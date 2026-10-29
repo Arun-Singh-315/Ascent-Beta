@@ -454,10 +454,6 @@ class _ApplicationStageCard extends StatelessWidget {
               const SizedBox(width: 8),
               PopupMenuButton<ApplicationStage>(
                 tooltip: 'Move to stage',
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                ),
-                color: context.bgSurface,
                 onSelected: onMoveTo,
                 itemBuilder: (context) {
                   return allStages

@@ -16,7 +16,7 @@ class WelcomeBackBanner extends StatefulWidget {
     super.key,
     required this.days,
     required this.onDismissed,
-    this.visibleFor = const Duration(seconds: 4),
+    this.visibleFor = const Duration(seconds: 3),
   });
 
   final int days;

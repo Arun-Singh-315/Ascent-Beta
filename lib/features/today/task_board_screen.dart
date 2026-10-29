@@ -172,7 +172,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
             }
 
             if (t.plannedDate == null) {
-              todayTasks.add(t);
+              upcomingTasks.add(t);
               continue;
             }
 
@@ -567,14 +567,26 @@ class _TaskItemTile extends ConsumerWidget {
     );
 
     final reminders = ref.watch(allRemindersProvider).value ?? [];
-    final hasReminder = reminders.any(
+    final matchingReminder = reminders.where(
       (r) =>
           r.isActive &&
           (r.linkedTaskId == task.id ||
               (r.linkedTaskId == null &&
                   r.title.trim().toLowerCase() ==
                       task.title.trim().toLowerCase())),
-    );
+    ).firstOrNull;
+    final hasReminder = matchingReminder != null;
+    DateTime? scheduledTime;
+    if (matchingReminder != null) {
+      scheduledTime = matchingReminder.scheduledAt;
+    } else if (task.plannedDate != null &&
+        (task.plannedDate!.hour != 0 || task.plannedDate!.minute != 0)) {
+      scheduledTime = task.plannedDate;
+    }
+    final isScheduledInFuture =
+        !isDone &&
+        scheduledTime != null &&
+        DateTime.now().isBefore(scheduledTime);
 
     final completedSubTasks = subTasks
         .where((s) => s.actualCompletedDate != null)
@@ -619,6 +631,21 @@ class _TaskItemTile extends ConsumerWidget {
         final taskDao = ref.read(taskDaoProvider);
 
         if (direction == DismissDirection.startToEnd) {
+          if (isScheduledInFuture) {
+            final timeStr = DateFormat('h:mm a').format(scheduledTime!);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Scheduled for $timeStr. You can complete it once that time arrives.',
+                  ),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            return false;
+          }
           final completed = await taskDao.markComplete(task.id);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -766,6 +793,22 @@ class _TaskItemTile extends ConsumerWidget {
                         );
                         return;
                       }
+                      if (isScheduledInFuture) {
+                        HapticFeedback.lightImpact();
+                        final timeStr = DateFormat('h:mm a').format(
+                          scheduledTime!,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Scheduled for $timeStr. You can complete it once that time arrives.',
+                            ),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                        return;
+                      }
                       final taskDao = ref.read(taskDaoProvider);
                       await taskDao.markComplete(task.id);
                     },
@@ -791,7 +834,13 @@ class _TaskItemTile extends ConsumerWidget {
                               size: 18,
                               color: context.textOnPrimary,
                             )
-                          : null,
+                          : (isScheduledInFuture
+                              ? Icon(
+                                  Icons.schedule_rounded,
+                                  size: 13,
+                                  color: context.textMuted,
+                                )
+                              : null),
                     ),
                   ),
                   const SizedBox(width: 14),

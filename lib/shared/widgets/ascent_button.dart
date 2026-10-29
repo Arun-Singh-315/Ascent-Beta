@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/glass_theme.dart';
 
 /// The core button variants in the Ascent design system.
 enum AscentButtonType {
@@ -256,8 +257,8 @@ class _TapScaleWrapperState extends State<_TapScaleWrapper> {
       onPointerUp: (_) => setState(() => _pressed = false),
       onPointerCancel: (_) => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 110),
         curve: Curves.easeOutCubic,
         child: widget.child,
       ),
@@ -295,12 +296,11 @@ class _PrimaryButton extends StatelessWidget {
                     ? FrozenPalette.darkAction
                     : context.bgSurfaceElevated.withValues(alpha: 0.92))
               : (isFrozen
-                        ? FrozenPalette.action
-                        : AppPalette.colorFF3B2C1E)
-                    .withValues(alpha: 0.94))
+                    ? FrozenPalette.action.withValues(alpha: .94)
+                    : context.glass.ink.withValues(alpha: 0.88)))
         : (isFrozen
               ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-              : context.bgSurfaceElevated.withValues(alpha: 0.4));
+              : context.bgSurfaceElevated.withValues(alpha: 0.35));
     final fg = isDark
         ? (isFrozen ? Colors.white : context.textPrimary)
         : AppPalette.white;
@@ -311,16 +311,15 @@ class _PrimaryButton extends StatelessWidget {
         ? (isFrozen
               ? FrozenPalette.darkAction
               : context.textPrimary.withValues(alpha: 0.25))
-        : (isFrozen ? FrozenPalette.action : AppPalette.colorFF2A1C0F)
-              .withValues(alpha: 0.7);
+        : (isFrozen ? FrozenPalette.action : context.glass.line);
     final disabledBorder = isFrozen
         ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
         : context.divider;
     final height = isFrozen
-        ? (compact ? 36.0 : 48.0)
-        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
-    final radius = isFrozen ? (compact ? 18.0 : 24.0) : (compact ? 8.0 : 10.0);
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -361,7 +360,7 @@ class _PrimaryButton extends StatelessWidget {
             foregroundColor: fg,
             disabledBackgroundColor: isFrozen
                 ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                : context.bgSurfaceElevated.withValues(alpha: 0.4),
+                : context.bgSurfaceElevated.withValues(alpha: 0.35),
             disabledForegroundColor: disabledFg,
             elevation: 0,
             shadowColor: AppPalette.transparent,
@@ -369,14 +368,14 @@ class _PrimaryButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(radius),
               side: BorderSide(
                 color: isEnabled ? borderColor : disabledBorder,
-                width: AppBorderScale.w1point1,
+                width: AppBorderScale.w1point0,
               ),
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
-              vertical: AppSpace.s10,
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
-            minimumSize: Size(compact ? 60 : 90, height),
+            minimumSize: Size(compact ? 44 : 76, height),
           ),
           filled: true,
           icon: false,
@@ -424,11 +423,14 @@ class _SecondaryButton extends StatelessWidget {
             ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
             : FrozenPalette.action)
         : context.textMuted;
+    final bg = isEnabled
+        ? accent.withValues(alpha: isDark ? 0.08 : 0.05)
+        : AppPalette.transparent;
     final height = isFrozen
-        ? (compact ? 36.0 : 48.0)
-        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
-    final radius = isFrozen ? (compact ? 18.0 : 24.0) : (compact ? 8.0 : 10.0);
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -466,21 +468,21 @@ class _SecondaryButton extends StatelessWidget {
         style: context.surfaces.buttonStyle(
           OutlinedButton.styleFrom(
             foregroundColor: accent,
-            backgroundColor: AppPalette.transparent,
+            backgroundColor: bg,
             side: BorderSide(
               color: isFrozen
                   ? accent
-                  : accent.withValues(alpha: 0.5),
+                  : accent.withValues(alpha: isDark ? 0.38 : 0.32),
               width: AppBorderScale.w1point0,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(radius),
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
-              vertical: AppSpace.s10,
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
-            minimumSize: Size(compact ? 60 : 90, height),
+            minimumSize: Size(compact ? 44 : 76, height),
           ),
           filled: false,
           icon: false,
@@ -534,9 +536,9 @@ class _TonalButton extends StatelessWidget {
             : context.accentPrimary)
         : context.textMuted;
     final height = isFrozen
-        ? (compact ? 36.0 : 42.0)
-        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
     final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
@@ -581,13 +583,16 @@ class _TonalButton extends StatelessWidget {
                         .withValues(alpha: 0.4),
                     width: 0.8,
                   )
-                : BorderSide.none,
+                : BorderSide(
+                    color: fg.withValues(alpha: isDark ? 0.25 : 0.18),
+                    width: AppBorderScale.w1point0,
+                  ),
           ),
           padding: EdgeInsets.symmetric(
             horizontal: compact ? AppSpace.s12 : AppSpace.s16,
-            vertical: AppSpace.s8,
+            vertical: compact ? AppSpace.s6 : AppSpace.s8,
           ),
-          minimumSize: Size(compact ? 50 : 70, height),
+          minimumSize: Size(compact ? 44 : 70, height),
         ),
         child: content,
       ),
@@ -624,12 +629,24 @@ class _OutlinedSignatureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = context.textPrimary;
-    final border = context.divider;
-    final height =
-        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
-    final radius = compact ? 8.0 : 10.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final fg = isFrozen
+        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
+        : context.textPrimary;
+    final border = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final bg = isFrozen
+        ? (isDark
+            ? FrozenPalette.darkTint.withValues(alpha: 0.15)
+            : FrozenPalette.tint.withValues(alpha: 0.35))
+        : context.bgSurface.withValues(alpha: 0.4);
+    final height = isFrozen
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -674,8 +691,9 @@ class _OutlinedSignatureButton extends StatelessWidget {
             ),
             padding: EdgeInsets.symmetric(
               horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
-            minimumSize: Size(compact ? 50 : 80, height),
+            minimumSize: Size(compact ? 44 : 76, height),
           ),
           filled: false,
           icon: false,
@@ -719,9 +737,10 @@ class _GhostButton extends StatelessWidget {
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : context.textSecondary;
     final height = isFrozen
-        ? (compact ? 36.0 : 42.0)
-        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -759,10 +778,12 @@ class _GhostButton extends StatelessWidget {
         style: context.surfaces.buttonStyle(
           TextButton.styleFrom(
             foregroundColor: fg,
-            shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
             padding: EdgeInsets.symmetric(
               horizontal: compact ? AppSpace.s10 : AppSpace.s14,
-              vertical: AppSpace.s10,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
           ),
           filled: false,
@@ -789,24 +810,37 @@ class _IconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = context.textPrimary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final fg = isFrozen
+        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
+        : context.textPrimary;
+    final border = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final bg = isFrozen
+        ? (isDark
+            ? FrozenPalette.darkTint.withValues(alpha: 0.15)
+            : FrozenPalette.tint.withValues(alpha: 0.35))
+        : context.bgSurface.withValues(alpha: 0.5);
     final size = compact ? 34.0 : 40.0;
     final iconSize = compact ? 18.0 : 20.0;
+    final radius = isFrozen ? (compact ? 12.0 : 16.0) : (compact ? 8.0 : 10.0);
 
     return AppCard(
       width: size,
       height: size,
       nightDecoration: BoxDecoration(
-        color: context.bgSurface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: context.divider,
+          color: border,
           width: AppBorderScale.w0point9,
         ),
       ),
       child: Material(
         color: AppPalette.transparent,
-        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+        borderRadius: BorderRadius.circular(radius),
         clipBehavior: Clip.antiAlias,
         child: AppTapArea(
           onTap: onPressed,
@@ -930,15 +964,35 @@ class _DestructiveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = context.stateDanger;
-    const fg = AppPalette.white;
-    final height =
-        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
-    final radius = compact ? 8.0 : 10.0;
+    final isEnabled = onPressed != null && !loading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final danger = isFrozen
+        ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
+        : context.stateDanger;
+    final bg = isEnabled
+        ? danger.withValues(alpha: isDark ? 0.16 : 0.10)
+        : (isFrozen
+            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+            : context.bgSurfaceElevated.withValues(alpha: 0.25));
+    final fg = isDark
+        ? (isFrozen ? FrozenPalette.darkDanger : const Color(0xFFFCA5A5))
+        : danger;
+    final disabledFg = fg.withValues(alpha: 0.38);
+    final borderColor = isDark
+        ? danger.withValues(alpha: 0.34)
+        : danger.withValues(alpha: 0.28);
+    final disabledBorder = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final height = isFrozen
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
-        ? const SizedBox(
+        ? SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2, color: fg),
@@ -959,7 +1013,7 @@ class _DestructiveButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg)
+                          .copyWith(color: fg, fontWeight: FontWeight.w600)
                           .merge(AppTypeRoles.typeRole8),
                 ),
               ),
@@ -974,16 +1028,22 @@ class _DestructiveButton extends StatelessWidget {
           ElevatedButton.styleFrom(
             backgroundColor: bg,
             foregroundColor: fg,
+            disabledBackgroundColor: bg,
+            disabledForegroundColor: disabledFg,
             elevation: 0,
             shadowColor: AppPalette.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(radius),
+              side: BorderSide(
+                color: isEnabled ? borderColor : disabledBorder,
+                width: AppBorderScale.w1point0,
+              ),
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
-              vertical: AppSpace.s10,
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
-            minimumSize: Size(compact ? 60 : 90, height),
+            minimumSize: Size(compact ? 44 : 76, height),
           ),
           filled: true,
           icon: false,

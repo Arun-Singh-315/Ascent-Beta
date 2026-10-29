@@ -137,6 +137,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
           borderRadius: AppGeometry.roundedr16,
           child: GlassSurface(
             radius: 18,
+            enableBlur: false,
             fillColor: isDark
                 ? null
                 : (g.merlot ? MerlotPalette.surface : Colors.white),

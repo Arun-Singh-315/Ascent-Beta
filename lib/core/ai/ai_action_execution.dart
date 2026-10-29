@@ -93,6 +93,7 @@ class AiActionExecution {
         }
         return AiExecutionResult(
           'Rescheduled ${rawIds.toSet().length} task(s). Reminders were not changed.',
+          taskId: rawIds.toSet().length == 1 ? rawIds.first as int : null,
         );
       });
     }

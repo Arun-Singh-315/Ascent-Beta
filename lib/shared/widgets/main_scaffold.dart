@@ -10,6 +10,7 @@ import '../../app/theme/frozen_palette.dart';
 import 'package:flutter/services.dart';
 
 import 'ascent_drawer.dart';
+import 'glass_surface.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
@@ -134,6 +135,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       child: Scaffold(
         key: _scaffoldKey,
         drawer: const AscentDrawer(),
+        extendBody: !context.isDark,
         body: widget.shell,
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
@@ -168,8 +170,8 @@ class _AscentBottomNav extends StatelessWidget {
     final isDark = context.isDark;
     final bg = isFrozen
         ? (isDark
-            ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
-            : FrozenPalette.surface.withValues(alpha: 0.96))
+              ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
+              : FrozenPalette.surface.withValues(alpha: 0.96))
         : context.bgSurface;
     final divider = isFrozen
         ? (isDark ? FrozenPalette.darkLineSubtle : FrozenPalette.lineSubtle)
@@ -184,9 +186,9 @@ class _AscentBottomNav extends StatelessWidget {
         ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
         : context.glass.claySoft;
 
-    return Container(
+    final navigation = Container(
       decoration: BoxDecoration(
-        color: bg,
+        color: isDark ? bg : Colors.transparent,
         border: Border(
           top: BorderSide(
             color: divider,
@@ -257,6 +259,13 @@ class _AscentBottomNav extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (isDark) return navigation;
+    return GlassSurface(
+      radius: 0,
+      padding: EdgeInsets.zero,
+      customBorder: Border(top: BorderSide(color: context.glass.highlight)),
+      child: navigation,
     );
   }
 }

@@ -1,4 +1,5 @@
 import '../../shared/widgets/glass_chip.dart';
+import '../../shared/widgets/ascent_popup_menu.dart';
 import 'thought_category_action.dart';
 import '../../app/theme/thought_theme.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
@@ -23,19 +24,23 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../promises/providers/promise_providers.dart';
+import '../vault/providers/vault_providers.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
-import 'thought_quick_actions.dart';
 import '../../shared/widgets/thought_excerpt.dart';
+import '../../shared/widgets/locked_commitment_tile.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
   final buffer = StringBuffer();
   if (thought.promptQuestion != null &&
-      thought.promptQuestion!.trim().isNotEmpty) {
+      thought.promptQuestion!.trim().isNotEmpty &&
+      thought.promptQuestion!.trim().toLowerCase() !=
+          thought.content.trim().toLowerCase()) {
     buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
   }
   buffer.writeln('"${thought.content.trim()}"');
@@ -57,7 +62,10 @@ String formatMultipleThoughtsForShare(List<Thought> thoughts) {
   for (int i = 0; i < thoughts.length; i++) {
     final t = thoughts[i];
     buffer.writeln('── [Note ${i + 1}/${thoughts.length}] ──');
-    if (t.promptQuestion != null && t.promptQuestion!.trim().isNotEmpty) {
+    if (t.promptQuestion != null &&
+        t.promptQuestion!.trim().isNotEmpty &&
+        t.promptQuestion!.trim().toLowerCase() !=
+            t.content.trim().toLowerCase()) {
       buffer.writeln('💭 Prompt: ${t.promptQuestion!.trim()}');
     }
     buffer.writeln('"${t.content.trim()}"');
@@ -126,11 +134,16 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     });
   }
 
+  UnlockedPromiseIdsNotifier? _unlockedNotifier;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       setState(() {});
       _scheduleDayChange();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _unlockedNotifier?.lockAll();
     }
   }
 
@@ -178,6 +191,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     _hasInputText = _inputController.text.trim().isNotEmpty;
     _inputController.addListener(_onInputChanged);
     _openHomeThought();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unlockedNotifier = ref.read(unlockedPromiseIdsProvider.notifier);
   }
 
   @override
@@ -230,6 +249,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     _inputController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
+    _unlockedNotifier?.lockAll();
     super.dispose();
   }
 
@@ -444,9 +464,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 onPressed: enabled ? deleteSelected : null,
               ),
             ),
-            PopupMenuButton<String>(
+            AscentPopupMenuButton<String>(
               tooltip: 'More selected actions',
               enabled: enabled,
+              icon: Icon(Icons.more_horiz_rounded, color: g.ink),
               onSelected: (action) async {
                 if (action == 'delete') {
                   await deleteSelected();
@@ -485,6 +506,156 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     );
   }
 
+  Widget _buildTopSelectionQuickBar(
+    BuildContext context,
+    AscentGlass g,
+    List<Thought> allThoughts,
+  ) {
+    final selected = allThoughts
+        .where((t) => _selectedIds.contains(t.id))
+        .toList();
+    final enabled = !_applyingSelection && selected.isNotEmpty;
+
+    Future<void> act(String action) async {
+      if (_applyingSelection || selected.isEmpty) return;
+      HapticFeedback.selectionClick();
+      setState(() => _applyingSelection = true);
+      try {
+        if (action == 'plan') {
+          await showHomeSchedule(context, selected.first);
+          if (mounted) _exitSelectionMode();
+          return;
+        }
+        final saved = await applyThoughtAction(
+          context,
+          ref.read(databaseProvider),
+          selected,
+          action,
+        );
+        if (mounted && saved) _exitSelectionMode();
+      } finally {
+        if (mounted) setState(() => _applyingSelection = false);
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GlassChip(
+              icon: Icons.transform_rounded,
+              label: 'Convert',
+              tooltip: 'Convert to Todo',
+              onTap: enabled ? () => act('todo') : null,
+            ),
+            const SizedBox(width: 8),
+            GlassChip(
+              icon: Icons.folder_outlined,
+              label: 'Category',
+              tooltip: 'Move to category',
+              onTap: enabled ? () => _moveToCategory(selected) : null,
+            ),
+            const SizedBox(width: 8),
+            GlassChip(
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+              tooltip: 'Archive selected',
+              onTap: enabled ? () => _batchArchive(selected) : null,
+            ),
+            const SizedBox(width: 8),
+            GlassChip(
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete',
+              tooltip: 'Delete selected',
+              onTap: enabled ? () => _batchDelete(selected) : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _batchArchive(List<Thought> selected) async {
+    if (_applyingSelection || selected.isEmpty) return;
+    setState(() => _applyingSelection = true);
+    try {
+      final dao = ref.read(thoughtDaoProvider);
+      final anyActive = selected.any((t) => !t.isArchived);
+      for (final t in selected) {
+        if (anyActive) {
+          await dao.archiveThought(t.id);
+        } else {
+          await dao.unarchiveThought(t.id);
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              anyActive
+                  ? '${selected.length} notes archived'
+                  : '${selected.length} notes restored',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _exitSelectionMode();
+      }
+    } finally {
+      if (mounted) setState(() => _applyingSelection = false);
+    }
+  }
+
+  Future<void> _batchDelete(List<Thought> selected) async {
+    if (_applyingSelection || selected.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Delete ${selected.length} note${selected.length > 1 ? 's' : ''}?',
+        ),
+        content: const Text(
+          'These thoughts and any linked reminders will be permanently removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _applyingSelection = true);
+    try {
+      final dao = ref.read(thoughtDaoProvider);
+      for (final t in selected) {
+        await dao.deleteThought(t.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${selected.length} note${selected.length > 1 ? 's' : ''} deleted',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _exitSelectionMode();
+      }
+    } finally {
+      if (mounted) setState(() => _applyingSelection = false);
+    }
+  }
+
   Future<void> _moveToCategory(List<Thought> selected) async {
     if (_applyingSelection) return;
     setState(() => _applyingSelection = true);
@@ -499,16 +670,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   void _selectFilter(String key) {
     setState(() {
       _categoryFilter = key;
-      _archiveFilter = key == 'archived'
-          ? 'archived'
-          : _categories.containsKey(key)
-          ? 'all'
-          : 'active';
-      if (_categories.containsKey(key)) _viewToggle = 'all';
-      if (key == 'archived') {
-        _viewToggle = 'all';
-        _completionFilter = 'all';
-      }
+      _archiveFilter = key == 'archived' ? 'archived' : 'active';
       _openedThoughtId = null;
       _selectedIds.clear();
       _isSelectionMode = false;
@@ -825,6 +987,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           HapticFeedback.selectionClick();
           setState(() {
             _viewToggle = key;
+            if (key == 'all') _archiveFilter = 'all';
             _openedThoughtId = null;
             _selectedIds.clear();
             _isSelectionMode = false;
@@ -934,15 +1097,34 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                         filtered.isNotEmpty &&
                         filtered.every((t) => _selectedIds.contains(t.id));
 
-                    return IconButton(
-                      icon: Icon(
-                        isAllSelected
-                            ? Icons.deselect_rounded
-                            : Icons.select_all_rounded,
-                        color: g.clay,
+                    return Tooltip(
+                      message: isAllSelected ? 'Deselect All' : 'Select All',
+                      child: TextButton.icon(
+                        key: const ValueKey('thought_select_all_btn'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: g.clay,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: Icon(
+                          isAllSelected
+                              ? Icons.check_box_outlined
+                              : Icons.checklist_rounded,
+                          size: 18,
+                          color: g.clay,
+                        ),
+                        label: Text(
+                          isAllSelected ? 'Deselect All' : 'Select All',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: g.clay,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () => _toggleSelectAll(filtered),
                       ),
-                      tooltip: isAllSelected ? 'Deselect All' : 'Select All',
-                      onPressed: () => _toggleSelectAll(filtered),
                     );
                   },
                   orElse: () => const SizedBox.shrink(),
@@ -1011,78 +1193,85 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
             ),
             const SizedBox(height: 6),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _viewToggle == 'today'
-                      ? "TODAY'S REFLECTIONS"
-                      : _viewToggle == 'all'
-                      ? 'ALL REFLECTIONS'
-                      : 'OLDER REFLECTIONS',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: g.inkMuted,
-                    letterSpacing: 1,
+            if (_isSelectionMode)
+              _buildTopSelectionQuickBar(context, g, [
+                ...(activeAsync.value ?? []),
+                ...(archivedAsync.value ?? []),
+              ])
+            else ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _viewToggle == 'today'
+                        ? "TODAY'S REFLECTIONS"
+                        : _viewToggle == 'all'
+                        ? 'ALL REFLECTIONS'
+                        : 'OLDER REFLECTIONS',
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: g.inkMuted,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                key: const ValueKey('thought_filter_bar'),
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (final key in <String>{
-                            if (_categoryFilter != 'all' &&
-                                !shortcuts.contains(_categoryFilter))
-                              _categoryFilter,
-                            'all',
-                            ...shortcuts.where(_categories.containsKey),
-                          })
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: AppPill.choice(
-                                label: Text(
-                                  key == 'all'
-                                      ? 'All notes'
-                                      : _filterMeta[key]?.$1 ?? 'Category',
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Row(
+                  key: const ValueKey('thought_filter_bar'),
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (final key in <String>{
+                              if (_categoryFilter != 'all' &&
+                                  !shortcuts.contains(_categoryFilter))
+                                _categoryFilter,
+                              'all',
+                              ...shortcuts.where(_categories.containsKey),
+                            })
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: AppPill.choice(
+                                  label: Text(
+                                    key == 'all'
+                                        ? 'All notes'
+                                        : _filterMeta[key]?.$1 ?? 'Category',
+                                  ),
+                                  selected: _categoryFilter == key,
+                                  onSelected: (_) => _selectFilter(key),
                                 ),
-                                selected: _categoryFilter == key,
-                                onSelected: (_) => _selectFilter(key),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  GlassChip(
-                    label: 'Archive',
-                    icon: Icons.archive_outlined,
-                    selected: _archiveFilter == 'archived',
-                    onTap: () => _selectFilter(
-                      _archiveFilter == 'archived' ? 'all' : 'archived',
+                    GlassChip(
+                      label: 'Archive',
+                      icon: Icons.archive_outlined,
+                      selected: _archiveFilter == 'archived',
+                      onTap: () => _selectFilter(
+                        _archiveFilter == 'archived' ? 'all' : 'archived',
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    tooltip: 'Category filter',
-                    icon: Badge(
-                      isLabelVisible:
-                          _completionFilter != 'all' ||
-                          _archiveFilter != 'active',
-                      child: const Icon(Icons.filter_list_rounded),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Category filter',
+                      icon: Badge(
+                        isLabelVisible:
+                            _completionFilter != 'all' ||
+                            _archiveFilter != 'active',
+                        child: const Icon(Icons.filter_list_rounded),
+                      ),
+                      onPressed: _chooseFilter,
                     ),
-                    onPressed: _chooseFilter,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
 
             // Main Wall Content
             Expanded(
@@ -1247,7 +1436,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 },
               ),
             ),
-            // Selection actions are visible below the tabs; compose when not selecting.
             if (_isSelectionMode)
               ConstrainedBox(
                 constraints: BoxConstraints(
@@ -1320,14 +1508,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     }
   }
 
-  Widget _doneButton() => GlassChip(
-    key: ValueKey('thought_done_${thought.id}'),
-    label: 'Done',
-    tooltip: thought.isCompleted ? 'Mark open' : 'Mark done',
-    success: thought.isCompleted,
-    selected: thought.isCompleted,
-    onTap: _toggleDone,
-  );
 
   Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
@@ -1403,41 +1583,88 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
   BoxDecoration _wallDecoration(BuildContext context) {
     final g = context.glass;
+    final isDark = context.isDark;
     final style = widget.appearance.style;
     final minimal = style == ThoughtCardStyle.minimal;
-    final radius = switch (style) {
-      ThoughtCardStyle.soft => BorderRadius.circular(16),
-      ThoughtCardStyle.bubble => BorderRadius.only(
-        topLeft: Radius.circular(16),
-        topRight: Radius.circular(16),
-        bottomLeft: Radius.circular(index.isEven ? 4 : 16),
-        bottomRight: Radius.circular(index.isOdd ? 4 : 16),
-      ),
-      ThoughtCardStyle.minimal => BorderRadius.zero,
-    };
+    final isBubble = style == ThoughtCardStyle.bubble;
+
+    final moodAccent = g.frozen
+        ? (thought.mood == 'win' ? g.sage : g.slate)
+        : _moodColor(thought.mood);
+
+    final hasBubbleFraming = !minimal;
     final hardBorderColor = thought.isCompleted
-        ? (context.isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
-              .withValues(alpha: .5)
-        : g.ink.withValues(alpha: context.isDark ? .34 : .38);
+        ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
+              .withValues(alpha: .6)
+        : hasBubbleFraming
+        ? Color.lerp(
+            g.ink.withValues(alpha: isDark ? .35 : .40),
+            moodAccent,
+            isDark ? 0.45 : 0.40,
+          )!
+        : g.ink.withValues(alpha: isDark ? .34 : .38);
+
+    final borderWidth =
+        hasBubbleFraming ? widget.appearance.bubbleBorderWidth : 1.0;
+
+    final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
+        ? Colors.transparent
+        : thought.isCompleted
+        ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
+              .withValues(alpha: .08)
+        : isSelected
+        ? g.clay.withValues(alpha: isDark ? 0.09 : 0.06)
+        : hasBubbleFraming
+        ? Color.lerp(
+            g.fill,
+            moodAccent.withValues(alpha: isDark ? 0.06 : 0.04),
+            0.5,
+          )
+        : Colors.transparent;
+
     return BoxDecoration(
-      color: thought.isCompleted
-          ? (context.isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
-                .withValues(alpha: .07)
-          : Colors.transparent,
-      boxShadow: const [],
-      borderRadius: widget.compact
-          ? radius
-          : BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(index.isEven ? 18 : 6),
-              bottomRight: Radius.circular(index.isOdd ? 18 : 6),
-            ),
+      color: bubbleFill,
+      boxShadow: minimal
+          ? const []
+          : isSelected
+          ? [
+              BoxShadow(
+                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.22),
+                blurRadius: 12,
+                spreadRadius: 1,
+                offset: const Offset(0, 2),
+              ),
+            ]
+          : isBubble
+          ? [
+              BoxShadow(
+                color: moodAccent.withValues(
+                  alpha: widget.appearance.bubbleFilled
+                      ? (isDark ? 0.10 : 0.05)
+                      : (isDark ? 0.04 : 0.02),
+                ),
+                blurRadius: 8,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ]
+          : const [],
+      borderRadius: switch (style) {
+        ThoughtCardStyle.soft => BorderRadius.circular(16),
+        ThoughtCardStyle.bubble => BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(index.isEven ? 18 : 6),
+          bottomRight: Radius.circular(index.isOdd ? 6 : 18),
+        ),
+        ThoughtCardStyle.minimal =>
+          widget.compact ? BorderRadius.zero : BorderRadius.circular(6),
+      },
       border: isSelected
-          ? Border.all(color: g.clay, width: 1.8)
+          ? Border.all(color: g.clay, width: 2.0)
           : minimal && widget.compact
           ? Border(bottom: BorderSide(color: hardBorderColor, width: 1.0))
-          : Border.all(color: hardBorderColor, width: 1.0),
+          : Border.all(color: hardBorderColor, width: borderWidth),
     );
   }
 
@@ -1448,6 +1675,16 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         : _moodColor(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
     final g = context.glass;
+    final contentLower = thought.content.toLowerCase();
+    final isHighPriority = thought.content.contains('[HIGH]') ||
+        contentLower.contains('#high') ||
+        contentLower.contains('#urgent');
+    final privatePromiseIds = ref.watch(privatePromiseIdsProvider);
+    final unlockedPromiseIds = ref.watch(unlockedPromiseIdsProvider);
+    final isPrivatePromise = thought.mood == 'promise' &&
+        privatePromiseIds.contains(thought.id);
+    final isPromiseLocked = isPrivatePromise &&
+        !unlockedPromiseIds.contains(thought.id);
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -1543,13 +1780,36 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               ],
             ),
           ),
+          secondaryBackground: AppCard(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: AppSpace.s20),
+            nightDecoration: BoxDecoration(
+              color: g.coralSoft,
+              borderRadius: AppGeometry.roundedr14,
+              border: Border.all(color: g.coral.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Delete',
+                  style: AppTypeRoles.typeRole8.copyWith(color: g.coral),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.delete_outline_rounded,
+                  color: g.coral,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
           child: AppTapArea(
             onTap: isSelectionMode ? onToggleSelect : null,
             onLongPress: isSelectionMode ? onToggleSelect : onLongPress,
             borderRadius: AppGeometry.roundedr16,
-            child: GestureDetector(
-              child: AnimatedContainer(
-                key: ValueKey(
+            child: AnimatedContainer(
+              key: ValueKey(
                   'thought_surface_${thought.id}_${widget.appearance.style.name}',
                 ),
                 duration: const Duration(milliseconds: 200),
@@ -1566,43 +1826,69 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   children: [
                     if (thought.mood == 'promise') ...[
                       Center(
-                        child: Container(
-                          key: ValueKey(
-                            'promise_top_middle_wrapper_${thought.id}',
-                          ),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s10,
-                            vertical: AppSpace.s4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: g.clay.withValues(alpha: 0.12),
-                            borderRadius: AppGeometry.roundedr12,
-                            border: Border.all(
-                              color: g.clay.withValues(alpha: 0.28),
-                              width: AppBorderScale.w1point0,
+                        child: Tooltip(
+                          message: isPrivatePromise && !isPromiseLocked
+                              ? 'Tap to lock commitment'
+                              : '',
+                          child: InkWell(
+                            key: ValueKey(
+                              'promise_top_middle_wrapper_${thought.id}',
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.handshake_rounded,
-                                size: 12,
-                                color: g.clay,
+                            onTap: isPrivatePromise && !isPromiseLocked
+                                ? () {
+                                    HapticFeedback.lightImpact();
+                                    ref
+                                        .read(
+                                          unlockedPromiseIdsProvider.notifier,
+                                        )
+                                        .lock(thought.id);
+                                  }
+                                : null,
+                            borderRadius: AppGeometry.roundedr12,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s10,
+                                vertical: AppSpace.s4,
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'PROMISE',
-                                style: AscentTextStyles.homeCaption
-                                    .copyWith(
-                                      color: g.clay,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.2,
-                                    )
-                                    .merge(AppTypeRoles.typeRole65),
+                              decoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.12),
+                                borderRadius: AppGeometry.roundedr12,
+                                border: Border.all(
+                                  color: g.clay.withValues(alpha: 0.28),
+                                  width: AppBorderScale.w1point0,
+                                ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isPrivatePromise
+                                        ? (isPromiseLocked
+                                            ? Icons.lock_rounded
+                                            : Icons.lock_open_rounded)
+                                        : Icons.handshake_rounded,
+                                    size: 12,
+                                    color: g.clay,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    isPrivatePromise
+                                        ? (isPromiseLocked
+                                            ? 'PRIVATE PROMISE'
+                                            : 'UNLOCKED • TAP TO LOCK')
+                                        : 'PROMISE',
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(
+                                          color: g.clay,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.2,
+                                        )
+                                        .merge(AppTypeRoles.typeRole65),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -1611,15 +1897,29 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        if (isSelectionMode) ...[
-                          Icon(
-                            isSelected
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 18,
-                            color: isSelected ? g.clay : g.inkMuted,
+                        if (!isSelectionMode) ...[
+                          Tooltip(
+                            message: thought.isCompleted
+                                ? 'Mark open'
+                                : 'Mark done',
+                            child: GestureDetector(
+                              key: ValueKey('thought_left_done_${thought.id}'),
+                              behavior: HitTestBehavior.opaque,
+                              onTap: _toggleDone,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: Icon(
+                                  thought.isCompleted
+                                      ? Icons.check_circle_rounded
+                                      : Icons.circle_outlined,
+                                  size: 16,
+                                  color: thought.isCompleted
+                                      ? g.sage
+                                      : g.inkMuted.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(width: 6),
                         ],
                         Expanded(
                           child: Text(
@@ -1632,7 +1932,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           ),
                         ),
                         if (!isSelectionMode) ...[
-                          _doneButton(),
                           IconButton(
                             tooltip: 'Edit thought',
                             visualDensity: VisualDensity.compact,
@@ -1648,22 +1947,25 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           ),
                         ],
                         if (!isSelectionMode)
-                          PopupMenuButton<String>(
+                          AscentPopupMenuButton<String>(
                             icon: Icon(
                               Icons.more_horiz_rounded,
                               size: 18,
                               color: context.textMuted,
                             ),
-                            color: context.isDark ? context.bgSurface : g.fill,
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
                             onSelected: (action) async {
                               if (action == 'category') {
                                 widget.onMoveToCategory?.call();
                               } else if (action == 'share') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before sharing',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 await shareThought(thought);
                               } else if (action == 'convert_task') {
                                 await applyThoughtAction(
@@ -1726,6 +2028,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                     .read(thoughtDaoProvider)
                                     .togglePin(thought.id);
                               } else if (action == 'copy') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before copying',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 HapticFeedback.lightImpact();
                                 await Clipboard.setData(
                                   ClipboardData(text: thought.content),
@@ -1739,7 +2049,16 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                   );
                                 }
                               } else if (action == 'edit') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before editing',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 HapticFeedback.lightImpact();
+                                if (!context.mounted) return;
                                 DropThoughtSheet.show(
                                   context,
                                   existingThought: thought,
@@ -1752,6 +2071,24 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 context.push('/momentum', extra: thought);
                               } else if (action == 'delete') {
                                 await _deleteWithUndo(context, ref);
+                              } else if (action == 'priority') {
+                                HapticFeedback.lightImpact();
+                                final isHigh = thought.content.contains('[HIGH]');
+                                final newContent = isHigh
+                                    ? thought.content.replaceAll('[HIGH] ', '').replaceAll('[HIGH]', '').trim()
+                                    : '[HIGH] ${thought.content}';
+                                await (ref.read(databaseProvider).update(
+                                  ref.read(databaseProvider).thoughtTable,
+                                )..where((t) => t.id.equals(thought.id))).write(
+                                  ThoughtTableCompanion(
+                                    content: drift.Value(newContent),
+                                  ),
+                                );
+                              } else if (action == 'lock') {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .lock(thought.id);
                               }
                             },
                             itemBuilder: (_) => [
@@ -1766,19 +2103,45 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                     ],
                                   ),
                                 ),
+                              if (isPrivatePromise && !isPromiseLocked)
+                                const PopupMenuItem(
+                                  value: 'lock',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.lock_outline_rounded, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Lock commitment'),
+                                    ],
+                                  ),
+                                ),
                               const PopupMenuItem(
                                 value: 'edit',
                                 child: Text('Edit thought'),
+                              ),
+                              PopupMenuItem(
+                                value: 'priority',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.flag_outlined,
+                                      size: 16,
+                                      color: thought.content.contains('[HIGH]')
+                                          ? g.coral
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      thought.content.contains('[HIGH]')
+                                          ? 'Remove priority'
+                                          : 'Mark high priority',
+                                    ),
+                                  ],
+                                ),
                               ),
                               const PopupMenuItem(
                                 value: 'copy',
                                 child: Text('Copy text'),
                               ),
-                              if (thought.mood != 'promise')
-                                const PopupMenuItem(
-                                  value: 'both',
-                                  child: Text('Todo + Reminder'),
-                                ),
                               if (thought.mood != 'promise')
                                 const PopupMenuItem(
                                   value: 'reminder',
@@ -1865,7 +2228,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 value: 'delete',
                                 child: Text(
                                   'Delete thought',
-                                  style: TextStyle(color: AppPalette.redAccent),
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1875,13 +2241,41 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
                     if (thought.isCompleted ||
                         thought.isPinned ||
-                        thought.isArchived) ...[
+                        thought.isArchived ||
+                        isHighPriority) ...[
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 5,
                         runSpacing: 4,
                         children: [
-
+                          if (isHighPriority)
+                            AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s5,
+                                vertical: AppSpace.s2,
+                              ),
+                              nightDecoration: BoxDecoration(
+                                color: g.coral.withValues(alpha: 0.14),
+                                borderRadius: AppGeometry.roundedr6,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.flag_rounded,
+                                    size: 9,
+                                    color: g.coral,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'HIGH',
+                                    style: AscentTextStyles.labelSmall
+                                        .copyWith(color: g.coral)
+                                        .merge(AppTypeRoles.typeRole56),
+                                  ),
+                                ],
+                              ),
+                            ),
                           if (thought.isCompleted)
                             AppTag(
                               padding: const EdgeInsets.symmetric(
@@ -1968,78 +2362,94 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                       ),
                       const SizedBox(height: 4),
                     ],
-                    // Optional prompt question banner
-                    if (thought.promptQuestion != null) ...[
+                    if (isPromiseLocked) ...[
                       const SizedBox(height: 10),
-                      AppTag(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s10,
-                          vertical: AppSpace.s6,
-                        ),
-                        nightDecoration: BoxDecoration(
-                          color: moodColor.withValues(alpha: 0.08),
-                          borderRadius: AppGeometry.roundedr8,
-                          border: Border(
-                            left: BorderSide(
-                              color: moodColor.withValues(alpha: 0.5),
-                              width: AppBorderScale.w2point5,
-                            ),
+                      LockedCommitmentTile(
+                        label: 'Private commitment',
+                        onTap: () async {
+                          final security = ref.read(vaultSecurityServiceProvider);
+                          final unlocked = await security.authenticateBiometrics(
+                            reason: 'Unlock private commitment',
+                          );
+                          if (unlocked) {
+                            ref
+                                .read(unlockedPromiseIdsProvider.notifier)
+                                .unlock(thought.id);
+                          }
+                        },
+                      ),
+                    ] else ...[
+                      // Optional prompt question banner: only show if distinct from content
+                      if (thought.mood != 'promise' &&
+                          thought.promptQuestion != null &&
+                          thought.promptQuestion!.trim().isNotEmpty &&
+                          thought.promptQuestion!.trim().toLowerCase() !=
+                              thought.content.trim().toLowerCase()) ...[
+                        const SizedBox(height: 10),
+                        AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s10,
+                            vertical: AppSpace.s6,
                           ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.help_outline_rounded,
-                              size: 13,
-                              color: moodColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                thought.promptQuestion!,
-                                style: AscentTextStyles.bodySmall
-                                    .copyWith(
-                                      color: context.textMuted,
-                                      fontStyle: FontStyle.italic,
-                                      height: 1.3,
-                                    )
-                                    .merge(AppTypeRoles.typeRole27),
+                          nightDecoration: BoxDecoration(
+                            color: moodColor.withValues(alpha: 0.08),
+                            borderRadius: AppGeometry.roundedr8,
+                            border: Border(
+                              left: BorderSide(
+                                color: moodColor.withValues(alpha: 0.5),
+                                width: AppBorderScale.w2point5,
                               ),
                             ),
-                          ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.help_outline_rounded,
+                                size: 13,
+                                color: moodColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  thought.promptQuestion!,
+                                  style: AscentTextStyles.bodySmall
+                                      .copyWith(
+                                        color: context.textMuted,
+                                        fontStyle: FontStyle.italic,
+                                        height: 1.3,
+                                      )
+                                      .merge(AppTypeRoles.typeRole27),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+
+                      // Content
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onDoubleTap: isSelectionMode ? null : _toggleDone,
+                        child: ThoughtExcerpt(
+                          content: thought.content.startsWith('[HIGH] ')
+                              ? thought.content.substring(7)
+                              : thought.content,
+                          maxLines: 5,
+                          style: AppTypography.thoughtContent(
+                            color: context.glass.ink,
+                          ),
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 10),
-
-                    // Content
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onDoubleTap: isSelectionMode ? null : _toggleDone,
-                      child: ThoughtExcerpt(
-                        content: thought.content,
-                        maxLines: 5,
-                        style: AppTypography.thoughtContent(
-                          color: context.glass.ink,
-                        ),
-                      ),
-                    ),
-                    if (!isSelectionMode && !thought.isArchived)
-                      ThoughtQuickActions(
-                        key: ValueKey('thought_quick_${thought.id}'),
-                        thought: thought,
-                        db: ref.read(databaseProvider),
-                        onMoveToCategory: widget.onMoveToCategory,
-                      ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }

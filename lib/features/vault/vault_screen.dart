@@ -3,11 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
-import '../../shared/widgets/glass_surface.dart';
 import 'models/vault_item_model.dart';
 import 'providers/vault_providers.dart';
 import 'widgets/vault_item_card.dart';
@@ -25,6 +23,7 @@ class VaultScreen extends ConsumerStatefulWidget {
 class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingObserver {
   bool _searchOpen = false;
   final _searchController = TextEditingController();
+  VaultSessionUnlockedNotifier? _vaultSessionUnlockedNotifier;
 
   @override
   void initState() {
@@ -33,8 +32,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _vaultSessionUnlockedNotifier =
+        ref.read(vaultSessionUnlockedProvider.notifier);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _vaultSessionUnlockedNotifier?.lock();
     _searchController.dispose();
     super.dispose();
   }
@@ -43,7 +50,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Auto-lock vault when app is backgrounded or hidden
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      ref.read(vaultSessionUnlockedProvider.notifier).lock();
+      _vaultSessionUnlockedNotifier?.lock();
     }
   }
 

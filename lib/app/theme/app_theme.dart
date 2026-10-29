@@ -6,6 +6,7 @@ import 'dimension_tokens.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
 import 'glass_theme.dart';
+import 'day_glass_material.dart';
 import 'text_styles.dart';
 import 'surface_tokens.dart';
 import '../../core/providers/settings_provider.dart';
@@ -26,34 +27,59 @@ class AscentTheme {
 
   static ThemeData light({
     DayThemePreset preset = DayThemePreset.merlotLinen,
-  }) => _build(brightness: Brightness.light, preset: preset);
+    GlassTranslucencyPreset translucency =
+        GlassTranslucencyPreset.balancedLiquid,
+  }) {
+    final base = _build(brightness: Brightness.light, preset: preset);
+    final glass = base.extension<AscentGlass>()!;
+    final material = DayGlassMaterial.from(glass, translucency);
+    final muted = Color.lerp(glass.inkMuted, glass.ink, .16)!;
+    final surface = base.extension<AppSurfaces>()!.copyWith(
+      mutedText: muted,
+      cardFill: glass.fill.withValues(alpha: material.topOpacity),
+      cardBorderColor: material.rim.top.color,
+      blur: material.blur,
+      shadow: material.shadow,
+    );
+    return base.copyWith(
+      scaffoldBackgroundColor: material.canvas,
+      appBarTheme: base.appBarTheme.copyWith(backgroundColor: material.canvas),
+      colorScheme: base.colorScheme.copyWith(
+        surfaceContainer: surface.cardFill,
+        onSurfaceVariant: muted,
+      ),
+      textTheme: base.textTheme.copyWith(
+        bodySmall: base.textTheme.bodySmall?.copyWith(color: muted),
+        labelMedium: base.textTheme.labelMedium?.copyWith(color: muted),
+        labelSmall: base.textTheme.labelSmall?.copyWith(color: muted),
+      ),
+      cardTheme: base.cardTheme.copyWith(
+        color: surface.cardFill,
+        shadowColor: material.shadow,
+      ),
+      extensions: [
+        material,
+        surface,
+        glass.copyWith(
+          bg: material.canvas,
+          inkMuted: muted,
+          fill: surface.cardFill,
+          nav: surface.cardFill,
+          edge: surface.cardBorderColor,
+          highlight: Colors.white.withValues(alpha: .90),
+          shadow: material.shadow,
+        ),
+      ],
+    );
+  }
 
   // ── Dark ───────────────────────────────────────────────────────────────────
 
   static ThemeData dark({DayThemePreset preset = DayThemePreset.classicClay}) =>
       _build(brightness: Brightness.dark, preset: preset);
 
-  static ThemeData assistant(ThemeData parent) {
-    if (parent.brightness == Brightness.dark) return parent;
-    final parentGlass = parent.extension<AscentGlass>() ?? AscentGlass.light;
-    final isNordic = parentGlass.frozen;
-    final isClay = parentGlass.clay == AscentColors.accentPrimary;
-    final preset = isNordic
-        ? DayThemePreset.nordicSky
-        : (isClay ? DayThemePreset.classicClay : DayThemePreset.merlotLinen);
-    final original = _build(
-      brightness: Brightness.light,
-      preset: preset,
-      outlinedDay: false,
-    );
-    final glass = isNordic
-        ? AscentGlass.nordicSky
-        : (isClay ? AscentGlass.light : AscentGlass.merlotLinenLight);
-    final surfaces = isNordic
-        ? AppSurfaces.legacyNordicSky
-        : (isClay ? AppSurfaces.legacyLight : AppSurfaces.legacyMerlotLinen);
-    return original.copyWith(extensions: [glass, surfaces]);
-  }
+  // Assistant routes share the current palette and translucency preference.
+  static ThemeData assistant(ThemeData parent) => parent;
 
   // ── Utility ────────────────────────────────────────────────────────────────
 
@@ -139,7 +165,9 @@ class AscentTheme {
         ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
         : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
     final textOnPrimary = isDark
-        ? (isMerlotLinen ? MerlotPalette.darkCanvas : AscentColors.textOnPrimaryDark)
+        ? (isMerlotLinen
+              ? MerlotPalette.darkCanvas
+              : AscentColors.textOnPrimaryDark)
         : AscentColors.textOnPrimary;
     final divider = day
         ? (isMerlotLinen
@@ -257,19 +285,19 @@ class AscentTheme {
       cardTheme: CardThemeData(
         color: day
             ? (isMerlotLinen
-                ? AppSurfaces.merlotLinen.cardFill
-                : isNordicSky
-                    ? AppSurfaces.nordicSky.cardFill
-                    : AppSurfaces.day.cardFill)
+                  ? AppSurfaces.merlotLinen.cardFill
+                  : isNordicSky
+                  ? AppSurfaces.nordicSky.cardFill
+                  : AppSurfaces.day.cardFill)
             : (isMerlotLinen
                   ? (isDark
                         ? MerlotPalette.darkSurface
                         : MerlotPalette.surface.withValues(alpha: 0.96))
                   : isNordicSky
-                      ? (isDark
-                            ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
-                            : FrozenPalette.surface.withValues(alpha: 0.94))
-                      : bgSurface),
+                  ? (isDark
+                        ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
+                        : FrozenPalette.surface.withValues(alpha: 0.94))
+                  : bgSurface),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(cardRadius),
@@ -278,8 +306,8 @@ class AscentTheme {
                   color: isMerlotLinen
                       ? AppSurfaces.merlotLinen.cardBorderColor
                       : isNordicSky
-                          ? AppSurfaces.nordicSky.cardBorderColor
-                          : AppSurfaces.day.cardBorderColor,
+                      ? AppSurfaces.nordicSky.cardBorderColor
+                      : AppSurfaces.day.cardBorderColor,
                   width: isMerlotLinen
                       ? AppSurfaces.merlotLinen.cardBorderWidth
                       : AppSurfaces.day.cardBorderWidth,
@@ -288,8 +316,8 @@ class AscentTheme {
                   color: isMerlotLinen
                       ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                       : isNordicSky
-                          ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                          : divider,
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : divider,
                   width: (isNordicSky || isMerlotLinen) ? 0.75 : 0.8,
                 ),
         ),
@@ -304,16 +332,18 @@ class AscentTheme {
                   ? MerlotPalette.darkElevated
                   : MerlotPalette.elevated.withValues(alpha: 0.96))
             : isNordicSky
-                ? (isDark
-                      ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
-                      : FrozenPalette.surface.withValues(alpha: 0.96))
-                : bgBase,
-        selectedItemColor: isMerlotLinen && isDark ? MerlotPalette.darkInk : accentPrimary,
+            ? (isDark
+                  ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
+                  : FrozenPalette.surface.withValues(alpha: 0.96))
+            : bgBase,
+        selectedItemColor: isMerlotLinen && isDark
+            ? MerlotPalette.darkInk
+            : accentPrimary,
         unselectedItemColor: isMerlotLinen
             ? (isDark ? MerlotPalette.darkMutedInk : MerlotPalette.mutedInk)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-                : textMuted,
+            ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+            : textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         showUnselectedLabels: true,
@@ -326,33 +356,33 @@ class AscentTheme {
         filled: true,
         fillColor: day
             ? (isMerlotLinen
-                ? AppSurfaces.merlotLinen.cardFill
-                : isNordicSky
-                    ? AppSurfaces.nordicSky.cardFill
-                    : AppSurfaces.day.cardFill)
+                  ? AppSurfaces.merlotLinen.cardFill
+                  : isNordicSky
+                  ? AppSurfaces.nordicSky.cardFill
+                  : AppSurfaces.day.cardFill)
             : (isMerlotLinen
                   ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
                   : isNordicSky
                   ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-                      : bgSurface),
+                  : bgSurface),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
           borderSide: BorderSide(
             color: day
                 ? (isMerlotLinen
-                    ? AppSurfaces.merlotLinen.cardBorderColor
-                    : isNordicSky
-                        ? AppSurfaces.nordicSky.cardBorderColor
-                        : AppSurfaces.day.ink)
+                      ? AppSurfaces.merlotLinen.cardBorderColor
+                      : isNordicSky
+                      ? AppSurfaces.nordicSky.cardBorderColor
+                      : AppSurfaces.day.ink)
                 : (isMerlotLinen
                       ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                       : isNordicSky
                       ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                          : divider),
+                      : divider),
             width: day
                 ? (isMerlotLinen
-                    ? AppSurfaces.merlotLinen.cardBorderWidth
-                    : AppSurfaces.day.cardBorderWidth)
+                      ? AppSurfaces.merlotLinen.cardBorderWidth
+                      : AppSurfaces.day.cardBorderWidth)
                 : 1.0,
           ),
         ),
@@ -361,19 +391,19 @@ class AscentTheme {
           borderSide: BorderSide(
             color: day
                 ? (isMerlotLinen
-                    ? AppSurfaces.merlotLinen.cardBorderColor
-                    : isNordicSky
-                        ? AppSurfaces.nordicSky.cardBorderColor
-                        : AppSurfaces.day.ink)
+                      ? AppSurfaces.merlotLinen.cardBorderColor
+                      : isNordicSky
+                      ? AppSurfaces.nordicSky.cardBorderColor
+                      : AppSurfaces.day.ink)
                 : (isMerlotLinen
                       ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                       : isNordicSky
                       ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                          : divider),
+                      : divider),
             width: day
                 ? (isMerlotLinen
-                    ? AppSurfaces.merlotLinen.cardBorderWidth
-                    : AppSurfaces.day.cardBorderWidth)
+                      ? AppSurfaces.merlotLinen.cardBorderWidth
+                      : AppSurfaces.day.cardBorderWidth)
                 : 1.0,
           ),
         ),
@@ -399,7 +429,9 @@ class AscentTheme {
         hintStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         labelStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         floatingLabelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: isMerlotLinen && isDark ? MerlotPalette.darkSecondaryInk : accentPrimary,
+          color: isMerlotLinen && isDark
+              ? MerlotPalette.darkSecondaryInk
+              : accentPrimary,
         ),
       ),
 
@@ -409,9 +441,7 @@ class AscentTheme {
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
               if (isMerlotLinen) {
-                return isDark
-                    ? MerlotPalette.darkElevated
-                    : MerlotPalette.tint;
+                return isDark ? MerlotPalette.darkElevated : MerlotPalette.tint;
               }
               return isNordicSky
                   ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
@@ -500,19 +530,19 @@ class AscentTheme {
             BorderSide(
               color: day
                   ? (isMerlotLinen
-                      ? AppSurfaces.merlotLinen.cardBorderColor
-                      : isNordicSky
-                          ? AppSurfaces.nordicSky.cardBorderColor
-                          : AppSurfaces.day.ink)
+                        ? AppSurfaces.merlotLinen.cardBorderColor
+                        : isNordicSky
+                        ? AppSurfaces.nordicSky.cardBorderColor
+                        : AppSurfaces.day.ink)
                   : (isMerlotLinen
                         ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                         : isNordicSky
                         ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                            : divider),
+                        : divider),
               width: day
                   ? (isMerlotLinen
-                      ? AppSurfaces.merlotLinen.cardBorderWidth
-                      : AppSurfaces.day.cardBorderWidth)
+                        ? AppSurfaces.merlotLinen.cardBorderWidth
+                        : AppSurfaces.day.cardBorderWidth)
                   : 1.0,
             ),
           ),
@@ -593,10 +623,10 @@ class AscentTheme {
       dividerTheme: DividerThemeData(
         color: day
             ? (isMerlotLinen
-                ? AppSurfaces.merlotLinen.dividerColor
-                : isNordicSky
-                    ? AppSurfaces.nordicSky.dividerColor
-                    : AppSurfaces.day.dividerColor)
+                  ? AppSurfaces.merlotLinen.dividerColor
+                  : isNordicSky
+                  ? AppSurfaces.nordicSky.dividerColor
+                  : AppSurfaces.day.dividerColor)
             : divider,
         thickness: 1,
         space: 1,
@@ -606,15 +636,15 @@ class AscentTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: isDark
             ? (isMerlotLinen
-                ? MerlotPalette.darkElevated
-                : isNordicSky
-                    ? FrozenPalette.darkElevated
-                    : const Color(0xFF2D251E))
+                  ? MerlotPalette.darkElevated
+                  : isNordicSky
+                  ? FrozenPalette.darkElevated
+                  : const Color(0xFF2D251E))
             : (isMerlotLinen
-                ? MerlotPalette.ink
-                : isNordicSky
-                    ? FrozenPalette.ink
-                    : const Color(0xFF2B221B)),
+                  ? MerlotPalette.ink
+                  : isNordicSky
+                  ? FrozenPalette.ink
+                  : const Color(0xFF2B221B)),
         contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
           color: const Color(0xFFF1F5F9),
           fontWeight: FontWeight.w500,
@@ -631,19 +661,15 @@ class AscentTheme {
       // ── Bottom sheet ─────────────────────────────────────────────────────────
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: isMerlotLinen
-            ? (isDark
-                  ? MerlotPalette.darkElevated
-                  : MerlotPalette.elevated)
+            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-                : bgSurface,
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
         modalBackgroundColor: isMerlotLinen
-            ? (isDark
-                  ? MerlotPalette.darkElevated
-                  : MerlotPalette.elevated)
+            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-                : bgSurface,
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: sheetRadius,
@@ -655,8 +681,8 @@ class AscentTheme {
         dragHandleColor: isMerlotLinen
             ? (isDark ? MerlotPalette.darkLine : MerlotPalette.lineSubtle)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                : divider,
+            ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+            : divider,
         dragHandleSize: const Size(40, 4),
       ),
 
@@ -674,22 +700,25 @@ class AscentTheme {
 
       // ── Icon theme ───────────────────────────────────────────────────────────
       iconTheme: IconThemeData(color: textPrimary, size: 24),
-      primaryIconTheme: IconThemeData(color: isMerlotLinen && isDark ? MerlotPalette.darkSecondaryInk : accentPrimary, size: 24),
+      primaryIconTheme: IconThemeData(
+        color: isMerlotLinen && isDark
+            ? MerlotPalette.darkSecondaryInk
+            : accentPrimary,
+        size: 24,
+      ),
 
       // ── Chip ─────────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: isMerlotLinen
-            ? (isDark
-                  ? MerlotPalette.darkElevated
-                  : MerlotPalette.pillSoft)
+            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.pillSoft)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                : (day ? AppSurfaces.day.cardFill : bgSurfaceElevated),
+            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+            : (day ? AppSurfaces.day.cardFill : bgSurfaceElevated),
         selectedColor: isMerlotLinen
             ? accentPrimary
             : isNordicSky
-                ? accentPrimary
-                : (day ? AppSurfaces.day.accent : null),
+            ? accentPrimary
+            : (day ? AppSurfaces.day.accent : null),
         labelStyle: AscentTextStyles.labelSmall.copyWith(
           color: isMerlotLinen && isDark
               ? MerlotPalette.darkSecondaryInk
@@ -710,16 +739,16 @@ class AscentTheme {
                 width: 0.75,
               )
             : isNordicSky
-                ? BorderSide(
-                    color: isDark ? FrozenPalette.darkLine : FrozenPalette.line,
-                    width: 1.0,
-                  )
-                : (day
-                      ? BorderSide(
-                          color: AppSurfaces.day.pillBorderColor,
-                          width: AppSurfaces.day.pillBorderWidth,
-                        )
-                      : BorderSide.none),
+            ? BorderSide(
+                color: isDark ? FrozenPalette.darkLine : FrozenPalette.line,
+                width: 1.0,
+              )
+            : (day
+                  ? BorderSide(
+                      color: AppSurfaces.day.pillBorderColor,
+                      width: AppSurfaces.day.pillBorderWidth,
+                    )
+                  : BorderSide.none),
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
@@ -727,12 +756,10 @@ class AscentTheme {
       // ── Dialog ───────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
         backgroundColor: isMerlotLinen
-            ? (isDark
-                  ? MerlotPalette.darkElevated
-                  : MerlotPalette.elevated)
+            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
             : isNordicSky
-                ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-                : bgSurface,
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(sheetRadius),
         ),
@@ -747,51 +774,43 @@ class AscentTheme {
 
       // ── Popup Menu ────────────────────────────────────────────────────────────
       popupMenuTheme: PopupMenuThemeData(
-        color: day
-            ? (isMerlotLinen
-                ? AppSurfaces.merlotLinen.cardFill
-                : isNordicSky
-                    ? AppSurfaces.nordicSky.cardFill
-                    : AppSurfaces.day.cardFill)
-            : (isMerlotLinen
-                  ? (isDark
-                        ? MerlotPalette.darkElevated
-                        : MerlotPalette.surface)
-                  : isNordicSky
-                      ? (isDark
-                            ? FrozenPalette.darkElevated
-                            : FrozenPalette.elevated)
-                      : bgSurface),
+        color: isMerlotLinen
+            ? MerlotPalette.darkElevated
+            : isNordicSky
+            ? FrozenPalette.darkElevated
+            : AscentColors.bgSurfaceElevatedDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(
-            color: day
-                ? (isMerlotLinen
-                    ? AppSurfaces.merlotLinen.cardBorderColor
-                    : isNordicSky
-                        ? AppSurfaces.nordicSky.cardBorderColor
-                        : AppSurfaces.day.cardBorderColor)
-                : (isMerlotLinen
-                      ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                      : isNordicSky
-                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                          : divider),
+            color: isMerlotLinen
+                ? MerlotPalette.darkLine
+                : isNordicSky
+                ? FrozenPalette.darkLine
+                : divider,
             width: isMerlotLinen ? 0.75 : 1.0,
           ),
         ),
         elevation: 8,
-        shadowColor: (isDark ? Colors.black : Colors.black54).withValues(
-          alpha: 0.18,
+        shadowColor: Colors.black.withValues(
+          alpha: 0.35,
         ),
         surfaceTintColor: Colors.transparent,
         menuPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         textStyle: AscentTextStyles.bodyMedium.copyWith(
-          color: textPrimary,
+          color: isMerlotLinen
+              ? MerlotPalette.darkInk
+              : isNordicSky
+              ? FrozenPalette.darkInk
+              : AscentColors.textPrimaryDark,
           fontWeight: FontWeight.w500,
         ),
         labelTextStyle: WidgetStateProperty.all(
           AscentTextStyles.bodyMedium.copyWith(
-            color: textPrimary,
+            color: isMerlotLinen
+                ? MerlotPalette.darkInk
+                : isNordicSky
+                ? FrozenPalette.darkInk
+                : AscentColors.textPrimaryDark,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -802,81 +821,81 @@ class AscentTheme {
         color: isMerlotLinen
             ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
             : (isNordicSky
-                ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                : accentPrimary),
+                  ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                  : accentPrimary),
         linearTrackColor: isMerlotLinen
             ? (isDark
-                ? const Color(0x1FFFFFFF)
-                : const Color.fromRGBO(88, 24, 37, 0.12))
+                  ? const Color(0x1FFFFFFF)
+                  : const Color.fromRGBO(88, 24, 37, 0.12))
             : (isNordicSky
-                ? (isDark
-                    ? const Color(0x1FFFFFFF)
-                    : const Color.fromRGBO(29, 100, 180, 0.12))
-                : (isDark
-                    ? const Color(0x1FFFFFFF)
-                    : const Color.fromRGBO(15, 23, 42, 0.12))),
+                  ? (isDark
+                        ? const Color(0x1FFFFFFF)
+                        : const Color.fromRGBO(29, 100, 180, 0.12))
+                  : (isDark
+                        ? const Color(0x1FFFFFFF)
+                        : const Color.fromRGBO(15, 23, 42, 0.12))),
         linearMinHeight: 4,
         borderRadius: BorderRadius.circular(4),
       ),
       extensions: [
         isDark
             ? (isMerlotLinen
-                ? AscentGlass.merlotLinenDark
-                : isNordicSky
-                ? AscentGlass.nordicSkyDark
-                : AscentGlass.dark)
+                  ? AscentGlass.merlotLinenDark
+                  : isNordicSky
+                  ? AscentGlass.nordicSkyDark
+                  : AscentGlass.dark)
             : isMerlotLinen
-                ? (!day
-                    ? AscentGlass.merlotLinenLight
-                    : AscentGlass.merlotLinenLight.copyWith(
-                        fill: AppSurfaces.merlotLinen.cardFill,
-                        line: AppSurfaces.merlotLinen.dividerColor,
-                        clay: AppSurfaces.merlotLinen.accent,
-                        claySoft: AppSurfaces.merlotLinen.tintFill,
-                        ink: AppSurfaces.merlotLinen.ink,
-                        inkMuted: AppSurfaces.merlotLinen.mutedText,
-                        glow1: const Color(0x29C28834),
-                        glow2: const Color(0x1F581825),
-                        shadow: MerlotPalette.shadowAmbient,
-                      ))
-                : isNordicSky
-                    ? (!day
-                        ? AscentGlass.nordicSky
-                        : AscentGlass.nordicSky.copyWith(
-                            fill: AppSurfaces.nordicSky.cardFill,
-                            line: AppSurfaces.nordicSky.dividerColor,
-                            clay: AppSurfaces.nordicSky.accent,
-                            claySoft: AppSurfaces.nordicSky.tintFill,
-                            ink: AppSurfaces.nordicSky.ink,
-                            inkMuted: AppSurfaces.nordicSky.mutedText,
-                            glow1: Colors.transparent,
-                            glow2: Colors.transparent,
-                            shadow: Colors.transparent,
-                          ))
-                    : !day
-                        ? AscentGlass.light
-                        : AscentGlass.light.copyWith(
-                            fill: AppSurfaces.day.cardFill,
-                            line: AppSurfaces.day.dividerColor,
-                            clay: AppSurfaces.day.accent,
-                            claySoft: AppSurfaces.day.tintFill,
-                            ink: AppSurfaces.day.ink,
-                            inkMuted: AppSurfaces.day.mutedText,
-                            glow1: Colors.transparent,
-                            glow2: Colors.transparent,
-                            shadow: Colors.transparent,
-                          ),
+            ? (!day
+                  ? AscentGlass.merlotLinenLight
+                  : AscentGlass.merlotLinenLight.copyWith(
+                      fill: AppSurfaces.merlotLinen.cardFill,
+                      line: AppSurfaces.merlotLinen.dividerColor,
+                      clay: AppSurfaces.merlotLinen.accent,
+                      claySoft: AppSurfaces.merlotLinen.tintFill,
+                      ink: AppSurfaces.merlotLinen.ink,
+                      inkMuted: AppSurfaces.merlotLinen.mutedText,
+                      glow1: const Color(0x29C28834),
+                      glow2: const Color(0x1F581825),
+                      shadow: MerlotPalette.shadowAmbient,
+                    ))
+            : isNordicSky
+            ? (!day
+                  ? AscentGlass.nordicSky
+                  : AscentGlass.nordicSky.copyWith(
+                      fill: AppSurfaces.nordicSky.cardFill,
+                      line: AppSurfaces.nordicSky.dividerColor,
+                      clay: AppSurfaces.nordicSky.accent,
+                      claySoft: AppSurfaces.nordicSky.tintFill,
+                      ink: AppSurfaces.nordicSky.ink,
+                      inkMuted: AppSurfaces.nordicSky.mutedText,
+                      glow1: Colors.transparent,
+                      glow2: Colors.transparent,
+                      shadow: Colors.transparent,
+                    ))
+            : !day
+            ? AscentGlass.light
+            : AscentGlass.light.copyWith(
+                fill: AppSurfaces.day.cardFill,
+                line: AppSurfaces.day.dividerColor,
+                clay: AppSurfaces.day.accent,
+                claySoft: AppSurfaces.day.tintFill,
+                ink: AppSurfaces.day.ink,
+                inkMuted: AppSurfaces.day.mutedText,
+                glow1: Colors.transparent,
+                glow2: Colors.transparent,
+                shadow: Colors.transparent,
+              ),
         isDark
             ? (isMerlotLinen
-                ? AppSurfaces.legacyMerlotLinenDark
-                : (isNordicSky
-                    ? AppSurfaces.legacyNordicSkyDark
-                    : AppSurfaces.night))
+                  ? AppSurfaces.legacyMerlotLinenDark
+                  : (isNordicSky
+                        ? AppSurfaces.legacyNordicSkyDark
+                        : AppSurfaces.night))
             : isMerlotLinen
-                ? (day ? AppSurfaces.merlotLinen : AppSurfaces.legacyMerlotLinen)
-                : isNordicSky
+            ? (day ? AppSurfaces.merlotLinen : AppSurfaces.legacyMerlotLinen)
+            : isNordicSky
             ? (day ? AppSurfaces.nordicSky : AppSurfaces.legacyNordicSky)
-                    : (day ? AppSurfaces.day : AppSurfaces.legacyLight),
+            : (day ? AppSurfaces.day : AppSurfaces.legacyLight),
       ],
     );
   }

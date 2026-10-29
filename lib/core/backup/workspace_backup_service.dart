@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/app_database.dart';
+import '../../features/promises/services/promise_repository.dart';
 
 abstract interface class BackupPreferences {
   Map<String, Object> snapshot();
@@ -104,6 +105,13 @@ class WorkspaceBackupService {
   final AppDatabase db;
   final BackupPreferences preferences;
   final Directory documents;
+  static const _promiseTables = [
+    'promise_metadata',
+    'promise_progress_events',
+    'promise_occurrences',
+    'promise_schedule_versions',
+    'promise_pause_periods',
+  ];
   static const maxBytes = 64 * 1024 * 1024;
   static const maxFileBytes = 40 * 1024 * 1024;
   List<TableInfo> get _tables => db.allTables
@@ -120,6 +128,7 @@ class WorkspaceBackupService {
 
   Future<String> _export({bool safetyCopy = false}) async {
     if (await _hasPending()) throw const RestoreRecoveryRequired();
+    await PromiseRepository(db).initialize();
     final tables = await db.transaction(() async {
       final result = <String, dynamic>{};
       for (final table in _tables) {
@@ -131,6 +140,11 @@ class WorkspaceBackupService {
                     .get())
                 .map((r) => r.data)
                 .toList();
+      }
+      for (final name in _promiseTables) {
+        result[name] = (await db.customSelect('SELECT * FROM $name').get())
+            .map((r) => r.data)
+            .toList();
       }
       return result;
     });
@@ -303,8 +317,12 @@ class WorkspaceBackupService {
         payload['files'] is! List) {
       throw const FormatException('Incomplete backup');
     }
+    await PromiseRepository(db).initialize();
     final tables = payload['tables'] as Map;
-    final names = _tables.map((t) => t.actualTableName).toSet();
+    for (final name in _promiseTables) {
+      tables.putIfAbsent(name, () => <dynamic>[]);
+    }
+    final names = {..._tables.map((t) => t.actualTableName), ..._promiseTables};
     if (tables.keys.toSet().difference(names).isNotEmpty ||
         names.difference(tables.keys.toSet()).isNotEmpty) {
       throw const FormatException('Backup must include every workspace table');
@@ -460,6 +478,9 @@ class WorkspaceBackupService {
       }
       await db.transaction(() async {
         await db.customStatement('PRAGMA defer_foreign_keys = ON');
+        for (final name in _promiseTables.reversed) {
+          await db.customStatement('DELETE FROM $name');
+        }
         for (final table in _tables.reversed) {
           await db.customStatement(
             'DELETE FROM ${_sqlName(table.actualTableName)}',
@@ -488,6 +509,24 @@ class WorkspaceBackupService {
               'INSERT INTO ${_sqlName(name)} (${keys.map(_sqlName).join(',')}) VALUES (${List.filled(keys.length, '?').join(',')})',
               keys.map((key) => row[key]).toList(),
             );
+          }
+        }
+        for (final name in _promiseTables) {
+          for (final raw in payload['tables'][name] as List) {
+            final row = Map<String, dynamic>.from(raw as Map);
+            final keys = row.keys.toList();
+            await db.customStatement(
+              'INSERT INTO $name (${keys.map(_sqlName).join(',')}) VALUES (${List.filled(keys.length, '?').join(',')})',
+              keys.map((k) => row[k]).toList(),
+            );
+          }
+          if ((await db
+                  .customSelect(
+                    "SELECT p.promise_id FROM $name p LEFT JOIN thoughts t ON p.promise_id=t.id WHERE t.id IS NULL OR t.mood!='promise'",
+                  )
+                  .get())
+              .isNotEmpty) {
+            throw const FormatException('Promise history has broken links.');
           }
         }
         await db.backfillThoughtLinks();

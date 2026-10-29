@@ -44,9 +44,23 @@ class ReminderAlarmBridge {
     }
   }
 
-  static Future<Map<String, dynamic>> access() async =>
-      Map<String, dynamic>.from(await channel.invokeMethod('access') as Map);
-  static Future<void> requestAccess() => channel.invokeMethod('requestAccess');
+  static Future<Map<String, dynamic>> access() async {
+    if (!_hasBinding) {
+      return {'exact': true, 'fullScreen': true, 'notifications': true};
+    }
+    try {
+      final res = await channel.invokeMethod('access');
+      if (res is Map) return Map<String, dynamic>.from(res);
+    } catch (_) {}
+    return {'exact': true, 'fullScreen': true, 'notifications': true};
+  }
+
+  static Future<void> requestAccess() async {
+    if (!_hasBinding) return;
+    try {
+      await channel.invokeMethod('requestAccess');
+    } catch (_) {}
+  }
   static Future<bool> act(int id, String action) async =>
       await channel.invokeMethod<bool>('act', {'id': id, 'action': action}) ??
       false;

@@ -91,6 +91,44 @@ final dayThemePresetProvider =
       DayThemePresetNotifier.new,
     );
 
+// ── Glass Translucency Preset (Apple Glass Style) ───────────────────────────
+
+enum GlassTranslucencyPreset {
+  subtleFrosted,
+  balancedLiquid,
+  highContrast,
+}
+
+const _glassTranslucencyPresetKey = 'ascent_glass_translucency_preset';
+
+class GlassTranslucencyPresetNotifier extends Notifier<GlassTranslucencyPreset> {
+  static const _values = {
+    'subtleFrosted': GlassTranslucencyPreset.subtleFrosted,
+    'balancedLiquid': GlassTranslucencyPreset.balancedLiquid,
+    'highContrast': GlassTranslucencyPreset.highContrast,
+  };
+
+  @override
+  GlassTranslucencyPreset build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final stored =
+        prefs.getString(_glassTranslucencyPresetKey) ?? 'balancedLiquid';
+    return _values[stored] ?? GlassTranslucencyPreset.balancedLiquid;
+  }
+
+  Future<void> setPreset(GlassTranslucencyPreset preset) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final key = _values.entries.firstWhere((e) => e.value == preset).key;
+    await prefs.setString(_glassTranslucencyPresetKey, key);
+    state = preset;
+  }
+}
+
+final glassTranslucencyPresetProvider =
+    NotifierProvider<GlassTranslucencyPresetNotifier, GlassTranslucencyPreset>(
+      GlassTranslucencyPresetNotifier.new,
+    );
+
 // ── Onboarding complete ──────────────────────────────────────────────────────
 
 const _onboardingKey = 'ascent_onboarding_complete';

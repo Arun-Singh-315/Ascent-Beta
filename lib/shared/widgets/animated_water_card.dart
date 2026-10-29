@@ -376,7 +376,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
     final iconBg = isDark
         ? context.waterAccent.withValues(alpha: 0.18)
         : (g.merlot
-              ? MerlotPalette.darkTint.withValues(alpha: 0.35)
+              ? MerlotPalette.tint
               : const Color(0xFFE0EFF8));
     final iconColor = isDark
         ? context.waterAccent

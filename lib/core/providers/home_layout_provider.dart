@@ -6,6 +6,7 @@ import '../streak/study_streak_provider.dart';
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
   'streak': 'Study streak',
+  'promises': 'Promises',
   'reminders': 'Upcoming reminders',
   'today': 'Today',
   'learning': 'Learning',
@@ -23,6 +24,7 @@ const homeTools = <String, String>{
   'chai-break': 'Breaks',
 };
 const homeShortcutRoutes = <String, String>{
+  'promises': 'Promises',
   'today': 'Today',
   'thought-wall': 'Mind Space',
   'learning': 'Learning',
@@ -53,8 +55,16 @@ class HomeLayout {
   final Set<String> visible, tools, compact;
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
-    order: ['mind', ...homeSections.keys.where((id) => id != 'mind')],
+    order: [
+      'mind',
+      'today',
+      'promises',
+      ...homeSections.keys.where(
+        (id) => id != 'mind' && id != 'today' && id != 'promises',
+      ),
+    ],
     visible: {
+      'promises',
       'streak',
       'reminders',
       'today',
@@ -64,6 +74,7 @@ class HomeLayout {
       'vault',
     },
     tools: homeTools.keys.toSet(),
+    shortcuts: const ['thought-wall', 'hydration', 'momentum', 'vault'],
   );
   HomeLayout copyWith({
     List<String>? order,
@@ -104,14 +115,28 @@ class HomeLayout {
     final savedOrder = (json['order'] as List).cast<dynamic>();
     final isExistingWithoutVault = !savedOrder.contains('vault');
     final parsedVisible = known(json['visible'], homeSections).toSet();
-    final visible = isExistingWithoutVault
-        ? {...parsedVisible, 'vault'}
-        : parsedVisible;
+    final isExistingWithoutPromises = !savedOrder.contains('promises');
+    var visible = parsedVisible;
+    // Migrate older active layouts without overriding explicit hidden choices
+    // or turning an intentionally empty Home back into a populated one.
+    if (parsedVisible.isNotEmpty) {
+      if (isExistingWithoutVault) visible = {...visible, 'vault'};
+      if (isExistingWithoutPromises) visible = {...visible, 'promises'};
+    }
+
+    final orderedSections = order.contains('promises')
+        ? order
+        : ['promises', ...order];
+
+    final rawShortcuts = json['shortcuts'];
+    final parsedShortcuts = (rawShortcuts == null || (rawShortcuts is List && rawShortcuts.isEmpty))
+        ? const ['thought-wall', 'hydration', 'momentum', 'vault']
+        : known(rawShortcuts, homeShortcutRoutes).take(4).toList();
 
     return HomeLayout(
       order: [
-        ...order,
-        ...homeSections.keys.where((id) => !order.contains(id)),
+        ...orderedSections,
+        ...homeSections.keys.where((id) => !orderedSections.contains(id)),
       ],
       visible: visible,
       tools: known(json['tools'], homeTools).toSet(),
@@ -119,10 +144,7 @@ class HomeLayout {
         json['compact'] ?? [],
         homeSections,
       ).where((id) => id == 'today' || id == 'mind').toSet(),
-      shortcuts: known(
-        json['shortcuts'] ?? [],
-        homeShortcutRoutes,
-      ).take(4).toList(),
+      shortcuts: parsedShortcuts,
     );
   }
 }

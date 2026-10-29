@@ -1,4 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/day_glass_material.dart';
 import 'package:ascent/app/theme/color_tokens.dart';
 import 'package:ascent/app/theme/frozen_palette.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
@@ -80,7 +81,10 @@ void main() {
           ),
         );
         expect(surfaceContext.glass.frozen, isTrue);
-        expect(surfaceContext.bgBase, FrozenPalette.canvas);
+        expect(
+          surfaceContext.bgBase,
+          theme.extension<DayGlassMaterial>()!.canvas,
+        );
         expect(surfaceContext.bgSurface, FrozenPalette.surface);
         expect(surfaceContext.bgSurfaceElevated, FrozenPalette.elevated);
         expect(surfaceContext.textSecondary, FrozenPalette.secondaryInk);

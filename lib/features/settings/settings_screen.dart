@@ -6,19 +6,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
+import '../../core/notifications/notification_service.dart';
+import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../features/home/widgets/day_one_tutorial_card.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
+import 'package:geolocator/geolocator.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -27,10 +28,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
-  final _companyInputController = TextEditingController();
   List<String> _targetCompanies = [];
   DateTime? _interviewDate;
   int _weeklyHours = 10;
@@ -38,25 +39,151 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _profileLoaded = false;
 
   // Collapsible section visibility states to keep UI calm & decluttered
-  bool _expandCareerGoals = false;
   bool _expandGpsTelemetry = false;
   bool _expandDataStorage = false;
+  bool _expandHelpGuides = false;
+
+  // Live Permission & System Access States
+  bool _notificationsAllowed = false;
+  bool _alarmsAllowed = false;
+  bool _locationAllowed = false;
+  bool _locationServiceOn = true;
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _roleController.dispose();
-    _companyInputController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final profile = ref.read(userProfileStreamProvider).value;
     if (profile != null) {
       _initFromProfile(profile);
     }
+    _checkAllPermissions();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAllPermissions();
+    }
+  }
+
+  Future<void> _checkAllPermissions() async {
+    if (!mounted) return;
+    try {
+      bool notif = false;
+      try {
+        notif = await NotificationService.instance.areNotificationsEnabled();
+      } catch (_) {}
+      LocationPermission locPerm = LocationPermission.denied;
+      bool locService = true;
+      try {
+        locPerm = await Geolocator.checkPermission();
+        locService = await Geolocator.isLocationServiceEnabled();
+      } catch (_) {}
+
+      bool alarmReady = notif;
+      try {
+        final access = await ReminderAlarmBridge.access();
+        alarmReady = access['exact'] == true;
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _notificationsAllowed = notif;
+          _locationAllowed = locPerm == LocationPermission.always ||
+              locPerm == LocationPermission.whileInUse;
+          _locationServiceOn = locService;
+          _alarmsAllowed = alarmReady;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openSystemAppSettings() async {
+    HapticFeedback.lightImpact();
+    try {
+      final opened = await Geolocator.openAppSettings();
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Open phone Settings > Apps > Ascent to manage permissions.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Open phone Settings > Apps > Ascent to manage permissions.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openLocationSettings() async {
+    HapticFeedback.lightImpact();
+    try {
+      await Geolocator.openLocationSettings();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Open device Location Settings to enable GPS.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _requestNotificationAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      await NotificationService.instance.requestPermissions();
+      await NotificationService.instance.requestExactAlarmsPermission();
+    } catch (_) {}
+    await _checkAllPermissions();
+  }
+
+  Future<void> _requestLocationAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      final perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.deniedForever) {
+        await _openSystemAppSettings();
+      } else {
+        final service = await Geolocator.isLocationServiceEnabled();
+        if (!service) {
+          await _openLocationSettings();
+        }
+      }
+    } catch (_) {}
+    await _checkAllPermissions();
+  }
+
+  Future<void> _requestAlarmAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      await ReminderAlarmBridge.requestAccess();
+    } catch (_) {
+      await _openSystemAppSettings();
+    }
+    await _checkAllPermissions();
   }
 
   void _initFromProfile(UserProfile? profile) {
@@ -209,30 +336,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           final prefs = ref.read(sharedPreferencesProvider);
                           await prefs.clear();
                           final db = ref.read(databaseProvider);
-                          await db.customStatement(
-                            'DELETE FROM insight_dismissals;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM interview_prep;',
-                          );
-                          await db.customStatement('DELETE FROM resumes;');
-                          await db.customStatement(
-                            'DELETE FROM application_status_history;',
-                          );
-                          await db.customStatement('DELETE FROM applications;');
-                          await db.customStatement('DELETE FROM tasks;');
-                          await db.customStatement('DELETE FROM series;');
-                          await db.customStatement('DELETE FROM study_phases;');
-                          await db.customStatement('DELETE FROM dsa_logs;');
-                          await db.customStatement(
-                            'DELETE FROM time_sessions;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM consistency_logs;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM user_profiles;',
-                          );
+                          await db.wipeAllUserData();
+                          try {
+                            await NotificationService.instance.cancelAll();
+                          } catch (_) {}
 
                           if (mounted) {
                             context.go('/onboarding');
@@ -342,10 +449,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
               ),
               const SizedBox(height: 18),
-              AscentButton.primary(
-                label: 'Understood, Got it! 👍',
-                expanded: true,
-                onPressed: () => Navigator.of(ctx).pop(),
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
+                children: [
+                  AscentButton.outlined(
+                    label: 'Open Phone App Settings',
+                    icon: Icons.open_in_new_rounded,
+                    compact: true,
+                    expanded: false,
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _openSystemAppSettings();
+                    },
+                  ),
+                  AscentButton.outlined(
+                    label: 'Understood, Got it! 👍',
+                    compact: true,
+                    expanded: false,
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
             ],
@@ -398,12 +522,257 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildPermissionsSection() {
+    final g = context.glass;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'App Permissions & System Access',
+          dotColor: g.sage,
+        ),
+        AscentCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Background Activity & Service Access',
+                style: AscentTextStyles.labelMedium
+                    .copyWith(color: g.ink)
+                    .merge(AppTypeRoles.typeRole2),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Manage essential OS permissions so background timers, walk tracking, and reminder alarms run reliably without interruption.',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: g.inkMuted,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 1. Notifications & Reminders
+              _buildPermissionTile(
+                icon: Icons.notifications_active_outlined,
+                iconColor: g.clay,
+                iconBg: g.claySoft,
+                title: 'Notifications & Alerts',
+                subtitle:
+                    'Scheduled reminders, study focus intervals & daily briefing',
+                isGranted: _notificationsAllowed,
+                grantedLabel: 'Allowed',
+                actionLabel: 'Allow Notifications',
+                onAction: _requestNotificationAccess,
+              ),
+
+              _Divider(color: g.line),
+
+              // 2. Alarms & Exact Timing
+              _buildPermissionTile(
+                icon: Icons.alarm_on_outlined,
+                iconColor: g.amber,
+                iconBg: g.amberSoft,
+                title: 'Exact Alarms & Ringing',
+                subtitle:
+                    'Reliable lock-screen ringing & full-screen alarm popups',
+                isGranted: _alarmsAllowed,
+                grantedLabel: 'Ready',
+                actionLabel: 'Configure Alarms',
+                onAction: _requestAlarmAccess,
+              ),
+
+              _Divider(color: g.line),
+
+              // 3. Location & GPS
+              _buildPermissionTile(
+                icon: Icons.location_on_outlined,
+                iconColor: g.sage,
+                iconBg: g.sageSoft,
+                title: 'GPS Walk Tracking',
+                subtitle:
+                    'Outdoor walking routes, live step count & distance tracking',
+                isGranted: _locationAllowed && _locationServiceOn,
+                grantedLabel: 'Active',
+                neededLabel: !_locationServiceOn ? 'GPS Off' : 'Needed',
+                actionLabel:
+                    !_locationServiceOn ? 'Turn On GPS' : 'Allow Location',
+                onAction: _requestLocationAccess,
+              ),
+
+              const SizedBox(height: 14),
+              _Divider(color: g.line),
+              const SizedBox(height: 12),
+
+              // Phone Shortcuts & Battery Saver Guide
+              Text(
+                'Phone Settings & Battery Savers',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: g.inkSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Android battery savers kill background GPS & timers when phone is locked. Tap below to jump directly to Ascent\'s App Info, grant permissions, and set Battery to "Unrestricted".',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: g.inkMuted,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack = constraints.maxWidth < 360;
+                  final btn1 = AscentButton.outlined(
+                    label: 'App Info & Battery',
+                    icon: Icons.open_in_new_rounded,
+                    compact: true,
+                    expanded: stack,
+                    onPressed: _openSystemAppSettings,
+                  );
+                  final btn2 = AscentButton.outlined(
+                    label: 'Location Settings',
+                    icon: Icons.location_on_outlined,
+                    compact: true,
+                    expanded: stack,
+                    onPressed: _openLocationSettings,
+                  );
+                  if (stack) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        btn1,
+                        const SizedBox(height: AppSpace.s8),
+                        btn2,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: btn1),
+                      const SizedBox(width: AppSpace.s8),
+                      Expanded(child: btn2),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionTile({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+    required bool isGranted,
+    required String grantedLabel,
+    String neededLabel = 'Needed',
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTag(
+            padding: const EdgeInsets.all(AppSpace.s8),
+            nightDecoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: AppGeometry.roundedr10,
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: AppSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s4,
+                  children: [
+                    Text(
+                      title,
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.ink)
+                          .merge(AppTypeRoles.typeRole8),
+                    ),
+                    AppTag(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s8,
+                        vertical: AppSpace.s2,
+                      ),
+                      nightDecoration: BoxDecoration(
+                        color: isGranted ? g.sageSoft : g.coralSoft,
+                        borderRadius: AppGeometry.roundedr8,
+                        border: Border.all(
+                          color: isGranted
+                              ? g.sage.withValues(alpha: 0.3)
+                              : g.coral.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isGranted
+                                ? Icons.check_circle_rounded
+                                : Icons.info_outline_rounded,
+                            size: 12,
+                            color: isGranted ? g.sage : g.coral,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isGranted ? grantedLabel : neededLabel,
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: isGranted ? g.sage : g.coral,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: g.inkMuted,
+                    height: 1.3,
+                  ),
+                ),
+                if (!isGranted) ...[
+                  const SizedBox(height: AppSpace.s6),
+                  AscentButton.outlined(
+                    label: actionLabel,
+                    compact: true,
+                    onPressed: onAction,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final dayPreset = ref.watch(dayThemePresetProvider);
+    final translucencyPreset = ref.watch(glassTranslucencyPresetProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -456,7 +825,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Display Mode',
+                          'Glass Translucency',
                           style: AscentTextStyles.labelMedium
                               .copyWith(color: g.ink)
                               .merge(AppTypeRoles.typeRole2),
@@ -465,11 +834,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          themeMode == ThemeMode.dark
-                              ? 'Night Mode'
-                              : (themeMode == ThemeMode.light
-                                    ? 'Day Mode'
-                                    : 'System Auto'),
+                          translucencyPreset ==
+                                  GlassTranslucencyPreset.subtleFrosted
+                              ? 'Subtle Frosted'
+                              : translucencyPreset ==
+                                      GlassTranslucencyPreset.highContrast
+                                  ? 'High Contrast'
+                                  : 'Balanced Liquid (Default)',
                           textAlign: TextAlign.end,
                           style: AscentTextStyles.captionMedium
                               .copyWith(color: g.clay)
@@ -481,247 +852,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _ThemeOption(
-                        label: 'Day / Light',
-                        icon: Icons.light_mode_rounded,
-                        isSelected: themeMode == ThemeMode.light,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.light);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'Night / Dark',
-                        icon: Icons.dark_mode_rounded,
-                        isSelected: themeMode == ThemeMode.dark,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.dark);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'System Auto',
-                        icon: Icons.brightness_auto_rounded,
-                        isSelected: themeMode == ThemeMode.system,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.system);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Active Theme Feedback Banner
-                  if (themeMode == ThemeMode.light)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: dayPreset == DayThemePreset.merlotLinen
-                            ? MerlotPalette.tint
-                            : dayPreset == DayThemePreset.nordicSky
-                            ? FrozenPalette.tint
-                            : const Color(0xFFFFF7ED),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: dayPreset == DayThemePreset.merlotLinen
-                              ? MerlotPalette.line
-                              : dayPreset == DayThemePreset.nordicSky
-                              ? FrozenPalette.line
-                              : const Color(0xFFFDBA74),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            dayPreset == DayThemePreset.merlotLinen
-                                ? Icons.auto_awesome_rounded
-                                : dayPreset == DayThemePreset.nordicSky
-                                ? Icons.cloud_outlined
-                                : Icons.wb_sunny_rounded,
-                            color: dayPreset == DayThemePreset.merlotLinen
-                                ? MerlotPalette.action
-                                : dayPreset == DayThemePreset.nordicSky
-                                ? FrozenPalette.action
-                                : const Color(0xFFEA580C),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              dayPreset == DayThemePreset.merlotLinen
-                                  ? 'Vintage Merlot Theme is active. Deep vintage merlot, cashmere oat linen, and antique gold accents.'
-                                  : dayPreset == DayThemePreset.nordicSky
-                                  ? 'Frozen Sky Theme is active. Crisp arctic blues, frosted glass, and cool linen surfaces.'
-                                  : 'Classic Clay Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: dayPreset == DayThemePreset.merlotLinen
-                                    ? MerlotPalette.action
-                                    : dayPreset == DayThemePreset.nordicSky
-                                    ? FrozenPalette.action
-                                    : const Color(0xFF9A3412),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (themeMode == ThemeMode.dark)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF334155)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.nightlight_round,
-                            color: Color(0xFFFF6B4A),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Night Glass Theme is active. Deep obsidian glass and vibrant neon clay accents.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: g.edge),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.brightness_auto_rounded,
-                            color: g.clay,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'System Auto is active. Ascent automatically matches your device setting (${context.isDark ? "currently Night Glass" : "currently Luminous Day"}).',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: g.ink,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 16),
-                  Divider(color: g.line, height: 1),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Daylight Style',
-                          style: AscentTextStyles.labelMedium
-                              .copyWith(color: g.ink)
-                              .merge(AppTypeRoles.typeRole2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          dayPreset == DayThemePreset.merlotLinen
-                              ? 'Vintage Merlot (Default)'
-                              : dayPreset == DayThemePreset.nordicSky
-                              ? 'Frozen Sky'
-                              : 'Classic Clay',
-                          textAlign: TextAlign.end,
-                          style: AscentTextStyles.captionMedium
-                              .copyWith(
-                                color: dayPreset == DayThemePreset.merlotLinen
-                                    ? MerlotPalette.action
-                                    : dayPreset == DayThemePreset.nordicSky
-                                    ? FrozenPalette.accent
-                                    : g.clay,
-                              )
-                              .merge(AppTypeRoles.typeRole8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
                       _DayPresetOption(
-                        label: 'Merlot',
-                        subtitle: 'Cashmere',
-                        colorSwatch: MerlotPalette.action,
+                        label: 'Subtle',
+                        subtitle: 'Airy Glass',
+                        icon: Icons.blur_on_rounded,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.subtleFrosted,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(GlassTranslucencyPreset.subtleFrosted);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
+                        label: 'Balanced',
+                        subtitle: 'Signature',
                         icon: Icons.auto_awesome_rounded,
-                        isSelected: dayPreset == DayThemePreset.merlotLinen,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.balancedLiquid,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.merlotLinen);
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(
+                                GlassTranslucencyPreset.balancedLiquid,
+                              );
                         },
                       ),
                       const SizedBox(width: 8),
                       _DayPresetOption(
-                        label: 'Classic Clay',
-                        subtitle: 'Terracotta',
-                        colorSwatch: AscentColors.accentPrimary,
-                        icon: Icons.wb_sunny_outlined,
-                        isSelected: dayPreset == DayThemePreset.classicClay,
+                        label: 'Contrast',
+                        subtitle: 'Crisp Day',
+                        icon: Icons.contrast_rounded,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.highContrast,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.classicClay);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _DayPresetOption(
-                        label: 'Frozen Sky',
-                        subtitle: 'Frost Slate',
-                        colorSwatch: FrozenPalette.accent,
-                        icon: Icons.cloud_outlined,
-                        isSelected: dayPreset == DayThemePreset.nordicSky,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.nordicSky);
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(
+                                GlassTranslucencyPreset.highContrast,
+                              );
                         },
                       ),
                     ],
@@ -731,9 +904,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ── Section 2: Target Profile & Identity (Always Visible) ────────
+            // ── Section 2: Profile & Identity (Always Visible) ──────────────
             _SectionHeader(
-              title: 'Target Profile & Identity',
+              title: 'Profile & Assistant',
               dotColor: g.slate,
             ),
             AscentCard(
@@ -782,7 +955,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: 14),
 
                   Text(
-                    'Target Role',
+                    'Your Role / Focus',
                     style: AscentTextStyles.labelMedium
                         .copyWith(color: g.ink)
                         .merge(AppTypeRoles.typeRole8),
@@ -792,7 +965,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     controller: _roleController,
                     style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
                     decoration: InputDecoration(
-                      hintText: 'e.g. Senior Software Engineer',
+                      hintText: 'e.g. Creator, Student, Builder',
                       hintStyle: AscentTextStyles.bodyMedium.copyWith(
                         color: g.inkMuted,
                       ),
@@ -855,194 +1028,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
+            // ── Section 3: App Permissions & System Access (Always Visible) ─
+            _buildPermissionsSection(),
+            const SizedBox(height: 20),
+
+            // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
             _SectionHeader(
-              title: 'Advanced Options & Tools',
+              title: 'System Access & Storage',
               dotColor: g.inkMuted,
             ),
-
-            // ── Collapsible 1: Career Goals & Target Companies ──────────────
-            _CollapsibleSettingsCard(
-              icon: Icons.track_changes_rounded,
-              iconTint: g.slate,
-              title: 'Career Milestones & Companies',
-              subtitle: 'Weekly study budget, deadline & target companies',
-              isExpanded: _expandCareerGoals,
-              onToggle: () =>
-                  setState(() => _expandCareerGoals = !_expandCareerGoals),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Weekly Study Budget',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole8),
-                      ),
-                      Text(
-                        '$_weeklyHours hrs / wk',
-                        style: AscentTextStyles.monoCode
-                            .copyWith(color: g.clay)
-                            .merge(AppTypeRoles.typeRole9),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: _weeklyHours.toDouble(),
-                    min: 5,
-                    max: 40,
-                    divisions: 7,
-                    activeColor: g.clay,
-                    inactiveColor: g.edge,
-                    onChanged: (val) =>
-                        setState(() => _weeklyHours = val.round()),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Target Interview Date
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Target Interview Date',
-                            style: AscentTextStyles.labelMedium
-                                .copyWith(color: g.ink)
-                                .merge(AppTypeRoles.typeRole8),
-                          ),
-                          Text(
-                            _interviewDate != null
-                                ? DateFormat.yMMMd().format(_interviewDate!)
-                                : 'No deadline set',
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                      AscentButton.outlined(
-                        label: _interviewDate == null ? 'Set Date' : 'Change',
-                        compact: true,
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate:
-                                _interviewDate ??
-                                DateTime.now().add(const Duration(days: 30)),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365 * 2),
-                            ),
-                          );
-                          if (picked != null) {
-                            setState(() => _interviewDate = picked);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Target Companies
-                  Text(
-                    'Target Companies',
-                    style: AscentTextStyles.labelMedium
-                        .copyWith(color: g.ink)
-                        .merge(AppTypeRoles.typeRole8),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _companyInputController,
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: g.ink,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Add company (e.g. Stripe)',
-                            hintStyle: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                            ),
-                            filled: true,
-                            fillColor: g.fill,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s12,
-                              vertical: AppSpace.s10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr10,
-                              borderSide: BorderSide(color: g.edge),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr10,
-                              borderSide: BorderSide(color: g.edge),
-                            ),
-                          ),
-                          onSubmitted: (val) {
-                            final text = val.trim();
-                            if (text.isNotEmpty &&
-                                !_targetCompanies.contains(text)) {
-                              setState(() {
-                                _targetCompanies.add(text);
-                                _companyInputController.clear();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(
-                          Icons.add_circle_outline_rounded,
-                          color: g.clay,
-                        ),
-                        onPressed: () {
-                          final text = _companyInputController.text.trim();
-                          if (text.isNotEmpty &&
-                              !_targetCompanies.contains(text)) {
-                            setState(() {
-                              _targetCompanies.add(text);
-                              _companyInputController.clear();
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_targetCompanies.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _targetCompanies.map((c) {
-                        return AppTag.label(
-                          label: Text(c),
-                          labelStyle: AscentTextStyles.labelSmall.copyWith(
-                            color: g.ink,
-                          ),
-                          backgroundColor: g.fill,
-                          side: BorderSide(color: g.edge),
-                          deleteIcon: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: g.inkMuted,
-                          ),
-                          onDeleted: () =>
-                              setState(() => _targetCompanies.remove(c)),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
 
             // ── Collapsible 2: Walk & Background Telemetry ───────────────────
             _CollapsibleSettingsCard(
@@ -1071,12 +1066,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  AscentButton.outlined(
-                    label: 'View Android Battery Guide',
-                    icon: Icons.battery_saver_rounded,
-                    compact: true,
-                    expanded: true,
-                    onPressed: () => _showGpsBatteryGuide(context),
+                  Wrap(
+                    spacing: AppSpace.s8,
+                    runSpacing: AppSpace.s8,
+                    children: [
+                      AscentButton.outlined(
+                        label: 'View Battery Guide',
+                        icon: Icons.battery_saver_rounded,
+                        compact: true,
+                        expanded: false,
+                        onPressed: () => _showGpsBatteryGuide(context),
+                      ),
+                      AscentButton.outlined(
+                        label: 'App Info & Battery',
+                        icon: Icons.open_in_new_rounded,
+                        compact: true,
+                        expanded: false,
+                        onPressed: _openSystemAppSettings,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1155,6 +1163,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     onTap: _confirmResetData,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Collapsible 5: Help & Walkthroughs ───────────────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.help_outline_rounded,
+              iconTint: g.clay,
+              title: 'Help & Walkthroughs',
+              subtitle: 'Replay welcome tutorial and guide tour',
+              isExpanded: _expandHelpGuides,
+              onToggle: () =>
+                  setState(() => _expandHelpGuides = !_expandHelpGuides),
+              child: Column(
+                children: [
+                  ListTile(
+                    key: const ValueKey('settings_replay_day_one_tutorial'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        borderRadius: AppGeometry.roundedr10,
+                      ),
+                      child: Icon(Icons.school_outlined, color: g.clay, size: 20),
+                    ),
+                    title: Text(
+                      'Replay Day One Tutorial',
+                      style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                    ),
+                    subtitle: Text(
+                      'Review the initial welcome walkthrough',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: g.inkMuted,
+                    ),
+                    onTap: () {
+                      final name = _nameController.text.trim();
+                      DayOneTutorialDialog.show(context, userName: name);
+                    },
                   ),
                 ],
               ),
@@ -1345,100 +1400,9 @@ class _CollapsibleSettingsCard extends StatelessWidget {
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeOption({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-
-    return Expanded(
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr16,
-        child: AppCard(
-          selected: isSelected,
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s16,
-            horizontal: AppSpace.s8,
-          ),
-          nightDecoration: BoxDecoration(
-            color: isSelected ? context.accentPrimary : g.fill,
-            borderRadius: AppGeometry.roundedr16,
-            border: Border.all(
-              color: isSelected ? context.accentPrimary : g.edge,
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: context.accentPrimary.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : (context.isDark
-                            ? g.edge.withValues(alpha: 0.4)
-                            : g.clay.withValues(alpha: 0.08)),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected ? AppPalette.white : g.inkSecondary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 10),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: AscentTextStyles.labelSmall
-                      .copyWith(
-                        color: isSelected ? AppPalette.white : g.ink,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      )
-                      .merge(AppStateTypography.stateType1(state0: isSelected)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _DayPresetOption extends StatelessWidget {
   final String label;
   final String subtitle;
-  final Color colorSwatch;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -1446,7 +1410,6 @@ class _DayPresetOption extends StatelessWidget {
   const _DayPresetOption({
     required this.label,
     required this.subtitle,
-    required this.colorSwatch,
     required this.icon,
     required this.isSelected,
     required this.onTap,
@@ -1467,12 +1430,25 @@ class _DayPresetOption extends StatelessWidget {
             horizontal: AppSpace.s8,
           ),
           nightDecoration: BoxDecoration(
-            color: isSelected ? colorSwatch : g.fill,
+            color: isSelected
+                ? (context.isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : g.clay.withValues(alpha: 0.08))
+                : g.fill,
             borderRadius: AppGeometry.roundedr12,
             border: Border.all(
-              color: isSelected ? colorSwatch : g.edge,
+              color: isSelected ? g.clay : g.edge,
               width: isSelected ? 1.5 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: g.clay.withValues(alpha: 0.16),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             children: [
@@ -1480,17 +1456,19 @@ class _DayPresetOption extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 10,
-                    height: 10,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : colorSwatch,
+                      color: isSelected
+                          ? g.clay
+                          : g.inkMuted.withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
                   Icon(
                     icon,
-                    color: isSelected ? AppPalette.white : g.inkSecondary,
+                    color: isSelected ? g.clay : g.inkSecondary,
                     size: 18,
                   ),
                 ],
@@ -1501,8 +1479,8 @@ class _DayPresetOption extends StatelessWidget {
                 child: Text(
                   label,
                   style: AscentTextStyles.labelSmall.copyWith(
-                    color: isSelected ? AppPalette.white : g.ink,
-                    fontWeight: FontWeight.w600,
+                    color: isSelected ? g.clay : g.ink,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -1513,9 +1491,10 @@ class _DayPresetOption extends StatelessWidget {
                   subtitle,
                   style: AscentTextStyles.captionMedium.copyWith(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.90)
+                        ? g.clay.withValues(alpha: 0.85)
                         : g.inkMuted,
                     fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

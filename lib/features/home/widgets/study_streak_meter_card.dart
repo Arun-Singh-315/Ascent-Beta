@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/day_glass_material.dart';
+import '../../../shared/widgets/glass_surface.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/streak/study_streak_models.dart';
 
@@ -72,32 +74,125 @@ class StudyStreakMeterCard extends StatelessWidget {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (g.merlot && !isDark) {
+      final cardGlass = AscentGlass(
+        merlot: true,
+        bg: MerlotPalette.surface,
+        fill: MerlotPalette.surface,
+        edge: MerlotPalette.line,
+        highlight: const Color.fromRGBO(255, 255, 255, 0.15),
+        line: MerlotPalette.lineSubtle,
+        glow1: const Color.fromRGBO(229, 169, 78, 0.25),
+        glow2: const Color.fromRGBO(196, 77, 86, 0.20),
+        track: MerlotPalette.recessedWell,
+        nav: MerlotPalette.surface,
+        shadow: MerlotPalette.shadowAmbient,
+        clay: MerlotPalette.action,
+        claySoft: MerlotPalette.pillSoft,
+        slate: MerlotPalette.action,
+        slateSoft: MerlotPalette.tint,
+        sage: MerlotPalette.success,
+        sageSoft: MerlotPalette.successTint,
+        amber: MerlotPalette.antiqueGold,
+        amberSoft: MerlotPalette.sparkTint,
+        coral: MerlotPalette.terracotta,
+        coralSoft: MerlotPalette.terracottaTint,
+        ink: MerlotPalette.cardInk,
+        inkSecondary: MerlotPalette.cardSecondaryInk,
+        inkMuted: MerlotPalette.cardMutedInk,
+      );
+      final parentTheme = Theme.of(context);
+      final cardTheme = parentTheme.copyWith(
+        brightness: Brightness.light,
+        textTheme: parentTheme.textTheme.apply(
+          bodyColor: MerlotPalette.cardInk,
+          displayColor: MerlotPalette.cardInk,
+        ),
+        colorScheme: parentTheme.colorScheme.copyWith(
+          brightness: Brightness.light,
+          onSurface: MerlotPalette.cardInk,
+          onSurfaceVariant: MerlotPalette.cardSecondaryInk,
+          surface: MerlotPalette.surface,
+          surfaceContainer: MerlotPalette.recessedWell,
+          primary: MerlotPalette.action,
+          onPrimary: Colors.white,
+        ),
+        extensions: [
+          ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
+          cardGlass,
+        ],
+      );
+      return Theme(
+        data: cardTheme,
+        child: DefaultTextStyle(
+          style: const TextStyle(color: MerlotPalette.cardInk),
+          child: Builder(builder: (ctx) => _buildCard(ctx)),
+        ),
+      );
+    }
+
+    return _buildCard(context);
+  }
+
+  Widget _surface(
+    BuildContext context, {
+    required BoxDecoration decoration,
+    required EdgeInsetsGeometry padding,
+    required Widget child,
+  }) {
+    if (Theme.of(context).extension<DayGlassMaterial>() != null) {
+      return GlassSurface(
+        radius: 16,
+        padding: padding,
+        enableBlur: false,
+        child: child,
+      );
+    }
+    return Container(decoration: decoration, padding: padding, child: child);
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final streakTitle = status.displayStreakDays == 0
         ? (status.phase == StudyStreakPhase.broken
-            ? 'A fresh start'
-            : 'Start your first day')
+              ? 'A fresh start'
+              : 'Start your first day')
         : '${status.displayStreakDays} Day Streak';
 
     return AppGestureTap(
       onTap: onTap ?? () => _showExplanation(context),
-      child: Container(
+      child: _surface(
+        context,
         decoration: BoxDecoration(
           color: g.merlot
-              ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+              ? (isDark ? MerlotPalette.darkSurface : null)
               : (g.frozen
-                  ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-                  : (isDark ? g.fill : Colors.white)),
+                    ? (isDark
+                          ? FrozenPalette.darkSurface
+                          : FrozenPalette.surface)
+                    : (isDark ? g.fill : Colors.white)),
+          gradient: g.merlot && !isDark
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [MerlotPalette.surface, MerlotPalette.surfaceBottom],
+                )
+              : null,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: g.merlot
                 ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                 : (g.frozen
-                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                    : (status.isRescueMode
-                        ? AppPalette.amber.withValues(alpha: 0.35)
-                        : (status.isUrgent
-                            ? AppPalette.redAccent.withValues(alpha: 0.35)
-                            : (isDark ? g.edge : g.edge.withValues(alpha: 0.45))))),
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : (status.isRescueMode
+                            ? AppPalette.amber.withValues(alpha: 0.35)
+                            : (status.isUrgent
+                                  ? AppPalette.redAccent.withValues(alpha: 0.35)
+                                  : (isDark
+                                        ? g.edge
+                                        : g.edge.withValues(alpha: 0.45))))),
             width: (g.merlot || g.frozen) ? 0.75 : AppBorderScale.w1,
           ),
           boxShadow: g.merlot
@@ -109,29 +204,29 @@ class StudyStreakMeterCard extends StatelessWidget {
                   ),
                 ]
               : (g.frozen
-                  ? [
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.35)
-                            : FrozenPalette.shadowAmbient,
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : (isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: const Color.fromRGBO(15, 23, 42, 0.05),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                          BoxShadow(
-                            color: const Color.fromRGBO(15, 23, 42, 0.02),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ])),
+                    ? [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.35)
+                              : FrozenPalette.shadowAmbient,
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : (isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color.fromRGBO(15, 23, 42, 0.05),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: const Color.fromRGBO(15, 23, 42, 0.02),
+                                blurRadius: 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ])),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
@@ -158,8 +253,10 @@ class StudyStreakMeterCard extends StatelessWidget {
                   color: g.frozen
                       ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
                       : (status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode ? AppPalette.amber : g.clay)),
+                            ? AppPalette.deepOrangeAccent
+                            : (status.isRescueMode
+                                  ? AppPalette.amber
+                                  : g.clay)),
                 ),
                 const SizedBox(width: 6),
                 Flexible(
@@ -169,10 +266,10 @@ class StudyStreakMeterCard extends StatelessWidget {
                       color: g.frozen
                           ? g.ink
                           : (status.isTodaySecured
-                              ? AppPalette.deepOrangeAccent
-                              : (status.isRescueMode
-                                  ? AppPalette.amberAccent
-                                  : g.ink)),
+                                ? AppPalette.deepOrangeAccent
+                                : (status.isRescueMode
+                                      ? AppPalette.amberAccent
+                                      : g.ink)),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -242,19 +339,19 @@ class StudyStreakMeterCard extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(
                     g.frozen
                         ? (status.isTodaySecured
-                            ? (isDark
-                                ? FrozenPalette.darkSpark
-                                : FrozenPalette.spark)
-                            : (isDark
-                                ? FrozenPalette.darkAction
-                                : FrozenPalette.action))
+                              ? (isDark
+                                    ? FrozenPalette.darkSpark
+                                    : FrozenPalette.spark)
+                              : (isDark
+                                    ? FrozenPalette.darkAction
+                                    : FrozenPalette.action))
                         : (status.isTodaySecured
-                            ? AppPalette.deepOrangeAccent
-                            : (status.isRescueMode
-                                ? AppPalette.amber
-                                : (status.isUrgent
-                                    ? AppPalette.redAccent
-                                    : g.clay))),
+                              ? AppPalette.deepOrangeAccent
+                              : (status.isRescueMode
+                                    ? AppPalette.amber
+                                    : (status.isUrgent
+                                          ? AppPalette.redAccent
+                                          : g.clay))),
                   ),
                 ),
               ),

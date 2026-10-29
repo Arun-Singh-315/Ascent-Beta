@@ -636,6 +636,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final taskDao = ref.watch(taskDaoProvider);
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
+  final planDao = ref.watch(planDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
   final activeCourseId = ref.watch(
@@ -664,8 +665,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
 
-  // Watch both tasks for today and sessions for today
-  final tasksStream = taskDao.watchTasksByDate(startOfToday);
+  // Watch both tasks for today (including uncompleted overdue tasks) and sessions for today
+  final tasksStream = taskDao.watchTodayAndOverdueTasks(startOfToday);
   final sessionsStream = sessionDao.watchSessionsForDate(startOfToday);
   final remindersStream = reminderDao.watchAllReminders();
 
@@ -687,12 +688,10 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       if (task.learningCourseId != null) continue;
-      final occ = await ref
-          .read(planDaoProvider)
-          .getOccurrenceByTaskId(task.id);
+      final occ = await planDao.getOccurrenceByTaskId(task.id);
       if (occ != null) {
         if (occ.outcome == 'skipped') continue;
-        final plan = await ref.read(planDaoProvider).getPlanById(occ.planId);
+        final plan = await planDao.getPlanById(occ.planId);
         if (plan != null &&
             (plan.status == 'paused' || plan.status == 'ended') &&
             task.actualCompletedDate == null) {
@@ -757,14 +756,32 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             task.plannedDate!.day,
           ).isBefore(startOfToday);
 
-      final hasReminder = reminders.any(
+      final matchingReminder = reminders.where(
         (r) =>
             r.isActive &&
             (r.linkedTaskId == task.id ||
                 (r.linkedTaskId == null &&
                     r.title.trim().toLowerCase() ==
                         task.title.trim().toLowerCase())),
-      );
+      ).firstOrNull;
+      final hasReminder = matchingReminder != null;
+
+      DateTime? scheduledTime;
+      if (medicineDose != null) {
+        final parts = medicineDose.timeSlot.split(':');
+        scheduledTime = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+        );
+      } else if (matchingReminder != null) {
+        scheduledTime = matchingReminder.scheduledAt;
+      } else if (task.plannedDate != null &&
+          (task.plannedDate!.hour != 0 || task.plannedDate!.minute != 0)) {
+        scheduledTime = task.plannedDate;
+      }
 
       items.add(
         TodayActivityItem(
@@ -783,17 +800,14 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           targetMinutes: targetMinutes,
           plannedDate: medicineDose == null
               ? task.plannedDate
-              : DateTime(
-                  today.year,
-                  today.month,
-                  today.day,
-                  int.parse(medicineDose.timeSlot.split(':')[0]),
-                  int.parse(medicineDose.timeSlot.split(':')[1]),
-                ),
+              : scheduledTime,
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
           completedAt: task.actualCompletedDate,
+          medicineId: medicineDose?.medicineId,
+          timeSlot: medicineDose?.timeSlot,
+          scheduledTime: scheduledTime,
         ),
       );
     }

@@ -136,15 +136,22 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: TextScaler.linear(scenario.$2)),
-                child: child!,
+            child: RepaintBoundary(
+              key: boundary,
+              child: MaterialApp(
+                theme: AscentTheme.light(
+                  preset: scenario.$2 == 1
+                      ? DayThemePreset.merlotLinen
+                      : DayThemePreset.nordicSky,
+                ),
+                builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.linear(scenario.$2)),
+                  child: child!,
+                ),
+                home: const HomeScreen(),
               ),
-              home: RepaintBoundary(key: boundary, child: const HomeScreen()),
             ),
           ),
         );
@@ -154,15 +161,8 @@ void main() {
           );
           await tester.pump(const Duration(milliseconds: 100));
         }
-        expect(tester.takeException(), isNull);
-        expect(find.text('Read a chapter'), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.text('250'),
-          240,
-          scrollable: find.byType(Scrollable).first,
-        );
-        expect(tester.takeException(), isNull);
-        if (const bool.fromEnvironment('HOME_SCREENSHOTS')) {
+        Future<void> snapshot(String suffix) async {
+          if (!const bool.fromEnvironment('HOME_SCREENSHOTS')) return;
           await tester.runAsync(() async {
             final image =
                 await (boundary.currentContext!.findRenderObject()
@@ -172,13 +172,25 @@ void main() {
               format: ui.ImageByteFormat.png,
             );
             final file = File(
-              'build/qa/home-refinement/home_${scenario.$1.toInt()}_${scenario.$2}x.png',
+              'build/qa/home-refinement/home_${scenario.$1.toInt()}_${scenario.$2}x_$suffix.png',
             );
             await file.parent.create(recursive: true);
             await file.writeAsBytes(bytes!.buffer.asUint8List());
             image.dispose();
           });
         }
+
+        expect(tester.takeException(), isNull);
+        await snapshot('home');
+        expect(find.text('Read a chapter'), findsOneWidget);
+        await snapshot('mind');
+        await tester.scrollUntilVisible(
+          find.text('250'),
+          240,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(tester.takeException(), isNull);
+        await snapshot('health');
       } finally {
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(seconds: 1));

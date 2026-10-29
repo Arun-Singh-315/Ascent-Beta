@@ -174,6 +174,8 @@ void main() {
                 find.textContaining('A new bug to review'),
                 findsOneWidget,
               );
+              await t.longPress(find.textContaining('A new bug to review'));
+              await t.pumpAndSettle();
               expect(find.byTooltip('Move to category'), findsOneWidget);
               expect(find.text('Both'), findsOneWidget);
               await t.ensureVisible(find.byTooltip('Move to category'));

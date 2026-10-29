@@ -1,5 +1,10 @@
+import '../../core/ai/riya_conversation_provider.dart';
+import '../../features/promises/models/promise_model.dart';
+import '../../features/promises/services/promise_intent_parser.dart';
+import 'riya_entity_card.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +27,6 @@ import '../home/widgets/home_schedule_sheet.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
-import '../../core/ai/riya_alert_effects.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
@@ -35,7 +39,31 @@ class AiAssistantScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialPrompt,
     this.sourceThoughtId,
+    this.compact = false,
   });
+  final bool compact;
+  static Future<void> showFromHome(
+    BuildContext context,
+  ) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    enableDrag: false,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SizedBox(
+        height:
+            (MediaQuery.sizeOf(context).height * .88 -
+                    MediaQuery.viewInsetsOf(context).bottom)
+                .clamp(240, MediaQuery.sizeOf(context).height * .88),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: const AiAssistantScreen(compact: true),
+        ),
+      ),
+    ),
+  );
   final String? initialPrompt;
   final int? sourceThoughtId;
 
@@ -49,6 +77,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   bool _isLoading = false;
   bool _hasInputText = false;
   RiyaIntentResolver? _resolver;
+  final _composerFocus = FocusNode();
+  RiyaIntentResolver get _conversation {
+    final resolver = _resolver ?? ref.read(riyaConversationProvider);
+    _resolver = resolver;
+    return _resolver!;
+  }
+
   late final Stream<List<AiChatMessage>> _messagesStream;
 
   @override
@@ -79,8 +114,21 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
+    _composerFocus.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Pre-fills the message composer with [text] and focuses it so the user
+  /// can finish typing before sending. Used by accelerator cards that need
+  /// the user to supply the key detail (e.g. the thought text or promise).
+  void _prefillText(String text) {
+    HapticFeedback.lightImpact();
+    _textController.text = text;
+    _textController.selection = TextSelection.collapsed(
+      offset: text.length,
+    );
+    _composerFocus.requestFocus();
   }
 
   void _scrollToBottom() {
@@ -106,6 +154,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final aiDao = ref.read(aiAssistantDaoProvider);
 
     try {
+      await _expireReviews(aiDao);
       // 1. Insert user message with unique timestamp
       final userMessageId = await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(sender: 'user', message: prompt),
@@ -114,13 +163,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       _scrollToBottom();
 
       final db = ref.read(databaseProvider);
+      final resolution = await _conversation
+          .resolve(prompt)
+          .timeout(const Duration(seconds: 5));
       final homeProposal = HomeCaptureProposal.parse(prompt, DateTime.now());
       final isConversational = RegExp(
         r'^(talk to me|hey|hi|hello|help me|how are you|good morning|what should i do)\b',
         caseSensitive: false,
       ).hasMatch(prompt.trim());
 
-      if (!isConversational &&
+      if (resolution == null &&
+          !isConversational &&
           homeProposal.scheduledIntent &&
           (homeProposal.at != null ||
               homeProposal.followUp ||
@@ -157,9 +210,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         if (mounted) _textController.clear();
         return;
       }
-      final resolution = await (_resolver ??= RiyaIntentResolver(
-        db,
-      )).resolve(prompt).timeout(const Duration(seconds: 5));
       if (!mounted) return;
       String reply;
       RiyaCommand? command = resolution?.command;
@@ -197,94 +247,30 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       if (command != null) {
         final executor = RiyaExecutor(
           db,
-          external: _workspaceCommand,
           expectedWorkspaceRevision: db.workspaceRevision,
-          verifyExternal: _verifyWorkspaceCommand,
         );
         executor.validate(command);
-        final capability = command.capability;
-        bool approved = !capability.requiresConfirmation;
-        if (capability.requiresConfirmation && mounted) {
-          approved =
-              await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(capability.description),
-                  content: SingleChildScrollView(child: Text(command!.preview)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Confirm'),
-                    ),
-                  ],
-                ),
-              ) ==
-              true;
-        }
-        if (approved && mounted) {
-          final requestId = 'chat:$userMessageId';
-          RiyaResult? savedResult;
-          try {
-            // Attach the existing Focus stream/ticker before creating a session.
-            if (command.id.startsWith('focus.')) ref.read(timeTrackingProvider);
-            final result = await executor.execute(
-              command,
-              requestId: requestId,
-              approved: approved,
-            );
-            savedResult = result;
-            reply = result.message;
-            _resolver?.rememberResult(result);
-            options = result.options;
-            data['quickOptions'] = options;
-            if (result.reminderIds.isNotEmpty ||
-                result.cancelReminderIds.isNotEmpty) {
-              final verified = await RiyaAlertEffects.device(
-                db,
-              ).syncRequest(requestId);
-              reply =
-                  '${result.message.replaceFirst(' Device alert scheduling has not been verified.', '')}\n${verified ? 'Device alert changes verified.' : 'Device alert changes are pending and will be retried.'}';
-            }
-            actionType = command.id;
-            data.addAll({
-              'title': capability.description,
-              'summary': reply,
-              'route': result.targetRoute,
-              'executionStatus': 'verified',
-              'requestId': requestId,
-              'write': capability.write,
-            });
-            if (command.id == 'navigation.open' && mounted) {
-              context.push(result.route);
-            }
-          } catch (error) {
-            if (error is RiyaCommittedActionError) {
-              savedResult = error.result;
-              data['requestId'] = requestId;
-              data['route'] = error.result.targetRoute;
-            }
-            reply = savedResult != null
-                ? '${savedResult.message} Confirmation history or device effects are pending verification.'
-                : command.id == 'focus.start' &&
-                      await db.timeSessionDao.getActiveFocusSession() != null
-                ? 'A Focus session is already active. Open Focus to continue or finish it.'
-                : error is StateError
-                ? error.message.toString()
-                : 'I could not verify that change. Check the relevant screen before trying again.';
-            actionType = command.id;
-            data['title'] = capability.description;
-            data['route'] ??= capability.route;
-            data['requestId'] ??= requestId;
-            data['executionStatus'] = savedResult == null
-                ? 'failed'
-                : 'recovery_pending';
-          }
+        if (command.capability.requiresConfirmation) {
+          actionType = command.id;
+          reply = _reviewCopy(command);
+          data.addAll({
+            'pendingCommand': {
+              'id': command.id,
+              'arguments': command.arguments,
+            },
+            'executionStatus': 'proposed',
+            'requestId': 'chat:$userMessageId',
+            'workspaceRevision': db.workspaceRevision,
+            'title': command.capability.description,
+          });
         } else {
-          reply = 'Cancelled. No changes were made.';
+          final executed = await _executeCommand(
+            command,
+            'chat:$userMessageId',
+          );
+          reply = executed.$1;
+          data.addAll(executed.$2);
+          actionType = command.id;
         }
       }
       await aiDao.insertMessage(
@@ -295,13 +281,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           actionPayloadJson: drift.Value(jsonEncode(data)),
         ),
       );
-    } catch (_) {
+    } catch (error) {
       try {
         await aiDao.insertMessage(
           AiChatMessageTableCompanion.insert(
             sender: 'assistant',
-            message:
-                'I could not finish that response. Recover saved results before trying again.',
+            message: error is ArgumentError
+                ? error.message.toString()
+                : 'I could not finish that response. Recover saved results before trying again.',
             actionPayloadJson: drift.Value(
               jsonEncode({
                 'executionStatus': 'failed',
@@ -326,8 +313,246 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
-        _scrollToBottom();
+        try {
+          await ref
+              .read(sharedPreferencesProvider)
+              .setString(
+                riyaConversationKey,
+                jsonEncode(_resolver?.conversationState ?? {}),
+              );
+        } catch (_) {}
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _scrollToBottom();
+        }
+      }
+    }
+  }
+
+  void _editDraft(Map<String, dynamic> data) {
+    if (_isLoading) return;
+    final raw = Map<String, dynamic>.from(data['pendingCommand'] as Map);
+    final args = Map<String, dynamic>.from(raw['arguments'] as Map);
+    final id = raw['id'] as String;
+    _textController.text = id == 'promises.create'
+        ? 'Create a promise to ${args['text']}'
+        : id == 'tasks.create'
+        ? 'Create a todo to ${args['title']}'
+        : id.endsWith('.edit')
+        ? 'Edit ${id.startsWith('promises') ? 'promise' : 'task'} #${args['id']} to ${args['title']}'
+        : '';
+    _textController.selection = TextSelection.collapsed(
+      offset: _textController.text.length,
+    );
+    _composerFocus.requestFocus();
+  }
+
+  String _reviewCopy(RiyaCommand command) {
+    final a = command.arguments;
+    if (command.id == 'promises.create') {
+      final p = PromiseIntentParser.parse(a['text'] as String);
+      return '“${p.title}”\n${p.schedule?.summary ?? 'Once'} · ${p.trackingType.name == 'duration' ? '${p.targetValue.toInt()} minutes' : 'Check-in'}\n${p.reminderTime == null ? 'No reminder. You can add one later.' : 'Reminder: ${p.reminderTime}'}';
+    }
+    if (command.id.endsWith('.delete')) {
+      return 'Delete “${a['expectedTitle'] ?? 'the selected item'}”?${command.id.startsWith('tasks.') ? '\nLinked reminders and records will also be removed.' : '\nIts progress history will also be removed.'}';
+    }
+    if (command.id == 'tasks.create') {
+      return 'Add “${a['title']}” to your Todos?\nDay: ${(a['plannedDate'] as String?)?.split('T').first ?? 'Today'}';
+    }
+    if (a['expectedTitle'] != null) {
+      if (a['title'] != null) {
+        return 'Rename “${a['expectedTitle']}” to “${a['title']}”?';
+      }
+      if (a['newDate'] != null || a['day'] != null) {
+        return 'Move “${a['expectedTitle']}” to ${(a['newDate'] ?? a['day']).toString().split('T').first}?';
+      }
+      return '${command.capability.description}: “${a['expectedTitle']}”';
+    }
+    return command.preview;
+  }
+
+  Future<void> _saveResponse(
+    AppDatabase db,
+    int id,
+    String text,
+    Map<String, dynamic> data,
+  ) async {
+    await (db.update(
+      db.aiChatMessageTable,
+    )..where((m) => m.id.equals(id))).write(
+      AiChatMessageTableCompanion(
+        message: drift.Value(text),
+        actionPayloadJson: drift.Value(jsonEncode(data)),
+      ),
+    );
+  }
+
+  Future<void> _expireReviews(AiAssistantDao dao) async {
+    final db = ref.read(databaseProvider);
+    final pending =
+        await (db.select(db.aiChatMessageTable)..where(
+              (m) => m.actionPayloadJson.like('%"executionStatus":"proposed"%'),
+            ))
+            .get();
+    for (final message in pending) {
+      try {
+        final data = Map<String, dynamic>.from(
+          jsonDecode(message.actionPayloadJson!) as Map,
+        );
+        data.remove('pendingCommand');
+        data['executionStatus'] = 'superseded';
+        await _saveResponse(
+          db,
+          message.id,
+          'Replaced by your newer request. Nothing saved from this review.',
+          data,
+        );
+      } catch (_) {
+        /* Leave malformed legacy messages readable. */
+      }
+    }
+  }
+
+  Future<(String, Map<String, dynamic>)> _executeCommand(
+    RiyaCommand command,
+    String requestId,
+  ) async {
+    final db = ref.read(databaseProvider);
+    final resolver = _conversation;
+    final executor = RiyaExecutor(
+      db,
+      external: _workspaceCommand,
+      verifyExternal: _verifyWorkspaceCommand,
+      expectedWorkspaceRevision: db.workspaceRevision,
+    );
+    final data = <String, dynamic>{
+      'title': command.capability.description,
+      'requestId': requestId,
+      'route': command.capability.route,
+      'write': command.capability.write,
+    };
+    RiyaResult? committed;
+    try {
+      if (command.id.startsWith('focus.')) ref.read(timeTrackingProvider);
+      final result = await executor.execute(
+        command,
+        requestId: requestId,
+        approved: true,
+      );
+      committed = result;
+      resolver.rememberResult(result);
+      var reply = result.message;
+      if (result.reminderIds.isNotEmpty ||
+          result.cancelReminderIds.isNotEmpty ||
+          result.promiseEffectIds.isNotEmpty) {
+        final synced = await ref
+            .read(riyaAlertEffectsProvider)
+            .syncRequest(requestId);
+        if (!synced) {
+          data['alertsPending'] = true;
+          reply += '\nSaved. Device alerts are pending and will be retried.';
+        }
+      }
+      data.addAll({
+        'summary': reply,
+        'route': result.targetRoute,
+        'executionStatus': 'verified',
+        'entityType': result.entityType,
+        'entityId': result.entityId,
+        'records': result.records,
+        'quickOptions': result.options,
+      });
+      if (command.id == 'navigation.open' && mounted) {
+        context.push(result.route);
+      }
+      return (reply, data);
+    } catch (error) {
+      if (error is RiyaCommittedActionError) committed = error.result;
+      data['executionStatus'] = committed == null
+          ? 'failed'
+          : 'recovery_pending';
+      if (committed != null) {
+        data['route'] = committed.targetRoute;
+        data['entityType'] = committed.entityType;
+        data['entityId'] = committed.entityId;
+      }
+      return (
+        committed != null
+            ? '${committed.message} Confirmation history or alerts still need verification.'
+            : error is StateError
+            ? error.message.toString()
+            : error is ArgumentError
+            ? error.message.toString()
+            : 'I could not verify this change. Your records were kept.',
+        data,
+      );
+    }
+  }
+
+  Future<void> _reviewMessage(
+    AiChatMessage message,
+    Map<String, dynamic> original,
+    bool approved,
+  ) async {
+    if (_isLoading || original['executionStatus'] != 'proposed') return;
+    final db = ref.read(databaseProvider);
+    setState(() => _isLoading = true);
+    try {
+      final fresh = await (db.select(
+        db.aiChatMessageTable,
+      )..where((m) => m.id.equals(message.id))).getSingleOrNull();
+      if (fresh == null) return;
+      final data = Map<String, dynamic>.from(
+        jsonDecode(fresh.actionPayloadJson!) as Map,
+      );
+      if (data['executionStatus'] != 'proposed') return;
+      if (!approved) {
+        data.remove('pendingCommand');
+        data['executionStatus'] = 'cancelled';
+        await _saveResponse(
+          db,
+          message.id,
+          'Cancelled. Nothing changed.',
+          data,
+        );
+        await _conversation.resolve('Cancel');
+        return;
+      }
+      if (data['workspaceRevision'] != db.workspaceRevision) {
+        throw StateError('The workspace changed. Ask again before saving.');
+      }
+      final raw = Map<String, dynamic>.from(data['pendingCommand'] as Map);
+      final command = RiyaCommand(
+        raw['id'] as String,
+        Map<String, dynamic>.from(raw['arguments'] as Map),
+      );
+      final result = await _executeCommand(
+        command,
+        data['requestId'] as String,
+      );
+      await _saveResponse(db, message.id, result.$1, result.$2);
+    } catch (error) {
+      final data = {...original}..remove('pendingCommand');
+      data['executionStatus'] = 'failed';
+      await _saveResponse(
+        db,
+        message.id,
+        error is StateError
+            ? error.message.toString()
+            : 'Could not finish. Ask again to review a fresh action.',
+        data,
+      );
+    } finally {
+      if (mounted) {
+        try {
+          await ref
+              .read(sharedPreferencesProvider)
+              .setString(
+                riyaConversationKey,
+                jsonEncode(_resolver?.conversationState ?? {}),
+              );
+        } catch (_) {}
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -338,14 +563,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     try {
       final request = data?['requestId'];
       if (request is String) {
-        await RiyaAlertEffects.device(
-          ref.read(databaseProvider),
-        ).syncRequest(request);
+        await ref.read(riyaAlertEffectsProvider).syncRequest(request);
       }
       await ref.read(aiAssistantDaoProvider).recoverCommandResponses();
       if (!mounted) return;
       final route = data?['route'];
-      if (route is String) {
+      if (route is String &&
+          !['tasks', 'promises'].contains(data?['entityType'])) {
         context.push(route);
       } else {
         AscentSnackBar.show(
@@ -509,400 +733,456 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final messagesStream = _messagesStream;
     final accentColor = context.accentPrimary;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: isDark
-          ? context.bgBase
-          : (g.merlot
-                ? MerlotPalette.canvas
-                : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? context.bgBase.withValues(alpha: 0.72)
-                    : Colors.white.withValues(alpha: 0.82),
-                border: Border(
-                  bottom: BorderSide(
-                    color: (isDark ? Colors.white : Colors.black).withValues(
-                      alpha: 0.06,
+    return PopScope(
+      canPop: !_isLoading,
+      child: Scaffold(
+        resizeToAvoidBottomInset: !widget.compact,
+        extendBodyBehindAppBar: true,
+        backgroundColor: isDark
+            ? context.bgBase
+            : (g.merlot
+                  ? MerlotPalette.canvas
+                  : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? context.bgBase.withValues(alpha: 0.72)
+                      : context.bgBase.withValues(alpha: 0.82),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: (isDark ? Colors.white : Colors.black).withValues(
+                        alpha: 0.06,
+                      ),
+                      width: 1.0,
                     ),
-                    width: 1.0,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: context.textPrimary,
-            size: 19,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        accentColor.withValues(alpha: 0.25),
-                        context.glass.clay.withValues(alpha: 0.25),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: accentColor.withValues(alpha: 0.45),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.auto_awesome_rounded,
-                      color: accentColor,
-                      size: 17,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: context.glass.sage,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? context.bgBase : Colors.white,
-                        width: 1.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.glass.sage.withValues(alpha: 0.6),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: context.textPrimary,
+              size: 19,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          ),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: context.textPrimary,
-                            fontSize: 16.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          accentColor.withValues(alpha: 0.25),
+                          context.glass.clay.withValues(alpha: 0.25),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.45),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: accentColor,
+                        size: 17,
+                      ),
+                    ),
                   ),
-                  Text(
-                    'Intelligent · On-Device · Private',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: context.textMuted,
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: context.glass.sage,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? context.bgBase : Colors.white,
+                          width: 1.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.glass.sage.withValues(alpha: 0.6),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.delete_sweep_outlined,
-              color: context.textMuted,
-              size: 21,
-            ),
-            tooltip: 'Clear chat history',
-            onPressed: _isLoading
-                ? null
-                : () async {
-                    HapticFeedback.lightImpact();
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Clear chat history?'),
-                        content: const Text(
-                          'This removes your conversation with Riya. Your saved thoughts, tasks and reminders will stay available.',
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Clear history'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed == true && mounted) {
-                      await ref.read(aiAssistantDaoProvider).clearChatHistory();
-                    }
-                  },
-          ),
-          const SizedBox(width: 6),
-        ],
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Breathtaking Night & Day Atmospheric Background
-          _AtmosphericChatBackground(isDark: isDark, accentColor: accentColor),
-          // Main Chat Interface
-          StreamBuilder<List<AiChatMessage>>(
-            stream: messagesStream,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
+              const SizedBox(width: 10),
+              Expanded(
+                child: InkWell(
+                  key: const ValueKey('ai_assistant_identity_switcher'),
+                  onTap: _isLoading
+                      ? null
+                      : () => _showCompanionSelectorSheet(context, ref, name),
+                  borderRadius: AscentRadii.borderSm,
                   child: Padding(
-                    padding: const EdgeInsets.all(AscentSpacing.xl),
-                    child: Text(
-                      'Connecting to memory...',
-                      style: TextStyle(color: context.textMuted, fontSize: 13),
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: context.textPrimary,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: context.textMuted,
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Intelligent · On-Device · Private',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }
-
-              final messages = snapshot.data ?? [];
-              final hasMessages = messages.isNotEmpty;
-
-              return Column(
-                children: [
-                  // Chat stream
-                  Expanded(
-                    child: messages.isEmpty
-                        ? _SoftChatWelcome(
-                            assistantName: name,
-                            onSelectPrompt: _handleSubmitted,
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: EdgeInsets.fromLTRB(
-                              14,
-                              MediaQuery.paddingOf(context).top +
-                                  kToolbarHeight +
-                                  8,
-                              14,
-                              12,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            if (widget.compact)
+              IconButton(
+                tooltip: 'Expand conversation',
+                icon: const Icon(Icons.open_in_full_rounded),
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        final router = GoRouter.of(context);
+                        Navigator.pop(context);
+                        router.push(
+                          Uri(
+                            path: '/ai-assistant',
+                            queryParameters: _textController.text.isEmpty
+                                ? null
+                                : {'prompt': _textController.text},
+                          ).toString(),
+                        );
+                      },
+              ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: context.textMuted,
+                size: 21,
+              ),
+              tooltip: 'Clear chat history',
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      HapticFeedback.lightImpact();
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Clear chat history?'),
+                          content: Text(
+                            'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
                             ),
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: messages.length + (_isLoading ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == messages.length) {
-                                return KeyedSubtree(
-                                  key: const ValueKey('chat_loading_indicator'),
-                                  child: _ThinkingBubble(
-                                    name: name,
-                                    accentColor: accentColor,
-                                  ),
-                                );
-                              }
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Clear history'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && mounted) {
+                        await ref
+                            .read(aiAssistantDaoProvider)
+                            .clearChatHistory();
+                        ref.read(riyaConversationProvider).resetConversation();
+                        await ref
+                            .read(sharedPreferencesProvider)
+                            .remove(riyaConversationKey);
+                      }
+                    },
+            ),
+            const SizedBox(width: 6),
+          ],
+        ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Breathtaking Night & Day Atmospheric Background
+            _AtmosphericChatBackground(
+              isDark: isDark,
+              accentColor: accentColor,
+            ),
+            // Main Chat Interface
+            StreamBuilder<List<AiChatMessage>>(
+              stream: messagesStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AscentSpacing.xl),
+                      child: Text(
+                        'Connecting to memory...',
+                        style: TextStyle(
+                          color: context.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  );
+                }
 
-                              final msg = messages[index];
-                              final isUser = msg.sender == 'user';
+                final messages = snapshot.data ?? [];
+                final hasMessages = messages.isNotEmpty;
 
-                              Map<String, dynamic>? actionData;
-                              List<String> messageQuickChips = [];
-                              if (msg.actionPayloadJson != null) {
-                                try {
-                                  actionData = jsonDecode(
-                                    msg.actionPayloadJson!,
+                return Column(
+                  children: [
+                    // Chat stream
+                    Expanded(
+                      child: messages.isEmpty
+                          ? _SoftChatWelcome(
+                              assistantName: name,
+                              onSelectPrompt: _handleSubmitted,
+                              onPrefill: _prefillText,
+                            )
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: EdgeInsets.fromLTRB(
+                                14,
+                                MediaQuery.paddingOf(context).top +
+                                    kToolbarHeight +
+                                    8,
+                                14,
+                                12,
+                              ),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: messages.length + (_isLoading ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == messages.length) {
+                                  return KeyedSubtree(
+                                    key: const ValueKey(
+                                      'chat_loading_indicator',
+                                    ),
+                                    child: _ThinkingBubble(
+                                      name: name,
+                                      accentColor: accentColor,
+                                    ),
                                   );
-                                  if (actionData?['quickOptions'] is List) {
-                                    messageQuickChips =
-                                        (actionData!['quickOptions'] as List)
-                                            .map((e) => e.toString())
-                                            .toList();
-                                  }
-                                } catch (_) {}
-                              }
+                                }
 
-                              return KeyedSubtree(
-                                key: ValueKey('chat_item_${msg.id}'),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AscentSpacing.md,
-                                  ),
-                                  child: Align(
-                                    alignment: isUser
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.sizeOf(context).width *
-                                            0.84,
-                                      ),
-                                      child: _TelegramMessageBubble(
-                                        msg: msg,
-                                        isUser: isUser,
-                                        assistantName: name,
-                                        accentColor: accentColor,
-                                        actionData: actionData,
-                                        messageQuickChips: messageQuickChips,
-                                        onSelectChip: _handleSubmitted,
-                                        onRecover: () =>
-                                            _recoverMessage(actionData),
-                                        onOpenCourse: () =>
-                                            context.push('/study-plan'),
-                                        onOpenHub: () => context.push(
-                                          actionData?['route'] as String? ??
-                                              '/today',
+                                final msg = messages[index];
+                                final isUser = msg.sender == 'user';
+
+                                // Consecutive AI message grouping:
+                                // If the previous message was also from assistant,
+                                // suppress the name label for visual clustering.
+                                final prevMsg = index > 0 ? messages[index - 1] : null;
+                                final isFirstInRun = prevMsg == null ||
+                                    prevMsg.sender != msg.sender;
+
+                                Map<String, dynamic>? actionData;
+                                List<String> messageQuickChips = [];
+                                if (msg.actionPayloadJson != null) {
+                                  try {
+                                    actionData = jsonDecode(
+                                      msg.actionPayloadJson!,
+                                    );
+                                    if (actionData?['quickOptions'] is List) {
+                                      messageQuickChips =
+                                          (actionData!['quickOptions'] as List)
+                                              .map((e) => e.toString())
+                                              .toList();
+                                    }
+                                  } catch (_) {}
+                                }
+
+                                return KeyedSubtree(
+                                  key: ValueKey('chat_item_${msg.id}'),
+                                  child: Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: AscentSpacing.sm,
+                                      top: isFirstInRun && !isUser && index != 0 ? 6 : 0,
+                                    ),
+                                    child: Align(
+                                      alignment: isUser
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.sizeOf(context).width *
+                                              0.84,
+                                        ),
+                                        child: _ConversationMessageBubble(
+                                          msg: msg,
+                                          isUser: isUser,
+                                          isFirstInRun: isFirstInRun,
+                                          assistantName: name,
+                                          accentColor: accentColor,
+                                          actionData: actionData,
+                                          messageQuickChips: messageQuickChips,
+                                          onSelectChip: _handleSubmitted,
+                                          busy: _isLoading,
+                                          onEditDraft: () =>
+                                              _editDraft(actionData!),
+                                          onReview: (approved) =>
+                                              _reviewMessage(
+                                                msg,
+                                                actionData!,
+                                                approved,
+                                              ),
+                                          onRecover: () =>
+                                              _recoverMessage(actionData),
+                                          onOpenCourse: () =>
+                                              context.push('/study-plan'),
+                                          onOpenHub: () => context.push(
+                                            actionData?['route'] as String? ??
+                                                '/today',
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-
-                  if (_isLoading)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 16),
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: accentColor,
+                                );
+                              },
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$name is thinking...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
 
-                  // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
-                  if (!hasMessages) ...[
-                    Padding(
+                    // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
+                    if (!hasMessages) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: AscentSpacing.xs,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'Todos' : 'Plan my day',
+                                Icons.wb_sunny_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact ? 'Show todos' : 'Plan my day',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'Promises' : 'Today\'s agenda',
+                                Icons.checklist_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact
+                                      ? 'Show promises'
+                                      : 'What are my tasks today?',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'New Todo' : 'Medicines',
+                                widget.compact
+                                    ? Icons.add_rounded
+                                    : Icons.medication_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact
+                                      ? 'New todo'
+                                      : 'What are my medicines today?',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ] else ...[
+                      const SizedBox(height: 4),
+                    ],
+
+                    // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
+                    Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: AscentSpacing.xs,
+                        vertical: AscentSpacing.sm,
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Plan my day',
-                              Icons.wb_sunny_rounded,
-                              () => _handleSubmitted('Plan my day'),
-                              context,
-                              accentColor,
-                            ),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        border: Border(
+                          top: BorderSide(
+                            color: g.edge.withValues(alpha: 0.5),
+                            width: 0.8,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Today\'s agenda',
-                              Icons.checklist_rounded,
-                              () =>
-                                  _handleSubmitted('What are my tasks today?'),
-                              context,
-                              accentColor,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Medicines',
-                              Icons.medication_rounded,
-                              () => _handleSubmitted(
-                                'What are my medicines today?',
-                              ),
-                              context,
-                              accentColor,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                  ] else ...[
-                    const SizedBox(height: 4),
-                  ],
-
-                  // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: AscentSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      border: Border(
-                        top: BorderSide(
-                          color: g.edge.withValues(alpha: 0.5),
-                          width: 0.8,
+                      child: SafeArea(
+                        top: false,
+                        child: MessageComposer(
+                          controller: _textController,
+                          focusNode: _composerFocus,
+                          hint: 'Message $name...',
+                          busy: _isLoading,
+                          onSend: _handleSubmitted,
                         ),
                       ),
                     ),
-                    child: SafeArea(
-                      top: false,
-                      child: MessageComposer(
-                        controller: _textController,
-                        hint: 'Message $name...',
-                        busy: _isLoading,
-                        onSend: _handleSubmitted,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -951,17 +1231,274 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               Icon(icon, size: 14, color: accentColor),
               const SizedBox(width: 5),
               Flexible(
-                child: Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCompanionSelectorSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+  ) {
+    HapticFeedback.lightImpact();
+    final customController = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final g = sheetContext.glass;
+        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF16181D) : const Color(0xFFF9F9FB),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: isDark ? g.edge : const Color(0x1F000000),
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Companion Identity',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: sheetContext.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choose who accompanies your daily Life OS',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: sheetContext.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCompanionTile(
+                      sheetContext: sheetContext,
+                      name: 'Aria',
+                      tagline: 'Reflective & Calm',
+                      description: 'Quiet clarity, intentional pacing, and mindful focus.',
+                      icon: Icons.auto_awesome_rounded,
+                      selected: currentName == 'Aria',
+                      onSelect: () {
+                        HapticFeedback.mediumImpact();
+                        ref.read(assistantNameProvider.notifier).setName('Aria');
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCompanionTile(
+                      sheetContext: sheetContext,
+                      name: 'Riya',
+                      tagline: 'Vibrant & Action-Driven',
+                      description: 'High energy, proactive habits, and relentless momentum.',
+                      icon: Icons.bolt_rounded,
+                      selected: currentName == 'Riya',
+                      onSelect: () {
+                        HapticFeedback.mediumImpact();
+                        ref.read(assistantNameProvider.notifier).setName('Riya');
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E2129) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? g.edge : const Color(0x1F000000),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: customController,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: sheetContext.textPrimary,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Custom companion name...',
+                                hintStyle: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: sheetContext.textMuted,
+                                ),
+                                isDense: true,
+                                border: InputBorder.none,
+                              ),
+                              onSubmitted: (val) {
+                                final trimmed = val.trim();
+                                if (trimmed.isNotEmpty) {
+                                  HapticFeedback.mediumImpact();
+                                  ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                  Navigator.pop(sheetContext);
+                                }
+                              },
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final trimmed = customController.text.trim();
+                              if (trimmed.isNotEmpty) {
+                                HapticFeedback.mediumImpact();
+                                ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                Navigator.pop(sheetContext);
+                              }
+                            },
+                            child: const Text('Set'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompanionTile({
+    required BuildContext sheetContext,
+    required String name,
+    required String tagline,
+    required String description,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onSelect,
+  }) {
+    final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+    final accent = sheetContext.accentPrimary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onSelect,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: isDark ? 0.16 : 0.08)
+                : (isDark ? const Color(0xFF1C1E26) : Colors.white),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : (isDark ? sheetContext.glass.edge : const Color(0x1F000000)),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected
+                      ? accent.withValues(alpha: 0.22)
+                      : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? accent : sheetContext.textPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: sheetContext.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '· $tagline',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: sheetContext.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: sheetContext.textMuted,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: accent,
+                  size: 20,
+                ),
+              ],
             ],
           ),
         ),
@@ -971,12 +1508,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Telegram-Style Translucent Message Bubble with Border
+// Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
-class _TelegramMessageBubble extends StatelessWidget {
+class _ConversationMessageBubble extends StatelessWidget {
   final AiChatMessage msg;
   final bool isUser;
+  final bool isFirstInRun;
   final String assistantName;
   final Color accentColor;
   final Map<String, dynamic>? actionData;
@@ -985,10 +1523,14 @@ class _TelegramMessageBubble extends StatelessWidget {
   final VoidCallback onOpenCourse;
   final VoidCallback onOpenHub;
   final VoidCallback onRecover;
+  final ValueChanged<bool> onReview;
+  final bool busy;
+  final VoidCallback onEditDraft;
 
-  const _TelegramMessageBubble({
+  const _ConversationMessageBubble({
     required this.msg,
     required this.isUser,
+    required this.isFirstInRun,
     required this.assistantName,
     required this.accentColor,
     required this.actionData,
@@ -997,6 +1539,9 @@ class _TelegramMessageBubble extends StatelessWidget {
     required this.onOpenCourse,
     required this.onOpenHub,
     required this.onRecover,
+    required this.onReview,
+    required this.busy,
+    required this.onEditDraft,
   });
 
   @override
@@ -1006,278 +1551,620 @@ class _TelegramMessageBubble extends StatelessWidget {
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
+    // ── User bubble: vivid solid gradient pill ──────────────────────────────
+    // ── AI bubble: clean opaque warm card ──────────────────────────────────
+    final Color bubbleFill;
+    final Color bubbleBorder;
+    final Color messageTextColor;
+    final Color timestampColor;
+
+    if (isUser) {
+      // User bubble — translucent glass with dark border & razor-sharp text
+      bubbleFill = isDark
+          ? const Color(0xFF141926).withValues(alpha: 0.60) // translucent obsidian-glass
+          : const Color(0xFFF1F4F9).withValues(alpha: 0.72); // translucent pearl-glass
+      bubbleBorder = isDark
+          ? const Color(0xFF2C384E) // crisp dark-slate rim
+          : const Color(0xFF334155).withValues(alpha: 0.50); // crisp dark charcoal rim
+      messageTextColor = isDark
+          ? const Color(0xFFF8FAFC) // crystal-clear bright ink (slate-50)
+          : const Color(0xFF0F172A); // deep ink (slate-900)
+      timestampColor = isDark
+          ? const Color(0xFF94A3B8)
+          : const Color(0xFF64748B);
+    } else {
+      // AI bubble — opaque surface for guaranteed readability
+      bubbleFill = isDark
+          ? const Color(0xFF1E2430)   // rich dark blue-charcoal
+          : const Color(0xFFFFFFFF);  // crisp white
+      bubbleBorder = isDark
+          ? const Color(0xFF2D3548)   // subtle rim
+          : const Color(0xFFE8ECF4);  // soft light rim
+      messageTextColor = isDark
+          ? const Color(0xFFE8EDF5)   // bright near-white on dark
+          : const Color(0xFF1A2233);  // deep ink on light
+      timestampColor = isDark
+          ? const Color(0xFF6B7A99)
+          : const Color(0xFF9AA3B8);
+    }
+
+    // Bubble radius: iMessage-style rounded with a "tail" corner
+    final borderRadius = isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(5),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(5),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          );
+
+    Widget bubbleContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Assistant Header Tag — only on first message in a run
+        if (!isUser && isFirstInRun) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 11,
+                color: accentColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                assistantName,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ],
+
+        // Message Body
+        Text(
+          (actionData?['records'] as List? ?? []).isNotEmpty
+              ? (msg.actionType?.startsWith('promises.') == true
+                    ? 'Here are your Promises.'
+                    : 'Here are your Todos. Choose a card below.')
+              : msg.message,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14.5,
+            fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
+            color: messageTextColor,
+            height: 1.5,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        // Micro Timestamp
+        Align(
+          alignment: Alignment.bottomRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                timeString,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 9.5,
+                  color: timestampColor,
+                ),
+              ),
+              if (isUser) ...[
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.done_all_rounded,
+                  size: 11,
+                  color: isDark ? accentColor : accentColor,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final Widget mainBubble = isUser
+        ? GlassSurface(
+            borderRadius: borderRadius,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            fillColor: bubbleFill,
+            customBorder: Border.all(color: bubbleBorder, width: 1.1),
+            enableBlur: true,
+            hasShadow: true,
+            child: bubbleContent,
+          )
+        : Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: bubbleFill,
+              borderRadius: borderRadius,
+              border: Border.all(color: bubbleBorder, width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: bubbleContent,
+          );
+
     return Column(
       crossAxisAlignment: isUser
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        GlassSurface(
-          key: ValueKey('chat-glass-${msg.id}'),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isUser ? 18 : 6),
-            bottomRight: Radius.circular(isUser ? 6 : 18),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Assistant Header Tag
-              if (!isUser) ...[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 12,
-                      color: accentColor,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      assistantName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: accentColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-              ],
+        mainBubble,
 
-              // Message Body
-              Text(
-                msg.message,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.45,
-                ),
-              ),
+        if (!isUser && actionData?['executionStatus'] == 'proposed')
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                final rawText = (actionData?['pendingCommand']?['arguments']?['text'] as String?) ?? '';
+                final proposal = msg.actionType == 'promises.create' && rawText.isNotEmpty
+                    ? PromiseIntentParser.parse(rawText)
+                    : null;
+                final taskTitle = msg.actionType == 'tasks.create'
+                    ? (actionData?['pendingCommand']?['arguments']?['title'] as String?)
+                    : null;
+                final taskDate = msg.actionType == 'tasks.create'
+                    ? (actionData?['pendingCommand']?['arguments']?['plannedDate'] as String?)?.split('T').first
+                    : null;
 
-              const SizedBox(height: 4),
-
-              // Micro Timestamp Row (Shrink-wrapped, NO Spacer)
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      timeString,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9.5,
-                        color: context.glass.inkMuted,
-                      ),
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1A2035)
+                        : const Color(0xFFF7F9FF),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF2A3550)
+                          : const Color(0xFFDDE3F0),
+                      width: 1.0,
                     ),
-                    if (isUser) ...[
-                      const SizedBox(width: 3),
-                      Icon(
-                        Icons.done_all_rounded,
-                        size: 11,
-                        color: context.glass.inkMuted,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
-                  ],
-                ),
+                  ),
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              msg.actionType?.startsWith('promises.') == true
+                                  ? 'PROMISE PREVIEW'
+                                  : (msg.actionType?.startsWith('tasks.') == true
+                                      ? 'TODO PREVIEW'
+                                      : 'REVIEW ACTION'),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                letterSpacing: 1.0,
+                                color: accentColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        proposal?.title ?? taskTitle ?? (actionData?['title'] as String? ?? 'Review'),
+                        style: TextStyle(
+                          color: context.glass.ink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (proposal != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: context.glass.fill.withValues(alpha: isDark ? 0.25 : 0.45),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.glass.line, width: 0.8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.event_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.targetDate != null
+                                          ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
+                                          : (proposal.schedule?.summary != null
+                                              ? 'Schedule: ${proposal.schedule!.summary}'
+                                              : 'Schedule: Every day (Daily)'),
+                                      style: TextStyle(
+                                        color: context.glass.ink,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Icon(Icons.timer_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.trackingType == PromiseTrackingType.duration
+                                          ? '${proposal.targetValue.toInt()} minutes per session'
+                                          : (proposal.trackingType == PromiseTrackingType.frequency
+                                              ? '${proposal.frequencyPerWeek} times a week'
+                                              : 'Daily check-in commitment'),
+                                      style: TextStyle(
+                                        color: context.glass.inkSecondary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Icon(Icons.notifications_active_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.reminderTime != null
+                                          ? 'Reminder: ${proposal.reminderTime}'
+                                          : 'No reminder',
+                                      style: TextStyle(
+                                        color: context.glass.inkSecondary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (taskDate != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 14, color: accentColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Planned: $taskDate',
+                              style: TextStyle(
+                                color: context.glass.inkSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: busy ? null : () => onReview(true),
+                            icon: Icon(
+                              msg.actionType?.endsWith('.delete') == true
+                                  ? Icons.delete_outline_rounded
+                                  : Icons.check_rounded,
+                              size: 16,
+                            ),
+                            label: Text(
+                              msg.actionType?.endsWith('.delete') == true
+                                  ? 'Delete'
+                                  : 'Save',
+                            ),
+                          ),
+                          if (msg.actionType?.endsWith('.create') == true ||
+                              msg.actionType?.endsWith('.edit') == true)
+                            TextButton.icon(
+                              onPressed: busy ? null : onEditDraft,
+                              icon: const Icon(Icons.edit_outlined, size: 14),
+                              label: const Text('Change words'),
+                            ),
+                          TextButton(
+                            onPressed: busy ? null : () => onReview(false),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ) as Widget,
+        if (!isUser)
+          for (final record in (actionData?['records'] as List? ?? []))
+            if (record is Map &&
+                ['tasks', 'promises'].contains(record['type']) &&
+                record['id'] is int)
+              RiyaEntityCard(
+                type: record['type'] as String,
+                id: record['id'] as int,
+                onCommand: onSelectChip,
+                busy: busy,
               ),
-            ],
+        if (!isUser &&
+            ['tasks', 'promises'].contains(actionData?['entityType']) &&
+            actionData?['entityId'] is int &&
+            (actionData?['records'] as List? ?? []).isEmpty)
+          RiyaEntityCard(
+            type: actionData!['entityType'] as String,
+            id: actionData!['entityId'] as int,
+            onCommand: onSelectChip,
+            busy: busy,
           ),
-        ),
 
         if (!isUser &&
-            const [
-              'failed',
-              'recovery_pending',
-            ].contains(actionData?['executionStatus']))
+                const [
+                  'failed',
+                  'recovery_pending',
+                ].contains(actionData?['executionStatus']) ||
+            (!isUser && actionData?['alertsPending'] == true))
           Padding(
             padding: const EdgeInsets.only(top: AscentSpacing.sm),
-            child: GlassSurface(
-              radius: AscentDimensions.radiusMd,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    actionData?['executionStatus'] == 'recovery_pending'
-                        ? 'Verification pending'
-                        : 'Action needs attention',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w700,
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E2430) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2D3548) : const Color(0xFFE8ECF4),
                     ),
                   ),
-                  Text(
-                    'Review saved changes before sending this request again.',
-                    style: TextStyle(color: context.textMuted),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        actionData?['executionStatus'] == 'recovery_pending'
+                            ? 'Verification pending'
+                            : 'Action needs attention',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Review saved changes before sending this request again.',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: onRecover,
+                        icon: const Icon(Icons.restore_rounded),
+                        label: const Text('Recover'),
+                      ),
+                    ],
                   ),
-                  TextButton.icon(
-                    onPressed: onRecover,
-                    icon: const Icon(Icons.restore_rounded),
-                    label: const Text('Recover'),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
 
         // Attached Action Confirmation Capsule (Executed Directly)
         if (!isUser &&
             msg.actionType != null &&
+            !['tasks', 'promises'].contains(actionData?['entityType']) &&
+            (actionData?['records'] as List? ?? []).isEmpty &&
             actionData != null &&
             actionData!['executionStatus'] == 'verified' &&
             actionData!['title'] != null) ...[
           const SizedBox(height: 6),
-          GlassSurface(
-            radius: 14,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AscentSpacing.md,
-              vertical: 10,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  actionData?['write'] == true
-                      ? Icons.check_circle_rounded
-                      : Icons.info_outline_rounded,
-                  size: 15,
-                  color: context.glass.sage,
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A2430) : const Color(0xFFF0F9F4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF243040) : const Color(0xFFCFEADA),
+                  ),
                 ),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionData!['title'].toString(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: context.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      actionData?['write'] == true
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
+                      size: 15,
+                      color: context.glass.sage,
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            actionData!['title'].toString(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (actionData!['summary'] != null)
+                            Text(
+                              actionData!['summary'].toString(),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
-                      if (actionData!['summary'] != null)
-                        Text(
-                          actionData!['summary'].toString(),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: context.textMuted,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    if (msg.actionType ==
-                        AiActionType.lectureMarkedComplete.name) {
-                      onOpenCourse();
-                    } else {
-                      onOpenHub();
-                    }
-                  },
-                  borderRadius: AscentRadii.borderSm,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: AscentDimensions.minTouchTarget,
-                      minHeight: AscentDimensions.minTouchTarget,
                     ),
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(AscentSpacing.sm),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          msg.actionType ==
-                                  AiActionType.lectureMarkedComplete.name
-                              ? 'Open Course'
-                              : 'View',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.glass.sage,
-                          ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (msg.actionType ==
+                            AiActionType.lectureMarkedComplete.name) {
+                          onOpenCourse();
+                        } else {
+                          onOpenHub();
+                        }
+                      },
+                      borderRadius: AscentRadii.borderSm,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: AscentDimensions.minTouchTarget,
+                          minHeight: AscentDimensions.minTouchTarget,
                         ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 9,
-                          color: context.glass.sage,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(AscentSpacing.sm),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              msg.actionType ==
+                                      AiActionType.lectureMarkedComplete.name
+                                  ? 'Open Course'
+                                  : 'View',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: context.glass.sage,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 9,
+                              color: context.glass.sage,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
 
         // Clarifying Interactive Quick Action Chips
         if (!isUser && messageQuickChips.isNotEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 6,
-            runSpacing: 5,
+            spacing: 7,
+            runSpacing: 7,
             children: messageQuickChips.map((chipText) {
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    onSelectChip(chipText);
-                  },
-                  borderRadius: AscentRadii.borderLg,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? context.bgSurface.withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.90),
-                      borderRadius: AscentRadii.borderLg,
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.4),
-                        width: 0.9,
+              return Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onSelectChip(chipText);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E2430)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.45),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(alpha: 0.10),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 12,
+                              color: accentColor,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                chipText,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFD0D8F0)
+                                      : const Color(0xFF1A2233),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.touch_app_rounded,
-                          size: 12,
-                          color: accentColor,
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            chipText,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               );
             }).toList(),
           ),
@@ -1292,40 +2179,382 @@ class _TelegramMessageBubble extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ThinkingBubble extends StatelessWidget {
+  const _ThinkingBubble({required this.name, required this.accentColor});
   final String name;
   final Color accentColor;
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: GlassSurface(
+        radius: 18,
+        enableBlur: false,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                '$name is checking…',
+                style: TextStyle(color: context.glass.inkMuted, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
-  const _ThinkingBubble({required this.name, required this.accentColor});
+// ---------------------------------------------------------------------------
+// Soft Minimalist Conversational Welcome (Opening State)
+// ---------------------------------------------------------------------------
+
+class _SoftChatWelcome extends StatefulWidget {
+  final String assistantName;
+  final ValueChanged<String> onSelectPrompt;
+  /// Pre-fills the message composer with a partial prompt so the user can
+  /// complete it before sending. Used for accelerator cards that need context.
+  final ValueChanged<String> onPrefill;
+
+  const _SoftChatWelcome({
+    required this.assistantName,
+    required this.onSelectPrompt,
+    required this.onPrefill,
+  });
+
+  @override
+  State<_SoftChatWelcome> createState() => _SoftChatWelcomeState();
+}
+
+class _SoftChatWelcomeState extends State<_SoftChatWelcome>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sparkleController;
+
+  @override
+  void initState() {
+    super.initState();
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    if (!isTest) {
+      _sparkleController.repeat(reverse: true);
+    } else {
+      _sparkleController.value = 0.5;
+    }
+  }
+
+  @override
+  void dispose() {
+    _sparkleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AscentSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
+    return Consumer(
+      builder: (context, ref, _) {
+        final profile = ref.watch(userProfileStreamProvider).value;
+        final userName = profile?.name.isNotEmpty == true
+            ? profile!.name.split(' ').first
+            : 'there';
+        final accent = context.accentPrimary;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        final hour = DateTime.now().hour;
+        final greetingTime = hour < 12
+            ? 'Good morning'
+            : (hour < 17 ? 'Good afternoon' : 'Good evening');
+
+        return Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+              20,
+              24,
             ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              color: accentColor,
-              size: 14,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Soft glowing breathing avatar
+                AnimatedBuilder(
+                  animation: _sparkleController,
+                  builder: (context, child) {
+                    final pulse = _sparkleController.value;
+                    return Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            accent.withValues(alpha: 0.25 + pulse * 0.15),
+                            context.glass.clay.withValues(alpha: 0.20 + pulse * 0.10),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.45 + pulse * 0.25),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(
+                              alpha: isDark ? (0.28 + pulse * 0.20) : (0.16 + pulse * 0.12),
+                            ),
+                            blurRadius: 22 + pulse * 10,
+                            spreadRadius: 2 + pulse * 3,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          color: accent,
+                          size: 30,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Minimal status indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: AscentSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? context.bgSurface.withValues(alpha: 0.85)
+                        : Colors.white.withValues(alpha: 0.90),
+                    borderRadius: AscentRadii.borderMd,
+                    border: Border.all(
+                      color: isDark ? context.glass.edge : context.divider,
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.glass.sage,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          '${widget.assistantName} · Always by your side',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text(
+                  '$greetingTime, $userName',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'I\'m ${widget.assistantName}, your personal assistant. How can I help you today?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    color: context.textMuted,
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // 4 Crisp Contextual Accelerator Cards
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 360;
+                    final cardWidth = isCompact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.bubble_chart_rounded,
+                          title: 'Unload Thought',
+                          subtitle: 'Clear mental clutter to Vault',
+                          prompt: 'Save thought: ',
+                          // Prefill: incomplete — needs user to type the thought
+                          onTap: widget.onPrefill,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.handshake_rounded,
+                          title: 'Sacred Promise',
+                          subtitle: 'Commit with daily check-ins',
+                          prompt: 'Create a promise to ',
+                          // Prefill: incomplete — needs user to describe the promise
+                          onTap: widget.onPrefill,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.coffee_rounded,
+                          title: 'Chai Reset',
+                          subtitle: '5-min mindful reflection',
+                          prompt: 'Start chai break',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.medication_rounded,
+                          title: 'Health & Meds',
+                          subtitle: 'Review daily doses & water',
+                          prompt: 'What are my medicines today?',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Soft suggestion pills
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children:
+                      [
+                        'Plan my day',
+                        'Log 250ml water',
+                        'What are my tasks today?',
+                        'Check my walk status',
+                        'Medicine schedule',
+                        'Explain Dynamic Programming',
+                      ].map((prompt) {
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onSelectPrompt(prompt);
+                            },
+                            borderRadius: AscentRadii.borderXl,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 9.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? context.bgSurface.withValues(alpha: 0.85)
+                                    : Colors.white.withValues(alpha: 0.90),
+                                borderRadius: AscentRadii.borderXl,
+                                border: Border.all(
+                                  color: isDark
+                                      ? context.glass.edge
+                                      : context.divider,
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.20 : 0.04,
+                                    ),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                prompt,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        );
+      },
+    );
+  }
+
+  Widget _buildAcceleratorCard({
+    required BuildContext context,
+    required bool isDark,
+    required double width,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String prompt,
+    required ValueChanged<String> onTap,
+  }) {
+    final accent = context.accentPrimary;
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap(prompt);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
               color: isDark
-                  ? context.bgSurface.withValues(alpha: 0.88)
-                  : Colors.white.withValues(alpha: 0.92),
-              borderRadius: AscentRadii.borderLg,
+                  ? context.bgSurface.withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark ? context.glass.edge : context.divider,
                 width: 1.0,
@@ -1339,235 +2568,59 @@ class _ThinkingBubble extends StatelessWidget {
               ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      icon,
+                      color: accent,
+                      size: 16,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  '$name is thinking & parsing your data...',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12.5,
-                    fontStyle: FontStyle.italic,
-                    color: context.textMuted,
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: context.textMuted,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Soft Minimalist Conversational Welcome (Opening State)
-// ---------------------------------------------------------------------------
-
-class _SoftChatWelcome extends ConsumerWidget {
-  final String assistantName;
-  final ValueChanged<String> onSelectPrompt;
-
-  const _SoftChatWelcome({
-    required this.assistantName,
-    required this.onSelectPrompt,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileStreamProvider).value;
-    final userName = profile?.name.isNotEmpty == true
-        ? profile!.name.split(' ').first
-        : 'there';
-    final accent = context.accentPrimary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final hour = DateTime.now().hour;
-    final greetingTime = hour < 12
-        ? 'Good morning'
-        : (hour < 17 ? 'Good afternoon' : 'Good evening');
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
-          24,
-          24,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Soft glowing avatar
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    accent.withValues(alpha: 0.25),
-                    context.glass.clay.withValues(alpha: 0.25),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: isDark ? 0.35 : 0.18),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: accent,
-                  size: 28,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // Minimal status indicator
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: AscentSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? context.bgSurface.withValues(alpha: 0.85)
-                    : Colors.white.withValues(alpha: 0.90),
-                borderRadius: AscentRadii.borderMd,
-                border: Border.all(
-                  color: isDark ? context.glass.edge : context.divider,
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.glass.sage,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      '$assistantName · Always by your side',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: context.textMuted,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Text(
-              '$greetingTime, $userName',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: context.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'I\'m $assistantName, your personal assistant. How can I help you today?',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13.5,
-                color: context.textMuted,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Soft suggestion pills
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children:
-                  [
-                    'Plan my day',
-                    'Log 250ml water',
-                    'What are my tasks today?',
-                    'Check my walk status',
-                    'Medicine schedule',
-                    'Explain Dynamic Programming',
-                  ].map((prompt) {
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          onSelectPrompt(prompt);
-                        },
-                        borderRadius: AscentRadii.borderXl,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 9.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? context.bgSurface.withValues(alpha: 0.85)
-                                : Colors.white.withValues(alpha: 0.90),
-                            borderRadius: AscentRadii.borderXl,
-                            border: Border.all(
-                              color: isDark
-                                  ? context.glass.edge
-                                  : context.divider,
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.20 : 0.04,
-                                ),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            prompt,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-            ),
-          ],
         ),
       ),
     );
@@ -1575,7 +2628,7 @@ class _SoftChatWelcome extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Atmospheric Night & Day Chat Background with Celestial Stardust
+// Warm Aurora Chat Background — Calm, Engaging, Soft
 // ---------------------------------------------------------------------------
 
 class _AtmosphericChatBackground extends StatelessWidget {
@@ -1590,69 +2643,72 @@ class _AtmosphericChatBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final BoxDecoration decor;
+
+    // Theme-aware background palette
+    final List<Color> gradientColors;
+    final Color aurora1;
+    final Color aurora2;
 
     if (g.frozen) {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? const [
-                  FrozenPalette.darkCanvas,
-                  FrozenPalette.darkSurface,
-                  FrozenPalette.darkCanvas,
-                ]
-              : const [
-                  FrozenPalette.surface,
-                  FrozenPalette.canvas,
-                  FrozenPalette.elevated,
-                ],
-        ),
-      );
+      gradientColors = isDark
+          ? const [
+              Color(0xFF0B1420),  // deep nordic night
+              Color(0xFF0F1C30),
+              Color(0xFF0D1828),
+            ]
+          : const [
+              FrozenPalette.surface,
+              FrozenPalette.canvas,
+              FrozenPalette.elevated,
+            ];
+      aurora1 = isDark ? const Color(0xFF1E3A5F) : FrozenPalette.action.withValues(alpha: 0.08);
+      aurora2 = isDark ? const Color(0xFF0E2A45) : FrozenPalette.action.withValues(alpha: 0.05);
     } else if (g.merlot) {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  MerlotPalette.darkCanvas,
-                  MerlotPalette.darkSurface,
-                  MerlotPalette.darkCanvas,
-                ]
-              : [
-                  MerlotPalette.canvas,
-                  MerlotPalette.surface,
-                  MerlotPalette.canvas,
-                ],
-        ),
-      );
+      gradientColors = isDark
+          ? const [
+              Color(0xFF180F14),  // deep merlot night
+              Color(0xFF1E1018),
+              Color(0xFF160D12),
+            ]
+          : const [
+              MerlotPalette.canvas,
+              MerlotPalette.surface,
+              MerlotPalette.canvas,
+            ];
+      aurora1 = isDark ? const Color(0xFF3D1828) : MerlotPalette.action.withValues(alpha: 0.07);
+      aurora2 = isDark ? const Color(0xFF2A1020) : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  AscentColors.bgBaseDark,
-                  AscentColors.bgSurfaceDark,
-                  AscentColors.bgBaseDark,
-                ]
-              : [
-                  AscentColors.bgBase,
-                  AscentColors.bgSurface,
-                  AscentColors.bgBase,
-                ],
-        ),
-      );
+      // Default: warm midnight indigo → violet for dark; soft lavender cream for light
+      gradientColors = isDark
+          ? const [
+              Color(0xFF0C0F1A),  // deep midnight
+              Color(0xFF111526),  // soft indigo depth
+              Color(0xFF0E1220),  // rich dark base
+            ]
+          : const [
+              Color(0xFFF5F4FC),  // soft lavender white
+              Color(0xFFF8F7FE),  // near white
+              Color(0xFFF2F1FB),  // gentle tint
+            ];
+      aurora1 = isDark
+          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6)  // warm violet glow
+          : accentColor.withValues(alpha: 0.06);
+      aurora2 = isDark
+          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5)  // cool indigo glow
+          : const Color(0xFF7C6FD0).withValues(alpha: 0.05);
     }
 
     return DecoratedBox(
-      decoration: decor,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: gradientColors,
+        ),
+      ),
       child: AscentAtmosphereBackground(
-        glow1: isDark ? g.glow1 : g.claySoft,
-        glow2: isDark ? g.glow2 : g.slateSoft,
+        glow1: aurora1,
+        glow2: aurora2,
         child: Stack(
           fit: StackFit.expand,
           children: [

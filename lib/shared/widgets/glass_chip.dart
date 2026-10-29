@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
 
 /// Compact, bordered actions and status labels with the same glass treatment.
@@ -45,7 +46,12 @@ class GlassChip extends StatelessWidget {
       shape: shape,
       child: InkWell(
         customBorder: shape,
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              }
+            : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(

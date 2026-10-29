@@ -36,10 +36,12 @@ class ActivityRowItem extends ConsumerStatefulWidget {
   final TodayActivityItem activity;
 
   final bool compact;
+  final VoidCallback? onViewCompleted;
   const ActivityRowItem({
     super.key,
     required this.activity,
     this.compact = false,
+    this.onViewCompleted,
   });
 
   @override
@@ -270,6 +272,20 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 );
                                 return;
                               }
+                              if (activity.isScheduledInFuture) {
+                                HapticFeedback.lightImpact();
+                                final timeStr = activity.scheduledTime != null
+                                    ? DateFormat(
+                                        'h:mm a',
+                                      ).format(activity.scheduledTime!)
+                                    : 'later';
+                                AscentSnackBar.show(
+                                  context,
+                                  message:
+                                      'Scheduled for $timeStr. You can complete it once that time arrives.',
+                                );
+                                return;
+                              }
                               HapticFeedback.mediumImpact();
                               if (isTimed) {
                                 AscentSnackBar.show(
@@ -323,11 +339,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 : null,
                             color: isDone
                                 ? g.sage.withValues(alpha: .12)
-                                : (g.merlot
-                                      ? MerlotPalette.spark.withValues(
-                                          alpha: 0.12,
-                                        )
-                                      : AppPalette.transparent),
+                                : (isRunning
+                                      ? g.clay.withValues(alpha: .12)
+                                      : (activity.isScheduledInFuture
+                                            ? g.ink.withValues(alpha: .04)
+                                            : AppPalette.transparent)),
                             border: Border.all(
                               color: isDone
                                   ? g.sage
@@ -337,7 +353,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                               : (g.merlot
                                                     ? MerlotPalette.antiqueGold
                                                     : g.clay))
-                                        : (isRunning ? g.clay : g.inkMuted)),
+                                        : (isRunning
+                                              ? g.clay
+                                              : (activity.isScheduledInFuture
+                                                    ? g.inkMuted
+                                                    : g.inkMuted))),
                               width: 1.75,
                             ),
                           ),
@@ -355,6 +375,14 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                         ),
+                                  ),
+                                )
+                              : activity.isScheduledInFuture
+                              ? Center(
+                                  child: Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: g.inkMuted,
                                   ),
                                 )
                               : (isLecture
@@ -492,8 +520,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                   width: 6,
                                   height: 6,
                                   margin: const EdgeInsets.only(right: 5),
-                                  decoration: const BoxDecoration(
-                                    color: MerlotPalette.spark,
+                                  decoration: BoxDecoration(
+                                    color: context.isDark
+                                        ? MerlotPalette.darkAction
+                                        : MerlotPalette.action,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -833,6 +863,56 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             success: true,
             tooltip: 'Completed',
           )
+        : activity.isScheduledInFuture
+        ? Semantics(
+            button: true,
+            label:
+                'Scheduled for ${activity.scheduledTime != null ? DateFormat('h:mm a').format(activity.scheduledTime!) : 'later'}',
+            child: InkWell(
+              key: ValueKey('activity_scheduled_${activity.id}'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                final timeStr = activity.scheduledTime != null
+                    ? DateFormat('h:mm a').format(activity.scheduledTime!)
+                    : 'later';
+                AscentSnackBar.show(
+                  context,
+                  message:
+                      'Scheduled for $timeStr. You can complete it once that time arrives.',
+                );
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 34),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: g.ink.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: g.ink.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.schedule_rounded, size: 13, color: g.clay),
+                    const SizedBox(width: 5),
+                    Text(
+                      activity.scheduledTime != null
+                          ? DateFormat('h:mm a').format(activity.scheduledTime!)
+                          : '',
+                      style: TextStyle(
+                        color: g.ink,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
         : FilledButton.icon(
             key: ValueKey('activity_action_${activity.id}'),
             style: FilledButton.styleFrom(
@@ -884,6 +964,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       return;
                     }
                     if (activity.linkedTaskId == null) return;
+                    final messenger = ScaffoldMessenger.of(context);
+                    final completedFeedback = AscentSnackBar.build(
+                      context,
+                      content: const Text('Task completed'),
+                      action: widget.onViewCompleted == null
+                          ? null
+                          : SnackBarAction(
+                              label: 'View completed',
+                              onPressed: widget.onViewCompleted!,
+                            ),
+                    );
                     try {
                       final dao = ref.read(taskDaoProvider);
                       await dao.toggleTaskCompletion(
@@ -893,7 +984,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       final task = await dao.getTaskById(
                         activity.linkedTaskId!,
                       );
-                      if (context.mounted &&
+                      if (task?.actualCompletedDate != null &&
+                          messenger.mounted) {
+                        messenger.removeCurrentSnackBar();
+                        messenger.showSnackBar(completedFeedback);
+                      } else if (context.mounted &&
                           task?.actualCompletedDate == null) {
                         AscentSnackBar.show(
                           context,
@@ -1454,66 +1549,107 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     ),
                     const SizedBox(width: 8),
                     if (!isDone)
-                      FilledButton(
-                        onPressed: () async {
-                          HapticFeedback.mediumImpact();
-                          Navigator.of(ctx).pop();
-                          final isTimedItem =
-                              activity.kind == ActivityKind.duration ||
-                              (activity.targetMinutes != null &&
-                                  activity.targetMinutes! > 0) ||
-                              activity.sourceType == 'lecture';
-                          if (isTimedItem) {
-                            if (activity.sourceType == 'lecture') {
-                              if (!_selectLecture(ref, activity)) return;
-                              LectureFocusPlayerSheet.show(context);
-                            } else {
-                              await ref
-                                  .read(timeTrackingProvider.notifier)
-                                  .switchToTask(
-                                    title: activity.title,
-                                    taskId: activity.linkedTaskId,
-                                    sourceType: activity.sourceType,
-                                    autoStart: true,
-                                  );
-                            }
-                            return;
-                          }
-                          if (activity.linkedTaskId != null) {
-                            await ref
-                                .read(taskDaoProvider)
-                                .toggleTaskCompletion(
-                                  activity.linkedTaskId!,
-                                  true,
+                      activity.isScheduledInFuture
+                          ? FilledButton.icon(
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.of(ctx).pop();
+                                final timeStr = activity.scheduledTime != null
+                                    ? DateFormat(
+                                        'h:mm a',
+                                      ).format(activity.scheduledTime!)
+                                    : 'later';
+                                AscentSnackBar.show(
+                                  context,
+                                  message:
+                                      'Scheduled for $timeStr. You can complete it once that time arrives.',
                                 );
-                          }
-                        },
-                        style: context.surfaces.buttonStyle(
-                          FilledButton.styleFrom(
-                            backgroundColor: g.clay,
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s18,
-                              vertical: AppSpace.s10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppGeometry.roundedr14,
-                            ),
-                          ),
-                          filled: true,
-                          icon: false,
-                        ),
-                        child: Text(
-                          (activity.kind == ActivityKind.duration ||
-                                  (activity.targetMinutes != null &&
-                                      activity.targetMinutes! > 0) ||
-                                  activity.sourceType == 'lecture')
-                              ? 'Start Focus'
-                              : 'Mark Done',
-                        ),
-                      )
+                              },
+                              icon: const Icon(
+                                Icons.schedule_rounded,
+                                size: 14,
+                              ),
+                              label: Text(
+                                'Scheduled · ${activity.scheduledTime != null ? DateFormat('h:mm a').format(activity.scheduledTime!) : ''}',
+                              ),
+                              style: context.surfaces.buttonStyle(
+                                FilledButton.styleFrom(
+                                  backgroundColor: g.ink.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  foregroundColor: g.ink,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpace.s18,
+                                    vertical: AppSpace.s10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: AppGeometry.roundedr14,
+                                  ),
+                                ),
+                                filled: true,
+                                icon: false,
+                              ),
+                            )
+                          : FilledButton(
+                              onPressed: () async {
+                                HapticFeedback.mediumImpact();
+                                Navigator.of(ctx).pop();
+                                final isTimedItem =
+                                    activity.kind == ActivityKind.duration ||
+                                    (activity.targetMinutes != null &&
+                                        activity.targetMinutes! > 0) ||
+                                    activity.sourceType == 'lecture';
+                                if (isTimedItem) {
+                                  if (activity.sourceType == 'lecture') {
+                                    if (!_selectLecture(ref, activity)) return;
+                                    LectureFocusPlayerSheet.show(context);
+                                  } else {
+                                    await ref
+                                        .read(timeTrackingProvider.notifier)
+                                        .switchToTask(
+                                          title: activity.title,
+                                          taskId: activity.linkedTaskId,
+                                          sourceType: activity.sourceType,
+                                          autoStart: true,
+                                        );
+                                  }
+                                  return;
+                                }
+                                if (activity.linkedTaskId != null) {
+                                  await ref
+                                      .read(taskDaoProvider)
+                                      .toggleTaskCompletion(
+                                        activity.linkedTaskId!,
+                                        true,
+                                      );
+                                }
+                              },
+                              style: context.surfaces.buttonStyle(
+                                FilledButton.styleFrom(
+                                  backgroundColor: g.clay,
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpace.s18,
+                                    vertical: AppSpace.s10,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: AppGeometry.roundedr14,
+                                  ),
+                                ),
+                                filled: true,
+                                icon: false,
+                              ),
+                              child: Text(
+                                (activity.kind == ActivityKind.duration ||
+                                        (activity.targetMinutes != null &&
+                                            activity.targetMinutes! > 0) ||
+                                        activity.sourceType == 'lecture')
+                                    ? 'Start Focus'
+                                    : 'Mark Done',
+                              ),
+                            )
                     else
                       FilledButton(
                         onPressed: () => Navigator.of(ctx).pop(),

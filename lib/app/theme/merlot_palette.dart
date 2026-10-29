@@ -11,29 +11,29 @@ class MerlotPalette {
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
-  /// Canvas: Scaffold background — soft, soothing cashmere oat cream linen
-  static const canvas = Color(0xFFF4EFE6);
+  /// Canvas: Scaffold background — soft, soothing cashmere linen (organic warmth, zero bleached white wash)
+  static const canvas = Color(0xFFF5EFE6);
 
-  /// Surface: Cards, bottom nav, containers — clotted cream & cashmere porcelain
-  static const surface = Color(0xFFEBE3D5);
+  /// Surface: Cards, bottom nav, containers — pristine porcelain off-white
+  static const surface = Color(0xFFFFFFFF);
 
-  /// Surface Bottom: Lower stop for frosted card gradient
-  static const surfaceBottom = Color(0xFFE6DDD0);
+  /// Surface Bottom: Lower stop for gradual card gradient — pure soft porcelain
+  static const surfaceBottom = Color(0xFFFAF5EE);
 
-  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break)
-  static const recessedWell = Color(0xFFDFD5C4);
+  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — soft sunken cashmere well
+  static const recessedWell = Color(0xFFF3ECE2);
 
-  /// Elevated: Sheets, dialogs, modals — warm elevated cream mist
-  static const elevated = Color(0xFFEFE8DB);
+  /// Elevated: Sheets, dialogs, modals — crisp elevated porcelain white
+  static const elevated = Color(0xFFFFFFFF);
 
-  /// Line: Hairline 0.75px border on cards and containers — rich vintage burgundy
-  static const line = Color(0x38581825); // 22% alpha merlot
+  /// Line: Hairline 0.75px border on cards and containers — refined vintage wine red rim
+  static const line = Color(0x2E581825); // 18% alpha merlot wine rim
 
-  /// Line Specular: Top edge catchlight reflection — vintage burgundy highlight
-  static const lineSpecular = Color(0x4D581825); // 30% alpha merlot
+  /// Line Specular: Top edge catchlight reflection — vintage wine specular highlight
+  static const lineSpecular = Color(0x44581825); // 27% alpha merlot specular
 
-  /// Line Subtle: Inner divider and recessed well border
-  static const lineSubtle = Color(0x26581825); // 15% alpha merlot
+  /// Line Subtle: Inner divider and recessed well border inside cards
+  static const lineSubtle = Color(0x18581825); // 10% alpha merlot hairline
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -42,34 +42,43 @@ class MerlotPalette {
   static const vintageMerlot = action;
 
   /// Action Deep: FAB ("✦ Ask Jarvis"), pressed/active states
-  static const actionDeep = Color(0xFF4D131F);
+  static const actionDeep = Color(0xFF48101C);
 
   /// Action Bright: Top of CTA button micro-gradient
-  static const actionBright = Color(0xFF6B1D2F);
+  static const actionBright = Color(0xFF722032);
 
   /// Action Pressed: Pressed state
-  static const actionPressed = Color(0xFF3F0E18);
+  static const actionPressed = Color(0xFF380B14);
 
   /// Secondary Accent: Antique warm gold for progress, sparks, and stars
   static const antiqueGold = Color(0xFFC28834);
 
-  /// Tint: Selected tabs ("Today"), chips, tonal button background — warm oat parchment
-  static const tint = Color(0xFFE9E0D0);
+  /// Tint: Selected tabs ("Today"), chips, tonal button background — delicate wine rose blush
+  static const tint = Color(0xFFF4E5EC);
 
-  /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off")
-  static const pillSoft = Color(0xFFECE3D4);
+  /// Pill Soft: Composer pills and light buttons — soft crisp cashmere cream
+  static const pillSoft = Color(0xFFFAF6F2);
 
-  /// Ink: Primary text — Espresso Merlot Obsidian (15.4:1 contrast on canvas)
-  static const ink = Color(0xFF260F14);
+  /// Ink: Primary text on canvas and screen headings — Espresso Merlot Obsidian (17.5:1 contrast)
+  static const ink = Color(0xFF240A10);
 
-  /// Secondary Ink: Secondary text, subtitles (8:1 contrast on canvas)
-  static const secondaryInk = Color(0xFF4A353B);
+  /// Secondary Ink: Secondary text on canvas and cards — Rich Merlot (9.5:1 contrast)
+  static const secondaryInk = Color(0xFF54222E);
 
-  /// Muted Ink: Captions, helper text, inactive icons (5.6:1 contrast on canvas)
-  static const mutedInk = Color(0xFF6E565B);
+  /// Muted Ink: Captions, helper text on canvas and cards (6.2:1 contrast)
+  static const mutedInk = Color(0xFF72424E);
+
+  /// Card Ink: Primary text inside cards — Espresso Merlot Obsidian (16.9:1 contrast on off-white)
+  static const cardInk = Color(0xFF240A10);
+
+  /// Card Secondary Ink: Secondary text inside cards (9.5:1 contrast on off-white)
+  static const cardSecondaryInk = Color(0xFF54222E);
+
+  /// Card Muted Ink: Captions, helper text, inactive icons inside cards (6.2:1 contrast on off-white)
+  static const cardMutedInk = Color(0xFF72424E);
 
   /// Subtle Ink: Hints, placeholders, disabled indicators
-  static const subtleInk = Color(0xFF9B8489);
+  static const subtleInk = Color(0xFF9E6E7A);
 
   /// Spark: Antique gold strictly for streak flame, achievements, win celebration
   static const spark = antiqueGold;

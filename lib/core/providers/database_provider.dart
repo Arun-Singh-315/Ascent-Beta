@@ -497,6 +497,9 @@ class TodayActivityItem {
   final bool hasReminder;
   final String? notes;
   final DateTime? completedAt;
+  final int? medicineId;
+  final String? timeSlot;
+  final DateTime? scheduledTime;
 
   const TodayActivityItem({
     required this.id,
@@ -517,7 +520,16 @@ class TodayActivityItem {
     this.hasReminder = false,
     this.notes,
     this.completedAt,
+    this.medicineId,
+    this.timeSlot,
+    this.scheduledTime,
   });
+
+  bool get isScheduledInFuture {
+    if (status == TodayActivityStatus.done) return false;
+    if (scheduledTime == null) return false;
+    return DateTime.now().isBefore(scheduledTime!);
+  }
 
   TodayActivityItem copyWith({
     String? id,
@@ -538,6 +550,9 @@ class TodayActivityItem {
     bool? hasReminder,
     String? notes,
     DateTime? completedAt,
+    int? medicineId,
+    String? timeSlot,
+    DateTime? scheduledTime,
   }) {
     return TodayActivityItem(
       id: id ?? this.id,
@@ -558,6 +573,9 @@ class TodayActivityItem {
       hasReminder: hasReminder ?? this.hasReminder,
       notes: notes ?? this.notes,
       completedAt: completedAt ?? this.completedAt,
+      medicineId: medicineId ?? this.medicineId,
+      timeSlot: timeSlot ?? this.timeSlot,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
     );
   }
 }

@@ -53,6 +53,20 @@ void main() {
     },
   );
   test(
+    'Hidden Promises stay hidden while older populated layouts gain new sections',
+    () {
+      final hidden = HomeLayout.defaults().copyWith(visible: {'mind', 'life'});
+      expect(HomeLayout.fromJson(hidden.toJson()).visible, {'mind', 'life'});
+      final legacy = HomeLayout.fromJson({
+        'version': 1,
+        'order': ['mind', 'life'],
+        'visible': ['mind', 'life'],
+        'tools': ['hydration'],
+      });
+      expect(legacy.visible, {'mind', 'life', 'promises', 'vault'});
+    },
+  );
+  test(
     'Unknown/duplicate IDs and unavailable variants never corrupt a restored layout',
     () {
       final layout = HomeLayout.fromJson({

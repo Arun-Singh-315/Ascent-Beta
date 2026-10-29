@@ -138,6 +138,7 @@ class AscentDialog extends StatelessWidget {
         vertical: AppSpace.s24,
       ),
       child: GlassSurface(
+        minimumOpacity: .94,
         radius: AscentDimensions.radiusXl,
         padding: const EdgeInsets.all(AscentDimensions.spaceXl),
         fillColor: context.bgSurface.withValues(

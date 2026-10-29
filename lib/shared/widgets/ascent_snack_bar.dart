@@ -17,6 +17,7 @@ class AscentSnackBar {
   }) => SnackBar(
     content: GlassSurface(
       radius: 18,
+      minimumOpacity: .94,
       fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.s16,

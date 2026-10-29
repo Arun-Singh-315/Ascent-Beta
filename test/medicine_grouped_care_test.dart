@@ -129,6 +129,10 @@ void main() {
         t.view.devicePixelRatio = 1;
         addTearDown(t.view.resetPhysicalSize);
         addTearDown(t.view.resetDevicePixelRatio);
+        // Both actions must be due; the real clock may be before 20:00.
+        await (db.update(db.medicineLogTable)).write(
+          const MedicineLogTableCompanion(timeSlot: drift.Value('00:00')),
+        );
         Future<void> flush() async {
           for (var i = 0; i < 6; i++) {
             await t.runAsync(

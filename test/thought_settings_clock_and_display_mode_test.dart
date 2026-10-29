@@ -49,29 +49,28 @@ void main() {
     );
   }
 
-  group('Display Mode UI in Settings', () {
+  group('Glass Translucency UI in Settings', () {
     testWidgets(
-      'all three squares are prominently sized and do not stick to names',
+      'all three translucency options are prominently sized and visible',
       (tester) async {
         await tester.pumpWidget(buildApp(const SettingsScreen()));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.text('Display Mode'), findsOneWidget);
-        expect(find.text('Day / Light'), findsOneWidget);
-        expect(find.text('Night / Dark'), findsOneWidget);
-        expect(find.text('System Auto'), findsAtLeastNWidgets(1));
+        expect(find.text('Glass Translucency'), findsOneWidget);
+        expect(find.text('Subtle'), findsOneWidget);
+        expect(find.text('Balanced'), findsOneWidget);
+        expect(find.text('Contrast'), findsOneWidget);
 
-        // Verify each option is housed in a prominent card with circular icon badge
-        final dayFinder = find
+        final subtleFinder = find
             .ancestor(
-              of: find.text('Day / Light'),
+              of: find.text('Subtle'),
               matching: find.byType(InkWell),
             )
             .first;
-        final dayBox = tester.getRect(dayFinder);
-        expect(dayBox.height, greaterThanOrEqualTo(65));
-        expect(dayBox.width, greaterThanOrEqualTo(70));
+        final subtleBox = tester.getRect(subtleFinder);
+        expect(subtleBox.height, greaterThanOrEqualTo(50));
+        expect(subtleBox.width, greaterThanOrEqualTo(60));
       },
     );
 
@@ -85,10 +84,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(tester.takeException(), isNull);
-        expect(find.text('Display Mode'), findsOneWidget);
-        expect(find.text('Day / Light'), findsOneWidget);
-        expect(find.text('Night / Dark'), findsOneWidget);
-        expect(find.text('System Auto'), findsAtLeastNWidgets(1));
+        expect(find.text('Glass Translucency'), findsOneWidget);
+        expect(find.text('Subtle'), findsOneWidget);
+        expect(find.text('Balanced'), findsOneWidget);
+        expect(find.text('Contrast'), findsOneWidget);
       },
     );
   });
@@ -220,7 +219,7 @@ void main() {
           find.text('Reflective thought on Home'),
         );
         final spanStyle = textWidget.textSpan?.style ?? textWidget.style;
-        expect(spanStyle?.fontSize, 14.5);
+        expect(spanStyle?.fontSize, 15.0);
         expect(spanStyle?.height, 1.5);
 
         await tester.pumpWidget(const SizedBox());

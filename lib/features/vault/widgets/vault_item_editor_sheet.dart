@@ -10,7 +10,6 @@ import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
-import '../../../shared/widgets/glass_surface.dart';
 import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import '../services/vault_pattern_extractor.dart';

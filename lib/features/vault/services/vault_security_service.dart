@@ -10,19 +10,25 @@ class VaultSecurityService {
     SharedPreferences? preferences,
     LocalAuthentication? localAuth,
     bool isTest = false,
+    bool mockBiometricsSuccess = true,
   })  : _prefs = preferences,
         _auth = localAuth ?? LocalAuthentication(),
-        _isTest = isTest {
+        _isTest = isTest,
+        _mockBiometricsSuccess = mockBiometricsSuccess {
     _initKey();
   }
 
-  factory VaultSecurityService.forTesting() {
-    return VaultSecurityService(isTest: true);
+  factory VaultSecurityService.forTesting({bool mockBiometricsSuccess = true}) {
+    return VaultSecurityService(
+      isTest: true,
+      mockBiometricsSuccess: mockBiometricsSuccess,
+    );
   }
 
   final SharedPreferences? _prefs;
   final LocalAuthentication _auth;
   final bool _isTest;
+  final bool _mockBiometricsSuccess;
 
   late final enc.Key _encKey;
   late final enc.IV _encIv;
@@ -33,7 +39,6 @@ class VaultSecurityService {
 
   static const String _prefPinHashKey = 'ascent_vault_master_pin_hash_v1';
   static const String _prefPinSaltKey = 'ascent_vault_master_pin_salt_v1';
-  static const String _prefBiometricsEnabledKey = 'ascent_vault_biometrics_enabled_v1';
 
   void _initKey() {
     // 256-bit AES key derived from application secret seed and device salt
@@ -142,8 +147,10 @@ class VaultSecurityService {
   /// Prompts device biometrics (Fingerprint/Face unlock).
   Future<bool> authenticateBiometrics({String reason = 'Unlock Ascent Vault'}) async {
     if (_isTest) {
-      _isUnlocked = true;
-      return true;
+      if (_mockBiometricsSuccess) {
+        _isUnlocked = true;
+      }
+      return _mockBiometricsSuccess;
     }
 
     try {

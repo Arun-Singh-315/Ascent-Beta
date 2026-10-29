@@ -155,8 +155,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
-        expect(find.text('Done'), findsOneWidget);
-        expect(find.text('Category'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
         expect(find.text('Create Todo'), findsNothing);
         await tester.tap(find.byTooltip('More selected actions'));
         await tester.pumpAndSettle();
@@ -274,11 +274,15 @@ void main() {
       await db.taskDao.insertTask(
         TaskTableCompanion.insert(
           title: 'Timed practice',
+          plannedDate: drift.Value(DateTime.now()),
           estimatedMinutes: const drift.Value(20),
         ),
       );
       await db.taskDao.insertTask(
-        TaskTableCompanion.insert(title: 'Plain Todo'),
+        TaskTableCompanion.insert(
+          title: 'Plain Todo',
+          plannedDate: drift.Value(DateTime.now()),
+        ),
       );
       try {
         await tester.pumpWidget(harness(container, const TaskBoardScreen()));

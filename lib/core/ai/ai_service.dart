@@ -129,7 +129,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     // 4. Free Time & Contextual Guidance ("I have 45 minutes free. What should I work on?")
-    if (lower.contains('free') &&
+    // Exclude chai-break requests from matching this pattern.
+    if (!_isChaiBreakRequest(lower) &&
+        lower.contains('free') &&
         (lower.contains('minute') ||
             lower.contains('min') ||
             lower.contains('hour') ||
@@ -169,9 +171,19 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       return await _handleReminderQuery(ref);
     }
 
-    // 7d. Querying Medicine & Prescriptions ("what are my medicines", "show medicines", "did i take my medicine")
+    // 7d. Querying Medicine & Prescriptions ("what are my medicines", "show medicines", "medicine schedule", "did i take my medicine")
     if (_isMedicineQuery(lower)) {
       return await _handleMedicineQuery(ref);
+    }
+
+    // 7e. Walk / fitness status ("check my walk status", "how far did i walk", "walk today")
+    if (_isWalkQuery(lower)) {
+      return _handleWalkQuery(ref);
+    }
+
+    // 7f. Chai break / mindful reset ("start chai break", "chai reset", "take a chai break")
+    if (_isChaiBreakRequest(lower)) {
+      return _handleChaiBreak(ref);
     }
 
     // 8. General Natural Language Task & Activity Creation
@@ -239,11 +251,12 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     return AiResponse(
       text:
-          'I use local rules to help with today’s tasks, upcoming reminders, expenses and water logs. I could not match that request. Try an example below, or use the feature screen.',
+          "Hmm, I didn't quite catch that. I work with your local data — here are a few things I can help you with right now:",
       clarifyingOptions: const [
         'What are my tasks today?',
         'Show my reminders',
-        'Spent 80 rupees on coffee',
+        'Plan my day',
+        'What are my medicines today?',
       ],
     );
   }
@@ -1136,6 +1149,80 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     return AiResponse(
       text: buffer.toString().trim(),
       clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
+    );
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // Walk Status
+  // ---------------------------------------------------------------------------
+
+  bool _isWalkQuery(String lower) =>
+      lower.contains('walk') &&
+      (lower.contains('status') ||
+          lower.contains('check') ||
+          lower.contains('how far') ||
+          lower.contains('distance') ||
+          lower.contains('today') ||
+          lower.contains('steps') ||
+          lower.startsWith('walk'));
+
+  AiResponse _handleWalkQuery(WidgetRef ref) {
+    final walkState = ref.read(walkTrackingProvider);
+    final todayDistanceMeters =
+        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final km = todayDistanceMeters / 1000.0;
+    final kmStr = km.toStringAsFixed(2);
+    final isActive = walkState.status == WalkTrackingStatus.tracking;
+
+    final buffer = StringBuffer();
+    if (isActive) {
+      buffer.writeln(
+        'Your walk is active right now \u2014 ${walkState.distanceKm.toStringAsFixed(2)} km and counting.',
+      );
+      buffer.writeln('Pace: ${walkState.formattedPace}/km. Keep it up!');
+    } else if (todayDistanceMeters < 100) {
+      buffer.writeln(
+        "You haven't started a walk yet today. A short 10-minute walk can do wonders for your focus and energy.",
+      );
+    } else {
+      buffer.writeln("Today's walk: **$kmStr km** covered.");
+      if (km < 5.0) {
+        final remaining = (5.0 - km).toStringAsFixed(2);
+        buffer.writeln(
+          '$remaining km to go for your 5 km daily goal \u2014 you are almost there.',
+        );
+      } else {
+        buffer.writeln('Daily goal smashed. Great work staying consistent today.');
+      }
+    }
+
+    return AiResponse(
+      text: buffer.toString().trim(),
+      clarifyingOptions: const [
+        'Log a walk',
+        'Plan my day',
+        'What are my tasks today?',
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chai Break
+  // ---------------------------------------------------------------------------
+
+  bool _isChaiBreakRequest(String lower) =>
+      lower.contains('chai') ||
+      (lower.contains('break') && lower.contains('mindful')) ||
+      lower == 'chai reset' ||
+      lower.startsWith('start chai') ||
+      lower.startsWith('take a chai');
+
+  AiResponse _handleChaiBreak(WidgetRef ref) {
+    return const AiResponse(
+      text:
+          'A chai reset is always a good idea. Step away from the screen, take a mindful reset, and give your mind a moment to settle.\n\nTap Open chai below to start your 5-minute session.',
+      clarifyingOptions: ['Open chai'],
     );
   }
 

@@ -255,7 +255,7 @@ void main() {
       );
       await t.longPress(find.text('New open bug'));
       await t.pumpAndSettle();
-      expect(find.text('Category'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
       expect(find.byTooltip('More selected actions'), findsOneWidget);
       expect(find.text('Todo & Reminder'), findsNothing);
       await t.tap(find.byTooltip('Exit selection'));

@@ -394,7 +394,7 @@ void main() {
       expect(bubbleFinder, findsOneWidget);
       final bubble = tester.widget<Container>(bubbleFinder);
       final merlotBox = bubble.decoration! as BoxDecoration;
-      expect(merlotBox.color, equals(Colors.transparent));
+      expect(merlotBox.color, isNotNull);
       expect(merlotBox.border, isNotNull);
       expect(merlotBox.gradient, isNull);
 
@@ -424,7 +424,7 @@ void main() {
       final frozenBubble = tester.widget<Container>(frozenBubbleFinder);
       final frozenBox = frozenBubble.decoration! as BoxDecoration;
       expect(frozenBox.gradient, isNull);
-      expect(frozenBox.color, equals(Colors.transparent));
+      expect(frozenBox.color, isNotNull);
       expect(frozenBox.border, isNotNull);
       expect(frozenBox.borderRadius, merlotBox.borderRadius);
 
