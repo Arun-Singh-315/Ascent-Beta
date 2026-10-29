@@ -55,6 +55,7 @@ void main() {
     TimeTrackingState? timeState,
     ChaiBreakState? chaiState,
     DailyBriefing? briefing,
+    Reminder? upcomingReminder,
     int? waterMl,
     int? thoughtCount,
     bool initiallyExpanded = false,
@@ -84,6 +85,9 @@ void main() {
         ),
         activePromisesStreamProvider.overrideWith(
           (ref) => Stream.value(const []),
+        ),
+        nextUpcomingReminderProvider.overrideWith(
+          (ref) => Stream.value(upcomingReminder),
         ),
         ...overrides,
       ],
@@ -143,7 +147,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       // Verify header and 4 Apple micro-color pods
-      expect(find.text('DYNAMIC HUB'), findsOneWidget);
+      expect(find.text('Ascent Dynamic Island'), findsOneWidget);
       expect(find.text('Water'), findsOneWidget);
       expect(find.text('Thoughts'), findsOneWidget);
       expect(find.text('Promises'), findsOneWidget);
@@ -291,6 +295,33 @@ void main() {
       expect(find.textContaining('3 leftover tasks from yesterday'), findsOneWidget);
       expect(find.text('Review →'), findsOneWidget);
     });
+
+    testWidgets('Upcoming scheduled reminder shows live activity banner when expanded', (
+      tester,
+    ) async {
+      final scheduledReminder = Reminder(
+        id: 42,
+        title: 'Team Architecture Sync',
+        scheduledAt: DateTime.now().add(const Duration(minutes: 30)),
+        isActive: true,
+        alarmEnabled: true,
+        alertSyncPending: false,
+        createdAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        buildIslandTestWidget(
+          initiallyExpanded: true,
+          upcomingReminder: scheduledReminder,
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.textContaining('Next: Team Architecture Sync'), findsOneWidget);
+      expect(find.text('View →'), findsOneWidget);
+    });
   });
 
   group('AscentDynamicIsland Defensive Layout & Overflow Immunity', () {
@@ -315,7 +346,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
 
       expect(tester.takeException(), isNull);
-      expect(find.text('DYNAMIC HUB'), findsOneWidget);
+      expect(find.text('Ascent Dynamic Island'), findsOneWidget);
       expect(find.text('Water'), findsOneWidget);
     });
   });
