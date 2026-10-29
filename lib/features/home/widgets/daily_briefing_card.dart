@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' as drift;
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/day_palette.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/database/app_database.dart';
@@ -400,7 +401,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 ? g.fill
                 : (g.merlot
                     ? MerlotPalette.pillSoft
-                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+                    : (g.frozen ? FrozenPalette.pillSoft : DayPalette.pillSoft)),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: g.merlot
@@ -603,7 +604,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 ? g.fill
                 : (g.merlot
                     ? MerlotPalette.pillSoft
-                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+                    : (g.frozen ? FrozenPalette.pillSoft : DayPalette.pillSoft)),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: g.merlot
@@ -790,7 +791,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 icon: Icon(
                   _waterLogged ? Icons.check_circle_rounded : Icons.water_drop_outlined,
                   size: 15,
-                  color: Colors.blueAccent,
+                  color: context.waterAccent,
                 ),
                 label: Text(
                   _waterLogged ? '+250ml logged!' : '+250ml water',
@@ -875,7 +876,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 ? g.fill
                 : (g.merlot
                     ? MerlotPalette.pillSoft
-                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+                    : (g.frozen ? FrozenPalette.pillSoft : DayPalette.pillSoft)),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: g.merlot

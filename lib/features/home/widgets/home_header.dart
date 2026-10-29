@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/day_palette.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/database/app_database.dart';
@@ -106,7 +107,7 @@ class HomeHeader extends ConsumerWidget {
                                   ? MerlotPalette.surface
                                   : (g.frozen
                                         ? FrozenPalette.surface
-                                        : const Color(0xFFFFF7ED))),
+                                        : DayPalette.surface)),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
@@ -115,7 +116,7 @@ class HomeHeader extends ConsumerWidget {
                                     ? MerlotPalette.line
                                     : (g.frozen
                                           ? FrozenPalette.line
-                                          : const Color(0xFFFDBA74))),
+                                          : DayPalette.line)),
                           width: g.merlot ? 0.75 : AppBorderScale.w1point0,
                         ),
                         boxShadow: isDark
@@ -127,7 +128,7 @@ class HomeHeader extends ConsumerWidget {
                                               ? MerlotPalette.action
                                               : (g.frozen
                                                     ? FrozenPalette.action
-                                                    : const Color(0xFFF97316)))
+                                                    : DayPalette.action))
                                           .withValues(alpha: 0.10),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
@@ -142,12 +143,12 @@ class HomeHeader extends ConsumerWidget {
                         color: isDark
                             ? (g.merlot
                                   ? MerlotPalette.spark
-                                  : const Color(0xFFF59E0B))
+                                  : DayPalette.sun)
                             : (g.merlot
                                   ? MerlotPalette.action
                                   : (g.frozen
                                         ? FrozenPalette.action
-                                        : const Color(0xFF6366F1))),
+                                        : DayPalette.moon)),
                       ),
                     ),
                   ),
@@ -199,8 +200,8 @@ class HomeHeader extends ConsumerWidget {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      Color(0xFFFFEDD5),
-                                      Color(0xFFFED7AA),
+                                      DayPalette.gradientStart,
+                                      DayPalette.gradientEnd,
                                     ],
                                   )
                                 : null),
@@ -217,7 +218,7 @@ class HomeHeader extends ConsumerWidget {
                             ? (isDark
                                   ? MerlotPalette.darkLine
                                   : MerlotPalette.actionDeep)
-                            : (isDark ? g.edge : const Color(0xFFFDBA74)),
+                            : (isDark ? g.edge : DayPalette.line),
                         width: g.merlot ? 1.0 : AppBorderScale.w1point0,
                       ),
                       boxShadow: g.frozen
@@ -249,9 +250,9 @@ class HomeHeader extends ConsumerWidget {
                           : (!isDark
                                 ? [
                                     BoxShadow(
-                                      color: const Color(
-                                        0xFFF97316,
-                                      ).withValues(alpha: 0.15),
+                                      color: DayPalette.action.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -268,7 +269,7 @@ class HomeHeader extends ConsumerWidget {
                         style: AppTypography.bricolageGrotesque15W70099(
                           color: g.frozen || g.merlot
                               ? Theme.of(context).colorScheme.onPrimary
-                              : (isDark ? g.ink : const Color(0xFF9A3412)),
+                              : (isDark ? g.ink : DayPalette.deepInk),
                         ),
                       ),
                     ),

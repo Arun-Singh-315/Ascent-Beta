@@ -1,6 +1,8 @@
 import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import '../../shared/widgets/empty_state.dart';
+import '../../app/theme/dimension_tokens.dart';
 import 'dart:async';
 
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -169,29 +171,32 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         color: Colors.transparent,
         child: InkWell(
           key: const ValueKey('home_inline_briefing_card'),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AscentRadii.borderLg,
           onTap: () {
             HapticFeedback.lightImpact();
             DailyBriefingCard.show(context, _briefingDate);
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16,
+              vertical: AppSpace.s12,
+            ),
             decoration: BoxDecoration(
               color: g.fill,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AscentRadii.borderLg,
               border: Border.all(color: g.line),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpace.s8),
                   decoration: BoxDecoration(
                     color: g.clay.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.wb_sunny_outlined, size: 18, color: g.clay),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpace.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,16 +204,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                     children: [
                       Text(
                         'Daily Briefing',
-                        style: TextStyle(
+                        style: AscentTextStyles.bodyMedium.copyWith(
                           color: g.ink,
-                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpace.s2),
                       Text(
                         'Tap to review agenda & launchpad',
-                        style: TextStyle(color: g.inkSecondary, fontSize: 12),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: g.inkSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -270,12 +276,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                 Positioned.fill(
                   child: profileAsync.when(
                     loading: () => const _HomeLoadingView(),
-                    error: (err, _) => Center(
-                      child: Text(
-                        'Failed to load dashboard: $err',
-                        style: TextStyle(color: g.inkMuted),
-                      ),
-                    ),
+                    error: (err, _) {
+                      debugPrint('Home profile load failed: $err');
+                      return EmptyState(
+                        icon: Icons.cloud_off_rounded,
+                        title: "Couldn't load your Home",
+                        subtitle:
+                            'Something went wrong while loading. Please try again.',
+                        actionLabel: 'Try again',
+                        onAction: () => ref.invalidate(userProfileStreamProvider),
+                      );
+                    },
                     data: (profile) {
                       final isValidProfile = canEnterWorkspace(
                         profile,
@@ -389,17 +400,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               ..._buildContextualModules(context, layout),
 
                               if (layout.visible.isEmpty)
-                                Column(
-                                  children: [
-                                    Text(
-                                      'Make this space yours',
-                                      style: TextStyle(color: g.ink),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => context.push('/more'),
-                                      child: const Text('Open tools'),
-                                    ),
-                                  ],
+                                EmptyState(
+                                  icon: Icons.dashboard_customize_outlined,
+                                  title: 'Make this space yours',
+                                  subtitle:
+                                      'Nothing is shown on Home right now. Open tools to browse everything Ascent can do.',
+                                  actionLabel: 'Open tools',
+                                  onAction: () => context.push('/more'),
                                 ),
                             ],
                           ],
@@ -438,44 +445,60 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         : '';
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const ValueKey('back_to_home_button'),
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            setState(() => _activeShortcutId = null);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: g.fill,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: g.edge),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.arrow_back_rounded, size: 18, color: g.clay),
-                const SizedBox(width: 8),
-                Text(
-                  'Back to home',
-                  style: TextStyle(
-                    color: g.clay,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+      child: Semantics(
+        button: true,
+        excludeSemantics: true,
+        label: shortcutLabel.isEmpty
+            ? 'Back to home'
+            : 'Back to home from $shortcutLabel',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: const ValueKey('back_to_home_button'),
+            borderRadius: AscentRadii.borderLg,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              setState(() => _activeShortcutId = null);
+            },
+            child: Container(
+              alignment: Alignment.centerLeft,
+              constraints: const BoxConstraints(
+                minHeight: AscentDimensions.minTouchTarget,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s12,
+              ),
+              decoration: BoxDecoration(
+                color: g.fill,
+                borderRadius: AscentRadii.borderLg,
+                border: Border.all(color: g.edge),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.arrow_back_rounded, size: 18, color: g.clay),
+                  const SizedBox(width: AppSpace.s8),
+                  Text(
+                    'Back to home',
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: g.clay,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const Spacer(),
-                Text(
-                  shortcutLabel,
-                  style: TextStyle(
-                    color: g.inkMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(width: AppSpace.s12),
+                  Expanded(
+                    child: Text(
+                      shortcutLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
