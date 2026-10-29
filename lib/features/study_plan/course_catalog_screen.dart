@@ -284,14 +284,43 @@ class _CourseHubCard extends StatelessWidget {
       child: GlassSurface(
         onTap: onSelectCourse,
         radius: 20,
+        hasShadow: false,
         customBorder: Border.all(
           color: isActiveCourse ? g.slate.withValues(alpha: 0.5) : g.edge,
-          width: isActiveCourse ? 1.2 : 0.9,
+          width: isActiveCourse ? 1.2 : .75,
         ),
         padding: const EdgeInsets.all(AppSpace.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // A course has a library identity rather than a generic dashboard tile.
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: g.slateSoft,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border(left: BorderSide(color: g.slate, width: 3)),
+                  ),
+                  child: Icon(
+                    Icons.menu_book_outlined,
+                    color: g.slate,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    course.title,
+                    style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
+              ],
+            ),
+            const SizedBox(height: 16),
             // Top Tag Row: Active indicator + target
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -361,13 +390,6 @@ class _CourseHubCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-
-            // Course Title
-            Text(
-              course.title,
-              style: AppTypography.plusJakartaSans16W70050(color: g.ink),
-            ),
-            const SizedBox(height: 4),
 
             // Instructor & curriculum meta
             Text(
@@ -443,7 +465,9 @@ class _CourseHubCard extends StatelessWidget {
                     style: context.surfaces.buttonStyle(
                       ElevatedButton.styleFrom(
                         backgroundColor: g.clay,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr12,

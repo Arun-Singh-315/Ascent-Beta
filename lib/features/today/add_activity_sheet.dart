@@ -21,6 +21,7 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/services/plan_child_protection.dart';
@@ -794,56 +795,33 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         color: context.divider.withValues(alpha: 0.6),
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.notifications_active_outlined,
-                          size: 20,
-                          color: context.accentPrimary,
+                        AscentSwitchRow(
+                          title: 'Remind me',
+                          helper: _hasReminder
+                              ? '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}'
+                              : null,
+                          value: _hasReminder,
+                          enabled: !_pickingReminder,
+                          onChanged: _chooseReminder,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: AppTapArea(
-                            onTap: _hasReminder
-                                ? () => _chooseReminder(true)
-                                : null,
-                            borderRadius: AppGeometry.roundedr8,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Remind me',
-                                      style: AscentTextStyles.labelMedium
-                                          .copyWith(color: context.textPrimary),
-                                    ),
-                                    if (_hasReminder) ...[
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '(Tap to edit)',
-                                        style: AscentTextStyles.captionMedium
-                                            .copyWith(color: context.textMuted)
-                                            .merge(AppTypeRoles.typeRole18),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                if (_hasReminder)
-                                  Text(
-                                    '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
-                                    style: AscentTextStyles.captionMedium
-                                        .copyWith(color: context.accentPrimary)
-                                        .merge(AppTypeRoles.typeRole8),
-                                  ),
-                              ],
+                        if (_hasReminder)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: AppSpace.s16,
+                              bottom: AppSpace.s8,
+                            ),
+                            child: TextButton.icon(
+                              onPressed: () => _chooseReminder(true),
+                              icon: const Icon(
+                                Icons.edit_calendar_outlined,
+                                size: 16,
+                              ),
+                              label: const Text('Change reminder time'),
                             ),
                           ),
-                        ),
-                        Switch(
-                          value: _hasReminder,
-                          onChanged: _pickingReminder ? null : _chooseReminder,
-                        ),
                       ],
                     ),
                   ),

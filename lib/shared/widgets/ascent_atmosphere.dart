@@ -27,14 +27,8 @@ class AscentAtmosphereBackground extends StatelessWidget {
     final g2 = glow2 ?? g.glow2;
     if (g1.a == 0 && g2.a == 0) return child;
 
-    final color1 = softenGlow(
-      g1,
-      maxAlpha: g.frozen ? 0.32 : 0.18,
-    );
-    final color2 = softenGlow(
-      g2,
-      maxAlpha: g.frozen ? 0.24 : 0.14,
-    );
+    final color1 = softenGlow(g1, maxAlpha: 0.035);
+    final color2 = softenGlow(g2, maxAlpha: 0.025);
 
     return Stack(
       fit: StackFit.expand,

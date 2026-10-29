@@ -353,12 +353,10 @@ class _ThoughtWallHomePreviewState
                       : (g.frozen
                             ? const Color(0xFFFBFDFF)
                             : const Color(0xFFFFFDFB))),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: _focusNode.hasFocus
-                  ? g.clay
-                  : g.ink.withValues(alpha: context.isDark ? .48 : .42),
-              width: _focusNode.hasFocus ? 2.6 : 2.0,
+              color: _focusNode.hasFocus ? g.clay : g.line,
+              width: _focusNode.hasFocus ? 1.5 : .75,
             ),
           ),
           child: Row(
@@ -1042,7 +1040,7 @@ class _ThoughtWallHomePreviewState
                   ),
                 ],
               );
-              if (constraints.maxWidth < 340 ||
+              if (constraints.maxWidth < 300 ||
                   MediaQuery.textScalerOf(context).scale(14) > 18) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

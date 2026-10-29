@@ -1,6 +1,4 @@
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,7 +6,6 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import 'ascent_button.dart';
-import 'glass_surface.dart';
 
 /// Standardized modal dialog utility for Ascent.
 ///
@@ -44,51 +41,65 @@ class AscentDialog extends StatelessWidget {
     IconData? icon,
   }) {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barrierColor = Color.fromRGBO(0, 0, 0, isDark ? 0.56 : 0.32);
 
     return showDialog<bool>(
       context: context,
-      builder: (ctx) => AscentDialog(
-        title: title,
-        content: content,
-        contentWidget: contentWidget,
-        icon: icon ?? (isDestructive ? Icons.warning_amber_rounded : null),
-        iconColor: isDestructive ? context.stateDanger : context.accentPrimary,
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: AscentButton.outlined(
-                  label: cancelLabel,
-                  compact: true,
-                  onPressed: () => Navigator.pop(ctx, false),
-                ),
+      barrierColor: barrierColor,
+      builder: (ctx) {
+        final textScaler = MediaQuery.textScalerOf(ctx);
+        final isLargeText = textScaler.scale(1.0) >= 1.45;
+
+        final cancelBtn = AscentButton.outlined(
+          label: cancelLabel,
+          compact: true,
+          expanded: isLargeText,
+          onPressed: () => Navigator.pop(ctx, false),
+        );
+
+        final confirmBtn = isDestructive
+            ? AscentButton.destructive(
+                label: confirmLabel,
+                compact: true,
+                expanded: isLargeText,
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pop(ctx, true);
+                },
+              )
+            : AscentButton.primary(
+                label: confirmLabel,
+                compact: true,
+                expanded: isLargeText,
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  Navigator.pop(ctx, true);
+                },
+              );
+
+        return AscentDialog(
+          title: title,
+          content: content,
+          contentWidget: contentWidget,
+          icon: icon ?? (isDestructive ? Icons.warning_amber_rounded : null),
+          iconColor: isDestructive ? ctx.stateDanger : ctx.accentPrimary,
+          actions: [
+            if (isLargeText) ...[
+              confirmBtn,
+              const SizedBox(height: AscentDimensions.spaceSm),
+              cancelBtn,
+            ] else
+              Row(
+                children: [
+                  Expanded(child: cancelBtn),
+                  const SizedBox(width: AscentDimensions.spaceSm),
+                  Expanded(child: confirmBtn),
+                ],
               ),
-              const SizedBox(width: AscentDimensions.spaceSm),
-              Expanded(
-                child: isDestructive
-                    ? AscentButton.destructive(
-                        label: confirmLabel,
-                        compact: true,
-                        expanded: true,
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          Navigator.pop(ctx, true);
-                        },
-                      )
-                    : AscentButton.primary(
-                        label: confirmLabel,
-                        compact: true,
-                        expanded: true,
-                        onPressed: () {
-                          HapticFeedback.mediumImpact();
-                          Navigator.pop(ctx, true);
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -102,9 +113,12 @@ class AscentDialog extends StatelessWidget {
     IconData? icon,
   }) {
     HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barrierColor = Color.fromRGBO(0, 0, 0, isDark ? 0.56 : 0.32);
 
     return showDialog<void>(
       context: context,
+      barrierColor: barrierColor,
       builder: (ctx) => AscentDialog(
         title: title,
         content: content,
@@ -127,23 +141,22 @@ class AscentDialog extends StatelessWidget {
     final g = context.glass;
 
     return Dialog(
-      backgroundColor: AppPalette.transparent,
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
-        side: BorderSide(color: g.edge, width: AppBorderScale.w1point0),
-      ),
       insetPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s24,
-        vertical: AppSpace.s24,
+        horizontal: AscentDimensions.spaceXxl,
+        vertical: AscentDimensions.spaceXxl,
       ),
-      child: GlassSurface(
-        minimumOpacity: .94,
-        radius: AscentDimensions.radiusXl,
-        padding: const EdgeInsets.all(AscentDimensions.spaceXl),
-        fillColor: context.bgSurface.withValues(
-          alpha: context.isDark ? 0.95 : 0.96,
+      child: Container(
+        decoration: BoxDecoration(
+          color: g.elevated,
+          borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
+          border: Border.all(
+            color: g.line,
+            width: AscentDimensions.contentOutlineWidth,
+          ),
         ),
+        padding: const EdgeInsets.all(AscentDimensions.spaceXl),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -152,18 +165,16 @@ class AscentDialog extends StatelessWidget {
               if (icon != null) ...[
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: AppTag(
-                    padding: const EdgeInsets.all(AppSpace.s8),
-                    nightDecoration: BoxDecoration(
-                      color: (iconColor ?? context.accentPrimary).withValues(
-                        alpha: 0.14,
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.all(AscentDimensions.spaceSm),
+                    decoration: BoxDecoration(
+                      color: (iconColor ?? g.actionInk).withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       icon,
                       size: 24,
-                      color: iconColor ?? context.accentPrimary,
+                      color: iconColor ?? g.actionInk,
                     ),
                   ),
                 ),
@@ -171,17 +182,14 @@ class AscentDialog extends StatelessWidget {
               ],
               Text(
                 title,
-                style: AscentTextStyles.displaySmall
-                    .copyWith(color: context.textPrimary)
-                    .merge(AppTypeRoles.typeRole2),
+                style: AscentTextStyles.cardTitle.copyWith(color: g.ink),
               ),
               if (content != null && content!.isNotEmpty) ...[
                 const SizedBox(height: AscentDimensions.spaceSm),
                 Text(
                   content!,
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: context.textMuted,
-                    height: 1.45,
+                  style: AscentTextStyles.supportingText.copyWith(
+                    color: g.inkSecondary,
                   ),
                 ),
               ],

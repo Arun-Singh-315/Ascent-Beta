@@ -1,95 +1,128 @@
 import 'package:flutter/material.dart';
 
-/// "Clear Sky": A blue-and-white design system for Ascent.
-/// - White-forward surfaces: crisp, airy, translucent, with thin blue-tinted borders.
-/// - One confident blue (action) for everything interactive.
-/// - One warm spark (sunny amber) for streaks, wins, and celebration.
-/// - Green only for "success", never as a brand color.
+/// Nordic Sky (Blue preset): Apple-inspired design system tokens for Ascent.
+/// Specified in Section 3.1 of the Ascent visual upgrade handoff.
 class FrozenPalette {
   FrozenPalette._();
 
-  // ── Light Mode ("Clear Sky") ──────────────────────────────────────────────
-  /// Canvas: Scaffold background
-  static const canvas = Color(0xFFEEF4F9);
+  // ── Light Mode ("Nordic Sky / Clear Sky") ──────────────────────────────────
+  /// Page canvas: #F5F5F7
+  static const canvas = Color(0xFFF5F5F7);
 
-  /// Surface: Cards, bottom nav, containers (frosted arctic porcelain)
-  static const surface = Color(0xFFF3F7FB);
+  /// Content/card surface: #FFFFFF
+  static const surface = Color(0xFFFFFFFF);
 
-  /// Pill Soft: Inner thought bubbles, option chips, input field backgrounds
-  static const pillSoft = Color(0xFFEAF2F8);
+  /// Elevated surface (sheet/dialog/menu): #FFFFFF
+  static const elevated = Color(0xFFFFFFFF);
 
-  /// Elevated: Sheets, dialogs, modals
-  static const elevated = Color(0xFFE1ECF5);
+  /// Recessed surface (inputs/segment track): #ECEEF2
+  static const recessed = Color(0xFFECEEF2);
+  static const pillSoft = Color(0xFFECEEF2);
 
-  /// Line: Hairline border on surfaces and containers
-  static const line = Color(0xFFBACFE2);
+  /// Primary text: #1D1D1F
+  static const ink = Color(0xFF1D1D1F);
 
-  /// Line Subtle: Subtle hairline border on inner bubbles and nested items
-  static const lineSubtle = Color(0xFFD2E3F1);
+  /// Secondary text: #51545C
+  static const secondaryInk = Color(0xFF51545C);
 
-  /// Shadow Ambient: Atmospheric drop shadow for cards and bubbles
-  static const shadowAmbient = Color.fromRGBO(20, 50, 80, 0.055);
+  /// Helper/placeholder text: #626670
+  static const mutedInk = Color(0xFF626670);
+  static const mutedInkToken = Color(0xFF626670);
 
-  /// Action: Buttons, active nav, FAB, selected tab, interactive icons
+  /// Decorative separator: #D8DBE2
+  static const line = Color(0xFFD8DBE2);
+  static const lineSubtle = Color(0xFFD8DBE2);
+
+  /// Required control outline: #747985
+  static const controlOutline = Color(0xFF747985);
+
+  /// Action ink (links/active icons/focus): #1D64B4
   static const action = Color(0xFF1D64B4);
-
-  /// Action Bright: Top of gradient, hover/press highlight
-  static const actionBright = Color(0xFF2F7FD8);
-
-  /// Action Pressed: Pressed state
+  static const actionBright = Color(0xFF1D64B4);
   static const actionPressed = Color(0xFF174F8F);
 
-  /// Tint: Active nav pill, chips, tonal button background
-  static const tint = Color(0xFFD8E8F5);
+  /// Filled primary button background: #1D64B4
+  static const primaryButtonBg = Color(0xFF1D64B4);
+  /// Filled primary button foreground: #FFFFFF
+  static const primaryButtonFg = Color(0xFFFFFFFF);
+  /// Filled primary button pressed background: #174F8F
+  static const primaryButtonPressed = Color(0xFF174F8F);
 
-  /// Ink: Primary text (12.8:1 contrast on canvas)
-  static const ink = Color(0xFF1E293B);
+  /// Tonal/selection background: #DFEAF8
+  static const tint = Color(0xFFDFEAF8);
+  /// Tonal/selection foreground: #174F8F
+  static const tintForeground = Color(0xFF174F8F);
 
-  /// Secondary Ink: Secondary text, subtitles (6.8:1 contrast on canvas)
-  static const secondaryInk = Color(0xFF475569);
+  /// Focus ring: #1D64B4
+  static const focusRing = Color(0xFF1D64B4);
 
-  /// Muted Ink: Captions, helper text, inactive icons (WCAG AA 4.5+:1 on canvas & tint)
-  static const mutedInk = Color(0xFF58687E);
+  /// Atmospheric drop shadow
+  static const shadowAmbient = Color.fromRGBO(0, 0, 0, 0.05);
 
-  /// Muted Ink Raw token (#64748B) from spec
-  static const mutedInkToken = Color(0xFF64748B);
-
-  /// Spark: Warm sunny amber strictly for streak flame, achievements, win celebration
+  /// Domain accents (preserved)
   static const spark = Color(0xFFF5A524);
-
-  /// Spark Tint: Streak container highlight
   static const sparkTint = Color(0xFFFFF3D6);
+  static const success = Color(0xFF166534);
+  static const warning = Color(0xFF854D0E);
+  static const danger = Color(0xFFB42318);
 
-  /// Success: Status only
-  static const success = Color(0xFF2E7D5B);
+  // ── Dark Mode ("Nordic Sky Dark") ──────────────────────────────────────────
+  /// Page canvas: #171819
+  static const darkCanvas = Color(0xFF171819);
 
-  /// Warning: Status only
-  static const warning = Color(0xFFB7791F);
+  /// Content/card surface: #202224
+  static const darkSurface = Color(0xFF202224);
 
-  /// Danger: Status only
-  static const danger = Color(0xFFC0392B);
+  /// Elevated surface: #292B2D
+  static const darkElevated = Color(0xFF292B2D);
 
-  // ── Dark Mode ("Clear Sky Dark") ──────────────────────────────────────────
-  static const darkCanvas = Color(0xFF0F1A2B);
-  static const darkSurface = Color(0xFF162338);
-  static const darkElevated = Color(0xFF1C2C45);
-  static const darkLine = Color(0xFF2A3F5E);
-  static const darkLineSubtle = Color(0xFF1E314D);
+  /// Recessed surface: #171819
+  static const darkRecessed = Color(0xFF171819);
+
+  /// Primary text: #F3F4F6
+  static const darkInk = Color(0xFFF3F4F6);
+
+  /// Secondary text: #C5C8CE
+  static const darkSecondaryInk = Color(0xFFC5C8CE);
+
+  /// Helper/placeholder text: #A7ABB3
+  static const darkMutedInk = Color(0xFFA7ABB3);
+
+  /// Decorative separator: #41454D
+  static const darkLine = Color(0xFF41454D);
+  static const darkLineSubtle = Color(0xFF41454D);
+
+  /// Required control outline: #8D939F
+  static const darkControlOutline = Color(0xFF8D939F);
+
+  /// Action ink: #5EA0F0
   static const darkAction = Color(0xFF5EA0F0);
-  static const darkActionBright = Color(0xFF7DB4F5);
-  static const darkActionPressed = Color(0xFF4A8BDD);
-  static const darkTint = Color(0xFF1F3555);
-  static const darkInk = Color(0xFFE6EEF8);
-  static const darkSecondaryInk = Color(0xFFA9BBD3);
-  static const darkMutedInk = Color(0xFF8296B0);
+  static const darkActionBright = Color(0xFF5EA0F0);
+  static const darkActionPressed = Color(0xFF174F8F);
+
+  /// Filled primary background in dark: #1D64B4
+  static const darkPrimaryButtonBg = Color(0xFF1D64B4);
+  /// Filled primary foreground in dark: #FFFFFF
+  static const darkPrimaryButtonFg = Color(0xFFFFFFFF);
+  /// Filled primary pressed background in dark: #174F8F
+  static const darkPrimaryButtonPressed = Color(0xFF174F8F);
+
+  /// Tonal/selection background: #203853
+  static const darkTint = Color(0xFF203853);
+  /// Tonal/selection foreground: #A8D0FF
+  static const darkTintForeground = Color(0xFFA8D0FF);
+
+  /// Focus ring in dark: #5EA0F0
+  static const darkFocusRing = Color(0xFF5EA0F0);
+
+  /// Domain accents (preserved)
   static const darkSpark = Color(0xFFFFB84D);
   static const darkSparkTint = Color(0xFF3A2F14);
-  static const darkSuccess = Color(0xFF3EA378);
-  static const darkWarning = Color(0xFFDCA045);
-  static const darkDanger = Color(0xFFE56A5E);
+  static const darkSuccess = Color(0xFF86EFAC);
+  static const darkWarning = Color(0xFFFDE68A);
+  static const darkDanger = Color(0xFFFFB4AB);
 
   // ── Backward-compatible Aliases ───────────────────────────────────────────
-  /// Replaces dark slate with action as the single interactive color everywhere
   static const accent = action;
   static const secondary = action;
   static const mint = tint;

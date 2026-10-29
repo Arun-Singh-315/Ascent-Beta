@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -930,24 +931,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         color: g.inkMuted,
                       ),
                       filled: true,
-                      fillColor: g.fill,
+                      fillColor: g.recessed,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s12,
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(
-                          color: g.clay,
-                          width: AppBorderScale.w1point2,
+                          color: g.focusRing,
+                          width: AscentDimensions.focusRingWidth,
                         ),
                       ),
                     ),
@@ -970,24 +977,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         color: g.inkMuted,
                       ),
                       filled: true,
-                      fillColor: g.fill,
+                      fillColor: g.recessed,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s12,
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(
-                          color: g.clay,
-                          width: AppBorderScale.w1point2,
+                          color: g.focusRing,
+                          width: AscentDimensions.focusRingWidth,
                         ),
                       ),
                     ),
@@ -1565,22 +1578,31 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   ),
                   hintText: 'e.g. Riya',
                   filled: true,
-                  fillColor: g.fill,
+                  fillColor: g.recessed,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s14,
-                    vertical: AppSpace.s12,
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s14,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.edge),
+                    borderSide: BorderSide(
+                      color: g.controlOutline,
+                      width: AscentDimensions.controlOutlineWidth,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.edge),
+                    borderSide: BorderSide(
+                      color: g.controlOutline,
+                      width: AscentDimensions.controlOutlineWidth,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.clay),
+                    borderSide: BorderSide(
+                      color: g.focusRing,
+                      width: AscentDimensions.focusRingWidth,
+                    ),
                   ),
                 ),
                 style: AscentTextStyles.bodyMedium

@@ -55,23 +55,38 @@ class AscentDimensions {
   static const double radiusFull = 999.0;
 
   // ── Component Dimensions ───────────────────────────────────────────────────
-  /// 36 px — Compact button height.
+  /// 36 px — Compact button visual minimum height.
   static const double buttonHeightCompact = 36.0;
 
-  /// 44 px — Standard button height (recommended touch target).
-  static const double buttonHeightStandard = 44.0;
+  /// 48 px — Standard button visual minimum height & regular control minimum hit region.
+  static const double buttonHeightStandard = 48.0;
 
-  /// 52 px — Hero / primary CTA button height.
+  /// 52 px — Hero / primary CTA button minimum height.
   static const double buttonHeightLarge = 52.0;
 
-  /// 46 px — Standard single-line text input height.
-  static const double inputHeight = 46.0;
+  /// 52 px — Input minimum height.
+  static const double inputHeight = 52.0;
+
+  /// 56 px — Settings/list row minimum height.
+  static const double settingsRowHeight = 56.0;
+
+  /// 72 px — Settings/list row with helper text minimum height.
+  static const double settingsRowWithHelperHeight = 72.0;
 
   /// 56 px — Bottom navigation bar height.
   static const double bottomNavHeight = 56.0;
 
   /// 48 dp — Minimum accessible tap target dimension.
   static const double minTouchTarget = 48.0;
+
+  /// 1.0 px — Standard content outline width.
+  static const double contentOutlineWidth = 1.0;
+
+  /// 1.0 px — Interactive unselected outline width.
+  static const double controlOutlineWidth = 1.0;
+
+  /// 2.0 px — Focus ring width.
+  static const double focusRingWidth = 2.0;
 }
 
 /// Convenience aliases for spacing tokens.

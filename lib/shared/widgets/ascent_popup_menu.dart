@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../app/theme/color_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/text_styles.dart';
 
-/// Standardized Ascent sleek dark obsidian popup menu item.
+/// Standardized Ascent popup menu item conforming to Section 5 (C08).
+/// - Minimum row height: 48px
+/// - Icons: 20px
+/// - Icon-label gap: 12px
+/// - Text: 16px body style
+/// - Horizontal padding: 16px
 PopupMenuItem<T> ascentPopupItem<T>({
   required T value,
   required IconData icon,
@@ -19,69 +22,92 @@ PopupMenuItem<T> ascentPopupItem<T>({
   return PopupMenuItem<T>(
     value: value,
     enabled: enabled,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 17,
-          color: iconColor,
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(
-            label,
-            style: textStyle,
-            overflow: TextOverflow.ellipsis,
+    padding: const EdgeInsets.symmetric(horizontal: AscentDimensions.spaceLg),
+    child: Builder(
+      builder: (context) {
+        final g = context.glass;
+        final effectiveIconColor = iconColor ?? (enabled ? g.inkSecondary : g.disabledFg);
+        final effectiveTextStyle = (textStyle ?? AscentTextStyles.body).copyWith(
+          color: enabled ? g.ink : g.disabledFg,
+        );
+
+        return ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AscentDimensions.minTouchTarget,
           ),
-        ),
-      ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: effectiveIconColor,
+              ),
+              const SizedBox(width: AscentDimensions.spaceMd),
+              Flexible(
+                child: Text(
+                  label,
+                  style: effectiveTextStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 }
 
-/// Standardized Ascent destructive popup menu item (e.g. Delete, Remove).
+/// Standardized Ascent destructive popup menu item conforming to Section 5 (C08).
 PopupMenuItem<T> ascentPopupDestructiveItem<T>({
   required T value,
   required IconData icon,
   required String label,
   bool enabled = true,
 }) {
-  const destructiveColor = Color(0xFFEF4444);
   return PopupMenuItem<T>(
     value: value,
     enabled: enabled,
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 17,
-          color: destructiveColor,
-        ),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(
-            label,
-            style: AscentTextStyles.bodyMedium.copyWith(
-              color: destructiveColor,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
+    padding: const EdgeInsets.symmetric(horizontal: AscentDimensions.spaceLg),
+    child: Builder(
+      builder: (context) {
+        final g = context.glass;
+        final errorColor = enabled ? g.errorInk : g.disabledFg;
+
+        return ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AscentDimensions.minTouchTarget,
           ),
-        ),
-      ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: errorColor,
+              ),
+              const SizedBox(width: AscentDimensions.spaceMd),
+              Flexible(
+                child: Text(
+                  label,
+                  style: AscentTextStyles.body.copyWith(
+                    color: errorColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 }
 
-/// Standardized Ascent sleek dark obsidian popup menu button.
-///
-/// Features:
-/// - Inherits the centralized sleek dark obsidian theme across all presets.
-/// - Injects high-contrast light icon themes into popup items.
-/// - Emits subtle tactile haptics on opening and on item selection.
-/// - Provides responsive min/max constraints and zero-bleed-through guarantee.
+/// Standardized Ascent popup menu button conforming to Section 5 (C08).
+/// Uses the current appearance (respects light/dark modes) instead of forcing dark colors in daylight.
 class AscentPopupMenuButton<T> extends StatelessWidget {
   const AscentPopupMenuButton({
     super.key,
@@ -115,17 +141,23 @@ class AscentPopupMenuButton<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final iconColor = g.merlot
-        ? MerlotPalette.darkSecondaryInk
-        : g.frozen
-        ? FrozenPalette.darkSecondaryInk
-        : AscentColors.textSecondaryDark;
+    final isDark = g.isDark;
 
     return Theme(
       data: Theme.of(context).copyWith(
-        iconTheme: IconThemeData(
-          color: iconColor,
-          size: 17,
+        popupMenuTheme: PopupMenuThemeData(
+          color: g.elevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AscentDimensions.radiusLg),
+            side: BorderSide(
+              color: g.line,
+              width: AscentDimensions.contentOutlineWidth,
+            ),
+          ),
+          elevation: 4,
+          shadowColor: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),
+          menuPadding: const EdgeInsets.symmetric(vertical: 4),
+          textStyle: AscentTextStyles.body.copyWith(color: g.ink),
         ),
       ),
       child: PopupMenuButton<T>(

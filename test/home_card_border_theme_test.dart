@@ -1,6 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/thought_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -41,7 +40,7 @@ void main() {
   });
 
   group('Home Cards Dark vs Day Theme Border Integrity Tests', () {
-    testWidgets('Dark Home keeps content surfaces and gives Learning and Mind Palace transparent outlined shells', (tester) async {
+    testWidgets('Dark Home keeps content surfaces and gives Learning and Mind Palace quiet opaque shells', (tester) async {
       final id = await db.thoughtDao.insertThought(
         ThoughtTableCompanion.insert(content: 'Thought in dark mode'),
       );
@@ -113,13 +112,15 @@ void main() {
       ).first;
       final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
       expect(learningGlass.customBorder, isNotNull);
-      expect(learningGlass.fillColor, Colors.transparent);
+      expect(learningGlass.fillColor, isNull);
+      expect(learningGlass.enableBlur, isFalse);
 
       // 4. Recent Thought card (Mind Space container)
       final mindSpaceFinder = find.byKey(const ValueKey('home_mind_space_card'));
       final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
       expect(mindSpaceGlass.customBorder, isNotNull);
-      expect(mindSpaceGlass.fillColor, Colors.transparent);
+      expect(mindSpaceGlass.fillColor, isNull);
+      expect(mindSpaceGlass.enableBlur, isFalse);
 
       // 5. Write a thought composer card (AppCard at top of Mind Space)
       // Check the AppCard decoration border
@@ -128,7 +129,6 @@ void main() {
         matching: find.byType(TextField),
       );
       expect(composerCardFinder, findsOneWidget);
-      final g = tester.element(composerCardFinder).glass;
 
       // Find the parent decorated container/card of the composer
       final appCardDecorations = tester.widgetList<Container>(
@@ -139,7 +139,7 @@ void main() {
       ).where((c) => c.decoration is BoxDecoration).map((c) => c.decoration as BoxDecoration).toList();
 
       final composerDeco = appCardDecorations.firstWhere(
-        (d) => d.borderRadius == BorderRadius.circular(22),
+        (d) => d.borderRadius == BorderRadius.circular(16),
       );
       final border = composerDeco.border as Border?;
       expect(border, isNotNull);
@@ -151,7 +151,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Day Home keeps content separation and transparent Learning and Mind Palace shells', (tester) async {
+    testWidgets('Day Home keeps content separation and quiet Learning and Mind Palace shells', (tester) async {
       final id = await db.thoughtDao.insertThought(
         ThoughtTableCompanion.insert(content: 'Thought in daylight'),
       );
@@ -200,7 +200,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final g = tester.element(find.byType(QuickModulesNavHub)).glass;
 
       // 1. Life & Health card in light mode
       final lifeAndHealthFinder = find.descendant(
@@ -209,8 +208,8 @@ void main() {
       ).first;
       final lifeGlass = tester.widget<GlassSurface>(lifeAndHealthFinder);
       expect(lifeGlass.fillColor, equals(Colors.white));
-      expect(lifeGlass.customBorder, isNotNull);
-      expect(lifeGlass.customBorder!.top.color, equals(g.edge.withValues(alpha: .45)));
+      expect(lifeGlass.customBorder, isNull);
+      expect(lifeGlass.enableBlur, isFalse);
 
       // 2. Things Hub card in light mode
       final activityCardFinder = find.byKey(const ValueKey('home_activity_card'));
@@ -224,16 +223,18 @@ void main() {
         matching: find.byType(GlassSurface),
       ).first;
       final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
-      expect(learningGlass.fillColor, Colors.transparent);
+      expect(learningGlass.fillColor, isNull);
+      expect(learningGlass.enableBlur, isFalse);
       expect(learningGlass.customBorder, isNotNull);
-      expect(learningGlass.customBorder!.top.width, greaterThanOrEqualTo(1));
+      expect(learningGlass.customBorder!.top.width, .75);
 
       // 4. Recent Thought card in light mode
       final mindSpaceFinder = find.byKey(const ValueKey('home_mind_space_card'));
       final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
-      expect(mindSpaceGlass.fillColor, Colors.transparent);
+      expect(mindSpaceGlass.fillColor, isNull);
+      expect(mindSpaceGlass.enableBlur, isFalse);
       expect(mindSpaceGlass.customBorder, isNotNull);
-      expect(mindSpaceGlass.customBorder!.top.width, greaterThanOrEqualTo(1));
+      expect(mindSpaceGlass.customBorder!.top.width, .75);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();

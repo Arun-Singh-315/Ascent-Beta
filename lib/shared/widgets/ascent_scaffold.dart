@@ -184,6 +184,7 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
       flexibleSpace: (Theme.of(context).brightness == Brightness.dark)
           ? null
           : const GlassSurface(
+              enableBlur: true,
               radius: 0,
               padding: EdgeInsets.zero,
               child: SizedBox.expand(),
