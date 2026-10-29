@@ -31,4 +31,22 @@ class DayPalette {
 
   /// Moon icon tone (shown in light mode to switch to dark).
   static const moon = Color(0xFF6366F1);
+
+  /// Neutral slate pill/chip fill for cards on the default light theme.
+  static const pillSoft = Color(0xFFF1F5F9);
+
+  /// Cool water-card surface (quick water buttons).
+  static const waterSurface = Color(0xFFF0F7FB);
+
+  /// Cool water-card hairline border.
+  static const waterLine = Color(0xFFD2E3F1);
+
+  /// Cool water-icon background tint.
+  static const waterTint = Color(0xFFE0EFF8);
+
+  /// Cool water-icon foreground.
+  static const waterAction = Color(0xFF0284C7);
+
+  /// Very soft water-card shadow.
+  static const waterShadow = Color.fromRGBO(2, 132, 199, 0.04);
 }

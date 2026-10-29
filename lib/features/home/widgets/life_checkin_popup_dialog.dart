@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/day_palette.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../app/theme/surface_tokens.dart';
@@ -348,18 +349,18 @@ class _LifeCheckInPopupDialogState
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          color: context.confirmInk.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                            color: context.confirmInk.withValues(alpha: 0.35),
                             width: 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.check_circle_rounded,
-                              color: Color(0xFF10B981),
+                              color: context.confirmInk,
                               size: 16,
                             ),
                             const SizedBox(width: 8),
@@ -894,7 +895,7 @@ class _CheckInTabButton extends StatelessWidget {
                 Icon(
                   Icons.check_circle_rounded,
                   size: 14,
-                  color: isSelected ? Colors.white : const Color(0xFF10B981),
+                  color: isSelected ? Colors.white : context.confirmInk,
                 ),
               ],
             ],
@@ -926,20 +927,20 @@ class _QuickWaterButton extends StatelessWidget {
         ? g.fill
         : (g.merlot
             ? MerlotPalette.pillSoft
-            : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
+            : (g.frozen ? FrozenPalette.pillSoft : DayPalette.waterSurface));
     final borderColor = isDark
         ? g.edge
         : (g.merlot
             ? MerlotPalette.lineSubtle
-            : (g.frozen ? FrozenPalette.lineSubtle : const Color(0xFFD2E3F1)));
+            : (g.frozen ? FrozenPalette.lineSubtle : DayPalette.waterLine));
     final iconBg = isDark
         ? context.waterAccent.withValues(alpha: 0.18)
         : (g.merlot
             ? MerlotPalette.darkTint.withValues(alpha: 0.35)
-            : const Color(0xFFE0EFF8));
+            : DayPalette.waterTint);
     final iconColor = isDark
         ? context.waterAccent
-        : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
+        : (g.merlot ? MerlotPalette.action : DayPalette.waterAction);
 
     return AppTapArea(
       onTap: onTap,
@@ -960,7 +961,7 @@ class _QuickWaterButton extends StatelessWidget {
                   ? Colors.black.withValues(alpha: 0.2)
                   : (g.merlot
                       ? MerlotPalette.shadowAmbient
-                      : const Color.fromRGBO(2, 132, 199, 0.04)),
+                      : DayPalette.waterShadow),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

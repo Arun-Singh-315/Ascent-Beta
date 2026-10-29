@@ -334,4 +334,8 @@ extension AscentGlassX on BuildContext {
   /// duplicated as literals across Home widgets.
   Color get doneInk =>
       isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534);
+
+  /// Positive confirmation tone (e.g. "logged" feedback, check marks) used
+  /// identically in every theme.
+  Color get confirmInk => const Color(0xFF10B981);
 }
