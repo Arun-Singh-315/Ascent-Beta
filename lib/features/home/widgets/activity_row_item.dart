@@ -732,34 +732,107 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   Future<void> _setPriority() async {
     final id = activity.linkedTaskId;
     if (id == null || activity.status == TodayActivityStatus.done) return;
+    final g = context.glass;
     final chosen = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
-      builder: (ctx) => SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Change priority'),
-            ),
-            for (final option in const [
-              ('high', 'Urgent', 'P0 · Do this first'),
-              ('medium', 'Important', 'P1 · Default, after urgent tasks'),
-              ('low', 'Normal', 'P2 · Flexible, after other tasks'),
-            ])
-              ListTile(
-                title: Text(option.$2),
-                subtitle: Text(option.$3),
-                trailing: (activity.priority ?? 'low') == option.$1
-                    ? const Icon(Icons.check)
-                    : null,
-                onTap: () => Navigator.pop(ctx, option.$1),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Material(
+        color: Theme.of(ctx).scaffoldBackgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          side: BorderSide(color: g.edge.withValues(alpha: 0.3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: SingleChildScrollView(
+            child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: g.inkMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
-          ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  'Change priority',
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final option in const [
+                (
+                  'high',
+                  'Urgent',
+                  'P0 · Do this first',
+                  Icons.flag_rounded,
+                  Colors.deepOrangeAccent,
+                ),
+                (
+                  'medium',
+                  'Important',
+                  'P1 · Default, after urgent tasks',
+                  Icons.flag_rounded,
+                  Colors.amber,
+                ),
+                (
+                  'low',
+                  'Normal',
+                  'P2 · Flexible, after other tasks',
+                  Icons.flag_outlined,
+                  null,
+                ),
+              ])
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  leading: Icon(
+                    option.$4,
+                    color: option.$5 ?? g.inkMuted,
+                    size: 20,
+                  ),
+                  title: Text(
+                    option.$2,
+                    style: TextStyle(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                  ),
+                  subtitle: Text(
+                    option.$3,
+                    style: TextStyle(color: g.inkMuted, fontSize: 12),
+                  ),
+                  trailing: (activity.priority ?? 'low') == option.$1
+                      ? Icon(Icons.check_circle_rounded, color: g.clay)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onTap: () => Navigator.pop(ctx, option.$1),
+                ),
+            ],
+          ),
         ),
       ),
-    );
+    ),
+  );
     if (chosen == null || !mounted) return;
     try {
       final saved = await ref
@@ -802,6 +875,16 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       'medium' => 'Important',
       _ => 'Normal',
     };
+    final priorityColor = switch (activity.priority) {
+      'high' => Colors.deepOrangeAccent,
+      'medium' => Colors.amber.shade700,
+      _ => g.inkMuted,
+    };
+    final priorityIcon = switch (activity.priority) {
+      'high' => Icons.flag_rounded,
+      'medium' => Icons.flag_rounded,
+      _ => Icons.flag_outlined,
+    };
     // Keep the status line short: a type/priority tag plus, only while it
     // matters, the live timer or a "Paused" marker. Full details live in the
     // lecture player, the focus screen and the board.
@@ -828,28 +911,42 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       child: InkWell(
         key: ValueKey('activity_priority_${activity.id}'),
         onTap: _setPriority,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 34),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          constraints: const BoxConstraints(minHeight: 28),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: g.ink.withValues(alpha: .24)),
+            color: (activity.priority == 'high'
+                    ? Colors.deepOrangeAccent
+                    : activity.priority == 'medium'
+                    ? Colors.amber.shade700
+                    : g.ink)
+                .withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: priorityColor.withValues(alpha: 0.35),
+              width: 0.8,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.flag_outlined, size: 13, color: g.inkMuted),
-              const SizedBox(width: 5),
+              Icon(priorityIcon, size: 12, color: priorityColor),
+              const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  'Priority: $priority',
-                  style: TextStyle(color: g.ink, fontSize: 11),
-                  maxLines: 2,
+                  priority,
+                  style: TextStyle(
+                    color: activity.priority == 'low'
+                        ? g.inkSecondary
+                        : priorityColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 3),
-              Icon(Icons.expand_more, size: 14, color: g.inkMuted),
             ],
           ),
         ),

@@ -34,10 +34,12 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
             ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
             : '/home?session=${routineAlertLink.occurrenceId}&reminder=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}')
       : plan == null
-      ? NotificationService.remindersDestination
+      ? (r.linkedTaskId != null
+            ? '/today?task=${r.linkedTaskId}'
+            : NotificationService.remindersDestination)
       : checkIn
       ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}'
-      : '/home';
+      : (r.linkedTaskId != null ? '/today?task=${r.linkedTaskId}' : '/home');
   return NotificationService.instance.scheduleReminderNotificationChecked(
     id: r.id,
     title: r.title,
