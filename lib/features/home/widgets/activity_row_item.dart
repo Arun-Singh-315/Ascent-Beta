@@ -371,9 +371,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                         .textTheme
                                         .labelSmall
                                         ?.copyWith(
-                                          color: context.isDark
-                                              ? const Color(0xFF86EFAC)
-                                              : const Color(0xFF166534),
+                                          color: context.doneInk,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                         ),

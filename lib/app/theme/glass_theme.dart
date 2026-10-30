@@ -7,8 +7,9 @@ import 'shared_control_tokens.dart';
 
 /// Glass theme tokens for the Ascent design system.
 /// Defined according to the Ascent Liquid Glass specification:
-/// - Light base: #F4F3F8, Clay: #A4523A
-/// - Dark base: #0D1016, Clay: #E6A088
+/// - Default light base: #EFF2F6, Clay: #A4523A
+/// - Default dark base: #16110D, Clay: #E6A088
+/// - Frost (nordicSky) and Merlot variants use their own palettes.
 /// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
 class AscentGlass extends ThemeExtension<AscentGlass> {
   final bool frozen;
@@ -436,4 +437,14 @@ extension AscentGlassX on BuildContext {
   AscentGlass get glass =>
       Theme.of(this).extension<AscentGlass>() ??
       (isDark ? AscentGlass.dark : AscentGlass.light);
+
+  /// Foreground/border color for a completed item (done chip, completed
+  /// thought). Single source for the "done" green that was previously
+  /// duplicated as literals across Home widgets.
+  Color get doneInk =>
+      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534);
+
+  /// Positive confirmation tone (e.g. "logged" feedback, check marks) used
+  /// identically in every theme.
+  Color get confirmInk => const Color(0xFF10B981);
 }

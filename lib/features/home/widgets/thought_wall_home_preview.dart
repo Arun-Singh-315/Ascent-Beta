@@ -572,10 +572,7 @@ class _ThoughtWallHomePreviewState
                   final hasBubbleFraming =
                       cardStyle != ThoughtCardStyle.minimal;
                   final itemHardBorderColor = thought.isCompleted
-                      ? (isDark
-                                ? const Color(0xFF86EFAC)
-                                : const Color(0xFF166534))
-                            .withValues(alpha: .6)
+                      ? context.doneInk.withValues(alpha: .6)
                       : hasBubbleFraming
                       ? Color.lerp(
                           g.ink.withValues(alpha: isDark ? .20 : .24),
@@ -592,10 +589,7 @@ class _ThoughtWallHomePreviewState
                   final itemBubbleFill = !bubbleFilled && hasBubbleFraming
                       ? Colors.transparent
                       : thought.isCompleted
-                      ? (isDark
-                                ? const Color(0xFF86EFAC)
-                                : const Color(0xFF166534))
-                            .withValues(alpha: .06)
+                      ? context.doneInk.withValues(alpha: .08)
                       : Color.lerp(
                           g.fill.withValues(alpha: isDark ? 0.25 : 0.40),
                           moodAccent.withValues(alpha: isDark ? 0.05 : 0.03),

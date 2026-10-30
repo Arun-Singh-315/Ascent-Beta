@@ -1746,8 +1746,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
     final hasBubbleFraming = !minimal;
     final hardBorderColor = thought.isCompleted
-        ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
-              .withValues(alpha: .6)
+        ? context.doneInk.withValues(alpha: .6)
         : hasBubbleFraming
         ? Color.lerp(
             g.ink.withValues(alpha: isDark ? .35 : .40),
@@ -1763,8 +1762,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
         ? Colors.transparent
         : thought.isCompleted
-        ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
-              .withValues(alpha: .08)
+        ? context.doneInk.withValues(alpha: .08)
         : isSelected
         ? g.clay.withValues(alpha: isDark ? 0.09 : 0.06)
         : hasBubbleFraming

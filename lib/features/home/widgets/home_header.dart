@@ -5,10 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/shared_control_tokens.dart';
-import '../../../app/theme/surface_tokens.dart';
-import '../../../app/theme/text_styles.dart';
+import '../../../app/theme/day_palette.dart';
+import '../../../app/theme/frozen_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../ai_assistant/ai_assistant_screen.dart';
@@ -95,45 +94,197 @@ class HomeHeader extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                tooltip: context.isDark
-                    ? 'Switch to Luminous Day Theme'
-                    : 'Switch to Night Glass Theme',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(
-                        context.isDark ? ThemeMode.light : ThemeMode.dark,
-                      );
-                },
-                icon: Icon(
-                  context.isDark
-                      ? Icons.light_mode_outlined
-                      : Icons.dark_mode_outlined,
-                  size: 20,
-                  color: g.inkSecondary,
+
+              // Quick 1-Tap Theme Mode Switcher
+              Material(
+                color: AppPalette.transparent,
+                child: AppTapArea(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    final next = isDark ? ThemeMode.light : ThemeMode.dark;
+                    ref.read(themeModeProvider.notifier).setThemeMode(next);
+                  },
+                  borderRadius: AppGeometry.roundedr99,
+                  child: Tooltip(
+                    message: isDark
+                        ? 'Switch to Luminous Day Theme'
+                        : 'Switch to Night Glass Theme',
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? g.fill
+                            : (g.merlot
+                                  ? MerlotPalette.surface
+                                  : (g.frozen
+                                        ? FrozenPalette.surface
+                                        : DayPalette.surface)),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark
+                              ? g.edge
+                              : (g.merlot
+                                    ? MerlotPalette.line
+                                    : (g.frozen
+                                          ? FrozenPalette.line
+                                          : DayPalette.line)),
+                          width: g.merlot ? 0.75 : AppBorderScale.w1point0,
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color:
+                                      (g.merlot
+                                              ? MerlotPalette.action
+                                              : (g.frozen
+                                                    ? FrozenPalette.action
+                                                    : DayPalette.action))
+                                          .withValues(alpha: 0.10),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: Icon(
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        size: 20,
+                        color: isDark
+                            ? (g.merlot
+                                  ? MerlotPalette.spark
+                                  : DayPalette.sun)
+                            : (g.merlot
+                                  ? MerlotPalette.action
+                                  : (g.frozen
+                                        ? FrozenPalette.action
+                                        : DayPalette.moon)),
+                      ),
+                    ),
+                  ),
                 ),
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               ),
-              IconButton(
-                key: const ValueKey('home_profile_button'),
-                tooltip: 'Profile and settings',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/settings');
-                },
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                icon: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: g.claySoft,
-                  foregroundColor: g.ink,
-                  child: Text(
-                    name.isNotEmpty
-                        ? String.fromCharCode(name.runes.first).toUpperCase()
-                        : 'A',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+
+              // Avatar Circle (opens profile & quick settings sheet)
+              Material(
+                color: AppPalette.transparent,
+                child: AppTapArea(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/settings');
+                  },
+                  borderRadius: AppGeometry.roundedr99,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: g.frozen
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                isDark
+                                    ? FrozenPalette.darkActionBright
+                                    : FrozenPalette.actionBright,
+                                isDark
+                                    ? FrozenPalette.darkAction
+                                    : FrozenPalette.action,
+                              ],
+                            )
+                          : g.merlot
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isDark
+                                  ? [
+                                      MerlotPalette.darkAction,
+                                      MerlotPalette.darkActionDeep,
+                                    ]
+                                  : [
+                                      MerlotPalette.action,
+                                      MerlotPalette.actionDeep,
+                                    ],
+                            )
+                          : (!isDark
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      DayPalette.gradientStart,
+                                      DayPalette.gradientEnd,
+                                    ],
+                                  )
+                                : null),
+                      color: (g.frozen || g.merlot)
+                          ? null
+                          : (isDark ? g.claySoft : null),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: g.frozen
+                            ? (isDark
+                                  ? FrozenPalette.darkLine
+                                  : FrozenPalette.line)
+                            : g.merlot
+                            ? (isDark
+                                  ? MerlotPalette.darkLine
+                                  : MerlotPalette.actionDeep)
+                            : (isDark ? g.edge : DayPalette.line),
+                        width: g.merlot ? 1.0 : AppBorderScale.w1point0,
+                      ),
+                      boxShadow: g.frozen
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (isDark
+                                            ? FrozenPalette.darkAction
+                                            : FrozenPalette.action)
+                                        .withValues(alpha: 0.20),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : g.merlot
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (isDark
+                                            ? MerlotPalette.darkAction
+                                            : MerlotPalette.action)
+                                        .withValues(
+                                          alpha: isDark ? 0.25 : 0.20,
+                                        ),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : (!isDark
+                                ? [
+                                    BoxShadow(
+                                      color: DayPalette.action.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null),
+                    ),
+                    child: Center(
+                      child: Text(
+                        name.isNotEmpty
+                            ? String.fromCharCode(
+                                name.runes.first,
+                              ).toUpperCase()
+                            : 'A',
+                        style: AppTypography.bricolageGrotesque15W70099(
+                          color: g.frozen || g.merlot
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : (isDark ? g.ink : DayPalette.deepInk),
+                        ),
+                      ),
                     ),
                   ),
                 ),
