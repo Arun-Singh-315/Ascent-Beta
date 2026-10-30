@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:drift/native.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +26,7 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/walk/walk_tracking_service.dart';
 import 'package:ascent/features/chai_break/chai_break_provider.dart';
 import 'package:ascent/features/home/widgets/ascent_dynamic_island.dart';
+import 'package:ascent/features/home/widgets/island_content.dart';
 
 class _Time extends TimeTrackingNotifier {
   _Time(this.initial);
@@ -137,8 +140,8 @@ void main() {
     ChaiBreakState chai = const ChaiBreakState(),
     DailyBriefing briefing = _emptyBriefing,
     List<Reminder> reminders = const [],
+    Stream<List<Task>>? taskStream,
     bool expanded = false,
-    bool autoPeek = false,
     bool dark = false,
     bool learning = false,
     WalkTrackingState walk = const WalkTrackingState(),
@@ -148,6 +151,9 @@ void main() {
   }) => ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(db),
+      islandTasksProvider.overrideWith(
+        (ref) => taskStream ?? Stream.value(const []),
+      ),
       sharedPreferencesProvider.overrideWithValue(prefs),
       timeTrackingProvider.overrideWith(() => _Time(time)),
       chaiBreakProvider.overrideWith(() => _Chai(chai)),
@@ -199,10 +205,7 @@ void main() {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    AscentDynamicIsland(
-                      initiallyExpanded: expanded,
-                      autoPeek: autoPeek,
-                    ),
+                    AscentDynamicIsland(initiallyExpanded: expanded),
                     const SizedBox(height: 20),
                     const Text('Mind palace', style: TextStyle(fontSize: 22)),
                   ],
@@ -231,27 +234,18 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets(
-    'New activity peeks once then settles; drag expands without a tap',
-    (tester) async {
-      await tester.pumpWidget(app(time: focus(), autoPeek: true));
+  testWidgets('New activity stays compact; drag expands without a tap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app(time: focus()));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
-      expect(
-        find.byKey(const ValueKey('dynamic_island_expanded')),
-        findsOneWidget,
-      );
+    expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsNothing);
       await tester.pump(const Duration(seconds: 6));
       await tester.pump(const Duration(milliseconds: 500));
-      expect(
-        find.byKey(const ValueKey('dynamic_island_expanded')),
-        findsNothing,
-      );
+    expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsNothing);
       await tester.pump(const Duration(seconds: 30));
-      expect(
-        find.byKey(const ValueKey('dynamic_island_expanded')),
-        findsNothing,
-      );
+    expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsNothing);
       await tester.drag(
         find.byKey(const ValueKey('island_drag_handle')),
         const Offset(0, 170),
@@ -262,6 +256,66 @@ void main() {
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Recap clears itself and stays gone on the next home visit', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app(briefing: _recap));
+    await settle(tester);
+    expect(
+      find.byKey(const ValueKey('dynamic_island_surface')),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 21));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('dynamic_island_surface')), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(app(briefing: _recap));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('dynamic_island_surface')), findsNothing);
+  });
+
+  testWidgets('Home scroll collapses the island without stopping live focus', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app(time: focus(), expanded: true, scale: 2));
+    await settle(tester);
+    final scroll = Scrollable.of(tester.element(find.byType(AscentDynamicIsland)));
+    scroll.position.isScrollingNotifier.value = true;
+    await settle(tester);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsNothing);
+    expect(find.text('Focus · 15:00'), findsOneWidget);
+    scroll.position.isScrollingNotifier.value = false;
+  });
+
+  testWidgets(
+    'A starred to-do appears and disappears immediately on completion',
+    (tester) async {
+      final tasks = StreamController<List<Task>>();
+      addTearDown(tasks.close);
+      final now = DateTime.now();
+      final task = Task(
+        id: 42,
+        title: 'Send the portfolio',
+        priority: 'high',
+        revisitFlag: false,
+        createdAt: now,
+        updatedAt: now,
+      );
+      await tester.pumpWidget(app(taskStream: tasks.stream));
+      tasks.add([task]);
+      await settle(tester);
+      expect(find.text('Send the portfolio'), findsOneWidget);
+      expect(find.text('Starred to-do'), findsOneWidget);
+      tasks.add([task.copyWith(actualCompletedDate: Value(now))]);
+      await settle(tester);
+      expect(
+        find.byKey(const ValueKey('dynamic_island_surface')),
+        findsNothing,
+      );
+      await tester.pumpWidget(const SizedBox());
     },
   );
 
@@ -311,7 +365,7 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(find.text('+4'), findsOneWidget);
+      expect(find.text('+4'), findsNothing);
       await expand(tester);
       for (final id in ['learning', 'walk', 'chai', 'focus']) {
         await tapVisible(tester, find.byKey(ValueKey('island_select_$id')));
@@ -320,10 +374,9 @@ void main() {
       }
       await tapVisible(
         tester,
-        find.byKey(const ValueKey('island_group_summary')),
+        find.byKey(const ValueKey('island_select_summary')),
       );
-      expect(find.text('Overdue tasks'), findsOneWidget);
-      await tapVisible(tester, find.byKey(const ValueKey('island_group_live')));
+      expect(find.textContaining('You recorded time'), findsOneWidget);
       await tapVisible(
         tester,
         find.byKey(const ValueKey('island_select_chai')),
@@ -366,7 +419,7 @@ void main() {
       await tester.pumpWidget(
         app(
           reminders: [
-            reminder(1, -2),
+            reminder(1, -20),
             reminder(2, 20),
             reminder(3, 300),
             reminder(4, 10, active: false),
@@ -389,19 +442,17 @@ void main() {
       );
     },
   );
-  testWidgets(
-    'Recap uses recorded totals and labels all overdue work accurately',
-    (tester) async {
+  testWidgets('Recap uses text points without count tiles', (tester) async {
       await tester.pumpWidget(app(briefing: _recap, expanded: true));
       await settle(tester);
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('85'), findsOneWidget);
-      expect(find.text('4'), findsOneWidget);
-      expect(find.text('Completed'), findsOneWidget);
-      expect(find.text('Minutes tracked'), findsOneWidget);
-      expect(find.text('Overdue tasks'), findsOneWidget);
-    },
+    expect(
+      find.textContaining('You moved things off your list'),
+      findsOneWidget,
   );
+    expect(find.textContaining('You recorded time'), findsOneWidget);
+    expect(find.text('Completed'), findsNothing);
+    expect(find.text('Minutes tracked'), findsNothing);
+  });
   testWidgets(
     'Mobile light and dark glass, large text, multi-activity controls and upward collapse',
     (tester) async {
@@ -650,8 +701,8 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(find.text('Daily recap'), findsOneWidget);
-      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('A fresh start'), findsOneWidget);
+      expect(find.text('Yesterday, then onward'), findsOneWidget);
     },
   );
 

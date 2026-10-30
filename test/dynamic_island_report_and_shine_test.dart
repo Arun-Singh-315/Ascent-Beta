@@ -56,7 +56,7 @@ void main() {
 
   group('Dynamic Island Report & Specular Shine Tests', () {
     testWidgets(
-      'Expanded recap shows actual totals with a concise overdue headline',
+      'Expanded recap shows text points without numeric tiles',
       (tester) async {
         await tester.pumpWidget(
           buildTestApp(
@@ -71,13 +71,11 @@ void main() {
           findsOneWidget,
         );
 
-        expect(find.text('1 overdue task'), findsOneWidget);
-        expect(find.text('Completed'), findsOneWidget);
-        expect(find.text('4'), findsOneWidget);
-        expect(find.text('Minutes tracked'), findsOneWidget);
-        expect(find.text('50'), findsOneWidget);
-        expect(find.text('Overdue tasks'), findsOneWidget);
-        expect(find.text('1'), findsOneWidget);
+        expect(find.text('Yesterday, then onward'), findsOneWidget);
+        expect(find.textContaining('You moved things off your list'), findsOneWidget);
+        expect(find.textContaining('You recorded time'), findsOneWidget);
+        expect(find.text('Completed'), findsNothing);
+        expect(find.text('Minutes tracked'), findsNothing);
         // Recorded minutes do not imply deep flow or tasks finished on schedule.
         expect(find.textContaining('Executive'), findsNothing);
         expect(find.textContaining('on schedule'), findsNothing);

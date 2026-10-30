@@ -961,7 +961,7 @@ class _ThoughtWallHomePreviewState
                 if (!widget.compact)
                   Align(
                     alignment: Alignment.centerRight,
-                    child: TextButton.icon(
+                    child: TextButton(
                       style: TextButton.styleFrom(
                         foregroundColor: actionAccentColor,
                       ),
@@ -969,8 +969,7 @@ class _ThoughtWallHomePreviewState
                         HapticFeedback.selectionClick();
                         context.push('/thought-wall');
                       },
-                      icon: const Icon(Icons.chevron_right_rounded, size: 18),
-                      label: const Text('View all'),
+                      child: const Text('View ›'),
                     ),
                   ),
               ],
@@ -1038,13 +1037,12 @@ class _ThoughtWallHomePreviewState
                     ),
                     onPressed: () => _showBubbleStyleSheet(context),
                   ),
-                  TextButton.icon(
+                  TextButton(
                     onPressed: () {
                       HapticFeedback.selectionClick();
                       context.push('/thought-wall');
                     },
-                    icon: const Icon(Icons.bubble_chart_outlined, size: 18),
-                    label: Text(widget.compact ? 'View all' : 'Open'),
+                    child: const Text('View ›'),
                   ),
                 ],
               );
@@ -1112,7 +1110,7 @@ class _ThoughtWallHomePreviewState
             ),
             TextButton(
               onPressed: () => context.push('/thought-wall'),
-              child: const Text('View all'),
+              child: const Text('View ›'),
             ),
           ],
         ),
@@ -1181,7 +1179,9 @@ class _ThoughtWallHomePreviewState
                   HapticFeedback.mediumImpact();
                   final thoughtDao = ref.read(thoughtDaoProvider);
                   final messenger = ScaffoldMessenger.of(context);
-                  final snapshot = await thoughtDao.deleteThoughtForUndo(latest.id);
+                  final snapshot = await thoughtDao.deleteThoughtForUndo(
+                    latest.id,
+                  );
                   if (snapshot == null) return false;
 
                   Future<void> restore() async {
@@ -1200,8 +1200,13 @@ class _ThoughtWallHomePreviewState
                         messenger.hideCurrentSnackBar();
                         messenger.showSnackBar(
                           SnackBar(
-                            content: const Text('Could not restore the thought.'),
-                            action: SnackBarAction(label: 'Retry', onPressed: restore),
+                            content: const Text(
+                              'Could not restore the thought.',
+                            ),
+                            action: SnackBarAction(
+                              label: 'Retry',
+                              onPressed: restore,
+                            ),
                           ),
                         );
                       }
@@ -1286,7 +1291,9 @@ class _ThoughtWallHomePreviewState
                             child: Text(
                               locked
                                   ? 'Private thought'
-                                  : ThoughtExcerpt.displayContent(latest.content),
+                                  : ThoughtExcerpt.displayContent(
+                                      latest.content,
+                                    ),
                               key: const ValueKey('home_latest_thought_text'),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,

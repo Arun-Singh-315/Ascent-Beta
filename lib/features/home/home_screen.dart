@@ -20,11 +20,9 @@ import '../money/add_transaction_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../promises/providers/promise_providers.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
-import 'widgets/daily_briefing_card.dart';
 import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
@@ -74,7 +72,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     with WidgetsBindingObserver {
   DateTime _briefingDate = briefingDay(DateTime.now());
   Timer? _dayTimer;
-  bool _dismissedBriefingToday = false;
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
   String? _activeShortcutId;
@@ -139,7 +136,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     if (mounted && day != _briefingDate) {
       setState(() {
         _briefingDate = day;
-        _dismissedBriefingToday = false;
       });
     }
     _scheduleDayChange();
@@ -154,90 +150,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     });
   }
 
-  Widget _buildInlineBriefingCard(
-    BuildContext context,
-    SharedPreferences preferences,
-  ) {
-    final key = _briefingDate.toIso8601String();
-    if (preferences.getString('ascent_daily_briefing_seen_v1') == key ||
-        _dismissedBriefingToday) {
-      return const SizedBox.shrink();
-    }
-    final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s16),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const ValueKey('home_inline_briefing_card'),
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            HapticFeedback.lightImpact();
-            DailyBriefingCard.show(context, _briefingDate);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: g.fill,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: g.line),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: g.clay.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.wb_sunny_outlined, size: 18, color: g.clay),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Daily Briefing',
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap to review agenda & launchpad',
-                        style: TextStyle(color: g.inkSecondary, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  key: const ValueKey('dismiss_inline_briefing'),
-                  tooltip: 'Dismiss for today',
-                  icon: Icon(Icons.close_rounded, size: 18, color: g.inkMuted),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() => _dismissedBriefingToday = true);
-                    preferences.setString('ascent_daily_briefing_seen_v1', key);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
     final layout = ref.watch(homeLayoutProvider);
+    if (!layout.shortcuts.contains(_activeShortcutId)) _activeShortcutId = null;
     ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
@@ -328,15 +247,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                             HomeHeader(profile: profile),
 
-                            // Inline Collapsible Daily Briefing Card (if not seen today)
-                            _buildInlineBriefingCard(
-                              context,
-                              ref.read(sharedPreferencesProvider),
-                            ),
-
                             // Live state is independent of shortcut preferences.
-                            const AscentDynamicIsland(),
-                            if (layout.shortcuts.isNotEmpty)
+                            const AnimatedSize(
+                              duration: Duration(milliseconds: 260),
+                              curve: Curves.easeOutCubic,
+                              alignment: Alignment.topCenter,
+                              child: AscentDynamicIsland(),
+                            ),
                               Padding(
                                 padding: const EdgeInsets.only(
                                   bottom: AppSpace.s16,
@@ -567,11 +484,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final widgets = <Widget>[];
 
     Widget deferredModule(Widget child) {
-      return AnimatedOpacity(
-        opacity: _heavierModulesReady ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 200),
-        child: child,
-      );
+      if (!_heavierModulesReady) return const SizedBox.shrink();
+      return child;
     }
 
     // 1. Morning: Life & Health (Water/Medicine) higher up

@@ -186,9 +186,8 @@ class _HomeCustomizationSheetState
                                 ),
                                 child: Text(
                                   'Shown below your name. Opens with your most recent thought.',
-                                  style: AscentTextStyles.captionMedium.copyWith(
-                                    color: g.inkMuted,
-                                  ),
+                                  style: AscentTextStyles.captionMedium
+                                      .copyWith(color: g.inkMuted),
                                 ),
                               ),
                             if (_draft.order[i] == 'today')
@@ -202,9 +201,8 @@ class _HomeCustomizationSheetState
                                       ? ids.add(_draft.order[i])
                                       : ids.remove(_draft.order[i]);
                                   setState(
-                                    () => _draft = _draft.copyWith(
-                                      compact: ids,
-                                    ),
+                                    () =>
+                                        _draft = _draft.copyWith(compact: ids),
                                   );
                                 },
                               ),
@@ -237,54 +235,6 @@ class _HomeCustomizationSheetState
                                       setState(
                                         () => _draft = _draft.copyWith(
                                           tools: tools,
-                                        ),
-                                      );
-                                    },
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Quick shortcuts · up to four',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.ink,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: homeShortcutRoutes.entries
-                          .map(
-                            (tool) => AppPill.filter(
-                              label: Text(tool.value),
-                              selected: _draft.shortcuts.contains(tool.key),
-                              onSelected: _saving
-                                  ? null
-                                  : (selected) {
-                                      final ids = [..._draft.shortcuts];
-                                      if (selected) {
-                                        if (ids.length >= 4) {
-                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Maximum 4 shortcuts allowed. Uncheck one to replace.',
-                                              ),
-                                              duration: Duration(seconds: 2),
-                                              behavior: SnackBarBehavior.floating,
-                                            ),
-                                          );
-                                          return;
-                                        }
-                                        ids.add(tool.key);
-                                      } else {
-                                        ids.remove(tool.key);
-                                      }
-                                      setState(
-                                        () => _draft = _draft.copyWith(
-                                          shortcuts: ids,
                                         ),
                                       );
                                     },

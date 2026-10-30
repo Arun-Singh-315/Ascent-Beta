@@ -192,7 +192,7 @@ class IslandCustomizationSheet extends ConsumerWidget {
             const SizedBox(height: 18),
             AscentSwitchRow(
               title: 'Upcoming reminders',
-              helper: 'Show active reminders in the next two hours.',
+              helper: 'Show reminders due soon, including recently due alerts.',
               value: prefs.showUpcoming,
               onChanged: (value) => ref
                   .read(islandPreferencesProvider.notifier)
@@ -200,7 +200,7 @@ class IslandCustomizationSheet extends ConsumerWidget {
             ),
             AscentSwitchRow(
               title: 'Daily recap',
-              helper: 'Include yesterday’s recorded progress and overdue work.',
+              helper: 'A brief text reflection shown once, then cleared automatically.',
               value: prefs.showRecap,
               onChanged: (value) => ref
                   .read(islandPreferencesProvider.notifier)

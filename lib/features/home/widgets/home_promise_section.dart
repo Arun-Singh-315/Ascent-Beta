@@ -26,9 +26,6 @@ class HomePromiseSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final priorityPromise = ref.watch(priorityPromiseProvider);
-    final activePromisesAsync = ref.watch(activePromisesStreamProvider);
-
-    final totalActive = activePromisesAsync.value?.length ?? 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,34 +44,12 @@ class HomePromiseSection extends ConsumerWidget {
                 ),
               ),
             ),
-            InkWell(
-              onTap: () {
+            TextButton(
+              onPressed: () {
                 HapticFeedback.selectionClick();
                 context.push('/promises');
               },
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      totalActive > 1 ? '$totalActive active' : 'View all',
-                      style: TextStyle(
-                        color: g.inkMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
-                      color: g.inkMuted,
-                    ),
-                  ],
-                ),
-              ),
+              child: const Text('View ›'),
             ),
           ],
         ),

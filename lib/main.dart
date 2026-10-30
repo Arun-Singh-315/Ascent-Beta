@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'core/services/plan_collection_service.dart';
 import 'core/notifications/alarm_lifecycle.dart';
 import 'core/notifications/reminder_alarm_bridge.dart';
@@ -75,39 +77,6 @@ Future<void> main() async {
     }
 
     await PlanCollectionService(bootstrapDb).importLegacy();
-    await PlanCollectionService(bootstrapDb).reconcileLocalSchedules();
-
-    if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
-      try {
-        await ReminderAlarmBridge.reconcile(bootstrapDb);
-      } catch (e) {
-        debugPrint('ReminderAlarmBridge reconcile skipped or failed: $e');
-      }
-    }
-
-    await NotificationService.instance.initialize();
-
-    if (prefs.getBool('ascent_restore_alert_sync_v1') ?? false) {
-      try {
-        await finishRestoredAlerts(bootstrapDb, prefs);
-      } catch (e) {
-        debugPrint('finishRestoredAlerts failed: $e');
-      }
-    }
-
-    try {
-      await RiyaAlertEffects.device(bootstrapDb).syncPending();
-      final grouped = prefs.getBool('ascent_notification_groups_v1') ?? false;
-      final result = await ReminderAlertSync.device(
-        bootstrapDb,
-      ).sync(onlyPending: grouped);
-      if (result.complete) {
-        await prefs.setBool('ascent_notification_groups_v1', true);
-      }
-    } catch (e) {
-      // Pending rows remain durable for retry when alerts become available.
-      debugPrint('Alert sync skipped/deferred: $e');
-    }
   } finally {
     await bootstrapDb.close();
   }
@@ -257,8 +226,56 @@ Future<void> main() async {
       child: const AscentApp(),
     ),
   );
+  // Draw the workspace before reconciling platform alarms. Restore recovery
+  // and legacy imports above remain prerequisites for reading user records.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(_reconcileStartupAlerts(container.read(databaseProvider), prefs));
+  });
   AlarmLifecycle(
     () => container.read(databaseProvider),
     () => rootNavigatorKey.currentContext,
   ).start();
+}
+
+Future<void> _reconcileStartupAlerts(
+  AppDatabase db,
+  SharedPreferences prefs,
+) async {
+  try {
+    await PlanCollectionService(db).reconcileLocalSchedules();
+
+    if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
+      try {
+        await ReminderAlarmBridge.reconcile(db);
+      } catch (e) {
+        debugPrint('ReminderAlarmBridge reconcile skipped or failed: $e');
+      }
+    }
+
+    await NotificationService.instance.initialize();
+
+    if (prefs.getBool('ascent_restore_alert_sync_v1') ?? false) {
+      try {
+        await finishRestoredAlerts(db, prefs);
+      } catch (e) {
+        debugPrint('finishRestoredAlerts failed: $e');
+      }
+    }
+
+    try {
+      await RiyaAlertEffects.device(db).syncPending();
+      final grouped = prefs.getBool('ascent_notification_groups_v1') ?? false;
+      final result = await ReminderAlertSync.device(
+        db,
+      ).sync(onlyPending: grouped);
+      if (result.complete) {
+        await prefs.setBool('ascent_notification_groups_v1', true);
+      }
+    } catch (e) {
+      // Pending rows remain durable for retry when alerts become available.
+      debugPrint('Alert sync skipped/deferred: $e');
+    }
+  } catch (e) {
+    debugPrint('Startup maintenance deferred: $e');
+  }
 }

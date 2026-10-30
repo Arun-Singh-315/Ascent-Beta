@@ -42,11 +42,12 @@ class HomeHeader extends ConsumerWidget {
         children: [
           _HomeHeaderRow(
             date: Text(
-              DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase(),
+              DateFormat('EEE, d MMM').format(DateTime.now()),
               key: const ValueKey('home_date'),
               style: AscentTextStyles.homeCaption.copyWith(
-                color: g.inkMuted,
-                letterSpacing: 1,
+                color: g.ink,
+                fontWeight: FontWeight.w700,
+                letterSpacing: .3,
               ),
             ),
             actions: [
@@ -228,8 +229,15 @@ class HomeHeader extends ConsumerWidget {
                         HapticFeedback.lightImpact();
                         showHomeCustomization(context);
                       },
-                      icon: Icon(Icons.dashboard_customize_outlined, size: 19, color: g.inkMuted),
-                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      icon: Icon(
+                        Icons.dashboard_customize_outlined,
+                        size: 19,
+                        color: g.inkMuted,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 44,
+                        minHeight: 44,
+                      ),
                       padding: EdgeInsets.zero,
                     ),
                   ],
@@ -256,8 +264,15 @@ class HomeHeader extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     showHomeCustomization(context);
                   },
-                  icon: Icon(Icons.dashboard_customize_outlined, size: 19, color: g.inkMuted),
-                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                  icon: Icon(
+                    Icons.dashboard_customize_outlined,
+                    size: 19,
+                    color: g.inkMuted,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 48,
+                    minHeight: 48,
+                  ),
                 ),
               ],
             ),

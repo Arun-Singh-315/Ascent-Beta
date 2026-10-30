@@ -74,14 +74,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 ),
               ),
             ),
-            TextButton.icon(
+            TextButton(
               onPressed: () {
                 HapticFeedback.selectionClick();
                 context.push('/today');
               },
-              icon: Icon(Icons.dashboard_outlined, size: 16, color: g.clay),
-              label: Text(
-                'View board',
+              child: Text(
+                'View ›',
                 style: TextStyle(
                   color: g.clay,
                   fontSize: 13,
@@ -226,7 +225,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                           else if (entry is _ActivityRowEntry)
                             _ActivityEntrance(
                               key: ValueKey('entrance_${entry.activity.id}'),
-                              animate: _listLoadedOnce &&
+                              animate:
+                                  _listLoadedOnce &&
                                   !_seenActivityIds.contains(entry.activity.id),
                               child: ActivityRowItem(
                                 key: ValueKey(entry.activity.id),

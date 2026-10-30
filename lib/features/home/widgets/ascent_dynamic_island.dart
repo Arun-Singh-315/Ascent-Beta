@@ -1,5 +1,5 @@
-import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../core/providers/settings_provider.dart';
 import 'dart:async';
@@ -18,6 +18,7 @@ import '../../../core/providers/time_tracking_provider.dart';
 import '../../../core/providers/island_preferences_provider.dart';
 import '../../../core/walk/walk_tracking_service.dart';
 import 'island_surface.dart';
+import 'island_content.dart';
 import 'island_customization_sheet.dart';
 import '../../chai_break/chai_break_provider.dart';
 
@@ -40,14 +41,9 @@ final islandLectureSessionProvider = StreamProvider.autoDispose<TimeSession?>((
 /// A live surface, never an app launcher. Every activity keeps its own identity
 /// and controls; selecting another activity does not pause the previous one.
 class AscentDynamicIsland extends ConsumerStatefulWidget {
-  const AscentDynamicIsland({
-    super.key,
-    this.initiallyExpanded = false,
-    this.autoPeek = true,
-  });
+  const AscentDynamicIsland({super.key, this.initiallyExpanded = false});
 
   final bool initiallyExpanded;
-  final bool autoPeek;
 
   @override
   ConsumerState<AscentDynamicIsland> createState() =>
@@ -86,7 +82,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   static const _recapDismissedKey = 'ascent_island_recap_dismissed_day_v1';
   late final AnimationController _expansion;
   late bool _expanded;
-  bool _manualExpanded = false;
   String? _selectedId;
   String? _dismissedRecapDay;
   String _signature = '';
@@ -94,7 +89,8 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   final _dismissedReminders = <String>{};
   late DateTime _now;
   Timer? _clock;
-  Timer? _settleTimer;
+  Timer? _recapTimer;
+  ScrollPosition? _scrollPosition;
 
   String get _day => briefingDay(_now).toIso8601String().split('T').first;
 
@@ -103,7 +99,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _expanded = widget.initiallyExpanded;
-    _manualExpanded = _expanded;
     _expansion = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 420),
@@ -121,8 +116,9 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _scrollPosition?.isScrollingNotifier.removeListener(_onScroll);
+    _recapTimer?.cancel();
     _clock?.cancel();
-    _settleTimer?.cancel();
     _expansion.dispose();
     super.dispose();
   }
@@ -130,16 +126,22 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
+      _signature = '';
       setState(() => _now = DateTime.now());
+    } else {
+      _recapTimer?.cancel();
+      if (state == AppLifecycleState.paused && _selectedId == 'summary') {
+        _consumeRecap();
+      }
     }
   }
 
   void _expand(bool value, {bool manual = true}) {
     if (!mounted) return;
-    _settleTimer?.cancel();
-    if (manual) _manualExpanded = value;
+    if (!value && _expanded && _selectedId == 'summary') _consumeRecap();
     final changed = _expanded != value;
     setState(() => _expanded = value);
+    _scheduleRecapExpiry();
     if (manual && changed) HapticFeedback.selectionClick();
     final animate =
         ref.read(islandPreferencesProvider).animate &&
@@ -155,9 +157,32 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scrollPosition?.isScrollingNotifier.removeListener(_onScroll);
+    _scrollPosition = Scrollable.maybeOf(context)?.position;
+    _scrollPosition?.isScrollingNotifier.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollPosition?.isScrollingNotifier.value != true) return;
+    if (_expanded) _expand(false);
+    if (_selectedId == 'summary') _consumeRecap();
+  }
+
+  Future<void> _consumeRecap() async {
+    if (_dismissedRecapDay == _day) return;
+    final day = _day;
+    // Hide immediately; a failed write leaves it available on the next visit.
+    setState(() => _dismissedRecapDay = day);
+    await ref
+        .read(sharedPreferencesProvider)
+        .setString(_recapDismissedKey, day);
+  }
+
   void _syncActivities(List<_IslandActivity> items) {
-    final signature =
-        '$_day:${items.map((a) => '${a.id}:${a.paused}').join(',')}';
+    final signature = '$_day:${items.map((a) => a.id).join(',')}';
     if (_signature == signature) return;
     _signature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -165,27 +190,33 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
       if (items.isEmpty) {
         if (!_hadActivities) return;
         _hadActivities = false;
-        _settleTimer?.cancel();
-        _manualExpanded = false;
         _selectedId = null;
-        _expanded = false;
-        _expansion.value = 0;
+        _expand(false, manual: false);
       } else {
         _hadActivities = true;
-        if (!widget.autoPeek || _manualExpanded) return;
-        _expand(true, manual: false);
-        _settleTimer = Timer(const Duration(seconds: 6), () {
-          if (mounted && !_manualExpanded) _expand(false, manual: false);
-        });
+        if (!items.any((a) => a.id == _selectedId)) {
+          _selectedId = items.first.id;
+        }
+        _scheduleRecapExpiry();
       }
     });
   }
 
+  void _scheduleRecapExpiry() {
+    _recapTimer?.cancel();
+    if (_selectedId != 'summary' || _dismissedRecapDay == _day) return;
+    // Remember that this launch already presented the recap, even if the user
+    // leaves before the display timeout. No repeat on every home visit.
+    ref.read(sharedPreferencesProvider).setString(_recapDismissedKey, _day);
+    _recapTimer = Timer(Duration(seconds: _expanded ? 60 : 20), () {
+      if (mounted) _consumeRecap();
+    });
+  }
+
   void _select(String id) {
-    _settleTimer?.cancel();
-    _manualExpanded = true;
     setState(() => _selectedId = id);
     _expand(true);
+    _scheduleRecapExpiry();
   }
 
   Future<void> _dismiss(_IslandActivity item) async {
@@ -215,14 +246,18 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     final walk = ref.watch(walkTrackingProvider);
     final chai = ref.watch(chaiBreakProvider);
     final briefing = ref.watch(dailyBriefingProvider(briefingDay(_now))).value;
+    final tasks = ref.watch(islandTasksProvider).value ?? <Task>[];
+    final starred = ref.watch(islandStarredTasksProvider(briefingDay(_now)));
     final reminders = ref.watch(allRemindersProvider).value ?? [];
     final upcoming =
         reminders
             .where(
               (r) =>
                   r.isActive &&
-                  !r.scheduledAt.isBefore(_now) &&
-                  r.scheduledAt.difference(_now) <= const Duration(hours: 2),
+                  r.scheduledAt.isAfter(
+                    _now.subtract(const Duration(minutes: 15)),
+                  ) &&
+                  r.scheduledAt.difference(_now) <= const Duration(minutes: 30),
             )
             .toList()
           ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
@@ -317,7 +352,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
       for (final reminder in upcoming)
         _IslandActivity(
           id: 'reminder-${reminder.id}',
-          label: 'Coming up',
+          label: reminder.scheduledAt.isAfter(_now) ? 'Coming up' : 'Due now',
           metricCaption: 'UP NEXT',
           title: reminder.title,
           detail:
@@ -328,52 +363,37 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
           icon: Icons.notifications_active_outlined,
           route: '/reminders',
         ),
+      for (final task in starred.take(3))
+        _IslandActivity(
+          id: 'task-${task.id}-$_day',
+          label: 'Starred to-do',
+          title: task.title,
+          detail:
+              task.plannedDate != null &&
+                  briefingDay(task.plannedDate!).isBefore(briefingDay(_now))
+              ? 'Still on your list. Take a step, or choose a better day.'
+              : 'You marked this as important. Make room for it when you can.',
+          icon: Icons.star_rounded,
+          route: '/today',
+        ),
       if (briefing != null &&
           (briefing.completedYesterday > 0 ||
-              briefing.trackedMinutesYesterday > 0 ||
-              briefing.overdue > 0))
+              briefing.trackedMinutesYesterday > 0))
         _IslandActivity(
           id: 'summary',
-          label: 'Daily recap',
-          title: 'Yesterday',
-          detail: briefing.overdue > 0
-              ? 'Recorded progress, with overdue work to review.'
-              : 'Your recorded progress from yesterday.',
-          stats: [
-            (value: '${briefing.completedYesterday}', label: 'Completed'),
-            (
-              value: '${briefing.trackedMinutesYesterday}',
-              label: 'Minutes tracked',
-            ),
-            (value: '${briefing.overdue}', label: 'Overdue tasks'),
-          ],
-          icon: Icons.assignment_outlined,
+          label: 'A fresh start',
+          title: 'Yesterday, then onward',
+          detail: islandRecapPoints(briefing, tasks, _now).join('\n\n'),
+          icon: Icons.auto_awesome_outlined,
           route: '/today',
         ),
     ];
   }
 
-  String _group(_IslandActivity item) => item.isLive
-      ? 'live'
-      : item.id == 'summary'
-      ? 'summary'
-      : 'next';
-  int _count(_IslandActivity item, String label) =>
-      int.tryParse(
-        item.stats.where((s) => s.label == label).firstOrNull?.value ?? '',
-      ) ??
-      0;
-  Color _accent(_IslandActivity item, IslandPalette p) =>
-      item.id == 'summary' && _count(item, 'Overdue tasks') > 0
-      ? (p.isDark ? SharedControlColors.dueRedDark : SharedControlColors.dueRed)
-      : p.accent;
-  String _headline(_IslandActivity item) => item.id == 'summary'
-      ? (_count(item, 'Overdue tasks') > 0
-            ? '${_count(item, 'Overdue tasks')} overdue ${_count(item, 'Overdue tasks') == 1 ? 'task' : 'tasks'}'
-            : 'Yesterday, at a glance')
-      : item.title;
+  Color _accent(_IslandActivity item, IslandPalette p) => p.accent;
+  String _headline(_IslandActivity item) => item.title;
   String _subtitle(_IslandActivity item) => item.id == 'summary'
-      ? 'Yesterday · ${_count(item, 'Completed')} completed · ${_count(item, 'Minutes tracked')} min tracked'
+      ? 'A brief reflection'
       : '${item.label}${item.metric == null ? '' : ' · ${item.metric}'}';
 
   @override
@@ -388,7 +408,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
             !a.isLive &&
             (a.id == 'summary'
                 ? preferences.showRecap && _dismissedRecapDay != _day
-                : preferences.showUpcoming &&
+                : (a.id.startsWith('task-') || preferences.showUpcoming) &&
                       !_dismissedReminders.contains(a.id)),
       ),
     ];
@@ -416,7 +436,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
               child: TapRegion(
                 onTapOutside: (_) {
                   if (_expanded) {
-                    _manualExpanded = false;
                     _expand(false, manual: false);
                   }
                 },
@@ -479,11 +498,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                 ),
               ),
             Icon(
-              item.paused
-                  ? Icons.pause_rounded
-                  : item.id == 'summary' && _count(item, 'Overdue tasks') > 0
-                  ? Icons.schedule_rounded
-                  : item.icon,
+              item.paused ? Icons.pause_rounded : item.icon,
               color: _accent(item, p),
               size: size * .5,
             ),
@@ -502,8 +517,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
       key: const ValueKey('island_drag_handle'),
       behavior: HitTestBehavior.opaque,
       onVerticalDragStart: (_) {
-        _settleTimer?.cancel();
-        _manualExpanded = true;
         _expansion.stop();
       },
       onVerticalDragUpdate: (d) {
@@ -546,7 +559,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                     const SizedBox(height: 3),
                     Text(
                       density == IslandDensity.minimal
-                          ? (item.metric ?? 'Yesterday')
+                          ? (item.metric ?? item.title)
                           : _subtitle(item),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -569,24 +582,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                     child: SizedBox(
                       width: 43,
                       height: 44,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          _badge(other, p, size: 27),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Text(
-                              '+${items.length - 1}',
-                              style: TextStyle(
-                                color: p.accent,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: _badge(other, p, size: 27),
                     ),
                   ),
                 ),
@@ -594,7 +590,11 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                 IconButton(
                   tooltip: 'Customize Dynamic Island',
                   onPressed: () => showIslandCustomization(context),
-                  icon: Icon(Icons.settings_outlined, size: 17, color: p.secondary),
+                  icon: Icon(
+                    Icons.settings_outlined,
+                    size: 17,
+                    color: p.secondary,
+                  ),
                 ),
               IconButton(
                 tooltip: _expanded
@@ -623,8 +623,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     _IslandActivity item,
     IslandPalette p,
   ) {
-    final groups = items.map(_group).toSet().toList();
-    final siblings = items.where((a) => _group(a) == _group(item)).toList();
     return ConstrainedBox(
       key: const ValueKey('dynamic_island_expanded'),
       constraints: const BoxConstraints(maxHeight: 330),
@@ -634,44 +632,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (groups.length > 1) ...[
-              AscentSegmentedControl<String>(
-                segments: [
-                  for (final group in groups)
-                    AscentSegment(
-                      value: group,
-                      key: ValueKey('island_group_$group'),
-                      label: switch (group) {
-                        'live' => 'Live',
-                        'next' => 'Up next',
-                        _ => 'Yesterday',
-                      },
-                    ),
-                ],
-                selected: _group(item),
-                onChanged: (value) =>
-                    _select(items.firstWhere((a) => _group(a) == value).id),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (siblings.length > 1) ...[
-              AscentSegmentedControl<String>(
-                segments: [
-                  for (final sibling in siblings)
-                    AscentSegment(
-                      value: sibling.id,
-                      key: ValueKey('island_select_${sibling.id}'),
-                      label: sibling.isLive ? sibling.label : sibling.title,
-                    ),
-                ],
-                selected: item.id,
-                onChanged: _select,
-              ),
-              const SizedBox(height: 14),
-            ],
-            if (item.id == 'summary')
-              _statistics(item, p)
-            else ...[
+            ...[
               if (item.metric != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -711,8 +672,6 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                       FilledButton.icon(
                         key: ValueKey('island_toggle_${item.id}'),
                         onPressed: () {
-                          _manualExpanded = true;
-                          _settleTimer?.cancel();
                           setState(() => _selectedId = item.id);
                           item.toggle!();
                         },
@@ -743,25 +702,28 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
               const SizedBox(height: 10),
               Text(
                 item.detail,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: p.secondary, fontSize: 12, height: 1.4),
+                style: TextStyle(color: p.secondary, fontSize: 13, height: 1.5),
               ),
+            ],
+            if (items.length > 1) ...[
+              const SizedBox(height: 12),
+              _activityPicker(items, item),
             ],
             const SizedBox(height: 8),
             Wrap(
               alignment: WrapAlignment.spaceBetween,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                TextButton.icon(
+                TextButton(
                   onPressed: () => context.push(item.route),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 15),
-                  label: Text(
+                  child: Text(
                     item.isLive
                         ? 'Open ${item.label.replaceAll(' paused', '')}'
                         : item.id == 'summary'
-                        ? 'Review tasks'
-                        : 'Open reminder',
+                        ? 'View ›'
+                        : item.id.startsWith('task-')
+                        ? 'View to-dos ›'
+                        : 'View reminder ›',
                   ),
                 ),
                 if (!item.isLive)
@@ -776,6 +738,37 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _activityPicker(
+    List<_IslandActivity> items,
+    _IslandActivity selected,
+  ) {
+    final control = AscentSegmentedControl<String>(
+      segments: [
+        for (final activity in items)
+          AscentSegment(
+            value: activity.id,
+            key: ValueKey('island_select_${activity.id}'),
+            label: activity.isLive ? activity.label : activity.title,
+          ),
+      ],
+      selected: selected.id,
+      onChanged: _select,
+    );
+    if (MediaQuery.textScalerOf(context).scale(1) >= 1.45) return control;
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SizedBox(
+          width: (items.length * 150.0).clamp(
+            constraints.maxWidth,
+            double.infinity,
+          ),
+          child: control,
         ),
       ),
     );

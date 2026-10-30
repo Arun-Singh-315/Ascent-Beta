@@ -129,7 +129,7 @@ class HomeLayout {
         : ['promises', ...order];
 
     final rawShortcuts = json['shortcuts'];
-    final parsedShortcuts = (rawShortcuts == null || (rawShortcuts is List && rawShortcuts.isEmpty))
+    final parsedShortcuts = (rawShortcuts == null)
         ? const ['thought-wall', 'hydration', 'momentum', 'vault']
         : known(rawShortcuts, homeShortcutRoutes).take(4).toList();
 
