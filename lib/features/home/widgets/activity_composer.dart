@@ -444,7 +444,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             child: TextButton.icon(
               key: const ValueKey('activity_options'),
               onPressed: _saving ? null : _options,
-              icon: const Icon(Icons.tune_rounded, size: 16),
+              icon: const Icon(Icons.settings_outlined, size: 16),
               label: Text(
                 summary.isEmpty ? 'Options' : summary,
                 maxLines: 1,

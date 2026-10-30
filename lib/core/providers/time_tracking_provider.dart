@@ -942,6 +942,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
     items.removeWhere((item) => dismissedIds.contains(item.id));
 
     // 3. Sort items: inProgress first (0), paused second (1), notStarted third (2), done last (3)
+    // Within notStarted: Starred / high-priority items float to the top for productive focus
     items.sort((a, b) {
       int score(TodayActivityStatus s) => switch (s) {
         TodayActivityStatus.inProgress => 0,
@@ -951,6 +952,13 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       };
       final diff = score(a.status).compareTo(score(b.status));
       if (diff != 0) return diff;
+      if (a.status == TodayActivityStatus.notStarted &&
+          b.status == TodayActivityStatus.notStarted) {
+        final aHigh = a.priority == 'high' ? 0 : 1;
+        final bHigh = b.priority == 'high' ? 0 : 1;
+        final priorityDiff = aHigh.compareTo(bHigh);
+        if (priorityDiff != 0) return priorityDiff;
+      }
       return b.elapsedSecondsToday.compareTo(a.elapsedSecondsToday);
     });
 

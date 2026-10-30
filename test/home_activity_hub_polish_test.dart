@@ -195,7 +195,79 @@ void main() {
 
       // Verify button uses OutlinedButton with compact size
       final button = tester.widget<OutlinedButton>(actionFinder);
-      expect(button.style?.minimumSize?.resolve({}), const Size(0, 28));
+      expect(button.style?.minimumSize?.resolve({}), const Size(0, 26));
+    });
+
+    testWidgets('To-do and timed activity titles are horizontally synchronized at the exact same X coordinate', (tester) async {
+      final todoActivity = const TodayActivityItem(
+        id: 'task_todo_sync',
+        title: 'Regular Todo Item',
+        sourceType: 'task',
+        categoryTag: 'Task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        kind: ActivityKind.todo,
+      );
+
+      final timedActivity = const TodayActivityItem(
+        id: 'task_timed_sync',
+        title: 'Timed Activity Item',
+        sourceType: 'task',
+        categoryTag: 'Task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        kind: ActivityKind.duration,
+        targetMinutes: 25,
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Scaffold(
+              body: Column(
+                children: [
+                  ActivityRowItem(activity: todoActivity, compact: true),
+                  ActivityRowItem(activity: timedActivity, compact: true),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final todoTitlePos = tester.getTopLeft(find.byKey(const ValueKey('activity_title_task_todo_sync')));
+      final timedTitlePos = tester.getTopLeft(find.byKey(const ValueKey('activity_title_task_timed_sync')));
+
+      // Both titles must start at the exact same horizontal coordinate (dx)
+      expect(todoTitlePos.dx, timedTitlePos.dx);
+    });
+
+    testWidgets('Activity composer options displays clear settings_outlined icon', (tester) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: SingleChildScrollView(
+                child: ActivityHubCard(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter text to reveal Options button
+      await tester.enterText(find.byKey(const ValueKey('activity_quick_input')), 'Test Task');
+      await tester.pumpAndSettle();
+
+      final optionsFinder = find.byKey(const ValueKey('activity_options'));
+      expect(optionsFinder, findsOneWidget);
+      expect(find.descendant(of: optionsFinder, matching: find.byIcon(Icons.settings_outlined)), findsOneWidget);
     });
   });
 

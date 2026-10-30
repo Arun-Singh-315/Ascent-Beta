@@ -158,7 +158,7 @@ class MoreScreen extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.tune_rounded, size: 14, color: g.clay),
+                          Icon(Icons.edit_rounded, size: 14, color: g.clay),
                           const SizedBox(width: 6),
                           Text(
                             'Edit',
@@ -326,7 +326,7 @@ class MoreScreen extends ConsumerWidget {
           AscentCard(
             padding: EdgeInsets.zero,
             child: _MoreListTile(
-              icon: Icons.tune_rounded,
+              icon: Icons.settings_rounded,
               iconTint: g.inkMuted,
               title: 'Settings',
               subtitle: 'Theme, study goals, notifications & data backup',

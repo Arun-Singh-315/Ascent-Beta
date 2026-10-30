@@ -116,6 +116,7 @@ class HomeHeader extends ConsumerWidget {
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               ),
               IconButton(
+                key: const ValueKey('home_profile_button'),
                 tooltip: 'Profile and settings',
                 onPressed: () {
                   HapticFeedback.lightImpact();
@@ -227,7 +228,7 @@ class HomeHeader extends ConsumerWidget {
                         HapticFeedback.lightImpact();
                         showHomeCustomization(context);
                       },
-                      icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
+                      icon: Icon(Icons.dashboard_customize_outlined, size: 19, color: g.inkMuted),
                       constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                       padding: EdgeInsets.zero,
                     ),
@@ -255,7 +256,7 @@ class HomeHeader extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     showHomeCustomization(context);
                   },
-                  icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
+                  icon: Icon(Icons.dashboard_customize_outlined, size: 19, color: g.inkMuted),
                   constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 ),
               ],

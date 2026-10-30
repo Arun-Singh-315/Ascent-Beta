@@ -594,7 +594,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                 IconButton(
                   tooltip: 'Customize Dynamic Island',
                   onPressed: () => showIslandCustomization(context),
-                  icon: Icon(Icons.tune_rounded, size: 17, color: p.secondary),
+                  icon: Icon(Icons.settings_outlined, size: 17, color: p.secondary),
                 ),
               IconButton(
                 tooltip: _expanded

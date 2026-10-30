@@ -744,6 +744,14 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
         );
     if (!saved) throw StateError('Could not save star');
+    if (mounted) {
+      AscentSnackBar.show(
+        context,
+        message: selected
+            ? 'Marked important · Pinned to top of Today'
+            : 'Removed from important',
+      );
+    }
   }
 
   Widget _compactRow(BuildContext context) {
@@ -847,60 +855,64 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     }
 
     Widget buildLeadingTarget() {
+      Widget content;
       if (timed) {
-        return Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: Icon(
-            lecture
-                ? Icons.school_outlined
-                : (running ? Icons.timer_rounded : Icons.timer_outlined),
-            size: 19,
-            color: running
-                ? SharedControlColors.dueRed
-                : (paused ? g.clay : g.inkMuted),
-          ),
+        content = Icon(
+          lecture
+              ? Icons.school_outlined
+              : (running ? Icons.timer_rounded : Icons.timer_outlined),
+          size: 20,
+          color: running
+              ? SharedControlColors.dueRed
+              : (paused ? g.clay : g.inkMuted),
         );
-      }
-      if (activity.isScheduledInFuture) {
-        return Padding(
-          padding: const EdgeInsets.only(right: 10),
-          child: Icon(
-            Icons.schedule_rounded,
-            size: 19,
-            color: g.inkMuted,
-          ),
+      } else if (activity.isScheduledInFuture) {
+        content = Icon(
+          Icons.schedule_rounded,
+          size: 20,
+          color: g.inkMuted,
         );
-      }
-      return Padding(
-        padding: const EdgeInsets.only(right: 10),
-        child: AppTapArea(
-          key: ValueKey('activity_action_${activity.id}'),
-          onTap: done ? null : completeTask,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: done ? SharedControlColors.actionBlue : Colors.transparent,
-              border: Border.all(
-                color: done
-                    ? SharedControlColors.actionBlue
-                    : (context.isDark
-                        ? g.inkMuted.withValues(alpha: 0.6)
-                        : g.ink.withValues(alpha: 0.35)),
-                width: 1.6,
+      } else {
+        content = Semantics(
+          button: true,
+          label: done ? 'Completed' : 'Mark complete',
+          child: InkResponse(
+            key: ValueKey('activity_action_${activity.id}'),
+            onTap: done ? null : completeTask,
+            radius: 18,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? SharedControlColors.actionBlue : Colors.transparent,
+                border: Border.all(
+                  color: done
+                      ? SharedControlColors.actionBlue
+                      : (context.isDark
+                          ? g.inkMuted.withValues(alpha: 0.6)
+                          : g.ink.withValues(alpha: 0.35)),
+                  width: 1.6,
+                ),
               ),
+              child: done
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    )
+                  : null,
             ),
-            child: done
-                ? const Icon(
-                    Icons.check_rounded,
-                    size: 14,
-                    color: Colors.white,
-                  )
-                : null,
           ),
-        ),
+        );
+      }
+
+      return Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        margin: const EdgeInsets.only(right: 10),
+        child: content,
       );
     }
 
@@ -973,23 +985,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         .withValues(alpha: context.isDark ? 0.55 : 0.35),
                     width: 1.0,
                   ),
-                  minimumSize: const Size(0, 28),
+                  minimumSize: const Size(0, 26),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 8,
+                    vertical: 3,
                   ),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textStyle: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 icon: Icon(
                   running ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  size: 14,
+                  size: 13,
                 ),
                 label: Text(actionLabel),
                 onPressed: () async {
@@ -1069,12 +1081,22 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           )
         : null;
 
+    final isStarred = activity.priority == 'high' && !done;
+    final softBorderColor = isStarred
+        ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
+        : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25);
+    final cardColor = isStarred
+        ? (context.isDark
+            ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
+            : SharedControlColors.actionBlue.withValues(alpha: 0.035))
+        : (context.isDark
+            ? g.fill.withValues(alpha: 0.18)
+            : Theme.of(context).colorScheme.surface);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Material(
-        color: context.isDark
-            ? g.fill.withValues(alpha: 0.25)
-            : Theme.of(context).colorScheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -1085,11 +1107,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: g.line.withValues(alpha: context.isDark ? 0.35 : 0.5),
-                width: 0.75,
+                color: softBorderColor,
+                width: 0.65,
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
             child: Row(
               children: [
                 buildLeadingTarget(),
@@ -1111,10 +1133,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ),
                       if (status.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(top: 3),
+                          padding: const EdgeInsets.only(top: 2),
                           child: Text(
                             status,
-                            style: TextStyle(color: g.inkMuted, fontSize: 11.5),
+                            style: TextStyle(color: g.inkMuted, fontSize: 11),
                           ),
                         ),
                     ],

@@ -36,15 +36,21 @@ class _AscentStarButtonState extends State<AscentStarButton> {
   @override
   Widget build(BuildContext context) => Semantics(
     toggled: widget.selected,
-    child: IconButton(
-      tooltip: widget.selected ? 'Remove star' : 'Star activity',
-      onPressed: widget.onChanged == null || _busy ? null : _toggle,
-      color: widget.selected
-          ? SharedControlColors.actionBlue
-          : const Color(0xFF8E8E93),
-      icon: Icon(
-        widget.selected ? Icons.star_rounded : Icons.star_outline_rounded,
-        size: 23,
+    child: SizedBox(
+      width: 32,
+      height: 32,
+      child: IconButton(
+        tooltip: widget.selected ? 'Remove star' : 'Star activity',
+        onPressed: widget.onChanged == null || _busy ? null : _toggle,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        color: widget.selected
+            ? SharedControlColors.actionBlue
+            : const Color(0xFF8E8E93),
+        icon: Icon(
+          widget.selected ? Icons.star_rounded : Icons.star_outline_rounded,
+          size: 18,
+        ),
       ),
     ),
   );
