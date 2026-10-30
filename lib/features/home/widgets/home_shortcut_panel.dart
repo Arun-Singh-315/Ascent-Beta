@@ -8,7 +8,6 @@ import '../../../app/theme/dimension_tokens.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../promises/providers/promise_providers.dart';
-import '../../../shared/widgets/glass_surface.dart';
 
 class HomeShortcutItem {
   final String id;

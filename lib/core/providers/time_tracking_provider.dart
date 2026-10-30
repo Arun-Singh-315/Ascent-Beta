@@ -637,7 +637,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
   final planDao = ref.watch(planDaoProvider);
-  final timeTracking = ref.watch(timeTrackingProvider);
+  final activeSessionState = ref.watch(
+    timeTrackingProvider.select(
+      (s) => (
+        activeSessionId: s.activeSession?.id,
+        linkedTaskId: s.activeSession?.linkedTaskId,
+        isRunning: s.isRunning,
+        isPaused: s.isPaused,
+      ),
+    ),
+  );
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
   final activeCourseId = ref.watch(
     learningHubProvider.select((s) => s.activeCourseId),
@@ -705,8 +714,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
 
       int taskElapsedSeconds = 0;
       for (final s in taskSessions) {
-        if (timeTracking.activeSession?.id == s.id) {
-          taskElapsedSeconds += timeTracking.elapsedSeconds;
+        if (activeSessionState.activeSessionId == s.id) {
+          taskElapsedSeconds += ref.read(timeTrackingProvider).elapsedSeconds;
         } else {
           taskElapsedSeconds += (s.durationSeconds > 0)
               ? s.durationSeconds
@@ -720,12 +729,12 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.linkedTaskId == task.id &&
-          timeTracking.isRunning) {
+      if (activeSessionState.linkedTaskId == task.id &&
+          activeSessionState.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (taskSessions.any((s) => s.status == 'paused') ||
-          (timeTracking.activeSession?.linkedTaskId == task.id &&
-              timeTracking.isPaused)) {
+          (activeSessionState.linkedTaskId == task.id &&
+              activeSessionState.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (task.actualCompletedDate != null) {
         status = TodayActivityStatus.done;
@@ -821,8 +830,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       int elapsed;
-      if (timeTracking.activeSession?.id == session.id) {
-        elapsed = timeTracking.elapsedSeconds;
+      if (activeSessionState.activeSessionId == session.id) {
+        elapsed = ref.read(timeTrackingProvider).elapsedSeconds;
       } else {
         elapsed = (session.durationSeconds > 0)
             ? session.durationSeconds
@@ -837,12 +846,12 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.id == session.id &&
-          timeTracking.isRunning) {
+      if (activeSessionState.activeSessionId == session.id &&
+          activeSessionState.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (session.status == 'paused' ||
-          (timeTracking.activeSession?.id == session.id &&
-              timeTracking.isPaused)) {
+          (activeSessionState.activeSessionId == session.id &&
+              activeSessionState.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (session.status == 'completed') {
         status = TodayActivityStatus.done;

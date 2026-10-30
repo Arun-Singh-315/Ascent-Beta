@@ -76,6 +76,18 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
         .watch();
   }
 
+  /// Home shows the newest non-archived message, independent of wall pinning.
+  Stream<Thought?> watchLatestThought() {
+    return (select(thoughtTable)
+          ..where((t) => t.isArchived.equals(false))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
   /// Get a single thought by ID.
   Future<Thought?> getThoughtById(int id) {
     return (select(

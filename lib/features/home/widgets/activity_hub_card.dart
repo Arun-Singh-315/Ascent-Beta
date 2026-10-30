@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../plans/widgets/home_plans_preview.dart';
 import 'activity_row_item.dart';
@@ -48,6 +49,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   bool _showAll = false;
   bool _showCompleted = false;
   bool _showPlans = false;
+  final Set<String> _seenActivityIds = <String>{};
+  bool _listLoadedOnce = false;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +113,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 const HomePlansPreview()
               else
                 activities.when(
+                  skipLoadingOnReload: true,
+                  skipError: true,
                   loading: () => const Padding(
                     padding: EdgeInsets.all(16),
                     child: LinearProgressIndicator(),
@@ -176,6 +181,17 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       ...standardRows.map((r) => _ActivityRowEntry(r)),
                     ];
 
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!mounted) return;
+                      final rowIds = allEntries
+                          .whereType<_ActivityRowEntry>()
+                          .map((e) => e.activity.id);
+                      if (!_listLoadedOnce) {
+                        _listLoadedOnce = true;
+                      }
+                      _seenActivityIds.addAll(rowIds);
+                    });
+
                     final limit = _showAll
                         ? 20
                         : widget.previewLimit.clamp(1, 4);
@@ -208,18 +224,23 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               compact: true,
                             )
                           else if (entry is _ActivityRowEntry)
-                            ActivityRowItem(
-                              key: ValueKey(entry.activity.id),
-                              activity: entry.activity,
-                              compact: true,
-                              onViewCompleted: () {
-                                if (!mounted) return;
-                                setState(() {
-                                  _showCompleted = true;
-                                  _showPlans = false;
-                                  _showAll = false;
-                                });
-                              },
+                            _ActivityEntrance(
+                              key: ValueKey('entrance_${entry.activity.id}'),
+                              animate: _listLoadedOnce &&
+                                  !_seenActivityIds.contains(entry.activity.id),
+                              child: ActivityRowItem(
+                                key: ValueKey(entry.activity.id),
+                                activity: entry.activity,
+                                compact: true,
+                                onViewCompleted: () {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _showCompleted = true;
+                                    _showPlans = false;
+                                    _showAll = false;
+                                  });
+                                },
+                              ),
                             ),
                         ],
                         if (allEntries.length > widget.previewLimit &&
@@ -262,14 +283,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   },
                 ),
               if (!_showPlans && !_showCompleted) ...[
-                // Full-width, stronger rule: sets the composer apart from the
-                // lighter, inset hairlines between activity rows.
-                Divider(
-                  key: const ValueKey('activity_hub_controls_separator'),
-                  color: g.line,
-                  height: 20,
-                  thickness: 1,
-                ),
+                const SizedBox(height: 10),
                 const ActivityComposer(),
               ],
             ],
@@ -294,50 +308,15 @@ class _HubTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final (i, label) in labels.indexed)
-              InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => onSelected(i),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          color: i == selected ? g.ink : g.inkMuted,
-                          fontSize: 13,
-                          fontWeight: i == selected
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Container(
-                        height: 2,
-                        width: 16,
-                        decoration: BoxDecoration(
-                          color: i == selected ? g.clay : Colors.transparent,
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: AscentSegmentedControl<int>(
+        segments: [
+          for (final (index, label) in labels.indexed)
+            AscentSegment(value: index, label: label),
+        ],
+        selected: selected,
+        onChanged: onSelected,
       ),
     );
   }
@@ -495,4 +474,69 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
       ),
     );
   }
+}
+
+class _ActivityEntrance extends StatefulWidget {
+  const _ActivityEntrance({
+    super.key,
+    required this.animate,
+    required this.child,
+  });
+
+  final bool animate;
+  final Widget child;
+
+  @override
+  State<_ActivityEntrance> createState() => _ActivityEntranceState();
+}
+
+class _ActivityEntranceState extends State<_ActivityEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+    value: widget.animate ? 0 : 1,
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (!widget.animate) return;
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _controller,
+        child: widget.child,
+        builder: (context, child) {
+          final fade = Curves.easeOutCubic.transform(_controller.value);
+          final slide = Curves.easeOutCubic.transform(_controller.value);
+          final scale = Curves.easeOutBack.transform(_controller.value);
+          return Opacity(
+            opacity: fade.clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, -18 * (1 - slide)),
+              child: Transform.scale(
+                scale: 0.96 + 0.04 * scale,
+                alignment: Alignment.topCenter,
+                child: child,
+              ),
+            ),
+          );
+        },
+      );
 }

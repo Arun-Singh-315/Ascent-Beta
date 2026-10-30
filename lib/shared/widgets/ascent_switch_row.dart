@@ -1,14 +1,13 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/shared_control_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import 'ascent_snack_bar.dart';
+import 'ascent_switch.dart';
 
 /// Shared Apple-inspired settings switch row as specified in Section 5 (C02).
 ///
@@ -46,7 +45,8 @@ class _AscentSwitchRowState extends State<AscentSwitchRow> {
   bool _internalBusy = false;
 
   bool get _isEffectivelyBusy => widget.busy || _internalBusy;
-  bool get _isInteractive => widget.enabled && !_isEffectivelyBusy && widget.onChanged != null;
+  bool get _isInteractive =>
+      widget.enabled && !_isEffectivelyBusy && widget.onChanged != null;
 
   Future<void> _handleToggle() async {
     if (!_isInteractive) return;
@@ -82,7 +82,6 @@ class _AscentSwitchRowState extends State<AscentSwitchRow> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final isDark = g.isDark;
     final hasHelper = widget.helper != null && widget.helper!.trim().isNotEmpty;
     final minHeight = hasHelper
         ? AscentDimensions.settingsRowWithHelperHeight
@@ -90,17 +89,6 @@ class _AscentSwitchRowState extends State<AscentSwitchRow> {
 
     final primaryTextColor = widget.enabled ? g.ink : g.disabledFg;
     final helperTextColor = widget.enabled ? g.inkSecondary : g.disabledFg;
-
-    final onTrack = SharedControlColors.switchTrackOn;
-    final offTrack = isDark
-        ? SharedControlColors.switchTrackOffDark
-        : SharedControlColors.switchTrackOffLight;
-    final disabledTrack = isDark
-        ? SharedControlColors.disabledBgDark
-        : SharedControlColors.disabledBgLight;
-    final disabledThumb = isDark
-        ? SharedControlColors.disabledFgDark
-        : SharedControlColors.disabledFgLight;
 
     final semanticsValue = widget.value ? 'on' : 'off';
 
@@ -160,14 +148,11 @@ class _AscentSwitchRowState extends State<AscentSwitchRow> {
                           ),
                         )
                       : ExcludeSemantics(
-                          child: CupertinoSwitch(
+                          child: AscentSwitch(
                             value: widget.value,
-                            activeTrackColor: widget.enabled ? onTrack : disabledTrack,
-                            inactiveTrackColor: widget.enabled ? offTrack : disabledTrack,
-                            thumbColor: widget.enabled
-                                ? SharedControlColors.switchThumb
-                                : disabledThumb,
-                            onChanged: _isInteractive ? (_) => _handleToggle() : null,
+                            onChanged: _isInteractive
+                                ? (_) => _handleToggle()
+                                : null,
                           ),
                         ),
                 ),

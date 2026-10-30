@@ -5,11 +5,22 @@ import 'package:flutter/material.dart';
 class SharedControlColors {
   SharedControlColors._();
 
+  // Semantic controls: blue = action/selection, red = overdue/destructive,
+  // grey = structure/disabled. Importance is a user-selected blue star.
+  static const actionBlue = Color(0xFF006FE6);
+  static const actionBlueDark = Color(0xFF64ACFF);
+  static const dueRed = Color(0xFFD92D20);
+  static const dueRedDark = Color(0xFFFF6961);
+  static const neutralFillLight = Color(0xFFF2F2F7);
+  static const neutralFillDark = Color(0xFF2C2C2E);
+  static const labelLight = Color(0xFF1C1C1E);
+  static const labelDark = Color(0xFFF5F5F7);
+
   // ── Switch colors ─────────────────────────────────────────────────────────
-  static const Color switchTrackOn = Color(0xFF16803C);
+  static const Color switchTrackOn = actionBlue;
   static const Color switchThumb = Color(0xFFFFFFFF);
-  static const Color switchTrackOffLight = Color(0xFF737984);
-  static const Color switchTrackOffDark = Color(0xFF656C78);
+  static const Color switchTrackOffLight = Color(0xFFE5E5EA);
+  static const Color switchTrackOffDark = Color(0xFF39393D);
 
   // ── Disabled control colors ───────────────────────────────────────────────
   static const Color disabledBgLight = Color(0xFFE5E7EB);
@@ -41,11 +52,17 @@ class SharedControlColors {
   static const Color warningSoftBgDark = Color(0xFF3B301B);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  static Color errorSoftBg(bool isDark) => isDark ? errorSoftBgDark : errorSoftBgLight;
+  static Color errorSoftBg(bool isDark) =>
+      isDark ? errorSoftBgDark : errorSoftBgLight;
   static Color errorInk(bool isDark) => isDark ? errorInkDark : errorInkLight;
-  static Color successSoftBg(bool isDark) => isDark ? successSoftBgDark : successSoftBgLight;
-  static Color successInk(bool isDark) => isDark ? successInkDark : successInkLight;
-  static Color switchTrackOff(bool isDark) => isDark ? switchTrackOffDark : switchTrackOffLight;
-  static Color disabledBg(bool isDark) => isDark ? disabledBgDark : disabledBgLight;
-  static Color disabledFg(bool isDark) => isDark ? disabledFgDark : disabledFgLight;
+  static Color successSoftBg(bool isDark) =>
+      isDark ? successSoftBgDark : successSoftBgLight;
+  static Color successInk(bool isDark) =>
+      isDark ? successInkDark : successInkLight;
+  static Color switchTrackOff(bool isDark) =>
+      isDark ? switchTrackOffDark : switchTrackOffLight;
+  static Color disabledBg(bool isDark) =>
+      isDark ? disabledBgDark : disabledBgLight;
+  static Color disabledFg(bool isDark) =>
+      isDark ? disabledFgDark : disabledFgLight;
 }

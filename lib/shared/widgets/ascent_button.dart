@@ -212,9 +212,13 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
     final g = context.glass;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
-    final isPrimary = widget.type == AscentButtonType.primary || widget.type == AscentButtonType.fab;
+    final isPrimary =
+        widget.type == AscentButtonType.primary ||
+        widget.type == AscentButtonType.fab;
     final isDestructive = widget.type == AscentButtonType.destructive;
-    final isTonal = widget.type == AscentButtonType.tonal || widget.type == AscentButtonType.secondary;
+    final isTonal =
+        widget.type == AscentButtonType.tonal ||
+        widget.type == AscentButtonType.secondary;
     final isOutlined = widget.type == AscentButtonType.outlined;
     final isGhost = widget.type == AscentButtonType.ghost;
     final isIcon = widget.type == AscentButtonType.icon;
@@ -228,7 +232,10 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       bg = isGhost || isIcon ? Colors.transparent : g.disabledBg;
       fg = g.disabledFg;
       border = isOutlined
-          ? Border.all(color: g.disabledFg.withValues(alpha: 0.3), width: AscentDimensions.controlOutlineWidth)
+          ? Border.all(
+              color: g.disabledFg.withValues(alpha: 0.3),
+              width: AscentDimensions.controlOutlineWidth,
+            )
           : null;
     } else if (isPrimary) {
       bg = _pressed ? g.primaryButtonPressed : g.primaryButtonBg;
@@ -238,11 +245,15 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       fg = g.destructiveFg;
     } else if (isTonal) {
       final baseBg = g.tonalBg;
-      bg = _pressed ? Color.alphaBlend(g.ink.withValues(alpha: 0.06), baseBg) : baseBg;
+      bg = _pressed
+          ? Color.alphaBlend(g.ink.withValues(alpha: 0.06), baseBg)
+          : baseBg;
       fg = g.tonalFg;
     } else if (isOutlined) {
       final baseBg = g.surface;
-      bg = _pressed ? Color.alphaBlend(g.ink.withValues(alpha: 0.06), baseBg) : baseBg;
+      bg = _pressed
+          ? Color.alphaBlend(g.ink.withValues(alpha: 0.06), baseBg)
+          : baseBg;
       fg = g.ink;
       border = Border.all(
         color: g.controlOutline,
@@ -270,10 +281,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       buttonContent = Container(
         width: 56,
         height: 56,
-        decoration: BoxDecoration(
-          color: bg,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
         alignment: Alignment.center,
         child: Icon(widget.icon, size: 24, color: fg),
       );
@@ -303,7 +311,6 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
           border: border,
         ),
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        alignment: Alignment.center,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -342,12 +349,15 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
         minHeight: AscentDimensions.minTouchTarget,
         minWidth: AscentDimensions.minTouchTarget,
       ),
-      alignment: Alignment.center,
-      child: AnimatedScale(
-        scale: (!disableAnimations && _pressed) ? 0.98 : 1.0,
-        duration: Duration(milliseconds: _pressed ? 100 : 140),
-        curve: Curves.easeOutCubic,
-        child: buttonContent,
+      child: Center(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: AnimatedScale(
+          scale: (!disableAnimations && _pressed) ? 0.98 : 1.0,
+          duration: Duration(milliseconds: _pressed ? 100 : 140),
+          curve: Curves.easeOutCubic,
+          child: buttonContent,
+        ),
       ),
     );
 
@@ -358,7 +368,8 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       );
     }
 
-    final effectiveLabel = widget.semanticLabel ?? widget.tooltip ?? widget.label;
+    final effectiveLabel =
+        widget.semanticLabel ?? widget.tooltip ?? widget.label;
 
     Widget result = GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -374,10 +385,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
     );
 
     if (widget.tooltip != null) {
-      result = Tooltip(
-        message: widget.tooltip!,
-        child: result,
-      );
+      result = Tooltip(message: widget.tooltip!, child: result);
     }
 
     return result;

@@ -133,7 +133,9 @@ void main() {
       controller.dispose();
     },
   );
-  testWidgets('Home field focuses an accessible quick-capture card', (tester) async {
+  testWidgets('Home field focuses an accessible quick-capture card', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
     await tester.pump();
     final field = tester.widget<TextField>(find.byType(TextField));
@@ -152,6 +154,7 @@ void main() {
       findsWidgets,
     );
     await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
   testWidgets(
     'Riya expense is not saved until confirmation, repeated confirm cannot duplicate',

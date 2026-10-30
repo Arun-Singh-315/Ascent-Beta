@@ -58,14 +58,17 @@ void main() {
         tester.widget<IconButton>(find.byType(IconButton)).onPressed,
         isNull,
       );
-      expect(find.text('To-do'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Reminder off'), findsOneWidget);
+      expect(find.text('To-do'), findsNothing);
+      expect(find.text('Today'), findsNothing);
+      expect(find.text('Reminder off'), findsNothing);
       await tester.enterText(
         find.byKey(const ValueKey('activity_quick_input')),
         '  Quick task  ',
       );
       await tester.pump();
+      expect(find.text('Timer'), findsNothing);
+      expect(find.text('To-do'), findsNothing);
+      expect(find.text('Today'), findsNothing);
       await tester.tap(find.byTooltip('Add activity'));
       await tester.tap(find.byTooltip('Add activity'));
       await settleDatabase(tester);
@@ -99,7 +102,9 @@ void main() {
     'timer choice reveals duration; cancelled/invalid duration stays safe; tomorrow persists',
     (tester) async {
       await mount(tester);
-      await tester.tap(find.byTooltip('Activity type'));
+      await tester.tap(find.byKey(const ValueKey('activity_quick_input')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('activity_options')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timer').last);
       await tester.pumpAndSettle();
@@ -115,6 +120,8 @@ void main() {
       await tester.tap(find.byTooltip('Activity date'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tomorrow').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const ValueKey('activity_quick_input')),
@@ -132,9 +139,9 @@ void main() {
         ),
         isTrue,
       );
-      expect(find.text('To-do'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Reminder off'), findsOneWidget);
+      expect(find.text('To-do'), findsNothing);
+      expect(find.text('Today'), findsNothing);
+      expect(find.text('Reminder off'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     },
@@ -143,13 +150,18 @@ void main() {
     tester,
   ) async {
     await mount(tester, scale: 2);
+    await tester.tap(find.byKey(const ValueKey('activity_quick_input')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('activity_options')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byTooltip('Activity reminder'));
     await tester.tap(find.byTooltip('Activity reminder'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Choose time'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Reminder off'), findsOneWidget);
+    expect(find.text('Reminder off'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

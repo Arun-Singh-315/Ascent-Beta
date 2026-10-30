@@ -14,46 +14,29 @@ class IslandPalette {
   final Color top, bottom, ink, secondary, accent;
 
   static IslandPalette resolve(IslandFinish finish, bool dark) {
-    if (finish == IslandFinish.midnight) {
+    if (finish == IslandFinish.midnight || dark) {
       return const IslandPalette(
-        Color(0xF0263C58),
-        Color(0xF20B1427),
-        Color(0xFFF1F7FF),
-        Color(0xFFB8CAE4),
-        Color(0xFF95CDFF),
+        Color(0xF0232326),
+        Color(0xF00F0F12),
+        Color(0xFFF5F5F7),
+        Color(0xFFAEAEB2),
+        Color(0xFF64ACFF),
       );
     }
-    if (finish == IslandFinish.frost) {
-      return dark
-          ? const IslandPalette(
-              Color(0xEE34434C),
-              Color(0xF01B252E),
-              Color(0xFFF2F8FA),
-              Color(0xFFBACFD8),
-              Color(0xFFADE7E5),
-            )
-          : const IslandPalette(
-              Color(0xEEFAFFFF),
-              Color(0xE6DFECEE),
-              Color(0xFF173D45),
-              Color(0xFF47666D),
-              Color(0xFF246873),
-            );
-    }
-    return dark
+    return finish == IslandFinish.frost
         ? const IslandPalette(
-            Color(0xEB214B70),
-            Color(0xF0102238),
-            Color(0xFFF1F7FF),
-            Color(0xFFB6CDE4),
-            Color(0xFF8DCCFF),
+            Color(0xF5FFFFFF),
+            Color(0xF0F2F2F7),
+            Color(0xFF1C1C1E),
+            Color(0xFF636366),
+            Color(0xFF006FE6),
           )
         : const IslandPalette(
-            Color(0xEEF0F8FF),
-            Color(0xE6CBE2F6),
-            Color(0xFF102F50),
-            Color(0xFF426482),
-            Color(0xFF1364AC),
+            Color(0xF5FFFFFF),
+            Color(0xF0EBF2FF),
+            Color(0xFF1C1C1E),
+            Color(0xFF636366),
+            Color(0xFF006FE6),
           );
   }
 
@@ -82,7 +65,7 @@ class IslandSurface extends StatelessWidget {
       borderRadius: BorderRadius.circular(radius),
       boxShadow: [
         BoxShadow(
-          color: palette.accent.withValues(alpha: palette.isDark ? .10 : .07),
+          color: Colors.black.withValues(alpha: palette.isDark ? .15 : .045),
           blurRadius: 24,
           offset: const Offset(0, 8),
         ),
@@ -94,7 +77,7 @@ class IslandSurface extends StatelessWidget {
       enableBlur: true,
       hasShadow: false,
       customBorder: Border.all(
-        color: palette.accent.withValues(alpha: .28),
+        color: palette.ink.withValues(alpha: .09),
         width: .8,
       ),
       gradient: LinearGradient(
@@ -127,9 +110,7 @@ class IslandSurface extends StatelessWidget {
                     colors: [
                       Colors.transparent,
                       (palette.isDark ? Colors.white : palette.accent)
-                          .withValues(
-                        alpha: palette.isDark ? 0.40 : 0.50,
-                      ),
+                          .withValues(alpha: palette.isDark ? 0.40 : 0.50),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.5, 1.0],

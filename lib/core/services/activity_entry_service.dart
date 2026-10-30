@@ -117,7 +117,7 @@ class ActivityEntryService {
             title: trimmed,
             plannedDate: Value(planned),
             estimatedMinutes: Value(estimatedMinutes),
-            priority: Value(priority ?? current?.priority ?? 'medium'),
+            priority: Value(priority ?? current?.priority ?? 'low'),
             notes: Value(
               cleanNotes == null || cleanNotes.isEmpty || cleanNotes == trimmed
                   ? null

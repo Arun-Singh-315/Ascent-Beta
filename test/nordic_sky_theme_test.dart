@@ -1,4 +1,5 @@
 import 'package:ascent/app/theme/merlot_palette.dart';
+import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,7 +89,7 @@ void main() {
       final theme = AscentTheme.light(preset: DayThemePreset.classicClay);
 
       expect(theme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, const Color(0xFFA4523A));
+      expect(theme.colorScheme.primary, SharedControlColors.actionBlue);
       expect(
         theme.scaffoldBackgroundColor,
         theme.extension<DayGlassMaterial>()!.canvas,
@@ -104,16 +105,13 @@ void main() {
         final theme = AscentTheme.light(preset: DayThemePreset.nordicSky);
 
         expect(theme.brightness, Brightness.light);
-        expect(theme.colorScheme.primary, FrozenPalette.action);
+        expect(theme.colorScheme.primary, SharedControlColors.actionBlue);
         expect(
           theme.scaffoldBackgroundColor,
           theme.extension<DayGlassMaterial>()!.canvas,
         );
         expect(theme.colorScheme.onSurface, FrozenPalette.ink);
-        expect(
-          theme.colorScheme.onSurfaceVariant,
-          Color.lerp(FrozenPalette.mutedInk, FrozenPalette.ink, .16),
-        );
+        expect(theme.colorScheme.onSurfaceVariant, FrozenPalette.mutedInk);
 
         final glass = theme.extension<AscentGlass>();
         expect(glass, isNotNull);
@@ -143,9 +141,9 @@ void main() {
         final unselectedTrack = switchTheme.trackColor!.resolve({});
 
         expect(selectedThumb, const Color(0xFFFFFFFF));
-        expect(selectedTrack, FrozenPalette.action);
-        expect(unselectedThumb, FrozenPalette.secondaryInk);
-        expect(unselectedTrack, FrozenPalette.line);
+        expect(selectedTrack, SharedControlColors.actionBlue);
+        expect(unselectedThumb, Colors.white);
+        expect(unselectedTrack, SharedControlColors.switchTrackOffLight);
       },
     );
 
@@ -180,8 +178,8 @@ void main() {
           {},
         );
 
-        expect(outlinedFg, FrozenPalette.action);
-        expect(textFg, FrozenPalette.action);
+        expect(outlinedFg, SharedControlColors.actionBlue);
+        expect(textFg, SharedControlColors.actionBlue);
       },
     );
   });
@@ -245,24 +243,14 @@ void main() {
     );
 
     testWidgets(
-      'ThemeOption toggle renders white text when selected and obsidian ink when unselected',
+      'Glass selection uses a neutral shared segmented control and persists',
       (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        SharedPreferences.setMockInitialValues({
-          'ascent_day_theme_preset': 'nordicSky',
-          ...returningUserGuidePrefs,
-        });
+        SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
         final prefs = await SharedPreferences.getInstance();
-
         final container = ProviderContainer(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         );
         addTearDown(container.dispose);
-
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
@@ -272,41 +260,17 @@ void main() {
             ),
           ),
         );
-
         await tester.pumpAndSettle();
-
-        // By default themeMode is system: "System Auto" toggle is selected (white text)
-        final systemAutoText = tester.widget<Text>(
-          find.text('System Auto').last,
-        );
-        expect(systemAutoText.style?.color, Colors.white);
-
-        // "Day / Light" is unselected, should have dark ink color, NOT blue!
-        final dayLightTextBefore = tester.widget<Text>(
-          find.text('Day / Light'),
-        );
-        expect(dayLightTextBefore.style?.color, FrozenPalette.ink);
-
-        // Tap "Day / Light" to select it
-        await tester.ensureVisible(find.text('Day / Light'));
-        await tester.tap(find.text('Day / Light'));
+        final balanced = tester.widget<Text>(find.text('Balanced').last);
+        expect(balanced.style?.color, SharedControlColors.labelLight);
+        await tester.tap(find.text('Subtle').last);
         await tester.pumpAndSettle();
-
-        // Now "Day / Light" is selected (white text)
-        final dayLightTextAfter = tester.widget<Text>(find.text('Day / Light'));
-        expect(dayLightTextAfter.style?.color, Colors.white);
-
-        // "Night / Dark" is unselected, should have dark ink color, NOT blue!
-        final nightDarkText = tester.widget<Text>(find.text('Night / Dark'));
-        expect(nightDarkText.style?.color, FrozenPalette.ink);
-
-        // The selected glass material has white text; the other choices retain palette ink.
-        final balancedText = tester.widget<Text>(find.text('Balanced').last);
-        expect(balancedText.style?.color, Colors.white);
-
-        // The Subtle material is unselected.
-        final subtleText = tester.widget<Text>(find.text('Subtle').last);
-        expect(subtleText.style?.color, FrozenPalette.ink);
+        expect(
+          container.read(glassTranslucencyPresetProvider),
+          GlassTranslucencyPreset.subtleFrosted,
+        );
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
       },
     );
   });

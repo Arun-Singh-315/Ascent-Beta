@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_switch.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -446,7 +447,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                     color: context.textMuted,
                   ),
                 ),
-                Switch(
+                AscentSwitch(
                   value: _useBulkLectureEntry,
                   onChanged: (v) => setState(() => _useBulkLectureEntry = v),
                 ),
@@ -735,7 +736,10 @@ class _StepPill extends StatelessWidget {
           child: Text(
             label,
             style: AppTypeRoles.typeRole34.copyWith(
-              color: context.surfaces.contentForeground(isActive, isActive ? AppPalette.white : context.textMuted),
+              color: context.surfaces.contentForeground(
+                isActive,
+                isActive ? AppPalette.white : context.textMuted,
+              ),
             ),
           ),
         ),

@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_segmented_control.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -574,15 +575,14 @@ Future<void> showEditLectureSheet(
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SegmentedButton<int>(
+                  AscentSegmentedControl<int>(
                     segments: const [
-                      ButtonSegment(value: 100, label: Text('Full duration')),
-                      ButtonSegment(value: 50, label: Text('At least half')),
+                      AscentSegment(value: 100, label: 'Full duration'),
+                      AscentSegment(value: 50, label: 'At least half'),
                     ],
-                    selected: {completionThreshold},
-                    onSelectionChanged: (values) => setModalState(
-                      () => completionThreshold = values.single,
-                    ),
+                    selected: completionThreshold,
+                    onChanged: (value) =>
+                        setModalState(() => completionThreshold = value),
                   ),
                   const SizedBox(height: 8),
                   Text(

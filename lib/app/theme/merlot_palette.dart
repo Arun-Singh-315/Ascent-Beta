@@ -1,164 +1,113 @@
 import 'package:flutter/material.dart';
 
-/// Ascent's warm neutral identity: linen daylight, charcoal night, merlot actions.
+/// Legacy preset identifier, now using neutral surfaces and semantic Apple blue.
 /// Accent color signals actions; opaque content surfaces keep text readable.
 class MerlotPalette {
   MerlotPalette._();
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
-  /// Canvas: Scaffold background — soft, soothing cashmere linen (organic warmth, zero bleached white wash)
-  static const canvas = Color(0xFFF5F3EF);
+  static const canvas = Color(0xFFF2F2F7);
 
-  /// Surface: Cards, bottom nav, containers — pristine porcelain off-white
   static const surface = Color(0xFFFFFFFF);
 
-  /// Surface Bottom: Lower stop for gradual card gradient — pure soft porcelain
-  static const surfaceBottom = Color(0xFFFAF8F5);
+  static const surfaceBottom = Color(0xFFFAFAFC);
 
-  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — soft sunken cashmere well
-  static const recessedWell = Color(0xFFF0EEEA);
+  static const recessedWell = Color(0xFFEFEFF4);
 
-  /// Elevated: Sheets, dialogs, modals — crisp elevated porcelain white
   static const elevated = Color(0xFFFFFFFF);
 
-  /// Line: Neutral hairline for structural boundaries.
   static const line = Color(0x20252624); // 18% alpha merlot wine rim
 
-  /// Line Specular: Top edge catchlight reflection — vintage wine specular highlight
-  static const lineSpecular = Color(0x44581825); // 27% alpha merlot specular
+  static const lineSpecular = Color(0x443C3C43); // 27% alpha merlot specular
 
-  /// Line Subtle: Inner divider and recessed well border inside cards
   static const lineSubtle = Color(0x14252624); // 10% alpha merlot hairline
 
-  /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
-  static const action = Color(0xFF581825);
+  static const action = Color(0xFF006FE6);
 
-  /// Deep Vintage Merlot alias
   static const vintageMerlot = action;
 
-  /// Action Deep: FAB ("✦ Ask Jarvis"), pressed/active states
-  static const actionDeep = Color(0xFF48101C);
+  static const actionDeep = Color(0xFF005AC8);
 
-  /// Action Bright: Top of CTA button micro-gradient
-  static const actionBright = Color(0xFF722032);
+  static const actionBright = Color(0xFF2589FF);
 
-  /// Action Pressed: Pressed state
-  static const actionPressed = Color(0xFF380B14);
+  static const actionPressed = Color(0xFF004CA6);
 
-  /// Secondary Accent: Antique warm gold for progress, sparks, and stars
-  static const antiqueGold = Color(0xFFC28834);
+  static const antiqueGold = Color(0xFF006FE6);
 
-  /// Tint: Selected tabs ("Today"), chips, tonal button background — delicate wine rose blush
-  static const tint = Color(0xFFF4E5EC);
+  static const tint = Color(0xFFE8F1FF);
 
-  /// Pill Soft: Composer pills and light buttons — soft crisp cashmere cream
-  static const pillSoft = Color(0xFFFAF6F2);
+  static const pillSoft = Color(0xFFF2F2F7);
 
-  /// Ink: Neutral charcoal for primary text.
-  static const ink = Color(0xFF252624);
+  static const ink = Color(0xFF1C1C1E);
 
-  /// Secondary Ink: Warm gray for supporting text.
-  static const secondaryInk = Color(0xFF575952);
+  static const secondaryInk = Color(0xFF636366);
 
-  /// Muted Ink: Readable gray for captions and helper text.
-  static const mutedInk = Color(0xFF6F7069);
+  static const mutedInk = Color(0xFF737378);
 
-  /// Card Ink: Primary text inside cards.
-  static const cardInk = Color(0xFF252624);
+  static const cardInk = Color(0xFF1C1C1E);
 
-  /// Card Secondary Ink: Supporting text inside cards.
-  static const cardSecondaryInk = Color(0xFF575952);
+  static const cardSecondaryInk = Color(0xFF636366);
 
-  /// Card Muted Ink: Captions, helper text, and inactive icons.
-  static const cardMutedInk = Color(0xFF6F7069);
+  static const cardMutedInk = Color(0xFF737378);
 
-  /// Subtle Ink: Hints, placeholders, disabled indicators
-  static const subtleInk = Color(0xFF9E6E7A);
+  static const subtleInk = Color(0xFF8E8E93);
 
-  /// Spark: Antique gold strictly for streak flame, achievements, win celebration
   static const spark = antiqueGold;
 
-  /// Spark Tint: Warm gold container highlight
-  static const sparkTint = Color(0xFFFDF6EA);
+  static const sparkTint = Color(0xFFE8F1FF);
 
-  /// Terracotta: Warm roasted terracotta for Chai & Coffee Break tile
-  static const terracotta = Color(0xFFA04020);
+  static const terracotta = Color(0xFF636366);
 
-  /// Terracotta Tint: Beverage container highlight
-  static const terracottaTint = Color(0xFFFDF1EB);
+  static const terracottaTint = Color(0xFFF2F2F7);
 
-  /// Success: Dewy botanical sage for hydration and completed goals
-  static const success = Color(0xFF166534);
+  static const success = Color(0xFF006FE6);
 
-  /// Success Tint: Soft sage container highlight
-  static const successTint = Color(0xFFEDF7F0);
+  static const successTint = Color(0xFFE8F1FF);
 
-  /// Warning: Warm amber
-  static const warning = Color(0xFFD97706);
+  static const warning = Color(0xFF006FE6);
 
-  /// Danger: Deep ruby red
-  static const danger = Color(0xFFBE123C);
+  static const danger = Color(0xFFD92D20);
 
-  /// Shadow Contact: Proximity contact shadow
-  static const shadowContact = Color(0x09260F14);
+  static const shadowContact = Color(0x093C3C43);
 
-  /// Shadow Ambient: Wide ambient diffuse glow
-  static const shadowAmbient = Color(0x0B260F14);
+  static const shadowAmbient = Color(0x0B3C3C43);
 
   // ── Dark Mode ("Vintage Merlot Night Glass") ─────────────────────────────
 
-  /// Canvas: Soft charcoal, with warmth reserved for accents
-  static const darkCanvas = Color(0xFF171819);
+  static const darkCanvas = Color(0xFF101012);
 
-  /// Surface: Opaque charcoal content surface
-  static const darkSurface = Color(0xFF202224);
+  static const darkSurface = Color(0xFF1C1C1E);
 
-  /// Elevated: Modals, popups, and elevated sheets
-  static const darkElevated = Color(0xFF292B2D);
+  static const darkElevated = Color(0xFF2C2C2E);
 
-  /// Line: Hairline subtle specular edge in dark mode
   static const darkLine = Color(0x26FFFFFF);
 
-  /// Line Subtle: Inner divider in dark mode
   static const darkLineSubtle = Color(0x18FFFFFF);
 
-  /// Action: Muted linen foreground with contrast on burgundy night surfaces.
-  static const darkAction = Color(0xFFC6B6A6);
+  static const darkAction = Color(0xFF64ACFF);
 
-  /// Action Bright: Gradient top highlight for dark mode CTA
-  static const darkActionBright = Color(0xFFD2C4B6);
+  static const darkActionBright = Color(0xFF86BDFF);
 
-  /// Action Deep: Pressed state in dark mode
-  static const darkActionDeep = Color(0xFFB6A594);
+  static const darkActionDeep = Color(0xFF409CFF);
 
-  /// Tint: Selected pills and container highlights in dark mode
-  static const darkTint = Color(0xFF34302D);
+  static const darkTint = Color(0xFF1D2D43);
 
-  /// Ink: Crisp cashmere cream primary text (15.5:1 contrast on dark canvas)
-  static const darkInk = Color(0xFFF3F1EC);
+  static const darkInk = Color(0xFFF5F5F7);
 
-  /// Secondary Ink: Soft linen silver secondary text (9.5:1 contrast on dark canvas)
-  static const darkSecondaryInk = Color(0xFFCECCC6);
+  static const darkSecondaryInk = Color(0xFFD1D1D6);
 
-  /// Muted Ink: Warm oat slate for captions & helper text (6.2:1 contrast on dark canvas)
-  static const darkMutedInk = Color(0xFFA6A49D);
+  static const darkMutedInk = Color(0xFFAEAEB2);
 
-  /// Spark: Radiant warm gold for flame/streak in dark mode
-  static const darkSpark = Color(0xFFF0B354);
+  static const darkSpark = Color(0xFF64ACFF);
 
-  /// Spark Tint: Gold container highlight in dark mode
-  static const darkSparkTint = Color(0xFF382914);
+  static const darkSparkTint = Color(0xFF1D2D43);
 
-  /// Terracotta: Warm glowing terracotta for Chai break in dark mode
-  static const darkTerracotta = Color(0xFFE07A5F);
+  static const darkTerracotta = Color(0xFFAEAEB2);
 
-  /// Success: Luminous botanical sage in dark mode
-  static const darkSuccess = Color(0xFF4ADE80);
+  static const darkSuccess = Color(0xFF64ACFF);
 
-  /// Warning: Warm amber
-  static const darkWarning = Color(0xFFFBBF24);
+  static const darkWarning = Color(0xFF64ACFF);
 
-  /// Danger: Soft ruby red
-  static const darkDanger = Color(0xFFFB7185);
+  static const darkDanger = Color(0xFFFF6961);
 }

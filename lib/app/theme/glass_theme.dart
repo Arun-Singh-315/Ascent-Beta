@@ -100,7 +100,9 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   /// Required control outline
   Color get controlOutline => frozen
-      ? (isDark ? FrozenPalette.darkControlOutline : FrozenPalette.controlOutline)
+      ? (isDark
+            ? FrozenPalette.darkControlOutline
+            : FrozenPalette.controlOutline)
       : merlot
       ? (isDark ? const Color(0xFF8D939F) : MerlotPalette.line)
       : (isDark ? const Color(0xFF8D939F) : AscentColors.outlineDay);
@@ -113,31 +115,9 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
       : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
 
   /// Filled primary button background
-  Color get primaryButtonBg => frozen
-      ? (isDark
-            ? FrozenPalette.darkPrimaryButtonBg
-            : FrozenPalette.primaryButtonBg)
-      : merlot
-      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
-
-  /// Filled primary button foreground
-  Color get primaryButtonFg => frozen
-      ? (isDark
-            ? FrozenPalette.darkPrimaryButtonFg
-            : FrozenPalette.primaryButtonFg)
-      : (isDark ? const Color(0xFF171819) : const Color(0xFFFFFFFF));
-
-  /// Filled primary button pressed background
-  Color get primaryButtonPressed => frozen
-      ? (isDark
-            ? FrozenPalette.darkPrimaryButtonPressed
-            : FrozenPalette.primaryButtonPressed)
-      : merlot
-      ? MerlotPalette.actionDeep
-      : (isDark
-            ? AscentColors.accentPrimaryBrightDark
-            : AscentColors.accentPrimaryBright);
+  Color get primaryButtonBg => SharedControlColors.actionBlue;
+  Color get primaryButtonFg => Colors.white;
+  Color get primaryButtonPressed => const Color(0xFF005AC8);
 
   /// Tonal/selection background
   Color get tonalBg => frozen

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
@@ -58,19 +59,34 @@ class HomeHeader extends ConsumerWidget {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(48, 48),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
+                    horizontal: 14,
                     vertical: 10,
                   ),
-                  backgroundColor: g.claySoft,
-                  foregroundColor: g.ink,
+                  backgroundColor: context.isDark
+                      ? SharedControlColors.actionBlue.withValues(alpha: 0.14)
+                      : Colors.white,
+                  foregroundColor: context.isDark
+                      ? SharedControlColors.actionBlueDark
+                      : SharedControlColors.actionBlue,
+                  side: BorderSide(
+                    color: SharedControlColors.actionBlue.withValues(
+                      alpha: context.isDark ? 0.6 : 0.45,
+                    ),
+                    width: 1.2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   textStyle: AscentTextStyles.homeSecondary.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 icon: Icon(
-                  Icons.auto_awesome_outlined,
-                  size: 17,
-                  color: g.clay,
+                  Icons.auto_awesome,
+                  size: 16,
+                  color: context.isDark
+                      ? SharedControlColors.actionBlueDark
+                      : SharedControlColors.actionBlue,
                 ),
                 label: Text(
                   'Ask $assistantName',

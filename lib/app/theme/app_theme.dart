@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -121,13 +122,9 @@ class AscentTheme {
         : (isDark
               ? AscentColors.bgSurfaceElevatedDark
               : AscentColors.bgSurfaceElevated);
-    final accentPrimary = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : (isDark
-              ? AscentColors.accentPrimaryDark
-              : AscentColors.accentPrimary);
+    final accentPrimary = isDark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
     final accentSecondary = isMerlotLinen
         ? (isDark ? MerlotPalette.darkSpark : MerlotPalette.antiqueGold)
         : isNordicSky
@@ -247,6 +244,21 @@ class AscentTheme {
 
     return ThemeData(
       useMaterial3: true,
+      cupertinoOverrideTheme: CupertinoThemeData(
+        primaryColor: accentPrimary,
+        brightness: brightness,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: SharedControlColors.actionBlue,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(44, 44),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
       iconButtonTheme: const IconButtonThemeData(
         style: ButtonStyle(
           minimumSize: WidgetStatePropertyAll(
@@ -389,10 +401,7 @@ class AscentTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(
-            color: accentPrimary,
-            width: 2.0,
-          ),
+          borderSide: BorderSide(color: accentPrimary, width: 2.0),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
@@ -713,9 +722,7 @@ class AscentTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(dialogRadius),
         ),
-        titleTextStyle: AscentTextStyles.cardTitle.copyWith(
-          color: textPrimary,
-        ),
+        titleTextStyle: AscentTextStyles.cardTitle.copyWith(color: textPrimary),
         contentTextStyle: AscentTextStyles.supportingText.copyWith(
           color: textMuted,
         ),
@@ -727,10 +734,7 @@ class AscentTheme {
         color: bgSurfaceElevated,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: divider,
-            width: 1.0,
-          ),
+          side: BorderSide(color: divider, width: 1.0),
         ),
         elevation: 4,
         shadowColor: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),

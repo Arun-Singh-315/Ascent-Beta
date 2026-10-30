@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import '../../app/theme/shared_control_tokens.dart';
 
 class AscentSegment<T> {
-  const AscentSegment({required this.value, required this.label});
+  const AscentSegment({required this.value, required this.label, this.key});
+  final Key? key;
   final T value;
   final String label;
 }
@@ -14,8 +16,8 @@ class AscentSegment<T> {
 /// Generic single-selection segmented control as specified in Section 5 (C04).
 ///
 /// Features:
-/// - Container: recessed fill, 4px padding, 999px capsule radius, minHeight: 48px.
-/// - Selected segment: content surface fill, 999px radius, primary text.
+/// - Container: neutral recessed fill, 4px padding, 12px radius.
+/// - Selected segment: raised neutral surface and primary text.
 /// - Unselected segment: transparent fill, secondary text.
 /// - Highlight animation: 180ms easeOutCubic (instant with reduced motion).
 /// - Emits selectionClick haptic only when switching to a different option.
@@ -49,10 +51,17 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     final isLargeText = textScaler.scale(1.0) >= 1.45;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
-    final containerBg = g.recessed;
-    final selectedSurface = g.surface;
-    final selectedTextColor = g.ink;
-    final unselectedTextColor = g.inkSecondary;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final containerBg = dark
+        ? SharedControlColors.neutralFillDark
+        : const Color(0xFFE9E9EE);
+    final selectedSurface = dark ? const Color(0xFF636366) : Colors.white;
+    final selectedTextColor = dark
+        ? SharedControlColors.labelDark
+        : SharedControlColors.labelLight;
+    final unselectedTextColor = dark
+        ? const Color(0xFFCCCCD2)
+        : const Color(0xFF636366);
 
     if (isLargeText) {
       // Large text vertical fallback as required by Section 4 & C04
@@ -76,6 +85,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
               selected: isSelected,
               label: segment.label,
               child: InkWell(
+                key: segment.key,
                 onTap: () => _handleSelect(segment.value),
                 borderRadius: BorderRadius.circular(AscentDimensions.radiusMd),
                 child: Container(
@@ -84,7 +94,9 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected ? selectedSurface : Colors.transparent,
-                    borderRadius: BorderRadius.circular(AscentDimensions.radiusMd),
+                    borderRadius: BorderRadius.circular(
+                      AscentDimensions.radiusMd,
+                    ),
                     border: isSelected
                         ? Border.all(
                             color: g.line,
@@ -100,8 +112,12 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                   child: Text(
                     segment.label,
                     style: AscentTextStyles.segmentLabel.copyWith(
-                      color: isSelected ? selectedTextColor : unselectedTextColor,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? selectedTextColor
+                          : unselectedTextColor,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -119,7 +135,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: containerBg,
-        borderRadius: BorderRadius.circular(AscentDimensions.radiusFull),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: g.line,
           width: AscentDimensions.contentOutlineWidth,
@@ -133,7 +149,8 @@ class AscentSegmentedControl<T> extends StatelessWidget {
 
           final selectedIndex = segments.indexWhere((s) => s.value == selected);
           final activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
-          final segmentWidth = (constraints.maxWidth - 2 * AscentDimensions.spaceXs) / count;
+          final segmentWidth =
+              constraints.maxWidth / count;
 
           return Stack(
             children: [
@@ -150,7 +167,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: selectedSurface,
-                    borderRadius: BorderRadius.circular(AscentDimensions.radiusFull),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: g.line,
                       width: AscentDimensions.contentOutlineWidth,
@@ -168,6 +185,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                       selected: isSelected,
                       label: segment.label,
                       child: InkWell(
+                        key: segment.key,
                         onTap: () => _handleSelect(segment.value),
                         borderRadius: BorderRadius.circular(
                           AscentDimensions.radiusFull,

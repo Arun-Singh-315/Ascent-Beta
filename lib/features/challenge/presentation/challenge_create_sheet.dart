@@ -1,3 +1,4 @@
+import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/date_range_calendar.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -296,22 +297,14 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                 ),
               ],
               const SizedBox(height: 18),
-              SegmentedButton<String>(
+              AscentSegmentedControl<String>(
                 segments: const [
-                  ButtonSegment(
-                    value: 'learning',
-                    label: Text('Learning'),
-                    icon: Icon(Icons.school_outlined),
-                  ),
-                  ButtonSegment(
-                    value: 'activity',
-                    label: Text('Activity'),
-                    icon: Icon(Icons.timer_outlined),
-                  ),
+                  AscentSegment(value: 'learning', label: 'Learning'),
+                  AscentSegment(value: 'activity', label: 'Activity'),
                 ],
-                selected: {_type},
-                onSelectionChanged: (selection) => setState(() {
-                  _type = selection.first;
+                selected: _type,
+                onChanged: (value) => setState(() {
+                  _type = value;
                   _sourceId = null;
                   _titleController.clear();
                 }),

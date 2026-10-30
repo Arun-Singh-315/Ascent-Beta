@@ -48,69 +48,81 @@ void main() {
         ),
         child: MaterialApp(
           theme: AscentTheme.light(),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: child,
-            ),
-          ),
+          home: Scaffold(body: SingleChildScrollView(child: child)),
         ),
       ),
     );
   }
 
   group('Dynamic Island Report & Specular Shine Tests', () {
-    testWidgets('Expanded recap displays clean executive report points with icons and phrased text, not square boxes', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          child: const AscentDynamicIsland(
-            initiallyExpanded: true,
+    testWidgets(
+      'Expanded recap shows actual totals with a concise overdue headline',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            child: const AscentDynamicIsland(initiallyExpanded: true),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Island expanded is present
-      expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsOneWidget);
+        // Island expanded is present
+        expect(
+          find.byKey(const ValueKey('dynamic_island_expanded')),
+          findsOneWidget,
+        );
 
-      // Report heading is present
-      expect(find.text("Yesterday's Executive Report"), findsOneWidget);
+        expect(find.text('1 overdue task'), findsOneWidget);
+        expect(find.text('Completed'), findsOneWidget);
+        expect(find.text('4'), findsOneWidget);
+        expect(find.text('Minutes tracked'), findsOneWidget);
+        expect(find.text('50'), findsOneWidget);
+        expect(find.text('Overdue tasks'), findsOneWidget);
+        expect(find.text('1'), findsOneWidget);
+        // Recorded minutes do not imply deep flow or tasks finished on schedule.
+        expect(find.textContaining('Executive'), findsNothing);
+        expect(find.textContaining('on schedule'), findsNothing);
 
-      // Executive report points are rendered with phrased copy and icons
-      expect(find.text('Completed Tasks'), findsOneWidget);
-      expect(find.text('4 tasks finished on schedule'), findsOneWidget);
+        // Verify no shortcuts panel exists inside the dynamic island
+        expect(find.byKey(const ValueKey('home_shortcut_panel')), findsNothing);
+      },
+    );
 
-      expect(find.text('Focus & Flow'), findsOneWidget);
-      expect(find.text('50 minutes of deep tracked flow'), findsOneWidget);
-
-      expect(find.text('Action Needed'), findsOneWidget);
-      expect(find.text('1 overdue task pending review'), findsOneWidget);
-
-      // Verify no shortcuts panel exists inside the dynamic island
-      expect(find.byKey(const ValueKey('home_shortcut_panel')), findsNothing);
-    });
-
-    testWidgets('Dismissing the recap report makes the island completely vanish when no other activity is active', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          child: const AscentDynamicIsland(
-            initiallyExpanded: true,
+    testWidgets(
+      'Dismissing the recap report makes the island completely vanish when no other activity is active',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            child: const AscentDynamicIsland(initiallyExpanded: true),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('dynamic_island_surface')), findsOneWidget);
-      expect(find.byKey(const ValueKey('island_dismiss_report_button')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('dynamic_island_surface')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('island_dismiss_report_button')),
+          findsOneWidget,
+        );
 
-      // Tap Dismiss Report / Got it button
-      await tester.tap(find.byKey(const ValueKey('island_dismiss_report_button')));
-      await tester.pumpAndSettle();
+        // Tap Dismiss Report / Got it button
+        await tester.tap(
+          find.byKey(const ValueKey('island_dismiss_report_button')),
+        );
+        await tester.pumpAndSettle();
 
-      // Island vanishes completely! No useless static cards left on screen.
-      expect(find.byKey(const ValueKey('dynamic_island_surface')), findsNothing);
-    });
+        // Island vanishes completely! No useless static cards left on screen.
+        expect(
+          find.byKey(const ValueKey('dynamic_island_surface')),
+          findsNothing,
+        );
+      },
+    );
 
-    testWidgets('IslandSurface renders specular top shine glass highlight', (tester) async {
+    testWidgets('IslandSurface renders specular top shine glass highlight', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -123,7 +135,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('island_specular_shine')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('island_specular_shine')),
+        findsOneWidget,
+      );
       expect(find.text('Test Surface'), findsOneWidget);
     });
   });

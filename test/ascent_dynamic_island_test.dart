@@ -138,6 +138,7 @@ void main() {
     DailyBriefing briefing = _emptyBriefing,
     List<Reminder> reminders = const [],
     bool expanded = false,
+    bool autoPeek = false,
     bool dark = false,
     bool learning = false,
     WalkTrackingState walk = const WalkTrackingState(),
@@ -198,7 +199,10 @@ void main() {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    AscentDynamicIsland(initiallyExpanded: expanded),
+                    AscentDynamicIsland(
+                      initiallyExpanded: expanded,
+                      autoPeek: autoPeek,
+                    ),
                     const SizedBox(height: 20),
                     const Text('Mind palace', style: TextStyle(fontSize: 22)),
                   ],
@@ -226,6 +230,40 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('dynamic_island_compact')));
     await settle(tester);
   }
+
+  testWidgets(
+    'New activity peeks once then settles; drag expands without a tap',
+    (tester) async {
+      await tester.pumpWidget(app(time: focus(), autoPeek: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byKey(const ValueKey('dynamic_island_expanded')),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 6));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byKey(const ValueKey('dynamic_island_expanded')),
+        findsNothing,
+      );
+      await tester.pump(const Duration(seconds: 30));
+      expect(
+        find.byKey(const ValueKey('dynamic_island_expanded')),
+        findsNothing,
+      );
+      await tester.drag(
+        find.byKey(const ValueKey('island_drag_handle')),
+        const Offset(0, 170),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byKey(const ValueKey('dynamic_island_expanded')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('Idle and water-only workspace has no island or reserved space', (
     tester,
@@ -275,11 +313,17 @@ void main() {
       await settle(tester);
       expect(find.text('+4'), findsOneWidget);
       await expand(tester);
-      for (final id in ['learning', 'walk', 'chai', 'summary', 'focus']) {
+      for (final id in ['learning', 'walk', 'chai', 'focus']) {
         await tapVisible(tester, find.byKey(ValueKey('island_select_$id')));
         await settle(tester);
         expect(tester.takeException(), isNull);
       }
+      await tapVisible(
+        tester,
+        find.byKey(const ValueKey('island_group_summary')),
+      );
+      expect(find.text('Overdue tasks'), findsOneWidget);
+      await tapVisible(tester, find.byKey(const ValueKey('island_group_live')));
       await tapVisible(
         tester,
         find.byKey(const ValueKey('island_select_chai')),
@@ -335,7 +379,9 @@ void main() {
       for (final id in [1, 3, 4]) {
         expect(find.text('Reminder $id'), findsNothing);
       }
-      await tester.tap(find.byTooltip('Dismiss this update'));
+      await tester.tap(
+        find.byKey(const ValueKey('island_dismiss_report_button')),
+      );
       await settle(tester);
       expect(
         find.byKey(const ValueKey('dynamic_island_surface')),

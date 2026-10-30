@@ -4,9 +4,11 @@ import '../../features/vault/providers/vault_providers.dart';
 import '../../features/vault/services/vault_security_service.dart';
 
 const String kAppLockEnabledKey = 'ascent_app_lock_enabled_v1';
-const String kAppLockAllowNotificationsKey = 'ascent_app_lock_allow_notifications_v1';
+const String kAppLockAllowNotificationsKey =
+    'ascent_app_lock_allow_notifications_v1';
 const String kAppLockRedactContentKey = 'ascent_app_lock_redact_content_v1';
-const String kAppLockBiometricsEnabledKey = 'ascent_app_lock_biometrics_enabled_v1';
+const String kAppLockBiometricsEnabledKey =
+    'ascent_app_lock_biometrics_enabled_v1';
 
 class AppLockState {
   const AppLockState({
@@ -16,6 +18,7 @@ class AppLockState {
     this.redactNotificationContent = true,
     this.biometricsEnabled = true,
     this.hasMasterPin = false,
+    this.isAuthenticating = false,
   });
 
   final bool isEnabled;
@@ -24,6 +27,7 @@ class AppLockState {
   final bool redactNotificationContent;
   final bool biometricsEnabled;
   final bool hasMasterPin;
+  final bool isAuthenticating;
 
   AppLockState copyWith({
     bool? isEnabled,
@@ -32,6 +36,7 @@ class AppLockState {
     bool? redactNotificationContent,
     bool? biometricsEnabled,
     bool? hasMasterPin,
+    bool? isAuthenticating,
   }) {
     return AppLockState(
       isEnabled: isEnabled ?? this.isEnabled,
@@ -41,11 +46,13 @@ class AppLockState {
           redactNotificationContent ?? this.redactNotificationContent,
       biometricsEnabled: biometricsEnabled ?? this.biometricsEnabled,
       hasMasterPin: hasMasterPin ?? this.hasMasterPin,
+      isAuthenticating: isAuthenticating ?? this.isAuthenticating,
     );
   }
 }
 
 class AppLockNotifier extends Notifier<AppLockState> {
+  int _generation = 0;
   @override
   AppLockState build() {
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -54,13 +61,17 @@ class AppLockNotifier extends Notifier<AppLockState> {
     final redact = prefs.getBool(kAppLockRedactContentKey) ?? true;
     final biometrics = prefs.getBool(kAppLockBiometricsEnabledKey) ?? true;
 
+    final generation = _generation;
     Future.microtask(() async {
-      final security = ref.read(vaultSecurityServiceProvider);
-      final hasPin = await security.hasMasterPin();
+      final hasPin = await ref
+          .read(vaultSecurityServiceProvider)
+          .hasMasterPin();
+      if (!ref.mounted || generation != _generation) return;
+      // Initialization may finish after a successful unlock. Never relock it.
       state = state.copyWith(
         hasMasterPin: hasPin,
-        isEnabled: enabled && hasPin,
-        isLocked: enabled && hasPin,
+        isEnabled: state.isEnabled && hasPin,
+        isLocked: state.isLocked && hasPin,
       );
     });
 
@@ -77,35 +88,38 @@ class AppLockNotifier extends Notifier<AppLockState> {
   VaultSecurityService get _security => ref.read(vaultSecurityServiceProvider);
 
   Future<bool> setPin(String pin) async {
+    _generation++;
     if (pin.length < 4) return false;
     await _security.setMasterPin(pin);
-    state = state.copyWith(
-      hasMasterPin: true,
-      isLocked: false,
-    );
+    state = state.copyWith(hasMasterPin: true, isLocked: false);
     return true;
   }
 
-  Future<bool> verifyPin(String pin) async {
-    final ok = await _security.verifyPin(pin);
-    if (ok) {
-      state = state.copyWith(isLocked: false);
-      return true;
-    }
-    return false;
-  }
+  Future<bool> verifyPin(String pin) =>
+      _authenticate(() => _security.verifyPin(pin));
 
-  Future<bool> authenticateBiometrics() async {
-    final canAuth = await _security.canAuthenticateWithBiometrics();
-    if (!canAuth) return false;
-    final ok = await _security.authenticateBiometrics(
+  Future<bool> authenticateBiometrics() => _authenticate(() async {
+    if (!await _security.canAuthenticateWithBiometrics()) return false;
+    return _security.authenticateBiometrics(
       reason: 'Unlock Ascent to access your workspace',
     );
-    if (ok) {
-      state = state.copyWith(isLocked: false);
-      return true;
+  });
+
+  Future<bool> _authenticate(Future<bool> Function() action) async {
+    if (state.isAuthenticating) return false;
+    _generation++;
+    state = state.copyWith(isAuthenticating: true);
+    try {
+      final ok = await action();
+      if (ok && ref.mounted) {
+        state = state.copyWith(isLocked: false, hasMasterPin: true);
+      }
+      return ok;
+    } catch (_) {
+      return false;
+    } finally {
+      if (ref.mounted) state = state.copyWith(isAuthenticating: false);
     }
-    return false;
   }
 
   void lock() {
@@ -119,6 +133,7 @@ class AppLockNotifier extends Notifier<AppLockState> {
   }
 
   Future<bool> toggleAppLock(bool enable) async {
+    _generation++;
     final prefs = ref.read(sharedPreferencesProvider);
     if (enable) {
       final hasPin = await _security.hasMasterPin();
@@ -154,5 +169,6 @@ class AppLockNotifier extends Notifier<AppLockState> {
   }
 }
 
-final appLockProvider =
-    NotifierProvider<AppLockNotifier, AppLockState>(AppLockNotifier.new);
+final appLockProvider = NotifierProvider<AppLockNotifier, AppLockState>(
+  AppLockNotifier.new,
+);

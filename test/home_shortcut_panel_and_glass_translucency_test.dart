@@ -53,9 +53,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const HomeShortcutPanel(shortcuts: ['today', 'learning']),
-        ),
+        buildTestApp(const HomeShortcutPanel(shortcuts: ['today', 'learning'])),
       );
       await tester.pumpAndSettle();
 
@@ -113,46 +111,50 @@ void main() {
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
     });
 
-    testWidgets('renders badge counters for active counts and hides when zero', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const HomeShortcutPanel(
-            shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
-            badgeCounts: {
-              'today': 5,
-              'thought-wall': 3,
-              'reminders': 0,
-              'promises': 12,
-            },
+    testWidgets(
+      'renders badge counters for active counts and hides when zero',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            const HomeShortcutPanel(
+              shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
+              badgeCounts: {
+                'today': 5,
+                'thought-wall': 3,
+                'reminders': 0,
+                'promises': 12,
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Badges for positive counts should appear
-      expect(find.byKey(const ValueKey('shortcut_badge_today')), findsOneWidget);
-      expect(find.text('5'), findsOneWidget);
+        // Badges for positive counts should appear
+        expect(
+          find.byKey(const ValueKey('shortcut_badge_today')),
+          findsOneWidget,
+        );
+        expect(find.text('5'), findsOneWidget);
 
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_thought-wall')),
-        findsOneWidget,
-      );
-      expect(find.text('3'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('shortcut_badge_thought-wall')),
+          findsOneWidget,
+        );
+        expect(find.text('3'), findsOneWidget);
 
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_promises')),
-        findsOneWidget,
-      );
-      expect(find.text('12'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('shortcut_badge_promises')),
+          findsOneWidget,
+        );
+        expect(find.text('12'), findsOneWidget);
 
-      // Badge for 0 count should NOT appear
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_reminders')),
-        findsNothing,
-      );
-    });
+        // Badge for 0 count should NOT appear
+        expect(
+          find.byKey(const ValueKey('shortcut_badge_reminders')),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('caps badge counter at 99+ when count exceeds 99', (
       tester,
@@ -167,7 +169,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('shortcut_badge_today')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('shortcut_badge_today')),
+        findsOneWidget,
+      );
       expect(find.text('99+'), findsOneWidget);
     });
 
@@ -230,30 +235,20 @@ void main() {
       expect(find.text('Balanced'), findsOneWidget);
       expect(find.text('Contrast'), findsOneWidget);
 
-      // Verify that no option in Glass Translucency has mustard yellow
-      final cards = tester.widgetList<AppCard>(
+      final controls = tester.widgetList<Container>(
         find.descendant(
           of: find.ancestor(
             of: find.text('Subtle'),
             matching: find.byType(AscentCard),
           ),
-          matching: find.byType(AppCard),
+          matching: find.byType(Container),
         ),
       );
-      expect(cards, isNotEmpty);
-      for (final card in cards) {
-        final nightDec = card.nightDecoration;
-        if (nightDec != null) {
-          expect(
-            nightDec.color,
-            isNot(equals(MerlotPalette.antiqueGold)),
-            reason: 'Mustard yellow antiqueGold was found in glass selection',
-          );
-          expect(
-            nightDec.color,
-            isNot(equals(const Color(0xFFD97706))),
-            reason: 'Color 0xFFD97706 was found in glass selection',
-          );
+      expect(controls, isNotEmpty);
+      for (final control in controls) {
+        final decoration = control.decoration;
+        if (decoration is BoxDecoration) {
+          expect(decoration.color, isNot(const Color(0xFFD97706)));
         }
       }
     });

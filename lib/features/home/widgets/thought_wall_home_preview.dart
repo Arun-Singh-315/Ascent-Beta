@@ -1,3 +1,4 @@
+import '../../../app/theme/shared_control_tokens.dart';
 import 'home_outline_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
 import '../../../app/theme/thought_theme.dart';
@@ -284,6 +285,7 @@ class _ThoughtWallHomePreviewState
   );
 
   Widget _buildThoughtSpace(BuildContext context) {
+    if (widget.compact) return _compactHome(context);
     final g = context.glass;
     final appearance = ref.watch(thoughtWallAppearanceProvider);
     final bubbleFilled = appearance.bubbleFilled;
@@ -381,10 +383,7 @@ class _ThoughtWallHomePreviewState
                         color: Colors.white,
                       ),
                     )
-                  : const Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.white,
-                    ),
+                  : const Icon(Icons.arrow_upward_rounded, color: Colors.white),
             ),
           ],
         ),
@@ -586,7 +585,9 @@ class _ThoughtWallHomePreviewState
                       : g.ink.withValues(alpha: isDark ? .18 : .22);
                   final itemBubbleBorder = Border.all(
                     color: itemHardBorderColor,
-                    width: hasBubbleFraming ? bubbleBorderWidth.clamp(0.8, 1.2) : 1.0,
+                    width: hasBubbleFraming
+                        ? bubbleBorderWidth.clamp(0.8, 1.2)
+                        : 1.0,
                   );
                   final itemBubbleFill = !bubbleFilled && hasBubbleFraming
                       ? Colors.transparent
@@ -1076,6 +1077,159 @@ class _ThoughtWallHomePreviewState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: shellChildren,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _compactHome(BuildContext context) {
+    final g = context.glass;
+    final latest = ref.watch(latestHomeThoughtProvider).value;
+    final privateIds = ref.watch(privatePromiseIdsProvider);
+    final unlocked = ref.watch(unlockedPromiseIdsProvider);
+    final locked =
+        latest != null &&
+        latest.mood == 'promise' &&
+        !unlocked.contains(latest.id) &&
+        (privateIds.contains(latest.id) ||
+            !ref.watch(allPromisesStreamProvider).hasValue);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Mind palace',
+                style: TextStyle(
+                  color: g.ink,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -.4,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push('/thought-wall'),
+              child: const Text('View all'),
+            ),
+          ],
+        ),
+        if (widget.showComposer)
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: g.line, width: .75),
+            ),
+            padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+            child: Row(
+              children: [
+                InlineListAddButton(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: !_saving,
+                ),
+                Expanded(
+                  child: TextField(
+                    key: _fieldKey,
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    minLines: 1,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
+                    decoration: const InputDecoration(
+                      hintText: 'Capture a thought…',
+                      filled: false,
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton.filled(
+                  tooltip: 'Send capture',
+                  onPressed: _saving || _controller.text.trim().isEmpty
+                      ? null
+                      : _send,
+                  style: IconButton.styleFrom(
+                    backgroundColor: SharedControlColors.actionBlue,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: g.ink.withValues(alpha: .08),
+                    disabledForegroundColor: g.inkMuted,
+                  ),
+                  icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                ),
+              ],
+            ),
+          ),
+        if (latest != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 9, right: 26),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Material(
+                color: g.ink.withValues(alpha: .045),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(17),
+                  topRight: Radius.circular(17),
+                  bottomRight: Radius.circular(17),
+                  bottomLeft: Radius.circular(5),
+                ),
+                child: InkWell(
+                  key: const ValueKey('home_latest_thought_bubble'),
+                  borderRadius: BorderRadius.circular(17),
+                  onTap: () =>
+                      context.push('/thought-wall?thought=${latest.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (locked)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 7),
+                            child: Icon(
+                              Icons.lock_outline_rounded,
+                              size: 15,
+                              color: g.inkMuted,
+                            ),
+                          ),
+                        Flexible(
+                          child: Text(
+                            locked
+                                ? 'Private thought'
+                                : ThoughtExcerpt.displayContent(latest.content),
+                            key: const ValueKey('home_latest_thought_text'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: g.inkSecondary,
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 17,
+                          color: g.inkMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
       ],

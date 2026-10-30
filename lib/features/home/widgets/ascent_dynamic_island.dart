@@ -1,3 +1,7 @@
+import '../../../shared/widgets/ascent_segmented_control.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../app/theme/shared_control_tokens.dart';
+import '../../../core/providers/settings_provider.dart';
 import 'dart:async';
 import 'package:drift/drift.dart' show BooleanExpressionOperators;
 
@@ -36,9 +40,14 @@ final islandLectureSessionProvider = StreamProvider.autoDispose<TimeSession?>((
 /// A live surface, never an app launcher. Every activity keeps its own identity
 /// and controls; selecting another activity does not pause the previous one.
 class AscentDynamicIsland extends ConsumerStatefulWidget {
-  const AscentDynamicIsland({super.key, this.initiallyExpanded = false});
+  const AscentDynamicIsland({
+    super.key,
+    this.initiallyExpanded = false,
+    this.autoPeek = true,
+  });
 
   final bool initiallyExpanded;
+  final bool autoPeek;
 
   @override
   ConsumerState<AscentDynamicIsland> createState() =>
@@ -73,23 +82,49 @@ class _IslandActivity {
 }
 
 class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
-    with WidgetsBindingObserver {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  static const _recapDismissedKey = 'ascent_island_recap_dismissed_day_v1';
+  late final AnimationController _expansion;
   late bool _expanded;
+  bool _manualExpanded = false;
   String? _selectedId;
-  String? _dismissedContext;
+  String? _dismissedRecapDay;
+  String _signature = '';
+  bool _hadActivities = false;
+  final _dismissedReminders = <String>{};
   late DateTime _now;
   Timer? _clock;
+  Timer? _settleTimer;
+
+  String get _day => briefingDay(_now).toIso8601String().split('T').first;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _expanded = widget.initiallyExpanded;
+    _manualExpanded = _expanded;
+    _expansion = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+      value: _expanded ? 1 : 0,
+    );
     _now = DateTime.now();
-    // Refresh date boundaries and reminder eligibility even without DB writes.
+    _dismissedRecapDay = ref
+        .read(sharedPreferencesProvider)
+        .getString(_recapDismissedKey);
     _clock = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _clock?.cancel();
+    _settleTimer?.cancel();
+    _expansion.dispose();
+    super.dispose();
   }
 
   @override
@@ -99,17 +134,78 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     }
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _clock?.cancel();
-    super.dispose();
+  void _expand(bool value, {bool manual = true}) {
+    if (!mounted) return;
+    _settleTimer?.cancel();
+    if (manual) _manualExpanded = value;
+    final changed = _expanded != value;
+    setState(() => _expanded = value);
+    if (manual && changed) HapticFeedback.selectionClick();
+    final animate =
+        ref.read(islandPreferencesProvider).animate &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (animate) {
+      _expansion.animateTo(
+        value ? 1 : 0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _expansion.value = value ? 1 : 0;
+    }
   }
 
-  void _expand(bool expanded) {
-    if (_expanded == expanded) return;
-    HapticFeedback.selectionClick();
-    setState(() => _expanded = expanded);
+  void _syncActivities(List<_IslandActivity> items) {
+    final signature =
+        '$_day:${items.map((a) => '${a.id}:${a.paused}').join(',')}';
+    if (_signature == signature) return;
+    _signature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _signature != signature) return;
+      if (items.isEmpty) {
+        if (!_hadActivities) return;
+        _hadActivities = false;
+        _settleTimer?.cancel();
+        _manualExpanded = false;
+        _selectedId = null;
+        _expanded = false;
+        _expansion.value = 0;
+      } else {
+        _hadActivities = true;
+        if (!widget.autoPeek || _manualExpanded) return;
+        _expand(true, manual: false);
+        _settleTimer = Timer(const Duration(seconds: 6), () {
+          if (mounted && !_manualExpanded) _expand(false, manual: false);
+        });
+      }
+    });
+  }
+
+  void _select(String id) {
+    _settleTimer?.cancel();
+    _manualExpanded = true;
+    setState(() => _selectedId = id);
+    _expand(true);
+  }
+
+  Future<void> _dismiss(_IslandActivity item) async {
+    if (item.isLive) return;
+    if (item.id == 'summary') {
+      final saved = await ref
+          .read(sharedPreferencesProvider)
+          .setString(_recapDismissedKey, _day);
+      if (!mounted) return;
+      if (!saved) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not dismiss recap. Please retry.',
+        );
+        return;
+      }
+      setState(() => _dismissedRecapDay = _day);
+    } else {
+      setState(() => _dismissedReminders.add(item.id));
+    }
   }
 
   List<_IslandActivity> _activities() {
@@ -239,9 +335,9 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
         _IslandActivity(
           id: 'summary',
           label: 'Daily recap',
-          title: "Yesterday's Executive Report",
+          title: 'Yesterday',
           detail: briefing.overdue > 0
-              ? 'Your recorded progress from yesterday, with overdue work to review.'
+              ? 'Recorded progress, with overdue work to review.'
               : 'Your recorded progress from yesterday.',
           stats: [
             (value: '${briefing.completedYesterday}', label: 'Completed'),
@@ -257,258 +353,427 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     ];
   }
 
+  String _group(_IslandActivity item) => item.isLive
+      ? 'live'
+      : item.id == 'summary'
+      ? 'summary'
+      : 'next';
+  int _count(_IslandActivity item, String label) =>
+      int.tryParse(
+        item.stats.where((s) => s.label == label).firstOrNull?.value ?? '',
+      ) ??
+      0;
+  Color _accent(_IslandActivity item, IslandPalette p) =>
+      item.id == 'summary' && _count(item, 'Overdue tasks') > 0
+      ? (p.isDark ? SharedControlColors.dueRedDark : SharedControlColors.dueRed)
+      : p.accent;
+  String _headline(_IslandActivity item) => item.id == 'summary'
+      ? (_count(item, 'Overdue tasks') > 0
+            ? '${_count(item, 'Overdue tasks')} overdue ${_count(item, 'Overdue tasks') == 1 ? 'task' : 'tasks'}'
+            : 'Yesterday, at a glance')
+      : item.title;
+  String _subtitle(_IslandActivity item) => item.id == 'summary'
+      ? 'Yesterday · ${_count(item, 'Completed')} completed · ${_count(item, 'Minutes tracked')} min tracked'
+      : '${item.label}${item.metric == null ? '' : ' · ${item.metric}'}';
+
   @override
   Widget build(BuildContext context) {
     final preferences = ref.watch(islandPreferencesProvider);
     final all = _activities();
-    final activities = [
+    final items = [
       ...all.where((a) => a.isLive && !a.paused),
       if (preferences.showPaused) ...all.where((a) => a.isLive && a.paused),
       ...all.where(
         (a) =>
             !a.isLive &&
             (a.id == 'summary'
-                ? preferences.showRecap
-                : preferences.showUpcoming),
+                ? preferences.showRecap && _dismissedRecapDay != _day
+                : preferences.showUpcoming &&
+                      !_dismissedReminders.contains(a.id)),
       ),
     ];
-    final contextKey =
-        '${briefingDay(_now)}:${activities.where((a) => !a.isLive).map((a) => a.id).join(',')}';
-    final visible = activities
-        .where((a) => a.isLive || _dismissedContext != contextKey)
-        .toList();
-    final duration = Duration(
-      milliseconds:
-          !preferences.animate || MediaQuery.disableAnimationsOf(context)
-          ? 0
-          : 320,
+    _syncActivities(items);
+    if (items.isEmpty) return const SizedBox.shrink();
+    final selected = items.firstWhere(
+      (a) => a.id == _selectedId,
+      orElse: () => items.first,
     );
-    if (visible.isEmpty) {
-      _selectedId = null;
-      _expanded = widget.initiallyExpanded;
-    }
-    final selected = visible.isEmpty
-        ? null
-        : visible.firstWhere(
-            (a) => a.id == _selectedId,
-            orElse: () => visible.first,
-          );
     final palette = IslandPalette.resolve(
       preferences.finish,
       Theme.of(context).brightness == Brightness.dark,
     );
-    return AnimatedSize(
-      duration: duration,
-      curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: selected == null
-          ? const SizedBox.shrink()
-          : Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Semantics(
-                container: true,
-                label: 'Ascent live activities',
-                child: TapRegion(
-                  onTapOutside: (_) => _expand(false),
-                  child: GestureDetector(
-                    onVerticalDragEnd: _expanded
-                        ? null
-                        : (details) {
-                            if ((details.primaryVelocity ?? 0) > 100) {
-                              _expand(true);
-                            }
-                          },
-                    child: IslandSurface(
-                      key: const ValueKey('dynamic_island_surface'),
-                      palette: palette,
-                      radius: _expanded ? 28 : 34,
-                      child: DefaultTextStyle.merge(
-                        style: TextStyle(color: palette.ink),
-                        child: IconTheme(
-                          data: IconThemeData(color: palette.accent, size: 22),
-                          child: _expanded
-                              ? _expandedContent(
-                                  visible,
-                                  selected,
-                                  palette,
-                                  contextKey,
-                                  duration,
-                                )
-                              : _compact(
-                                  visible,
-                                  selected,
-                                  palette,
-                                  preferences.density,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-    );
-  }
-
-  Widget _activityBadge(
-    _IslandActivity item,
-    IslandPalette p, {
-    double size = 42,
-  }) => SizedBox(
-    width: size,
-    height: size,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                p.accent.withValues(alpha: .18),
-                p.accent.withValues(alpha: .03),
-              ],
-            ),
-            border: Border.all(color: p.accent.withValues(alpha: .16)),
-          ),
-        ),
-        if (item.progress != null)
-          Positioned.fill(
-            child: CircularProgressIndicator(
-              value: item.progress!.clamp(0, 1),
-              strokeWidth: 2,
-              strokeCap: StrokeCap.round,
-              color: p.accent,
-              backgroundColor: p.accent.withValues(alpha: .09),
-            ),
-          ),
-        Icon(
-          item.paused ? Icons.pause_rounded : item.icon,
-          size: size * .46,
-          color: p.accent,
-        ),
-      ],
-    ),
-  );
-
-  Widget _compact(
-    List<_IslandActivity> items,
-    _IslandActivity selected,
-    IslandPalette p,
-    IslandDensity density,
-  ) {
-    final extra = items.where((a) => a.id != selected.id).firstOrNull;
-    final minimal = density == IslandDensity.minimal;
-    return InkWell(
-      key: const ValueKey('dynamic_island_compact'),
-      onTap: () => _expand(true),
-      onLongPress: () => _expand(true),
-      borderRadius: BorderRadius.circular(34),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(12, minimal ? 8 : 12, 4, minimal ? 8 : 12),
-        child: Row(
-          children: [
-            _activityBadge(selected, p, size: minimal ? 34 : 42),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    minimal ? selected.label : selected.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.ink,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    minimal
-                        ? (selected.metric ??
-                              (selected.id == 'summary'
-                                  ? 'Yesterday'
-                                  : selected.detail))
-                        : '${selected.label}${selected.metric == null ? '' : ' · ${selected.metric}'}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: p.secondary,
-                      fontSize: 12,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (extra != null)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Semantics(
-                  label:
-                      '${items.length - 1} more activities. Show ${extra.title}',
-                  button: true,
-                  child: Tooltip(
-                    message: 'Show ${extra.title}',
-                    child: InkWell(
-                      key: const ValueKey('island_secondary_activity'),
-                      borderRadius: BorderRadius.circular(24),
-                      onTap: () {
-                        setState(() => _selectedId = extra.id);
-                        _expand(true);
-                      },
-                      child: SizedBox(
-                        width: 46,
-                        height: 48,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            _activityBadge(extra, p, size: 32),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: p.tile,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: p.accent.withValues(alpha: .22),
-                                  ),
-                                ),
-                                child: Text(
-                                  '+${items.length - 1}',
-                                  style: TextStyle(
-                                    color: p.accent,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: AnimatedBuilder(
+        animation: _expansion,
+        builder: (context, _) {
+          final t = _expansion.value;
+          return FractionallySizedBox(
+            widthFactor: .96 + .04 * t,
+            child: Semantics(
+              container: true,
+              label: 'Ascent live activities',
+              child: TapRegion(
+                onTapOutside: (_) {
+                  if (_expanded) {
+                    _manualExpanded = false;
+                    _expand(false, manual: false);
+                  }
+                },
+                child: IslandSurface(
+                  key: const ValueKey('dynamic_island_surface'),
+                  palette: palette,
+                  radius: 32 - 5 * t,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _header(items, selected, palette, preferences.density),
+                      if (_expanded || t > 0)
+                        ClipRect(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            heightFactor: t,
+                            child: Opacity(
+                              opacity: t,
+                              child: IgnorePointer(
+                                ignoring: t < .95,
+                                child: ExcludeSemantics(
+                                  excluding: t < .95,
+                                  child: _details(items, selected, palette),
                                 ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _badge(_IslandActivity item, IslandPalette p, {double size = 32}) =>
+      SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _accent(item, p).withValues(alpha: .08),
+              ),
+            ),
+            if (item.progress != null)
+              Positioned.fill(
+                child: CircularProgressIndicator(
+                  value: item.progress!.clamp(0, 1),
+                  strokeWidth: 2,
+                  color: p.accent,
+                  backgroundColor: p.accent.withValues(alpha: .08),
+                ),
+              ),
+            Icon(
+              item.paused
+                  ? Icons.pause_rounded
+                  : item.id == 'summary' && _count(item, 'Overdue tasks') > 0
+                  ? Icons.schedule_rounded
+                  : item.icon,
+              color: _accent(item, p),
+              size: size * .5,
+            ),
+          ],
+        ),
+      );
+
+  Widget _header(
+    List<_IslandActivity> items,
+    _IslandActivity item,
+    IslandPalette p,
+    IslandDensity density,
+  ) {
+    final other = items.where((a) => a.id != item.id).firstOrNull;
+    return GestureDetector(
+      key: const ValueKey('island_drag_handle'),
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragStart: (_) {
+        _settleTimer?.cancel();
+        _manualExpanded = true;
+        _expansion.stop();
+      },
+      onVerticalDragUpdate: (d) {
+        if (!_expanded) setState(() => _expanded = true);
+        _expansion.value = (_expansion.value + d.delta.dy / 180).clamp(0, 1);
+      },
+      onVerticalDragEnd: (d) {
+        final v = d.primaryVelocity ?? 0;
+        _expand(v.abs() > 150 ? v > 0 : _expansion.value > .35);
+      },
+      onVerticalDragCancel: () => _expand(_expansion.value > .35),
+      child: InkWell(
+        key: const ValueKey('dynamic_island_compact'),
+        onTap: () => _expand(!_expanded),
+        onLongPress: () => _expand(true),
+        borderRadius: BorderRadius.circular(32),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 9, 4, 9),
+          child: Row(
+            children: [
+              _badge(item, p),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      density == IslandDensity.minimal
+                          ? item.label
+                          : _headline(item),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: item.id == 'summary' ? _accent(item, p) : p.ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      density == IslandDensity.minimal
+                          ? (item.metric ?? 'Yesterday')
+                          : _subtitle(item),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: p.secondary,
+                        fontSize: 11,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!_expanded && other != null)
+                InkWell(
+                  key: const ValueKey('island_secondary_activity'),
+                  onTap: () => _select(other.id),
+                  borderRadius: BorderRadius.circular(22),
+                  child: Tooltip(
+                    message: 'Show ${other.title}',
+                    child: SizedBox(
+                      width: 43,
+                      height: 44,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _badge(other, p, size: 27),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Text(
+                              '+${items.length - 1}',
+                              style: TextStyle(
+                                color: p.accent,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
+              if (_expanded)
+                IconButton(
+                  tooltip: 'Customize Dynamic Island',
+                  onPressed: () => showIslandCustomization(context),
+                  icon: Icon(Icons.tune_rounded, size: 17, color: p.secondary),
+                ),
+              IconButton(
+                tooltip: _expanded
+                    ? 'Collapse live activities'
+                    : 'Expand live activities',
+                onPressed: () => _expand(!_expanded),
+                icon: AnimatedRotation(
+                  turns: _expansion.value * .5,
+                  duration: Duration.zero,
+                  child: Icon(
+                    Icons.expand_more_rounded,
+                    size: 19,
+                    color: p.secondary,
+                  ),
+                ),
               ),
-            IconButton(
-              tooltip: 'Expand live activities',
-              onPressed: () => _expand(true),
-              icon: Icon(
-                Icons.expand_more_rounded,
-                color: p.secondary,
-                size: 20,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _details(
+    List<_IslandActivity> items,
+    _IslandActivity item,
+    IslandPalette p,
+  ) {
+    final groups = items.map(_group).toSet().toList();
+    final siblings = items.where((a) => _group(a) == _group(item)).toList();
+    return ConstrainedBox(
+      key: const ValueKey('dynamic_island_expanded'),
+      constraints: const BoxConstraints(maxHeight: 330),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 3, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (groups.length > 1) ...[
+              AscentSegmentedControl<String>(
+                segments: [
+                  for (final group in groups)
+                    AscentSegment(
+                      value: group,
+                      key: ValueKey('island_group_$group'),
+                      label: switch (group) {
+                        'live' => 'Live',
+                        'next' => 'Up next',
+                        _ => 'Yesterday',
+                      },
+                    ),
+                ],
+                selected: _group(item),
+                onChanged: (value) =>
+                    _select(items.firstWhere((a) => _group(a) == value).id),
               ),
+              const SizedBox(height: 12),
+            ],
+            if (siblings.length > 1) ...[
+              AscentSegmentedControl<String>(
+                segments: [
+                  for (final sibling in siblings)
+                    AscentSegment(
+                      value: sibling.id,
+                      key: ValueKey('island_select_${sibling.id}'),
+                      label: sibling.isLive ? sibling.label : sibling.title,
+                    ),
+                ],
+                selected: item.id,
+                onChanged: _select,
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (item.id == 'summary')
+              _statistics(item, p)
+            else ...[
+              if (item.metric != null)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.metricCaption,
+                            style: TextStyle(
+                              color: p.secondary,
+                              fontSize: 9,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              item.metric!,
+                              style: TextStyle(
+                                color: p.ink,
+                                fontSize: 32,
+                                height: 1.1,
+                                fontWeight: FontWeight.w500,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (item.toggle != null)
+                      FilledButton.icon(
+                        key: ValueKey('island_toggle_${item.id}'),
+                        onPressed: () {
+                          _manualExpanded = true;
+                          _settleTimer?.cancel();
+                          setState(() => _selectedId = item.id);
+                          item.toggle!();
+                        },
+                        icon: Icon(
+                          item.paused
+                              ? Icons.play_arrow_rounded
+                              : Icons.pause_rounded,
+                          size: 17,
+                        ),
+                        label: Text(item.paused ? 'Resume' : 'Pause'),
+                      ),
+                  ],
+                ),
+              if (item.progress != null) ...[
+                const SizedBox(height: 13),
+                LinearProgressIndicator(
+                  value: item.progress!.clamp(0, 1),
+                  minHeight: 3,
+                  borderRadius: BorderRadius.circular(3),
+                  color: p.accent,
+                  backgroundColor: p.accent.withValues(alpha: .10),
+                ),
+              ],
+              if (item.stats.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _statistics(item, p),
+              ],
+              const SizedBox(height: 10),
+              Text(
+                item.detail,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: p.secondary, fontSize: 12, height: 1.4),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: () => context.push(item.route),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 15),
+                  label: Text(
+                    item.isLive
+                        ? 'Open ${item.label.replaceAll(' paused', '')}'
+                        : item.id == 'summary'
+                        ? 'Review tasks'
+                        : 'Open reminder',
+                  ),
+                ),
+                if (!item.isLive)
+                  TextButton(
+                    key: const ValueKey('island_dismiss_report_button'),
+                    onPressed: () => _dismiss(item),
+                    child: Text(
+                      'Dismiss',
+                      style: TextStyle(color: p.secondary),
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -516,500 +781,54 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     );
   }
 
-  Widget _activitySelectors(
-    List<_IslandActivity> items,
-    _IslandActivity selected,
-    IslandPalette p,
-    Duration duration,
-  ) => LayoutBuilder(
-    builder: (context, constraints) {
-      final columns =
-          constraints.maxWidth >= 270 &&
-              MediaQuery.textScalerOf(context).scale(1) < 1.5
-          ? 2
-          : 1;
-      final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+  Widget _statistics(_IslandActivity item, IslandPalette p) => LayoutBuilder(
+    builder: (context, c) {
+      final vertical = MediaQuery.textScalerOf(context).scale(1) >= 1.5;
       return Wrap(
         spacing: 8,
-        runSpacing: 8,
+        runSpacing: 10,
         children: [
-          for (final item in items)
+          for (final stat in item.stats)
             SizedBox(
-              width: width,
-              child: Semantics(
-                selected: item.id == selected.id,
-                button: true,
-                child: InkWell(
-                  key: ValueKey('island_select_${item.id}'),
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _selectedId = item.id);
-                  },
-                  child: AnimatedContainer(
-                    duration: duration,
-                    curve: Curves.easeOutCubic,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Color.alphaBlend(
-                        p.accent.withValues(
-                          alpha: item.id == selected.id ? .13 : .025,
-                        ),
-                        p.tile,
+              width: vertical ? c.maxWidth : (c.maxWidth - 16) / 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      stat.value,
+                      style: TextStyle(
+                        color:
+                            stat.label == 'Overdue tasks' &&
+                                (int.tryParse(stat.value) ?? 0) > 0
+                            ? (p.isDark
+                                  ? SharedControlColors.dueRedDark
+                                  : SharedControlColors.dueRed)
+                            : stat.label == 'Minutes tracked' &&
+                                  (int.tryParse(stat.value) ?? 0) > 0
+                            ? p.accent
+                            : p.ink,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: p.accent.withValues(
-                          alpha: item.id == selected.id ? .5 : .12,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(item.icon, size: 18, color: p.accent),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.id.startsWith('reminder-')
-                                    ? item.title
-                                    : item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: p.ink,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                item.metric ??
-                                    (item.id == 'summary'
-                                        ? 'Yesterday'
-                                        : 'Review'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: p.secondary,
-                                  fontSize: 12,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 5),
+                  Text(
+                    stat.label,
+                    style: TextStyle(
+                      color: p.secondary,
+                      fontSize: 10,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
       );
     },
   );
-
-  Widget _statistics(_IslandActivity item, IslandPalette p) {
-    String getPhrase(String label, String value) {
-      final count = int.tryParse(value) ?? 0;
-      switch (label) {
-        case 'Completed':
-          return count == 1
-              ? '1 task finished on schedule'
-              : '$count tasks finished on schedule';
-        case 'Minutes tracked':
-          return '$count minutes of deep tracked flow';
-        case 'Overdue tasks':
-          return count == 1
-              ? '1 overdue task pending review'
-              : '$count overdue tasks pending review';
-        default:
-          return label;
-      }
-    }
-
-    IconData getIcon(String label) {
-      switch (label) {
-        case 'Completed':
-          return Icons.check_circle_outline_rounded;
-        case 'Minutes tracked':
-          return Icons.hourglass_bottom_rounded;
-        case 'Overdue tasks':
-          return Icons.assignment_late_outlined;
-        default:
-          return Icons.assessment_outlined;
-      }
-    }
-
-    String getDisplayTitle(String label) {
-      switch (label) {
-        case 'Completed':
-          return 'Completed Tasks';
-        case 'Minutes tracked':
-          return 'Focus & Flow';
-        case 'Overdue tasks':
-          return 'Action Needed';
-        default:
-          return label;
-      }
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: p.accent.withValues(alpha: .04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: p.accent.withValues(alpha: .12)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.assessment_outlined, size: 14, color: p.accent),
-              const SizedBox(width: 6),
-              Text(
-                'EXECUTIVE AUDIT BREAKDOWN',
-                style: TextStyle(
-                  color: p.secondary,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          for (int i = 0; i < item.stats.length; i++) ...[
-            if (i > 0)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child:
-                    Divider(color: p.accent.withValues(alpha: .08), height: 1),
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: p.accent.withValues(alpha: .10),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      getIcon(item.stats[i].label),
-                      size: 16,
-                      color: p.accent,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            getDisplayTitle(item.stats[i].label),
-                            style: TextStyle(
-                              color: p.ink,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            item.stats[i].label,
-                            style: TextStyle(
-                              color: p.secondary.withValues(alpha: 0.7),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        getPhrase(item.stats[i].label, item.stats[i].value),
-                        style: TextStyle(
-                          color: p.secondary,
-                          fontSize: 11,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: p.accent.withValues(alpha: .10),
-                    borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: p.accent.withValues(alpha: .15)),
-                  ),
-                  child: Text(
-                    item.stats[i].value,
-                    style: TextStyle(
-                      color: p.accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _expandedContent(
-    List<_IslandActivity> items,
-    _IslandActivity selected,
-    IslandPalette p,
-    String contextKey,
-    Duration duration,
-  ) {
-    return Padding(
-      key: const ValueKey('dynamic_island_expanded'),
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            key: const ValueKey('island_drag_handle'),
-            behavior: HitTestBehavior.opaque,
-            onVerticalDragEnd: (details) {
-              if ((details.primaryVelocity ?? 0) < -100) _expand(false);
-            },
-            child: Row(
-              children: [
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: p.accent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    items.any((a) => a.isLive && !a.paused)
-                        ? 'LIVE NOW'
-                        : 'AT A GLANCE',
-                    style: TextStyle(
-                      color: p.secondary,
-                      fontSize: 9,
-                      letterSpacing: 1.8,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Customize Dynamic Island',
-                  onPressed: () => showIslandCustomization(context),
-                  icon: Icon(Icons.tune_rounded, size: 18, color: p.secondary),
-                ),
-                if (!items.any((a) => a.isLive))
-                  IconButton(
-                    tooltip: 'Dismiss this update',
-                    onPressed: () =>
-                        setState(() => _dismissedContext = contextKey),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: p.secondary,
-                    ),
-                  ),
-                IconButton(
-                  tooltip: 'Collapse live activities',
-                  onPressed: () => _expand(false),
-                  icon: Icon(
-                    Icons.expand_less_rounded,
-                    size: 20,
-                    color: p.secondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              _activityBadge(selected, p, size: 48),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  selected.label,
-                  style: TextStyle(
-                    color: p.secondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: .2,
-                  ),
-                ),
-              ),
-              if (selected.progress != null)
-                Text(
-                  '${(selected.progress! * 100).round()}%',
-                  style: TextStyle(
-                    color: p.accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          AnimatedSwitcher(
-            duration: duration,
-            switchInCurve: Curves.easeOutCubic,
-            layoutBuilder: (current, previous) =>
-                current ?? const SizedBox.shrink(),
-            child: Align(
-              key: ValueKey(selected.id),
-              alignment: Alignment.centerLeft,
-              child: Text(
-                selected.title,
-                style: TextStyle(
-                  color: p.ink,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            selected.detail,
-            style: TextStyle(color: p.secondary, fontSize: 12, height: 1.5),
-          ),
-          if (selected.metric != null) ...[
-            const SizedBox(height: 18),
-            Text(
-              selected.metricCaption,
-              style: TextStyle(
-                color: p.secondary,
-                fontSize: 9,
-                letterSpacing: 1.7,
-              ),
-            ),
-            const SizedBox(height: 4),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                selected.metric!,
-                style: TextStyle(
-                  color: p.accent,
-                  fontSize: selected.isLive ? 46 : 30,
-                  height: 1.15,
-                  fontWeight: FontWeight.w500,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                  letterSpacing: -1.8,
-                ),
-              ),
-            ),
-          ],
-          if (selected.stats.isNotEmpty) ...[
-            const SizedBox(height: 18),
-            _statistics(selected, p),
-          ],
-          if (selected.progress != null) ...[
-            const SizedBox(height: 16),
-            LinearProgressIndicator(
-              value: selected.progress!.clamp(0, 1),
-              minHeight: 3,
-              borderRadius: BorderRadius.circular(3),
-              color: p.accent,
-              backgroundColor: p.accent.withValues(alpha: .12),
-            ),
-          ],
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 10,
-            runSpacing: 8,
-            children: [
-              if (selected.toggle != null)
-                FilledButton.icon(
-                  key: ValueKey('island_toggle_${selected.id}'),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() => _selectedId = selected.id);
-                    selected.toggle!();
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: p.accent,
-                    foregroundColor: p.isDark
-                        ? const Color(0xFF102B45)
-                        : Colors.white,
-                  ),
-                  icon: Icon(
-                    selected.paused
-                        ? Icons.play_arrow_rounded
-                        : Icons.pause_rounded,
-                    size: 18,
-                  ),
-                  label: Text(selected.paused ? 'Resume' : 'Pause'),
-                ),
-              OutlinedButton.icon(
-                onPressed: () => context.push(selected.route),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: p.ink,
-                  side: BorderSide(color: p.accent.withValues(alpha: .3)),
-                ),
-                icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                label: Text(selected.isLive ? 'Open' : 'Review'),
-              ),
-              if (!selected.isLive)
-                OutlinedButton.icon(
-                  key: const ValueKey('island_dismiss_report_button'),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _dismissedContext = contextKey;
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: p.secondary,
-                    side: BorderSide(color: p.accent.withValues(alpha: .2)),
-                  ),
-                  icon: const Icon(Icons.done_all_rounded, size: 16),
-                  label: const Text('Got it · Dismiss'),
-                ),
-            ],
-          ),
-          if (items.length > 1) ...[
-            const SizedBox(height: 22),
-            Divider(color: p.accent.withValues(alpha: .12), height: 1),
-            const SizedBox(height: 16),
-            Text(
-              'YOUR ACTIVITIES',
-              style: TextStyle(
-                color: p.secondary,
-                fontSize: 9,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 10),
-            _activitySelectors(items, selected, p, duration),
-          ],
-        ],
-      ),
-    );
-  }
 }
