@@ -141,6 +141,17 @@ class $UserProfileTableTable extends UserProfileTable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dateOfBirthMeta = const VerificationMeta(
+    'dateOfBirth',
+  );
+  @override
+  late final GeneratedColumn<DateTime> dateOfBirth = GeneratedColumn<DateTime>(
+    'date_of_birth',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _onboardingCompleteMeta =
       const VerificationMeta('onboardingComplete');
   @override
@@ -168,6 +179,7 @@ class $UserProfileTableTable extends UserProfileTable
     createdAt,
     updatedAt,
     lastOpenedAt,
+    dateOfBirth,
     onboardingComplete,
   ];
   @override
@@ -265,6 +277,15 @@ class $UserProfileTableTable extends UserProfileTable
         ),
       );
     }
+    if (data.containsKey('date_of_birth')) {
+      context.handle(
+        _dateOfBirthMeta,
+        dateOfBirth.isAcceptableOrUnknown(
+          data['date_of_birth']!,
+          _dateOfBirthMeta,
+        ),
+      );
+    }
     if (data.containsKey('onboarding_complete')) {
       context.handle(
         _onboardingCompleteMeta,
@@ -327,6 +348,10 @@ class $UserProfileTableTable extends UserProfileTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_opened_at'],
       ),
+      dateOfBirth: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date_of_birth'],
+      ),
       onboardingComplete: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}onboarding_complete'],
@@ -370,6 +395,9 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
   /// Timestamp of the last time the user opened the app.
   final DateTime? lastOpenedAt;
 
+  /// User's date of birth (used for personalized cosmic insights, zodiac/rashi wisdom, and birthday celebrations).
+  final DateTime? dateOfBirth;
+
   /// Whether the user has completed the onboarding flow.
   final bool onboardingComplete;
   const UserProfile({
@@ -384,6 +412,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     required this.createdAt,
     required this.updatedAt,
     this.lastOpenedAt,
+    this.dateOfBirth,
     required this.onboardingComplete,
   });
   @override
@@ -403,6 +432,9 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || lastOpenedAt != null) {
       map['last_opened_at'] = Variable<DateTime>(lastOpenedAt);
+    }
+    if (!nullToAbsent || dateOfBirth != null) {
+      map['date_of_birth'] = Variable<DateTime>(dateOfBirth);
     }
     map['onboarding_complete'] = Variable<bool>(onboardingComplete);
     return map;
@@ -425,6 +457,9 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       lastOpenedAt: lastOpenedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastOpenedAt),
+      dateOfBirth: dateOfBirth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dateOfBirth),
       onboardingComplete: Value(onboardingComplete),
     );
   }
@@ -450,6 +485,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       lastOpenedAt: serializer.fromJson<DateTime?>(json['lastOpenedAt']),
+      dateOfBirth: serializer.fromJson<DateTime?>(json['dateOfBirth']),
       onboardingComplete: serializer.fromJson<bool>(json['onboardingComplete']),
     );
   }
@@ -468,6 +504,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'lastOpenedAt': serializer.toJson<DateTime?>(lastOpenedAt),
+      'dateOfBirth': serializer.toJson<DateTime?>(dateOfBirth),
       'onboardingComplete': serializer.toJson<bool>(onboardingComplete),
     };
   }
@@ -484,6 +521,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> lastOpenedAt = const Value.absent(),
+    Value<DateTime?> dateOfBirth = const Value.absent(),
     bool? onboardingComplete,
   }) => UserProfile(
     id: id ?? this.id,
@@ -499,6 +537,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     lastOpenedAt: lastOpenedAt.present ? lastOpenedAt.value : this.lastOpenedAt,
+    dateOfBirth: dateOfBirth.present ? dateOfBirth.value : this.dateOfBirth,
     onboardingComplete: onboardingComplete ?? this.onboardingComplete,
   );
   UserProfile copyWithCompanion(UserProfileTableCompanion data) {
@@ -528,6 +567,9 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
       lastOpenedAt: data.lastOpenedAt.present
           ? data.lastOpenedAt.value
           : this.lastOpenedAt,
+      dateOfBirth: data.dateOfBirth.present
+          ? data.dateOfBirth.value
+          : this.dateOfBirth,
       onboardingComplete: data.onboardingComplete.present
           ? data.onboardingComplete.value
           : this.onboardingComplete,
@@ -548,6 +590,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastOpenedAt: $lastOpenedAt, ')
+          ..write('dateOfBirth: $dateOfBirth, ')
           ..write('onboardingComplete: $onboardingComplete')
           ..write(')'))
         .toString();
@@ -566,6 +609,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
     createdAt,
     updatedAt,
     lastOpenedAt,
+    dateOfBirth,
     onboardingComplete,
   );
   @override
@@ -583,6 +627,7 @@ class UserProfile extends DataClass implements Insertable<UserProfile> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.lastOpenedAt == this.lastOpenedAt &&
+          other.dateOfBirth == this.dateOfBirth &&
           other.onboardingComplete == this.onboardingComplete);
 }
 
@@ -598,6 +643,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> lastOpenedAt;
+  final Value<DateTime?> dateOfBirth;
   final Value<bool> onboardingComplete;
   const UserProfileTableCompanion({
     this.id = const Value.absent(),
@@ -611,6 +657,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.lastOpenedAt = const Value.absent(),
+    this.dateOfBirth = const Value.absent(),
     this.onboardingComplete = const Value.absent(),
   });
   UserProfileTableCompanion.insert({
@@ -625,6 +672,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.lastOpenedAt = const Value.absent(),
+    this.dateOfBirth = const Value.absent(),
     this.onboardingComplete = const Value.absent(),
   }) : name = Value(name);
   static Insertable<UserProfile> custom({
@@ -639,6 +687,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? lastOpenedAt,
+    Expression<DateTime>? dateOfBirth,
     Expression<bool>? onboardingComplete,
   }) {
     return RawValuesInsertable({
@@ -655,6 +704,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (lastOpenedAt != null) 'last_opened_at': lastOpenedAt,
+      if (dateOfBirth != null) 'date_of_birth': dateOfBirth,
       if (onboardingComplete != null) 'onboarding_complete': onboardingComplete,
     });
   }
@@ -671,6 +721,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? lastOpenedAt,
+    Value<DateTime?>? dateOfBirth,
     Value<bool>? onboardingComplete,
   }) {
     return UserProfileTableCompanion(
@@ -685,6 +736,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       lastOpenedAt: lastOpenedAt ?? this.lastOpenedAt,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }
@@ -727,6 +779,9 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
     if (lastOpenedAt.present) {
       map['last_opened_at'] = Variable<DateTime>(lastOpenedAt.value);
     }
+    if (dateOfBirth.present) {
+      map['date_of_birth'] = Variable<DateTime>(dateOfBirth.value);
+    }
     if (onboardingComplete.present) {
       map['onboarding_complete'] = Variable<bool>(onboardingComplete.value);
     }
@@ -747,6 +802,7 @@ class UserProfileTableCompanion extends UpdateCompanion<UserProfile> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('lastOpenedAt: $lastOpenedAt, ')
+          ..write('dateOfBirth: $dateOfBirth, ')
           ..write('onboardingComplete: $onboardingComplete')
           ..write(')'))
         .toString();
@@ -24481,6 +24537,7 @@ typedef $$UserProfileTableTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> lastOpenedAt,
+      Value<DateTime?> dateOfBirth,
       Value<bool> onboardingComplete,
     });
 typedef $$UserProfileTableTableUpdateCompanionBuilder =
@@ -24496,6 +24553,7 @@ typedef $$UserProfileTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> lastOpenedAt,
+      Value<DateTime?> dateOfBirth,
       Value<bool> onboardingComplete,
     });
 
@@ -24560,6 +24618,11 @@ class $$UserProfileTableTableFilterComposer
 
   ColumnFilters<DateTime> get lastOpenedAt => $composableBuilder(
     column: $table.lastOpenedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get dateOfBirth => $composableBuilder(
+    column: $table.dateOfBirth,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24633,6 +24696,11 @@ class $$UserProfileTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get dateOfBirth => $composableBuilder(
+    column: $table.dateOfBirth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get onboardingComplete => $composableBuilder(
     column: $table.onboardingComplete,
     builder: (column) => ColumnOrderings(column),
@@ -24695,6 +24763,11 @@ class $$UserProfileTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get dateOfBirth => $composableBuilder(
+    column: $table.dateOfBirth,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get onboardingComplete => $composableBuilder(
     column: $table.onboardingComplete,
     builder: (column) => column,
@@ -24745,6 +24818,7 @@ class $$UserProfileTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
+                Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<bool> onboardingComplete = const Value.absent(),
               }) => UserProfileTableCompanion(
                 id: id,
@@ -24758,6 +24832,7 @@ class $$UserProfileTableTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 lastOpenedAt: lastOpenedAt,
+                dateOfBirth: dateOfBirth,
                 onboardingComplete: onboardingComplete,
               ),
           createCompanionCallback:
@@ -24773,6 +24848,7 @@ class $$UserProfileTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> lastOpenedAt = const Value.absent(),
+                Value<DateTime?> dateOfBirth = const Value.absent(),
                 Value<bool> onboardingComplete = const Value.absent(),
               }) => UserProfileTableCompanion.insert(
                 id: id,
@@ -24786,6 +24862,7 @@ class $$UserProfileTableTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 lastOpenedAt: lastOpenedAt,
+                dateOfBirth: dateOfBirth,
                 onboardingComplete: onboardingComplete,
               ),
           withReferenceMapper: (p0) => p0

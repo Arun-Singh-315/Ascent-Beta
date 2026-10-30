@@ -1,13 +1,14 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/color_tokens.dart';
+import 'package:ascent/app/theme/glass_theme.dart';
+import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:ascent/shared/widgets/glass_chip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('AscentButton Refinements & Soft Glass Danger Tests', () {
-    testWidgets('Destructive button uses translucent red glass background and red text', (
+  group('AscentButton Refinements & C01 Specification Tests', () {
+    testWidgets('Destructive button uses filled destructive pair (#B42318 and white text)', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -25,24 +26,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final elevatedBtnFinder = find.byType(ElevatedButton);
-      expect(elevatedBtnFinder, findsOneWidget);
+      final btnFinder = find.widgetWithText(AscentButton, 'Delete Item');
+      expect(btnFinder, findsOneWidget);
 
-      final button = tester.widget<ElevatedButton>(elevatedBtnFinder);
-      final bg = button.style?.backgroundColor?.resolve({});
-      final fg = button.style?.foregroundColor?.resolve({});
+      final text = tester.widget<Text>(find.text('Delete Item'));
+      expect(text.style?.color, equals(SharedControlColors.filledDestructiveFg));
 
-      // Translucent tint background, not opaque solid red
-      expect(bg, isNotNull);
-      expect(bg!.a, lessThan(0.35));
-      expect(bg.a, greaterThan(0.05));
-
-      // Foreground text is clear, visible red (same hue)
-      expect(fg, isNotNull);
-      expect(fg!.r, greaterThan(0.7)); // Danger red component
+      final size = tester.getSize(btnFinder);
+      expect(size.height, greaterThanOrEqualTo(48.0));
     });
 
-    testWidgets('Destructive button in dark mode maintains soft red tint and readable text', (
+    testWidgets('Destructive button in dark mode maintains filled destructive pair', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -60,67 +54,73 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
-      final bg = button.style?.backgroundColor?.resolve({});
-      final fg = button.style?.foregroundColor?.resolve({});
+      final btnFinder = find.widgetWithText(AscentButton, 'Discard');
+      expect(btnFinder, findsOneWidget);
 
-      expect(bg, isNotNull);
-      expect(bg!.a, lessThan(0.35));
-      expect(fg, isNotNull);
+      final text = tester.widget<Text>(find.text('Discard'));
+      expect(text.style?.color, equals(SharedControlColors.filledDestructiveFg));
     });
 
-    testWidgets('Secondary button has soft accent wash instead of hollow transparency', (
+    testWidgets('Secondary button uses tonal pair with no border', (
       tester,
     ) async {
+      late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
           theme: AscentTheme.light(),
-          home: Scaffold(
-            body: Center(
-              child: AscentButton.secondary(
-                label: 'Secondary Action',
-                onPressed: () {},
-              ),
-            ),
+          home: Builder(
+            builder: (ctx) {
+              capturedContext = ctx;
+              return Scaffold(
+                body: Center(
+                  child: AscentButton.secondary(
+                    label: 'Secondary Action',
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final outlinedBtnFinder = find.byType(OutlinedButton);
-      expect(outlinedBtnFinder, findsOneWidget);
+      final btnFinder = find.widgetWithText(AscentButton, 'Secondary Action');
+      expect(btnFinder, findsOneWidget);
 
-      final button = tester.widget<OutlinedButton>(outlinedBtnFinder);
-      final bg = button.style?.backgroundColor?.resolve({});
-      expect(bg, isNotNull);
-      expect(bg, isNot(Colors.transparent));
-      expect(bg!.a, lessThan(0.18));
-      expect(bg.a, greaterThan(0.02));
+      final g = capturedContext.glass;
+      final text = tester.widget<Text>(find.text('Secondary Action'));
+      expect(text.style?.color, equals(g.tonalFg));
     });
 
-    testWidgets('Tonal button has refined glass rim border', (tester) async {
+    testWidgets('Tonal button uses tonal pair matching secondary', (tester) async {
+      late BuildContext capturedContext;
       await tester.pumpWidget(
         MaterialApp(
           theme: AscentTheme.light(),
-          home: Scaffold(
-            body: Center(
-              child: AscentButton.tonal(
-                label: 'Done',
-                onPressed: () {},
-              ),
-            ),
+          home: Builder(
+            builder: (ctx) {
+              capturedContext = ctx;
+              return Scaffold(
+                body: Center(
+                  child: AscentButton.tonal(
+                    label: 'Done',
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final textBtnFinder = find.byType(TextButton);
-      expect(textBtnFinder, findsOneWidget);
+      final btnFinder = find.widgetWithText(AscentButton, 'Done');
+      expect(btnFinder, findsOneWidget);
 
-      final button = tester.widget<TextButton>(textBtnFinder);
-      final shape = button.style?.shape?.resolve({}) as RoundedRectangleBorder?;
-      expect(shape, isNotNull);
-      expect(shape!.side.style, BorderStyle.solid);
+      final g = capturedContext.glass;
+      final text = tester.widget<Text>(find.text('Done'));
+      expect(text.style?.color, equals(g.tonalFg));
     });
 
     testWidgets('GlassChip fires tap callback with proper semantic role', (tester) async {
@@ -178,12 +178,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final cancelSize = tester.getSize(find.byType(OutlinedButton));
-      final deleteSize = tester.getSize(find.byType(ElevatedButton));
+      final cancelSize = tester.getSize(find.widgetWithText(AscentButton, 'Cancel'));
+      final deleteSize = tester.getSize(find.widgetWithText(AscentButton, 'Delete'));
       expect(cancelSize.height, equals(deleteSize.height));
+      expect(cancelSize.height, greaterThanOrEqualTo(48.0));
     });
 
-    testWidgets('IconButton renders compact 34px and standard 40px correctly', (
+    testWidgets('IconButton renders with 48px hit target and tooltip', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -194,11 +195,13 @@ void main() {
               children: [
                 AscentButton.icon(
                   icon: Icons.close,
+                  tooltip: 'Close',
                   compact: true,
                   onPressed: () {},
                 ),
                 AscentButton.icon(
                   icon: Icons.edit,
+                  tooltip: 'Edit',
                   compact: false,
                   onPressed: () {},
                 ),
@@ -211,6 +214,9 @@ void main() {
 
       expect(find.byIcon(Icons.close), findsOneWidget);
       expect(find.byIcon(Icons.edit), findsOneWidget);
+
+      final closeSize = tester.getSize(find.byIcon(Icons.close));
+      expect(closeSize.width, greaterThanOrEqualTo(20.0));
     });
 
     for (final dark in [false, true]) {

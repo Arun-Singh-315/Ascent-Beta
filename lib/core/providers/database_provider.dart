@@ -149,8 +149,10 @@ class DueCheckInItem {
   });
 }
 
-final dueCheckInForTaskProvider =
-    StreamProvider.family<DueCheckInItem?, int>((ref, taskId) async* {
+final dueCheckInForTaskProvider = StreamProvider.family<DueCheckInItem?, int>((
+  ref,
+  taskId,
+) async* {
   final db = ref.watch(databaseProvider);
   final planDao = ref.watch(planDaoProvider);
 
@@ -186,8 +188,9 @@ final dueCheckInForTaskProvider =
 
     // 2. Check one-time HomePlans
     final plans = await HomeCaptureService(db).watchPlans().first;
-    final homePlan =
-        plans.where((p) => p.task?.id == taskId && p.needsAnswer).firstOrNull;
+    final homePlan = plans
+        .where((p) => p.task?.id == taskId && p.needsAnswer)
+        .firstOrNull;
     if (homePlan != null && homePlan.checkIn != null) {
       yield DueCheckInItem(
         taskId: taskId,
@@ -206,15 +209,13 @@ final dueCheckInForTaskProvider =
 
 final reminderProtectionProvider =
     FutureProvider.family<PlanChildRestriction?, int>((ref, reminderId) async {
-  return ref.watch(reminderDaoProvider).getReminderProtection(reminderId);
-});
+      return ref.watch(reminderDaoProvider).getReminderProtection(reminderId);
+    });
 
 final taskProtectionProvider =
     FutureProvider.family<PlanChildRestriction?, int>((ref, taskId) async {
-  return ref.watch(taskDaoProvider).getTaskProtection(taskId);
-});
-
-
+      return ref.watch(taskDaoProvider).getTaskProtection(taskId);
+    });
 
 // ── Medicine Reactive Stream Providers ─────────────────────────────────────────
 
@@ -332,7 +333,9 @@ final past7DaysHydrationStreamProvider =
 
 // ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
 
-final thoughtCategoriesStreamProvider = StreamProvider<Map<String, String>>((ref) {
+final thoughtCategoriesStreamProvider = StreamProvider<Map<String, String>>((
+  ref,
+) {
   return ref.watch(thoughtDaoProvider).watchCategories();
 });
 
@@ -354,6 +357,10 @@ final todayThoughtsCountStreamProvider = StreamProvider<int>((ref) {
 final recentThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
   final dao = ref.watch(thoughtDaoProvider);
   return dao.watchRecentThoughts(limit: 6);
+});
+
+final latestHomeThoughtProvider = StreamProvider<Thought?>((ref) {
+  return ref.watch(thoughtDaoProvider).watchLatestThought();
 });
 
 // ── Reminders & Interviews ───────────────────────────────────────────────────

@@ -342,7 +342,8 @@ void main() {
       final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(cardFinder, findsOneWidget);
       final cardGlass = tester.widget<GlassSurface>(cardFinder);
-      expect(cardGlass.fillColor, equals(MerlotPalette.surface));
+      expect(cardGlass.fillColor, isNull);
+      expect(cardGlass.enableBlur, isFalse);
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
@@ -371,7 +372,8 @@ void main() {
       final frozenCardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(frozenCardFinder, findsOneWidget);
       final frozenCardGlass = tester.widget<GlassSurface>(frozenCardFinder);
-      expect(frozenCardGlass.fillColor, equals(ThoughtTheme.frozenSurface));
+      expect(frozenCardGlass.fillColor, isNull);
+      expect(frozenCardGlass.enableBlur, isFalse);
 
       final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(frozenBubbleFinder, findsOneWidget);

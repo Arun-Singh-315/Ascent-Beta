@@ -8,6 +8,7 @@ import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'package:ascent/shared/widgets/ascent_atmosphere.dart';
 import 'package:ascent/shared/widgets/ascent_card.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:flutter/material.dart';
@@ -31,12 +32,15 @@ void main() {
           expect(theme.scaffoldBackgroundColor, material.canvas);
           expect(
             theme.scaffoldBackgroundColor.computeLuminance(),
-            lessThan(.85),
+            lessThan(.95),
           );
           expect(theme.extension<AppSurfaces>()!.blur, material.blur);
           expect(HomeTheme.from(theme), same(theme));
           expect(AscentTheme.assistant(theme), same(theme));
-          final underlying = Color.alphaBlend(glass.glow2, material.canvas);
+          final underlying = Color.alphaBlend(
+            AscentAtmosphereBackground.softenGlow(glass.glow2, maxAlpha: .025),
+            material.canvas,
+          );
           final effective = Color.alphaBlend(
             glass.fill.withValues(alpha: material.bottomOpacity),
             underlying,
@@ -74,7 +78,7 @@ void main() {
   );
 
   testWidgets(
-    'shared card families blur in daylight and feedback can retain a denser backing',
+    'Content panes stay clear while floating controls can use glass',
     (tester) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -83,7 +87,7 @@ void main() {
             body: SingleChildScrollView(
               child: Column(
                 children: [
-                  GlassSurface(child: Text('Shared glass')),
+                  GlassSurface(enableBlur: true, child: Text('Shared glass')),
                   AppCard(child: Text('Grouped card')),
                   AscentCard(child: Text('Feature card')),
                   StudyStreakMeterCard(
@@ -100,7 +104,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(BackdropFilter), findsNWidgets(5));
+      expect(find.byType(BackdropFilter), findsNWidgets(2));
       final context = tester.element(find.text('Shared glass'));
       expect(
         context.bgBase,
@@ -114,12 +118,7 @@ void main() {
           .first;
       final decoration =
           tester.widget<Container>(feedback).decoration! as BoxDecoration;
-      expect(
-        (decoration.gradient! as LinearGradient).colors.every(
-          (c) => c.a >= .94 - .004,
-        ),
-        isTrue,
-      );
+      expect(decoration.color?.a, 1);
       expect(tester.takeException(), isNull);
     },
   );

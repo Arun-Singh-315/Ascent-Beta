@@ -139,7 +139,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
       actions: [
         IconButton(
           tooltip: 'Edit Daily Goal',
-          icon: Icon(Icons.tune_rounded, color: g.clay),
+          icon: Icon(Icons.settings_outlined, color: g.clay),
           onPressed: () {
             HapticFeedback.lightImpact();
             _showSetGoalDialog(targetMl);

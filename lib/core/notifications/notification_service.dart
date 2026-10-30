@@ -85,6 +85,8 @@ class NotificationService {
       'Momentum Evening Wind-Down';
   static const String channelMedicineId = 'ascent_medicine_reminders';
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
+  static const String channelHydrationId = 'ascent_hydration_reminders';
+  static const String channelHydrationName = 'Hydration & Fluid Health';
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
   static const int ongoingLectureNotificationId = 888800;
@@ -467,6 +469,17 @@ class NotificationService {
             description:
                 'Timely reminders for prescribed medicines, tablets, and doses',
             importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelHydrationId,
+            channelHydrationName,
+            description:
+                'Gentle nudges to stay hydrated and refreshed throughout the day',
+            importance: Importance.high,
             playSound: true,
             enableVibration: true,
           ),
@@ -975,7 +988,11 @@ class NotificationService {
           contentTitle: copy.title,
           summaryText: checkIn
               ? 'Tap to answer on Home'
-              : 'Tap to open your plan',
+              : (destination.startsWith('/today')
+                  ? 'Tap to open activity'
+                  : destination.startsWith('/thought-wall')
+                  ? 'Tap to open in Mind Palace'
+                  : 'Tap to open your plan'),
         ),
       ),
       iOS: DarwinNotificationDetails(
@@ -992,7 +1009,7 @@ class NotificationService {
       await _plugin.zonedSchedule(
         id: id,
         title: copy.title,
-        body: copy.body,
+        body: copy.bodyFor(destination),
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -1009,7 +1026,7 @@ class NotificationService {
         await _plugin.zonedSchedule(
           id: id,
           title: copy.title,
-          body: copy.body,
+          body: copy.bodyFor(destination),
           scheduledDate: scheduledTz,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -1384,6 +1401,73 @@ class NotificationService {
         return true;
       } catch (err) {
         debugPrint('Failed to schedule medicine reminder: $err');
+        return false;
+      }
+    }
+  }
+
+  Future<bool> scheduleHydrationReminderChecked({
+    required int id,
+    required DateTime scheduledAt,
+    String? customMessage,
+  }) async {
+    if (!_isInitialized) await initialize();
+    if (!await areNotificationsEnabled()) return false;
+    await refreshLocalTimeZone();
+
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        debugPrint('Cannot schedule hydration in past: $scheduledTz');
+        return false;
+      }
+    }
+
+    const title = '💧 Stay Hydrated';
+    final body = customMessage ??
+        'Take a sip of water to keep your mind clear and your energy high.';
+
+    final details = _buildModernNotificationDetails(
+      channelId: channelHydrationId,
+      channelName: channelHydrationName,
+      channelDescription: 'Hydration and fluid health alerts',
+      title: title,
+      body: body,
+      summaryText: 'Tap to log water',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '/hydration',
+      );
+      debugPrint('Scheduled exact hydration reminder id=$id at $scheduledTz');
+      return true;
+    } catch (e) {
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '/hydration',
+        );
+        debugPrint('Scheduled fallback hydration reminder id=$id at $scheduledTz');
+        return true;
+      } catch (_) {
         return false;
       }
     }

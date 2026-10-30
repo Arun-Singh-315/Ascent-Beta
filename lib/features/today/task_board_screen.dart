@@ -1,3 +1,6 @@
+import 'package:drift/drift.dart' show Value;
+import '../../shared/widgets/ascent_star_button.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/utils/action_text.dart';
 import 'add_lecture_activity_sheet.dart';
@@ -103,17 +106,13 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
             Icons.filter_list_rounded,
             color: _priorityFilter != 'All' ? g.clay : g.inkMuted,
           ),
-          tooltip: 'Filter by priority',
+          tooltip: 'Filter starred activities',
           initialValue: _priorityFilter,
           onSelected: (val) => setState(() => _priorityFilter = val),
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'All', child: Text('All Priorities')),
-            const PopupMenuItem(value: 'high', child: Text('High Priority')),
-            const PopupMenuItem(
-              value: 'medium',
-              child: Text('Medium Priority'),
-            ),
-            const PopupMenuItem(value: 'low', child: Text('Low Priority')),
+            const PopupMenuItem(value: 'All', child: Text('All activities')),
+            const PopupMenuItem(value: 'starred', child: Text('Starred')),
+            const PopupMenuItem(value: 'unstarred', child: Text('Unstarred')),
           ],
         ),
       ],
@@ -162,7 +161,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
 
           for (final t in topLevelTasks) {
             if (_priorityFilter != 'All' &&
-                t.priority.toLowerCase() != _priorityFilter.toLowerCase()) {
+                ((_priorityFilter == 'starred') != (t.priority == 'high'))) {
               continue;
             }
 
@@ -216,35 +215,17 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                   AppSpace.s18,
                   AppSpace.s12,
                 ),
-                child: AppCard(
-                  padding: const EdgeInsets.all(AppSpace.s4),
-                  nightDecoration: BoxDecoration(
-                    color: g.fill,
-                    borderRadius: AppGeometry.roundedr16,
-                    border: Border.all(color: g.line, width: AppBorderScale.w1),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildTabSegment(
-                        'Today',
-                        _TaskBoardTab.today,
-                        todayTasks.length + overdueTasks.length,
-                        g,
-                      ),
-                      _buildTabSegment(
-                        'Others',
-                        _TaskBoardTab.others,
-                        upcomingTasks.length,
-                        g,
-                      ),
-                      _buildTabSegment(
-                        'Completed',
-                        _TaskBoardTab.completed,
-                        completedTasks.length,
-                        g,
-                      ),
-                    ],
-                  ),
+                child: AscentSegmentedControl<_TaskBoardTab>(
+                  segments: const [
+                    AscentSegment(value: _TaskBoardTab.today, label: 'Today'),
+                    AscentSegment(value: _TaskBoardTab.others, label: 'Others'),
+                    AscentSegment(
+                      value: _TaskBoardTab.completed,
+                      label: 'Completed',
+                    ),
+                  ],
+                  selected: _selectedTab,
+                  onChanged: (value) => setState(() => _selectedTab = value),
                 ),
               ),
               Expanded(
@@ -379,71 +360,6 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
       ),
     );
   }
-
-  Widget _buildTabSegment(
-    String label,
-    _TaskBoardTab tab,
-    int count,
-    AscentGlass g,
-  ) {
-    final isSelected = _selectedTab == tab;
-    return Expanded(
-      child: AppGestureTap(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() => _selectedTab = tab);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s9),
-          decoration: AppCard.decoration(
-            context,
-            selected: isSelected,
-            night: BoxDecoration(
-              color: isSelected ? g.clay : AppPalette.transparent,
-              borderRadius: AppGeometry.roundedr12,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: AppStateTypography.stateType2(
-                  state0: isSelected,
-                  color: isSelected ? AppPalette.white : g.inkMuted,
-                ),
-              ),
-              if (count > 0) ...[
-                const SizedBox(width: 5),
-                AppTag(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s6,
-                    vertical: AppSpace.s1point5,
-                  ),
-                  nightDecoration: BoxDecoration(
-                    color: isSelected
-                        ? AppPalette.white.withValues(alpha: 0.25)
-                        : (context.isDark
-                              ? g.claySoft
-                              : context.divider.withValues(alpha: 0.5)),
-                    borderRadius: AppGeometry.roundedr8,
-                  ),
-                  child: Text(
-                    '$count',
-                    style: AppTypography.jetBrainsMono11W7002(
-                      color: isSelected ? AppPalette.white : g.ink,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -567,14 +483,16 @@ class _TaskItemTile extends ConsumerWidget {
     );
 
     final reminders = ref.watch(allRemindersProvider).value ?? [];
-    final matchingReminder = reminders.where(
-      (r) =>
-          r.isActive &&
-          (r.linkedTaskId == task.id ||
-              (r.linkedTaskId == null &&
-                  r.title.trim().toLowerCase() ==
-                      task.title.trim().toLowerCase())),
-    ).firstOrNull;
+    final matchingReminder = reminders
+        .where(
+          (r) =>
+              r.isActive &&
+              (r.linkedTaskId == task.id ||
+                  (r.linkedTaskId == null &&
+                      r.title.trim().toLowerCase() ==
+                          task.title.trim().toLowerCase())),
+        )
+        .firstOrNull;
     final hasReminder = matchingReminder != null;
     DateTime? scheduledTime;
     if (matchingReminder != null) {
@@ -795,9 +713,9 @@ class _TaskItemTile extends ConsumerWidget {
                       }
                       if (isScheduledInFuture) {
                         HapticFeedback.lightImpact();
-                        final timeStr = DateFormat('h:mm a').format(
-                          scheduledTime!,
-                        );
+                        final timeStr = DateFormat(
+                          'h:mm a',
+                        ).format(scheduledTime!);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -835,12 +753,12 @@ class _TaskItemTile extends ConsumerWidget {
                               color: context.textOnPrimary,
                             )
                           : (isScheduledInFuture
-                              ? Icon(
-                                  Icons.schedule_rounded,
-                                  size: 13,
-                                  color: context.textMuted,
-                                )
-                              : null),
+                                ? Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: context.textMuted,
+                                  )
+                                : null),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -928,24 +846,6 @@ class _TaskItemTile extends ConsumerWidget {
                                             ? context.stateDanger
                                             : context.textMuted,
                                       ),
-                                ),
-                              ],
-                              if (task.priority == 'high') ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: context.stateDanger,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'High',
-                                  style: AppTypeRoles.typeRole4.copyWith(
-                                    color: context.stateDanger,
-                                  ),
                                 ),
                               ],
                               if (hasReminder) ...[
@@ -1192,19 +1092,24 @@ class _TaskItemTile extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      AppCard(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s10,
-                          vertical: AppSpace.s4,
-                        ),
-                        nightDecoration: BoxDecoration(
-                          color: g.claySoft,
-                          borderRadius: AppGeometry.roundedr12,
-                        ),
-                        child: Text(
-                          task.priority.toUpperCase(),
-                          style: AppTypography.inter11W7003(color: g.clay),
-                        ),
+                      AscentStarButton(
+                        selected: task.priority == 'high',
+                        onChanged: isDone
+                            ? null
+                            : (value) async {
+                                final saved = await ref
+                                    .read(taskDaoProvider)
+                                    .updateTask(
+                                      TaskTableCompanion(
+                                        id: Value(task.id),
+                                        priority: Value(value ? 'high' : 'low'),
+                                        updatedAt: Value(DateTime.now()),
+                                      ),
+                                    );
+                                if (!saved) {
+                                  throw StateError('Could not save star');
+                                }
+                              },
                       ),
                       const Spacer(),
                       if (!isDone)

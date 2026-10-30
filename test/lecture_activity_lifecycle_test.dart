@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 import 'support/learning_fixtures.dart';
 import 'support/returning_user_guides.dart';
 import 'dart:async';
@@ -431,6 +434,18 @@ void main() {
         );
 
         // Switch to Completed tab to verify completed task
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byType(RepaintBoundary).first,
+        );
+        await tester.runAsync(() async {
+          final image = await boundary.toImage();
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          await File(
+            '/tmp/ascent-taskboard-check.png',
+          ).writeAsBytes(bytes!.buffer.asUint8List());
+          image.dispose();
+        });
+        await tester.ensureVisible(find.text('Completed'));
         await tester.tap(find.text('Completed'));
         await tester.pumpAndSettle();
 

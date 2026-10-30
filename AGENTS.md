@@ -11,3 +11,7 @@ Before implementing a feature or interaction, inspect the existing equivalent im
 ## Temporary planning files
 
 Implementation plans and task-specific planning documents are temporary working files. After the implementation and verification are complete, delete those files before finishing the task. Do not commit or retain them unless the user explicitly asks to keep them. Preserve maintained product documentation, user-owned files, and repository instructions such as this file.
+
+## Shared interaction controls
+
+Use `AscentSwitch` for standalone switches and `AscentSwitchRow` for settings. Use `AscentSegmentedControl` for mutually exclusive options, including its large-text vertical layout. Do not introduce raw Switch, Switch.adaptive, CupertinoSwitch, or per-screen segmented controls. SharedControlColors owns interaction colors: blue for actions and selection, red for overdue/destructive states, neutral grey for structure. Importance uses a user-selected star, not a yellow priority badge.

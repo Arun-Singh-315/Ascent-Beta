@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'color_tokens.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
+import 'shared_control_tokens.dart';
 
 /// Glass theme tokens for the Ascent design system.
 /// Defined according to the Ascent Liquid Glass specification:
@@ -71,6 +72,114 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     required this.inkMuted,
   });
 
+  // ── Semantic Roles from Section 3 ─────────────────────────────────────────
+
+  bool get isDark => bg.computeLuminance() < 0.2;
+
+  /// Content/card surface
+  Color get surface => frozen
+      ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+      : merlot
+      ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+      : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
+
+  /// Elevated surface (sheet/dialog/menu)
+  Color get elevated => frozen
+      ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+      : merlot
+      ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.surface)
+      : (isDark
+            ? AscentColors.bgSurfaceElevatedDark
+            : AscentColors.bgSurfaceElevated);
+
+  /// Recessed surface (inputs/segment track)
+  Color get recessed => frozen
+      ? (isDark ? FrozenPalette.darkRecessed : FrozenPalette.recessed)
+      : merlot
+      ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.recessedWell)
+      : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
+
+  /// Required control outline
+  Color get controlOutline => frozen
+      ? (isDark
+            ? FrozenPalette.darkControlOutline
+            : FrozenPalette.controlOutline)
+      : merlot
+      ? (isDark ? const Color(0xFF8D939F) : MerlotPalette.line)
+      : (isDark ? const Color(0xFF8D939F) : AscentColors.outlineDay);
+
+  /// Action ink (links/active icons/focus)
+  Color get actionInk => frozen
+      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+      : merlot
+      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
+      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+
+  /// Filled primary button background
+  Color get primaryButtonBg => SharedControlColors.actionBlue;
+  Color get primaryButtonFg => Colors.white;
+  Color get primaryButtonPressed => const Color(0xFF005AC8);
+
+  /// Tonal/selection background
+  Color get tonalBg => frozen
+      ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+      : merlot
+      ? (isDark ? MerlotPalette.darkTint : MerlotPalette.tint)
+      : (isDark
+            ? AscentColors.accentPrimaryDimDark
+            : AscentColors.accentPrimaryDim);
+
+  /// Tonal/selection foreground
+  Color get tonalFg => frozen
+      ? (isDark
+            ? FrozenPalette.darkTintForeground
+            : FrozenPalette.tintForeground)
+      : merlot
+      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
+      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+
+  /// Focus ring
+  Color get focusRing => frozen
+      ? (isDark ? FrozenPalette.darkFocusRing : FrozenPalette.focusRing)
+      : merlot
+      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
+      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+
+  // ── Shared Control Colors (Section 3.2) ───────────────────────────────────
+
+  Color get switchTrackOn => SharedControlColors.switchTrackOn;
+  Color get switchThumb => SharedControlColors.switchThumb;
+  Color get switchTrackOff => isDark
+      ? SharedControlColors.switchTrackOffDark
+      : SharedControlColors.switchTrackOffLight;
+  Color get disabledBg => isDark
+      ? SharedControlColors.disabledBgDark
+      : SharedControlColors.disabledBgLight;
+  Color get disabledFg => isDark
+      ? SharedControlColors.disabledFgDark
+      : SharedControlColors.disabledFgLight;
+  Color get errorInk => isDark
+      ? SharedControlColors.errorInkDark
+      : SharedControlColors.errorInkLight;
+  Color get errorSoftBg => isDark
+      ? SharedControlColors.errorSoftBgDark
+      : SharedControlColors.errorSoftBgLight;
+  Color get destructiveBg => SharedControlColors.filledDestructiveBg;
+  Color get destructiveFg => SharedControlColors.filledDestructiveFg;
+  Color get destructivePressed => SharedControlColors.filledDestructivePressed;
+  Color get successInk => isDark
+      ? SharedControlColors.successInkDark
+      : SharedControlColors.successInkLight;
+  Color get successSoftBg => isDark
+      ? SharedControlColors.successSoftBgDark
+      : SharedControlColors.successSoftBgLight;
+  Color get warningInk => isDark
+      ? SharedControlColors.warningInkDark
+      : SharedControlColors.warningInkLight;
+  Color get warningSoftBg => isDark
+      ? SharedControlColors.warningSoftBgDark
+      : SharedControlColors.warningSoftBgLight;
+
   static const light = AscentGlass(
     bg: Color(0xFFEFF2F6),
     fill: Color.fromRGBO(255, 255, 255, 0.78),
@@ -100,25 +209,25 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   static const nordicSky = AscentGlass(
     frozen: true,
     bg: FrozenPalette.canvas,
-    fill: Color.fromRGBO(243, 247, 251, 0.78),
+    fill: FrozenPalette.surface,
     edge: FrozenPalette.line,
     highlight: Color.fromRGBO(255, 255, 255, 0.96),
-    line: FrozenPalette.lineSubtle,
+    line: FrozenPalette.line,
     glow1: Color.fromRGBO(147, 197, 253, 0.28),
     glow2: Color.fromRGBO(199, 210, 254, 0.20),
     track: Color.fromRGBO(29, 100, 180, 0.12),
-    nav: Color.fromRGBO(243, 247, 251, 0.90),
+    nav: FrozenPalette.surface,
     shadow: FrozenPalette.shadowAmbient,
     clay: FrozenPalette.action,
     claySoft: FrozenPalette.pillSoft,
     slate: FrozenPalette.action,
     slateSoft: FrozenPalette.pillSoft,
     sage: FrozenPalette.success,
-    sageSoft: Color.fromRGBO(46, 125, 91, 0.12),
+    sageSoft: Color.fromRGBO(22, 101, 52, 0.12),
     amber: FrozenPalette.spark,
     amberSoft: FrozenPalette.sparkTint,
     coral: FrozenPalette.danger,
-    coralSoft: Color.fromRGBO(192, 57, 43, 0.12),
+    coralSoft: Color.fromRGBO(180, 35, 24, 0.12),
     ink: FrozenPalette.ink,
     inkSecondary: FrozenPalette.secondaryInk,
     inkMuted: FrozenPalette.mutedInk,
@@ -127,25 +236,25 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   static const nordicSkyDark = AscentGlass(
     frozen: true,
     bg: FrozenPalette.darkCanvas,
-    fill: Color.fromRGBO(22, 35, 56, 0.72),
+    fill: FrozenPalette.darkSurface,
     edge: FrozenPalette.darkLine,
     highlight: Color.fromRGBO(120, 180, 255, 0.14),
-    line: FrozenPalette.darkLineSubtle,
+    line: FrozenPalette.darkLine,
     glow1: Color.fromRGBO(94, 160, 240, 0.32),
     glow2: Color.fromRGBO(125, 180, 245, 0.26),
     track: Color.fromRGBO(255, 255, 255, 0.12),
-    nav: Color.fromRGBO(15, 26, 43, 0.90),
+    nav: FrozenPalette.darkSurface,
     shadow: Color.fromRGBO(0, 0, 0, 0.55),
     clay: FrozenPalette.darkAction,
     claySoft: FrozenPalette.darkTint,
     slate: FrozenPalette.darkAction,
     slateSoft: FrozenPalette.darkTint,
     sage: FrozenPalette.darkSuccess,
-    sageSoft: Color.fromRGBO(62, 163, 120, 0.14),
+    sageSoft: Color.fromRGBO(134, 239, 172, 0.14),
     amber: FrozenPalette.darkSpark,
     amberSoft: FrozenPalette.darkSparkTint,
     coral: FrozenPalette.darkDanger,
-    coralSoft: Color.fromRGBO(229, 106, 94, 0.14),
+    coralSoft: Color.fromRGBO(255, 180, 171, 0.14),
     ink: FrozenPalette.darkInk,
     inkSecondary: FrozenPalette.darkSecondaryInk,
     inkMuted: FrozenPalette.darkMutedInk,

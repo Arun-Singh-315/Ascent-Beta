@@ -16,6 +16,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import '../../../shared/widgets/ascent_card.dart';
+import '../../../shared/widgets/ascent_switch_row.dart';
 import '../../today/add_activity_sheet.dart';
 
 class DailyBriefingCard extends ConsumerWidget {
@@ -347,27 +348,15 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         if (widget.inSheet) ...[
           const SizedBox(height: 16),
           Divider(color: g.line),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Welcome me each new day'),
-            subtitle: const Text(
-              'Open this check-in automatically. You can always find it on Home.',
-            ),
+          AscentSwitchRow(
+            title: 'Welcome me each new day',
+            helper:
+                'Open this check-in automatically. You can always find it on Home.',
             value: ref.watch(dailyBriefingAutoOpenProvider),
             onChanged: (enabled) async {
-              try {
-                await ref
-                    .read(dailyBriefingAutoOpenProvider.notifier)
-                    .setEnabled(enabled);
-              } catch (_) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not save. Please try again.'),
-                    ),
-                  );
-                }
-              }
+              await ref
+                  .read(dailyBriefingAutoOpenProvider.notifier)
+                  .setEnabled(enabled);
             },
           ),
         ],

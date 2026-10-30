@@ -48,6 +48,7 @@ class AiAssistantScreen extends ConsumerStatefulWidget {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    useRootNavigator: true,
     backgroundColor: Colors.transparent,
     enableDrag: false,
     builder: (context) => Padding(

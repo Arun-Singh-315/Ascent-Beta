@@ -82,6 +82,7 @@ class ChaiBreakState {
   final int totalDurationSeconds;
   final int remainingSeconds;
   final bool isRunning;
+  final bool hasStarted;
   final SoundscapePreset selectedSoundscape;
   final BreathPhase breathPhase;
   final bool isBreathingGuideEnabled;
@@ -93,7 +94,8 @@ class ChaiBreakState {
   const ChaiBreakState({
     this.totalDurationSeconds = 600, // 10 minutes default
     this.remainingSeconds = 600,
-    this.isRunning = true,
+    this.isRunning = false,
+    this.hasStarted = false,
     this.selectedSoundscape = SoundscapePreset.tapriCafeRain,
     this.breathPhase = BreathPhase.inhale,
     this.isBreathingGuideEnabled = true,
@@ -125,6 +127,7 @@ class ChaiBreakState {
     int? totalDurationSeconds,
     int? remainingSeconds,
     bool? isRunning,
+    bool? hasStarted,
     SoundscapePreset? selectedSoundscape,
     BreathPhase? breathPhase,
     bool? isBreathingGuideEnabled,
@@ -137,6 +140,7 @@ class ChaiBreakState {
       totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
       remainingSeconds: remainingSeconds ?? this.remainingSeconds,
       isRunning: isRunning ?? this.isRunning,
+      hasStarted: hasStarted ?? this.hasStarted,
       selectedSoundscape: selectedSoundscape ?? this.selectedSoundscape,
       breathPhase: breathPhase ?? this.breathPhase,
       isBreathingGuideEnabled:
@@ -164,16 +168,6 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       NotificationService.instance.cancelOngoingChaiBreakNotification();
     });
 
-    _initAudioPlayer();
-    _startTimer();
-    _startBreathCycle();
-
-    NotificationService.instance.showOngoingChaiBreakNotification(
-      remainingSeconds: 600,
-      soundscapeTitle: SoundscapePreset.tapriCafeRain.title,
-      isPaused: false,
-    );
-
     return const ChaiBreakState();
   }
 
@@ -186,7 +180,6 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
     try {
       _player = AudioPlayer();
       _player?.setReleaseMode(ReleaseMode.loop).catchError((_) {});
-      _playCurrentSoundscape();
     } catch (_) {}
   }
 
@@ -278,6 +271,10 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       if (state.remainingSeconds > 0) {
         final remaining = state.remainingSeconds - 1;
         state = state.copyWith(remainingSeconds: remaining);
+        if (remaining == 0) {
+          _finish();
+          return;
+        }
         tickCount++;
         if (tickCount % 5 == 0 || remaining == 0) {
           NotificationService.instance.showOngoingChaiBreakNotification(
@@ -287,9 +284,17 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
           );
         }
       } else {
-        pause();
+        _finish();
       }
     });
+  }
+
+  void _finish() {
+    _timer?.cancel();
+    _breathTimer?.cancel();
+    state = state.copyWith(isRunning: false, hasStarted: false);
+    _playCurrentSoundscape();
+    NotificationService.instance.cancelOngoingChaiBreakNotification();
   }
 
   void _startBreathCycle() {
@@ -320,7 +325,9 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       totalDurationSeconds: seconds,
       remainingSeconds: seconds,
       isRunning: true,
+      hasStarted: true,
     );
+    _initAudioPlayerIfNeeded();
     _startTimer();
     _startBreathCycle();
     _playCurrentSoundscape();
@@ -349,11 +356,18 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
     );
   }
 
+  void _initAudioPlayerIfNeeded() {
+    if (_player == null) _initAudioPlayer();
+  }
+
   void resume() {
     if (state.remainingSeconds <= 0) {
       state = state.copyWith(remainingSeconds: state.totalDurationSeconds);
     }
-    state = state.copyWith(isRunning: true);
+    state = state.copyWith(isRunning: true, hasStarted: true);
+    _initAudioPlayerIfNeeded();
+    _startTimer();
+    _startBreathCycle();
     _playCurrentSoundscape();
     NotificationService.instance.showOngoingChaiBreakNotification(
       remainingSeconds: state.remainingSeconds,
@@ -365,6 +379,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   void selectSoundscape(SoundscapePreset soundscape) {
     state = state.copyWith(selectedSoundscape: soundscape);
     _playCurrentSoundscape();
+    if (!state.hasStarted) return;
     NotificationService.instance.showOngoingChaiBreakNotification(
       remainingSeconds: state.remainingSeconds,
       soundscapeTitle: soundscape.title,
@@ -379,7 +394,6 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 }
 
-final chaiBreakProvider =
-    NotifierProvider.autoDispose<ChaiBreakNotifier, ChaiBreakState>(
-      ChaiBreakNotifier.new,
-    );
+final chaiBreakProvider = NotifierProvider<ChaiBreakNotifier, ChaiBreakState>(
+  ChaiBreakNotifier.new,
+);

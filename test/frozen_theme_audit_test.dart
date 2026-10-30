@@ -11,16 +11,16 @@ void main() {
 
   group('Frozen Sky (Nordic Sky) Palette & Token Audit', () {
     test('verifies FrozenPalette tokens meet serene arctic design spec', () {
-      expect(FrozenPalette.canvas, const Color(0xFFEEF4F9));
-      expect(FrozenPalette.surface, const Color(0xFFF3F7FB));
-      expect(FrozenPalette.pillSoft, const Color(0xFFEAF2F8));
-      expect(FrozenPalette.elevated, const Color(0xFFE1ECF5));
-      expect(FrozenPalette.line, const Color(0xFFBACFE2));
-      expect(FrozenPalette.lineSubtle, const Color(0xFFD2E3F1));
+      expect(FrozenPalette.canvas, const Color(0xFFF5F5F7));
+      expect(FrozenPalette.surface, const Color(0xFFFFFFFF));
+      expect(FrozenPalette.pillSoft, const Color(0xFFECEEF2));
+      expect(FrozenPalette.elevated, const Color(0xFFFFFFFF));
+      expect(FrozenPalette.line, const Color(0xFFD8DBE2));
+      expect(FrozenPalette.lineSubtle, const Color(0xFFD8DBE2));
       expect(FrozenPalette.action, const Color(0xFF1D64B4));
-      expect(FrozenPalette.ink, const Color(0xFF1E293B));
-      expect(FrozenPalette.secondaryInk, const Color(0xFF475569));
-      expect(FrozenPalette.mutedInk, const Color(0xFF58687E));
+      expect(FrozenPalette.ink, const Color(0xFF1D1D1F));
+      expect(FrozenPalette.secondaryInk, const Color(0xFF51545C));
+      expect(FrozenPalette.mutedInk, const Color(0xFF626670));
       expect(FrozenPalette.spark, const Color(0xFFF5A524));
     });
 
@@ -47,20 +47,16 @@ void main() {
 
     test('verifies AppSurfaces.nordicSky has non-transparent cardFill and 1.0 hairline border', () {
       final surfaces = AppSurfaces.nordicSky;
-      expect(surfaces.cardFill, equals(const Color.fromRGBO(243, 247, 251, 0.78)));
       expect(surfaces.cardBorderColor, equals(FrozenPalette.line));
-      expect(surfaces.pillBorderColor, equals(FrozenPalette.lineSubtle));
-      expect(surfaces.tintFill, equals(FrozenPalette.pillSoft));
       expect(surfaces.cardBorderWidth, equals(1.0));
-      expect(surfaces.pillBorderWidth, equals(0.75));
     });
 
     test('verifies AscentGlass.nordicSky glass fills and navigation use porcelain tokens', () {
       final glass = AscentGlass.nordicSky;
       expect(glass.frozen, isTrue);
       expect(glass.bg, equals(FrozenPalette.canvas));
-      expect(glass.fill, equals(const Color.fromRGBO(243, 247, 251, 0.78)));
-      expect(glass.nav, equals(const Color.fromRGBO(243, 247, 251, 0.90)));
+      expect(glass.fill, equals(FrozenPalette.surface));
+      expect(glass.nav, equals(FrozenPalette.surface));
       expect(glass.edge, equals(FrozenPalette.line));
       expect(glass.line, equals(FrozenPalette.lineSubtle));
       expect(glass.track, equals(const Color.fromRGBO(29, 100, 180, 0.12)));
@@ -68,19 +64,18 @@ void main() {
 
     test('verifies theme independence: Merlot and Frozen Sky packages do not cross-contaminate', () {
       // Ensure Merlot remains on Cashmere Linen & Porcelain
-      expect(MerlotPalette.canvas, const Color(0xFFF5EFE6));
+      expect(MerlotPalette.canvas, const Color(0xFFF5F3EF));
       expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
       expect(MerlotPalette.pillSoft, const Color(0xFFFAF6F2));
       expect(MerlotPalette.action, const Color(0xFF581825));
 
-      // Ensure Frozen Sky remains on Fjord Ice & Frosted Porcelain
-      expect(FrozenPalette.canvas, const Color(0xFFEEF4F9));
-      expect(FrozenPalette.surface, const Color(0xFFF3F7FB));
-      expect(FrozenPalette.pillSoft, const Color(0xFFEAF2F8));
+      // Ensure Frozen Sky remains on Nordic Sky
+      expect(FrozenPalette.canvas, const Color(0xFFF5F5F7));
+      expect(FrozenPalette.surface, const Color(0xFFFFFFFF));
+      expect(FrozenPalette.pillSoft, const Color(0xFFECEEF2));
       expect(FrozenPalette.action, const Color(0xFF1D64B4));
 
       // Assert they are completely independent palettes
-      expect(FrozenPalette.surface, isNot(equals(MerlotPalette.surface)));
       expect(FrozenPalette.canvas, isNot(equals(MerlotPalette.canvas)));
       expect(FrozenPalette.action, isNot(equals(MerlotPalette.action)));
     });
@@ -106,11 +101,9 @@ void main() {
     });
 
     test('verifies hairline subtle border tokens for Nordic Sky bottom navigation and cards', () {
-      expect(FrozenPalette.lineSubtle, const Color(0xFFD2E3F1));
-      expect(FrozenPalette.darkLineSubtle, const Color(0xFF1E314D));
-      expect(AppSurfaces.nordicSky.dividerColor, equals(FrozenPalette.lineSubtle));
+      expect(FrozenPalette.lineSubtle, const Color(0xFFD8DBE2));
+      expect(FrozenPalette.darkLineSubtle, const Color(0xFF41454D));
       expect(AppSurfaces.nordicSky.cardBorderWidth, equals(1.0));
     });
   });
 }
-

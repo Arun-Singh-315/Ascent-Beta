@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_star_button.dart';
 import '../../shared/widgets/schedule_picker.dart';
 import '../../shared/widgets/note_list_button.dart';
 import '../../core/services/plan_collection_service.dart';
@@ -21,6 +22,7 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/services/plan_child_protection.dart';
@@ -90,7 +92,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _hasReminder = false;
   bool _pickingReminder = false;
-  String _priority = 'medium';
+  String _priority = 'low';
   bool _saving = false;
   bool _reminderEdited = false;
   bool _loadingReminder = false;
@@ -471,7 +473,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     autofocus: widget.existingTask == null,
                     textCapitalization: TextCapitalization.sentences,
                     onChanged: (_) {
-                      if (_titleError != null) setState(() => _titleError = null);
+                      if (_titleError != null) {
+                        setState(() => _titleError = null);
+                      }
                     },
                     style: AscentTextStyles.bodyMedium.copyWith(
                       color: context.textPrimary,
@@ -794,56 +798,33 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         color: context.divider.withValues(alpha: 0.6),
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.notifications_active_outlined,
-                          size: 20,
-                          color: context.accentPrimary,
+                        AscentSwitchRow(
+                          title: 'Remind me',
+                          helper: _hasReminder
+                              ? '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}'
+                              : null,
+                          value: _hasReminder,
+                          enabled: !_pickingReminder,
+                          onChanged: _chooseReminder,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: AppTapArea(
-                            onTap: _hasReminder
-                                ? () => _chooseReminder(true)
-                                : null,
-                            borderRadius: AppGeometry.roundedr8,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Remind me',
-                                      style: AscentTextStyles.labelMedium
-                                          .copyWith(color: context.textPrimary),
-                                    ),
-                                    if (_hasReminder) ...[
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '(Tap to edit)',
-                                        style: AscentTextStyles.captionMedium
-                                            .copyWith(color: context.textMuted)
-                                            .merge(AppTypeRoles.typeRole18),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                if (_hasReminder)
-                                  Text(
-                                    '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
-                                    style: AscentTextStyles.captionMedium
-                                        .copyWith(color: context.accentPrimary)
-                                        .merge(AppTypeRoles.typeRole8),
-                                  ),
-                              ],
+                        if (_hasReminder)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: AppSpace.s16,
+                              bottom: AppSpace.s8,
+                            ),
+                            child: TextButton.icon(
+                              onPressed: () => _chooseReminder(true),
+                              icon: const Icon(
+                                Icons.edit_calendar_outlined,
+                                size: 16,
+                              ),
+                              label: const Text('Change reminder time'),
                             ),
                           ),
-                        ),
-                        Switch(
-                          value: _hasReminder,
-                          onChanged: _pickingReminder ? null : _chooseReminder,
-                        ),
                       ],
                     ),
                   ),
@@ -858,7 +839,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       title: Text(
-                        'Priority & Notes',
+                        'Notes & details',
                         style: AscentTextStyles.labelSmall.copyWith(
                           color: context.textMuted,
                         ),
@@ -866,37 +847,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       children: [
                         Row(
                           children: [
-                            Text(
-                              'Priority: ',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: context.textMuted,
+                            const Expanded(child: Text('Star this activity')),
+                            AscentStarButton(
+                              selected: _priority == 'high',
+                              onChanged: (value) => setState(
+                                () => _priority = value ? 'high' : 'low',
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            for (final p in ['low', 'medium', 'high'])
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  right: AppSpace.s6,
-                                ),
-                                child: AppPill.choice(
-                                  label: Text(p.toUpperCase()),
-                                  selected: _priority == p,
-                                  selectedColor: p == 'high'
-                                      ? context.stateDanger.withValues(
-                                          alpha: 0.15,
-                                        )
-                                      : context.accentPrimary.withValues(
-                                          alpha: 0.15,
-                                        ),
-                                  labelStyle: AppTypeRoles.typeRole19.copyWith(
-                                    color: _priority == p
-                                        ? context.textPrimary
-                                        : context.textMuted,
-                                  ),
-                                  onSelected: (_) =>
-                                      setState(() => _priority = p),
-                                ),
-                              ),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -1096,12 +1053,16 @@ class _TypeSelectChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.s8),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
+                ? (isDark
+                      ? context.accentPrimary.withValues(alpha: 0.85)
+                      : context.accentPrimary)
                 : (isDark
-                    ? g.fill
-                    : (g.merlot
-                        ? MerlotPalette.surface
-                        : (g.frozen ? FrozenPalette.surface : Colors.white))),
+                      ? g.fill
+                      : (g.merlot
+                            ? MerlotPalette.surface
+                            : (g.frozen
+                                  ? FrozenPalette.surface
+                                  : Colors.white))),
             borderRadius: AppGeometry.roundedr24,
             border: Border.all(
               color: isSelected
@@ -1136,4 +1097,3 @@ class _TypeSelectChip extends StatelessWidget {
     );
   }
 }
-

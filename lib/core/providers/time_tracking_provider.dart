@@ -637,7 +637,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
   final planDao = ref.watch(planDaoProvider);
-  final timeTracking = ref.watch(timeTrackingProvider);
+  final activeSessionState = ref.watch(
+    timeTrackingProvider.select(
+      (s) => (
+        activeSessionId: s.activeSession?.id,
+        linkedTaskId: s.activeSession?.linkedTaskId,
+        isRunning: s.isRunning,
+        isPaused: s.isPaused,
+      ),
+    ),
+  );
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
   final activeCourseId = ref.watch(
     learningHubProvider.select((s) => s.activeCourseId),
@@ -705,8 +714,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
 
       int taskElapsedSeconds = 0;
       for (final s in taskSessions) {
-        if (timeTracking.activeSession?.id == s.id) {
-          taskElapsedSeconds += timeTracking.elapsedSeconds;
+        if (activeSessionState.activeSessionId == s.id) {
+          taskElapsedSeconds += ref.read(timeTrackingProvider).elapsedSeconds;
         } else {
           taskElapsedSeconds += (s.durationSeconds > 0)
               ? s.durationSeconds
@@ -720,12 +729,12 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.linkedTaskId == task.id &&
-          timeTracking.isRunning) {
+      if (activeSessionState.linkedTaskId == task.id &&
+          activeSessionState.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (taskSessions.any((s) => s.status == 'paused') ||
-          (timeTracking.activeSession?.linkedTaskId == task.id &&
-              timeTracking.isPaused)) {
+          (activeSessionState.linkedTaskId == task.id &&
+              activeSessionState.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (task.actualCompletedDate != null) {
         status = TodayActivityStatus.done;
@@ -821,8 +830,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       int elapsed;
-      if (timeTracking.activeSession?.id == session.id) {
-        elapsed = timeTracking.elapsedSeconds;
+      if (activeSessionState.activeSessionId == session.id) {
+        elapsed = ref.read(timeTrackingProvider).elapsedSeconds;
       } else {
         elapsed = (session.durationSeconds > 0)
             ? session.durationSeconds
@@ -837,12 +846,12 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.id == session.id &&
-          timeTracking.isRunning) {
+      if (activeSessionState.activeSessionId == session.id &&
+          activeSessionState.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (session.status == 'paused' ||
-          (timeTracking.activeSession?.id == session.id &&
-              timeTracking.isPaused)) {
+          (activeSessionState.activeSessionId == session.id &&
+              activeSessionState.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (session.status == 'completed') {
         status = TodayActivityStatus.done;
@@ -933,6 +942,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
     items.removeWhere((item) => dismissedIds.contains(item.id));
 
     // 3. Sort items: inProgress first (0), paused second (1), notStarted third (2), done last (3)
+    // Within notStarted: Starred / high-priority items float to the top for productive focus
     items.sort((a, b) {
       int score(TodayActivityStatus s) => switch (s) {
         TodayActivityStatus.inProgress => 0,
@@ -942,6 +952,13 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       };
       final diff = score(a.status).compareTo(score(b.status));
       if (diff != 0) return diff;
+      if (a.status == TodayActivityStatus.notStarted &&
+          b.status == TodayActivityStatus.notStarted) {
+        final aHigh = a.priority == 'high' ? 0 : 1;
+        final bHigh = b.priority == 'high' ? 0 : 1;
+        final priorityDiff = aHigh.compareTo(bHigh);
+        if (priorityDiff != 0) return priorityDiff;
+      }
       return b.elapsedSecondsToday.compareTo(a.elapsedSecondsToday);
     });
 

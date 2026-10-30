@@ -116,7 +116,7 @@ class HomePlansPreview extends ConsumerWidget {
                     const Spacer(),
                     TextButton(
                       onPressed: () => context.push('/plans'),
-                      child: const Text('View all'),
+                      child: const Text('View ›'),
                     ),
                   ],
                 ),

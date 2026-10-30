@@ -51,18 +51,22 @@ class UnlockedPromiseIdsNotifier extends Notifier<Set<int>> {
   Set<int> build() => <int>{};
 
   void unlock(int id) {
+    if (!ref.mounted) return;
     state = {...state, id};
   }
 
   void lock(int id) {
+    if (!ref.mounted) return;
     state = {...state}..remove(id);
   }
 
   void lockAll() {
+    if (!ref.mounted) return;
     state = <int>{};
   }
 
   void toggle(int id) {
+    if (!ref.mounted) return;
     if (state.contains(id)) {
       lock(id);
     } else {

@@ -11,6 +11,7 @@ import '../../../app/theme/color_tokens.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/plan_collection_service.dart';
+import '../../../shared/widgets/ascent_switch_row.dart';
 import '../planning_providers.dart';
 
 Future<void> showPlanCollectionEditor(
@@ -2003,16 +2004,14 @@ class _SettingsState extends State<_ItemSettings> {
                       'Repeats ${_repeat == 'daily' ? 'daily' : 'on weekdays'} until ${DateFormat.yMMMd().format(_end!)}',
                     ),
                   ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Check in afterwards'),
-                  subtitle: Text(
-                    _check && checkAt != null
-                        ? 'Next check-in: ${DateFormat('EEE, h:mm a').format(checkAt)}'
-                        : 'Optional notification to check whether you finished.',
-                  ),
+                AscentSwitchRow(
+                  title: 'Check in afterwards',
+                  helper: _check && checkAt != null
+                      ? 'Next check-in: ${DateFormat('EEE, h:mm a').format(checkAt)}'
+                      : 'Optional notification to check whether you finished.',
                   value: _check,
-                  onChanged: _choosing ? null : _chooseCheck,
+                  enabled: !_choosing,
+                  onChanged: _chooseCheck,
                 ),
                 const SizedBox(height: AppSpace.s8),
                 _label('Focus duration'),
@@ -2243,9 +2242,8 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
                       ),
                   ],
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Use for future plans'),
+                AscentSwitchRow(
+                  title: 'Use for future plans',
                   value: _remember,
                   onChanged: (v) => setState(() => _remember = v),
                 ),

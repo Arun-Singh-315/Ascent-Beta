@@ -37,7 +37,7 @@ void main() {
 
   group('Chai & Coffee Break Sanctuary Tests', () {
     test(
-      'ChaiBreakNotifier initializes with 10 min preset and decrements timer',
+      'ChaiBreakNotifier stays idle until explicitly started',
       () async {
         final container = ProviderContainer(
           overrides: [
@@ -49,7 +49,8 @@ void main() {
 
         expect(container.read(chaiBreakProvider).totalDurationSeconds, 600);
         expect(container.read(chaiBreakProvider).remainingSeconds, 600);
-        expect(container.read(chaiBreakProvider).isRunning, true);
+        expect(container.read(chaiBreakProvider).isRunning, false);
+        expect(container.read(chaiBreakProvider).hasStarted, false);
         expect(
           container.read(chaiBreakProvider).selectedSoundscape,
           SoundscapePreset.tapriCafeRain,

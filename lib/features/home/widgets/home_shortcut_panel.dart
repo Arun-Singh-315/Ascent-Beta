@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import 'home_shortcut_editor.dart';
 import '../../../app/theme/dimension_tokens.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../promises/providers/promise_providers.dart';
-import '../../../shared/widgets/glass_surface.dart';
 
 class HomeShortcutItem {
   final String id;
@@ -154,7 +154,8 @@ class HomeShortcutPanel extends ConsumerWidget {
     if (shortcutItems != null) {
       return shortcutItems!.take(4).toList();
     }
-    final raw = shortcuts ?? const ['thought-wall', 'hydration', 'momentum', 'vault'];
+    final raw =
+        shortcuts ?? const ['thought-wall', 'hydration', 'momentum', 'vault'];
     final items = <HomeShortcutItem>[];
     for (final id in raw) {
       final item = kRegisteredShortcuts[id];
@@ -175,14 +176,23 @@ class HomeShortcutPanel extends ConsumerWidget {
         return ref
                 .watch(todayActivitiesProvider)
                 .value
-                ?.where((a) => a.status != TodayActivityStatus.done && a.completedAt == null)
+                ?.where(
+                  (a) =>
+                      a.status != TodayActivityStatus.done &&
+                      a.completedAt == null,
+                )
                 .length ??
             0;
       case 'thought-wall':
       case 'mind':
         return ref.watch(todayThoughtsCountStreamProvider).value ?? 0;
       case 'reminders':
-        return ref.watch(allRemindersProvider).value?.where((r) => r.isActive).length ?? 0;
+        return ref
+                .watch(allRemindersProvider)
+                .value
+                ?.where((r) => r.isActive)
+                .length ??
+            0;
       case 'promises':
         return ref.watch(activePromisesStreamProvider).value?.length ?? 0;
       case 'hydration':
@@ -202,21 +212,36 @@ class HomeShortcutPanel extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final items = _resolveItems();
 
-    if (items.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return GlassSurface(
+    return Padding(
       key: const ValueKey('home_shortcut_panel'),
-      radius: 24,
-      enableBlur: false,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AscentDimensions.spaceSm,
-        vertical: AscentDimensions.spaceMd,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: items.map((item) {
+      padding: const EdgeInsets.only(top: 10, bottom: 6),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: g.line, width: 1.0),
+              color: g.fill.withValues(alpha: isDark ? 0.15 : 0.25),
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AscentDimensions.spaceSm,
+              42,
+              AscentDimensions.spaceSm,
+              10,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: items.isEmpty
+                  ? [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => showHomeShortcutEditor(context),
+                          child: const Text('Add your shortcuts'),
+                        ),
+                      ),
+                    ]
+                  : items.map((item) {
           final count = _resolveBadgeCount(ref, item.id);
           final isSelected = activeShortcutId == item.id;
           return Expanded(
@@ -237,7 +262,9 @@ class HomeShortcutPanel extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: isSelected
                       ? BoxDecoration(
-                          color: g.clay.withValues(alpha: isDark ? 0.22 : 0.12),
+                                      color: g.clay.withValues(
+                                        alpha: isDark ? 0.22 : 0.12,
+                                      ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: g.clay.withValues(alpha: 0.5),
@@ -262,17 +289,22 @@ class HomeShortcutPanel extends ConsumerWidget {
                               top: -7,
                               right: -12,
                               child: Container(
-                                key: ValueKey('shortcut_badge_${item.id}'),
+                                            key: ValueKey(
+                                              'shortcut_badge_${item.id}',
+                                            ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 5,
                                   vertical: 1.5,
                                 ),
-                                constraints: const BoxConstraints(minWidth: 16),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 16,
+                                            ),
                                 decoration: BoxDecoration(
                                   color: g.clay.withValues(
                                     alpha: isDark ? 0.35 : 0.22,
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                   border: Border.all(
                                     color: g.line,
                                     width: 1.0,
@@ -315,6 +347,53 @@ class HomeShortcutPanel extends ConsumerWidget {
             ),
           );
         }).toList(),
+            ),
+          ),
+          Positioned(
+            right: 6,
+            top: 0,
+            child: IconButton(
+              key: const ValueKey('edit_home_shortcuts'),
+              tooltip: 'Add or remove shortcuts',
+              onPressed: () => showHomeShortcutEditor(context),
+              icon: const Icon(Icons.add_rounded, size: 20),
+            ),
+          ),
+          Positioned(
+            top: -9,
+            left: 20,
+            child: Container(
+              key: const ValueKey('shortcut_legend_title'),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0F1520)
+                    : const Color(0xFFF7F9FC),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: g.line.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt_rounded, size: 11, color: g.clay),
+                  const SizedBox(width: 4),
+                  Text(
+                    'QUICK ACTIONS',
+                    style: TextStyle(
+                      color: g.inkSecondary,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,7 @@
+import '../../shared/widgets/ascent_switch.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
+import '../home/widgets/island_customization_sheet.dart';
+import '../../core/security/app_lock_provider.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -7,8 +11,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:intl/intl.dart';
 
-import '../../app/theme/color_tokens.dart';
+import '../../core/services/cosmic_profile_service.dart';
+
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -34,6 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   final _roleController = TextEditingController();
   List<String> _targetCompanies = [];
   DateTime? _interviewDate;
+  DateTime? _dateOfBirth;
   int _weeklyHours = 10;
   String _studyWindow = 'morning';
   bool _profileLoaded = false;
@@ -98,7 +106,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       if (mounted) {
         setState(() {
           _notificationsAllowed = notif;
-          _locationAllowed = locPerm == LocationPermission.always ||
+          _locationAllowed =
+              locPerm == LocationPermission.always ||
               locPerm == LocationPermission.whileInUse;
           _locationServiceOn = locService;
           _alarmsAllowed = alarmReady;
@@ -192,6 +201,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _nameController.text = profile.name;
     _roleController.text = profile.targetRole;
     _interviewDate = profile.interviewDate;
+    _dateOfBirth = profile.dateOfBirth;
     _weeklyHours = profile.weeklyHoursAvailable;
     _studyWindow = profile.preferredStudyWindow;
     try {
@@ -220,6 +230,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           targetRole: drift.Value(_roleController.text.trim()),
           targetCompanies: drift.Value(jsonEncode(_targetCompanies)),
           interviewDate: drift.Value(_interviewDate),
+          dateOfBirth: drift.Value(_dateOfBirth),
           weeklyHoursAvailable: drift.Value(_weeklyHours),
           preferredStudyWindow: drift.Value(_studyWindow),
           onboardingComplete: const drift.Value(true),
@@ -595,8 +606,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 isGranted: _locationAllowed && _locationServiceOn,
                 grantedLabel: 'Active',
                 neededLabel: !_locationServiceOn ? 'GPS Off' : 'Needed',
-                actionLabel:
-                    !_locationServiceOn ? 'Turn On GPS' : 'Allow Location',
+                actionLabel: !_locationServiceOn
+                    ? 'Turn On GPS'
+                    : 'Allow Location',
                 onAction: _requestLocationAccess,
               ),
 
@@ -768,6 +780,302 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
+  Future<bool?> _showSetPinDialog(
+    BuildContext context, {
+    bool isChanging = false,
+  }) async {
+    final pinController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? errorText;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final g = ctx.glass;
+          return AlertDialog(
+            backgroundColor: g.bg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: g.line),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, color: g.clay),
+                const SizedBox(width: 8),
+                Text(
+                  isChanging ? 'Change Master PIN' : 'Set Master PIN',
+                  style: AscentTextStyles.headlineMedium.copyWith(color: g.ink),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Set a 4-digit PIN to secure your Ascent workspace and prevent unauthorized access.',
+                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  key: const ValueKey('set_pin_input'),
+                  controller: pinController,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  maxLength: 4,
+                  style: TextStyle(
+                    letterSpacing: 4,
+                    color: g.ink,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'New 4-digit PIN',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const ValueKey('confirm_pin_input'),
+                  controller: confirmController,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  maxLength: 4,
+                  style: TextStyle(
+                    letterSpacing: 4,
+                    color: g.ink,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Confirm PIN',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                if (errorText != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    errorText!,
+                    style: TextStyle(
+                      color: g.coral,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                key: const ValueKey('save_pin_button'),
+                style: FilledButton.styleFrom(backgroundColor: g.clay),
+                onPressed: () async {
+                  final pin = pinController.text.trim();
+                  final confirm = confirmController.text.trim();
+                  if (pin.length < 4) {
+                    setDialogState(() => errorText = 'PIN must be 4 digits');
+                    return;
+                  }
+                  if (pin != confirm) {
+                    setDialogState(() => errorText = 'PINs do not match');
+                    return;
+                  }
+                  final ok = await ref
+                      .read(appLockProvider.notifier)
+                      .setPin(pin);
+                  if (ok && dialogCtx.mounted) {
+                    Navigator.pop(dialogCtx, true);
+                  }
+                },
+                child: const Text('Save PIN'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    final g = context.glass;
+    final lockState = ref.watch(appLockProvider);
+    final notifier = ref.read(appLockProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: 'Security & App Lock', dotColor: g.coral),
+        AscentCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Require App Lock',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Require PIN or Biometrics whenever Ascent opens',
+                          style: AscentTextStyles.captionMedium.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AscentSwitch(
+                    key: const ValueKey('setting_app_lock_switch'),
+                    value: lockState.isEnabled,
+                    onChanged: (val) async {
+                      HapticFeedback.lightImpact();
+                      if (val && !lockState.hasMasterPin) {
+                        final setPin = await _showSetPinDialog(context);
+                        if (setPin == true) {
+                          await notifier.toggleAppLock(true);
+                        }
+                      } else {
+                        await notifier.toggleAppLock(val);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              if (lockState.hasMasterPin) ...[
+                const SizedBox(height: 8),
+                Divider(color: g.line, height: 1),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => _showSetPinDialog(context, isChanging: true),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.password_rounded,
+                              size: 20,
+                              color: g.clay,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Change Master PIN',
+                              style: AscentTextStyles.labelMedium.copyWith(
+                                color: g.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: g.inkMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Divider(color: g.line, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Allow Notifications When Locked',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Deliver reminders even while app lock is engaged',
+                          style: AscentTextStyles.captionMedium.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AscentSwitch(
+                    key: const ValueKey('setting_allow_notifications_switch'),
+                    value: lockState.allowNotifications,
+                    onChanged: (val) {
+                      HapticFeedback.lightImpact();
+                      notifier.setAllowNotifications(val);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: g.line, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Redact Notification Content',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Hide private task and thought text on notifications when locked',
+                          style: AscentTextStyles.captionMedium.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AscentSwitch(
+                    key: const ValueKey('setting_redact_notifications_switch'),
+                    value: lockState.redactNotificationContent,
+                    onChanged: (val) {
+                      HapticFeedback.lightImpact();
+                      notifier.setRedactContent(val);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -838,9 +1146,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   GlassTranslucencyPreset.subtleFrosted
                               ? 'Subtle Frosted'
                               : translucencyPreset ==
-                                      GlassTranslucencyPreset.highContrast
-                                  ? 'High Contrast'
-                                  : 'Balanced Liquid (Default)',
+                                    GlassTranslucencyPreset.highContrast
+                              ? 'High Contrast'
+                              : 'Balanced Liquid (Default)',
                           textAlign: TextAlign.end,
                           style: AscentTextStyles.captionMedium
                               .copyWith(color: g.clay)
@@ -850,65 +1158,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _DayPresetOption(
+                  AscentSegmentedControl<GlassTranslucencyPreset>(
+                    segments: const [
+                      AscentSegment(
+                        value: GlassTranslucencyPreset.subtleFrosted,
                         label: 'Subtle',
-                        subtitle: 'Airy Glass',
-                        icon: Icons.blur_on_rounded,
-                        isSelected: translucencyPreset ==
-                            GlassTranslucencyPreset.subtleFrosted,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(glassTranslucencyPresetProvider.notifier)
-                              .setPreset(GlassTranslucencyPreset.subtleFrosted);
-                        },
                       ),
-                      const SizedBox(width: 8),
-                      _DayPresetOption(
+                      AscentSegment(
+                        value: GlassTranslucencyPreset.balancedLiquid,
                         label: 'Balanced',
-                        subtitle: 'Signature',
-                        icon: Icons.auto_awesome_rounded,
-                        isSelected: translucencyPreset ==
-                            GlassTranslucencyPreset.balancedLiquid,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(glassTranslucencyPresetProvider.notifier)
-                              .setPreset(
-                                GlassTranslucencyPreset.balancedLiquid,
-                              );
-                        },
                       ),
-                      const SizedBox(width: 8),
-                      _DayPresetOption(
+                      AscentSegment(
+                        value: GlassTranslucencyPreset.highContrast,
                         label: 'Contrast',
-                        subtitle: 'Crisp Day',
-                        icon: Icons.contrast_rounded,
-                        isSelected: translucencyPreset ==
-                            GlassTranslucencyPreset.highContrast,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(glassTranslucencyPresetProvider.notifier)
-                              .setPreset(
-                                GlassTranslucencyPreset.highContrast,
-                              );
-                        },
                       ),
                     ],
+                    selected: translucencyPreset,
+                    onChanged: (value) => ref
+                        .read(glassTranslucencyPresetProvider.notifier)
+                        .setPreset(value),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // ── Section 2: Profile & Identity (Always Visible) ──────────────
-            _SectionHeader(
-              title: 'Profile & Assistant',
-              dotColor: g.slate,
+            AscentCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(Icons.blur_on_rounded, color: g.clay),
+                title: const Text('Dynamic Island'),
+                subtitle: const Text(
+                  'Glass finish, compact view and what appears',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => showIslandCustomization(context),
+              ),
             ),
+            const SizedBox(height: 20),
+
+            // ── Section 2: Profile & Identity (Always Visible) ──────────────
+            _SectionHeader(title: 'Profile & Assistant', dotColor: g.slate),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
@@ -930,28 +1220,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         color: g.inkMuted,
                       ),
                       filled: true,
-                      fillColor: g.fill,
+                      fillColor: g.recessed,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s12,
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(
-                          color: g.clay,
-                          width: AppBorderScale.w1point2,
+                          color: g.focusRing,
+                          width: AscentDimensions.focusRingWidth,
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Date of Birth',
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
+                  ),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    key: const ValueKey('settings_dob_picker'),
+                    onTap: () async {
+                      HapticFeedback.lightImpact();
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _dateOfBirth ?? DateTime(2000, 1, 1),
+                        firstDate: DateTime(1900),
+                        lastDate: now,
+                        builder: (ctx, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: Theme.of(context).colorScheme
+                                  .copyWith(
+                                    primary: g.clay,
+                                    onPrimary: Colors.white,
+                                    surface: g.fill,
+                                    onSurface: g.ink,
+                                  ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() => _dateOfBirth = picked);
+                      }
+                    },
+                    borderRadius: AppGeometry.roundedr12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.recessed,
+                        borderRadius: AppGeometry.roundedr12,
+                        border: Border.all(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.cake_outlined,
+                            size: 18,
+                            color: _dateOfBirth != null ? g.clay : g.inkMuted,
+                          ),
+                          const SizedBox(width: AppSpace.s10),
+                          Expanded(
+                            child: Text(
+                              _dateOfBirth != null
+                                  ? DateFormat(
+                                      'd MMMM yyyy',
+                                    ).format(_dateOfBirth!)
+                                  : 'Select date of birth',
+                              style: AscentTextStyles.bodyMedium.copyWith(
+                                color: _dateOfBirth != null
+                                    ? g.ink
+                                    : g.inkMuted,
+                              ),
+                            ),
+                          ),
+                          if (_dateOfBirth != null)
+                            IconButton(
+                              tooltip: 'Clear birth date',
+                              icon: Icon(
+                                Icons.close_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                minWidth: 28,
+                                minHeight: 28,
+                              ),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _dateOfBirth = null);
+                              },
+                            )
+                          else
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: g.inkMuted,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_dateOfBirth != null) ...[
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (context) {
+                        const service = CosmicProfileService();
+                        final sign = service.getZodiac(_dateOfBirth!);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 2, top: 2),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.clay,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '(${sign.element.icon} ${sign.element.label})',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.inkMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 14),
 
                   Text(
@@ -970,24 +1402,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         color: g.inkMuted,
                       ),
                       filled: true,
-                      fillColor: g.fill,
+                      fillColor: g.recessed,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s12,
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(color: g.edge),
+                        borderSide: BorderSide(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(
-                          color: g.clay,
-                          width: AppBorderScale.w1point2,
+                          color: g.focusRing,
+                          width: AscentDimensions.focusRingWidth,
                         ),
                       ),
                     ),
@@ -1030,6 +1468,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // ── Section 3: App Permissions & System Access (Always Visible) ─
             _buildPermissionsSection(),
+            const SizedBox(height: 20),
+
+            // ── Section 4: Security & App Lock ──────────────────────────────
+            _buildSecuritySection(),
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
@@ -1189,11 +1631,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         color: g.clay.withValues(alpha: 0.12),
                         borderRadius: AppGeometry.roundedr10,
                       ),
-                      child: Icon(Icons.school_outlined, color: g.clay, size: 20),
+                      child: Icon(
+                        Icons.school_outlined,
+                        color: g.clay,
+                        size: 20,
+                      ),
                     ),
                     title: Text(
                       'Replay Day One Tutorial',
-                      style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.ink,
+                      ),
                     ),
                     subtitle: Text(
                       'Review the initial welcome walkthrough',
@@ -1400,114 +1848,6 @@ class _CollapsibleSettingsCard extends StatelessWidget {
   }
 }
 
-class _DayPresetOption extends StatelessWidget {
-  final String label;
-  final String subtitle;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _DayPresetOption({
-    required this.label,
-    required this.subtitle,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-
-    return Expanded(
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr12,
-        child: AppCard(
-          selected: isSelected,
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s12,
-            horizontal: AppSpace.s8,
-          ),
-          nightDecoration: BoxDecoration(
-            color: isSelected
-                ? (context.isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : g.clay.withValues(alpha: 0.08))
-                : g.fill,
-            borderRadius: AppGeometry.roundedr12,
-            border: Border.all(
-              color: isSelected ? g.clay : g.edge,
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: g.clay.withValues(alpha: 0.16),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? g.clay
-                          : g.inkMuted.withValues(alpha: 0.35),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    icon,
-                    color: isSelected ? g.clay : g.inkSecondary,
-                    size: 18,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: isSelected ? g.clay : g.ink,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  subtitle,
-                  style: AscentTextStyles.captionMedium.copyWith(
-                    color: isSelected
-                        ? g.clay.withValues(alpha: 0.85)
-                        : g.inkMuted,
-                    fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AssistantNameEditor extends ConsumerStatefulWidget {
   final String currentName;
 
@@ -1565,22 +1905,31 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   ),
                   hintText: 'e.g. Riya',
                   filled: true,
-                  fillColor: g.fill,
+                  fillColor: g.recessed,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s14,
-                    vertical: AppSpace.s12,
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s14,
                   ),
                   border: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.edge),
+                    borderSide: BorderSide(
+                      color: g.controlOutline,
+                      width: AscentDimensions.controlOutlineWidth,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.edge),
+                    borderSide: BorderSide(
+                      color: g.controlOutline,
+                      width: AscentDimensions.controlOutlineWidth,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: g.clay),
+                    borderSide: BorderSide(
+                      color: g.focusRing,
+                      width: AscentDimensions.focusRingWidth,
+                    ),
                   ),
                 ),
                 style: AscentTextStyles.bodyMedium

@@ -41,14 +41,14 @@ void main() {
   }
 
   test(
-    'trimmed quick entry creates a medium To-do today without reminders or timers',
+    'trimmed quick entry creates an unstarred To-do today without reminders or timers',
     () async {
       final id = await create(title: '  Read a chapter  ');
       final task = (await db.taskDao.getTaskById(id))!;
       expect(task.title, 'Read a chapter');
       expect(task.plannedDate, day);
       expect(task.estimatedMinutes, isNull);
-      expect(task.priority, 'medium');
+      expect(task.priority, 'low');
       expect(await db.select(db.reminderTable).get(), isEmpty);
       expect(await db.select(db.timeSessionTable).get(), isEmpty);
     },

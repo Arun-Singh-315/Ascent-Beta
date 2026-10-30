@@ -21,7 +21,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
-import '../../shared/widgets/glass_surface.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:go_router/go_router.dart';
@@ -412,30 +412,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    GlassSurface(
-                      radius: 18,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s6,
-                      ),
-                      child: SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Ring as an alarm'),
-                        secondary: Icon(
-                          alarmEnabled
-                              ? Icons.alarm_rounded
-                              : Icons.notifications_none_rounded,
-                          color: context.glass.clay,
-                        ),
-                        subtitle: const Text(
+                    AscentSwitchRow(
+                      title: 'Ring as an alarm',
+                      helper:
                           'Optional. Rings until Snooze or Done. Off uses a normal notification.',
-                        ),
-                        value: alarmEnabled,
-                        onChanged: saving
-                            ? null
-                            : (value) =>
-                                  setSheetState(() => alarmEnabled = value),
-                      ),
+                      value: alarmEnabled,
+                      enabled: !saving,
+                      onChanged: (value) =>
+                          setSheetState(() => alarmEnabled = value),
                     ),
                     if (alarmEnabled) ...[
                       const Text(

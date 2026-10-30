@@ -1,4 +1,5 @@
 import '../../shared/widgets/glass_chip.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_popup_menu.dart';
 import 'thought_category_action.dart';
 import '../../app/theme/thought_theme.dart';
@@ -22,6 +23,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../promises/providers/promise_providers.dart';
@@ -302,13 +304,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       setState(() {
         _completionFilter = 'all';
         _archiveFilter = 'active';
-        _viewToggle = 'today';
+        _viewToggle = _categories.containsKey(_categoryFilter)
+            ? 'all'
+            : 'today';
         _openedThoughtId = null;
         if (!_categories.containsKey(_categoryFilter)) _categoryFilter = 'all';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(persist: false, content: Text('Added to your Thought Wall.')),
-      );
 
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -670,6 +671,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   void _selectFilter(String key) {
     setState(() {
       _categoryFilter = key;
+      if (_categories.containsKey(key)) _viewToggle = 'all';
       _archiveFilter = key == 'archived' ? 'archived' : 'active';
       _openedThoughtId = null;
       _selectedIds.clear();
@@ -701,6 +703,150 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     return true;
   }
 
+  void _openCollection(String key, {bool add = false}) {
+    _selectFilter(key);
+    setState(() {
+      _viewToggle = 'all';
+      _completionFilter = 'all';
+      _archiveFilter = 'active';
+    });
+    if (add) _focusNode.requestFocus();
+  }
+
+  Future<void> _browseCollections() async {
+    final choice = await showModalBottomSheet<({String key, bool add})>(
+      context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => Consumer(
+        builder: (context, ref, _) {
+          final categories =
+              ref.watch(thoughtCategoriesStreamProvider).value ?? _categories;
+          final notes =
+              ref.watch(allThoughtsStreamProvider).value ?? <Thought>[];
+          final latest = <String, Thought>{};
+          for (final note in notes) {
+            final previous = latest[note.category];
+            if (previous == null ||
+                note.createdAt.isAfter(previous.createdAt)) {
+              latest[note.category] = note;
+            }
+          }
+          final ordered = categories.entries.toList()
+            ..sort((a, b) {
+              final aDate = latest[a.key]?.createdAt;
+              final bDate = latest[b.key]?.createdAt;
+              if (aDate != null && bDate != null) return bDate.compareTo(aDate);
+              if (aDate != null) return -1;
+              if (bDate != null) return 1;
+              final aBuiltIn = ThoughtDao.builtInCategories.containsKey(a.key);
+              final bBuiltIn = ThoughtDao.builtInCategories.containsKey(b.key);
+              if (aBuiltIn != bBuiltIn) return aBuiltIn ? 1 : -1;
+              return a.value.compareTo(b.value);
+            });
+          return SizedBox(
+            height: MediaQuery.sizeOf(context).height * .7,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Your collections',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(sheetContext, (
+                          key: '__new',
+                          add: false,
+                        )),
+                        child: const Text('Create'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Keep adding to the things you care about. Open a collection to see every entry together.',
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: categories.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final category = ordered[index];
+                        final preview = latest[category.key];
+                        return AppCard(
+                          onTap: () => Navigator.pop(sheetContext, (
+                            key: category.key,
+                            add: false,
+                          )),
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                category.value,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                preview?.content ??
+                                    'Ready for your first entry',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: context.glass.inkSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+                                  OutlinedButton(
+                                    onPressed: () => Navigator.pop(
+                                      sheetContext,
+                                      (key: category.key, add: true),
+                                    ),
+                                    child: const Text('+ Add entry'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(
+                                      sheetContext,
+                                      (key: category.key, add: false),
+                                    ),
+                                    child: const Text('View ›'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice.key == '__new') {
+      await _createCategory();
+      if (mounted) _focusNode.requestFocus();
+    } else {
+      _openCollection(choice.key, add: choice.add);
+    }
+  }
+
   Future<void> _createCategory() async {
     final name = await showDialog<String>(
       context: context,
@@ -712,10 +858,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           .read(thoughtDaoProvider)
           .createCategoryAndMove(name, []);
       if (mounted) {
-        setState(() {
-          _categoryFilter = key;
-          _viewToggle = 'all';
-        });
+        _openCollection(key, add: true);
       }
     } catch (_) {
       if (mounted) {
@@ -920,7 +1063,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
             MessageComposer(
               controller: _inputController,
               focusNode: _focusNode,
-              hint: 'Write a thought...',
+              hint: _categories.containsKey(_categoryFilter)
+                  ? 'Add to ${_categories[_categoryFilter]}...'
+                  : 'Write a thought...',
               busy: _isSubmitting,
               onSend: (_) => _submitThought(),
             ),
@@ -973,68 +1118,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
         _isSelectionMode = true;
       }
     });
-  }
-
-  Widget _buildViewSegment(String key, String label, IconData icon, dynamic g) {
-    final isSelected = _viewToggle == key;
-    final activeColor = context.isDark
-        ? Theme.of(context).colorScheme.surfaceContainerHighest
-        : context.accentPrimary;
-    final activeInk = context.isDark ? g.ink : Colors.white;
-    return Expanded(
-      child: AppGestureTap(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _viewToggle = key;
-            if (key == 'all') _archiveFilter = 'all';
-            _openedThoughtId = null;
-            _selectedIds.clear();
-            _isSelectionMode = false;
-          });
-        },
-        child: AnimatedContainer(
-          key: ValueKey('thought_view_$key'),
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor : AppPalette.transparent,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: isSelected && !context.isDark
-                ? [
-                    BoxShadow(
-                      color: activeColor.withValues(alpha: 0.28),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 15, color: isSelected ? activeInk : g.inkMuted),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? activeInk : g.inkMuted,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   @override
@@ -1157,7 +1240,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               ],
         body: Column(
           children: [
-            // Segmented 2-Way Toggle: Today | History & Archive
+            if (MediaQuery.viewInsetsOf(context).bottom == 0 ||
+                _isSelectionMode) ...[
+              // Date views share the app's accessible segmented control.
             AppCard(
               margin: const EdgeInsets.symmetric(
                 horizontal: AppSpace.s16,
@@ -1178,17 +1263,32 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   width: 1.0,
                 ),
               ),
-              child: Row(
-                children: [
-                  _buildViewSegment('all', 'All', Icons.notes_rounded, g),
-                  _buildViewSegment('today', "Today", Icons.today_rounded, g),
-                  _buildViewSegment(
-                    'history',
-                    "History",
-                    Icons.history_rounded,
-                    g,
+                child: AscentSegmentedControl<String>(
+                  segments: const [
+                    AscentSegment(
+                      value: 'all',
+                      label: 'All',
+                      key: ValueKey('thought_view_all'),
+                    ),
+                    AscentSegment(
+                      value: 'today',
+                      label: 'Today',
+                      key: ValueKey('thought_view_today'),
+                    ),
+                    AscentSegment(
+                      value: 'history',
+                      label: 'History',
+                      key: ValueKey('thought_view_history'),
                   ),
                 ],
+                  selected: _viewToggle,
+                  onChanged: (value) => setState(() {
+                    _viewToggle = value;
+                    if (value == 'all') _archiveFilter = 'all';
+                    _openedThoughtId = null;
+                    _selectedIds.clear();
+                    _isSelectionMode = false;
+                  }),
               ),
             ),
             const SizedBox(height: 6),
@@ -1199,6 +1299,34 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 ...(archivedAsync.value ?? []),
               ])
             else ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          key: const ValueKey('browse_thought_collections'),
+                          onPressed: _browseCollections,
+                          child: const Text('Collections ›'),
+                        ),
+                      ),
+                      if (_categories.containsKey(_categoryFilter)) ...[
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                _openCollection(_categoryFilter, add: true),
+                            child: Text(
+                              '+ Add entry',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
                 child: Align(
@@ -1217,7 +1345,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                 child: Row(
                   key: const ValueKey('thought_filter_bar'),
                   children: [
@@ -1272,7 +1403,29 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 ),
               ),
             ],
-
+            ] else
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _categories[_categoryFilter] ?? 'New thought',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _focusNode.unfocus(),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
             // Main Wall Content
             Expanded(
               child: activeAsync.when(
@@ -1308,7 +1461,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                             ? Icons.archive_outlined
                             : Icons.bubble_chart_rounded,
                         actionLabel: 'Drop a Thought',
-                        onAction: () => DropThoughtSheet.show(context),
+                        onAction: () => _focusNode.requestFocus(),
                       ),
                     );
                   }
@@ -1508,7 +1661,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     }
   }
 
-
   Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
     final dao = ref.read(thoughtDaoProvider);
@@ -1603,8 +1755,9 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           )!
         : g.ink.withValues(alpha: isDark ? .34 : .38);
 
-    final borderWidth =
-        hasBubbleFraming ? widget.appearance.bubbleBorderWidth : 1.0;
+    final borderWidth = hasBubbleFraming
+        ? widget.appearance.bubbleBorderWidth
+        : 1.0;
 
     final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
         ? Colors.transparent
@@ -1674,15 +1827,16 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
     final g = context.glass;
     final contentLower = thought.content.toLowerCase();
-    final isHighPriority = thought.content.contains('[HIGH]') ||
+    final isHighPriority =
+        thought.content.contains('[HIGH]') ||
         contentLower.contains('#high') ||
         contentLower.contains('#urgent');
     final privatePromiseIds = ref.watch(privatePromiseIdsProvider);
     final unlockedPromiseIds = ref.watch(unlockedPromiseIdsProvider);
-    final isPrivatePromise = thought.mood == 'promise' &&
-        privatePromiseIds.contains(thought.id);
-    final isPromiseLocked = isPrivatePromise &&
-        !unlockedPromiseIds.contains(thought.id);
+    final isPrivatePromise =
+        thought.mood == 'promise' && privatePromiseIds.contains(thought.id);
+    final isPromiseLocked =
+        isPrivatePromise && !unlockedPromiseIds.contains(thought.id);
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -1711,7 +1865,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           key: ValueKey('thought_${thought.id}'),
           direction: isSelectionMode
               ? DismissDirection.none
-              : DismissDirection.startToEnd,
+              : DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             final thoughtDao = ref.read(thoughtDaoProvider);
             final messenger = ScaffoldMessenger.of(context);
@@ -1749,17 +1903,18 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 );
               }
               return false;
+            } else if (direction == DismissDirection.endToStart) {
+              return await _deleteWithUndo(context, ref);
             } else {
               return false;
             }
           },
-          background: AppCard(
+          background: Container(
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: AppSpace.s20),
-            nightDecoration: BoxDecoration(
-              color: g.fill,
-              borderRadius: AppGeometry.roundedr14,
-              border: Border.all(color: g.line),
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: g.tonalBg,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
@@ -1767,36 +1922,46 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   thought.isArchived
                       ? Icons.unarchive_outlined
                       : Icons.archive_outlined,
-                  color: g.inkSecondary,
+                  color: g.tonalFg,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   thought.isArchived ? 'Unarchive' : 'Archive',
-                  style: AppTypeRoles.typeRole8.copyWith(color: g.inkSecondary),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.30,
+                  ).copyWith(color: g.tonalFg),
                 ),
               ],
             ),
           ),
-          secondaryBackground: AppCard(
+          secondaryBackground: Container(
             alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: AppSpace.s20),
-            nightDecoration: BoxDecoration(
-              color: g.coralSoft,
-              borderRadius: AppGeometry.roundedr14,
-              border: Border.all(color: g.coral.withValues(alpha: 0.3)),
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: SharedControlColors.errorSoftBg(context.isDark),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'Delete',
-                  style: AppTypeRoles.typeRole8.copyWith(color: g.coral),
+                  style:
+                      const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.30,
+                  ).copyWith(
+                    color: SharedControlColors.errorInk(context.isDark),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Icon(
                   Icons.delete_outline_rounded,
-                  color: g.coral,
+                  color: SharedControlColors.errorInk(context.isDark),
                   size: 20,
                 ),
               ],
@@ -1836,9 +2001,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 ? () {
                                     HapticFeedback.lightImpact();
                                     ref
-                                        .read(
-                                          unlockedPromiseIdsProvider.notifier,
-                                        )
+                                      .read(unlockedPromiseIdsProvider.notifier)
                                         .lock(thought.id);
                                   }
                                 : null,
@@ -1925,8 +2088,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AscentTextStyles.labelSmall
-                                .copyWith(color: g.inkMuted)
-                                .merge(AppTypeRoles.typeRole54),
+                              .merge(AppTypeRoles.typeRole54)
+                              .copyWith(
+                                color: g.inkSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
                           ),
                         ),
                         if (!isSelectionMode) ...[
@@ -1957,12 +2123,18 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 widget.onMoveToCategory?.call();
                               } else if (action == 'share') {
                                 if (isPromiseLocked) {
-                                  final security = ref.read(vaultSecurityServiceProvider);
-                                  final unlocked = await security.authenticateBiometrics(
-                                    reason: 'Unlock private commitment before sharing',
+                                final security = ref.read(
+                                  vaultSecurityServiceProvider,
+                                );
+                                final unlocked = await security
+                                    .authenticateBiometrics(
+                                      reason:
+                                          'Unlock private commitment before sharing',
                                   );
                                   if (!unlocked) return;
-                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .unlock(thought.id);
                                 }
                                 await shareThought(thought);
                               } else if (action == 'convert_task') {
@@ -2027,12 +2199,18 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                     .togglePin(thought.id);
                               } else if (action == 'copy') {
                                 if (isPromiseLocked) {
-                                  final security = ref.read(vaultSecurityServiceProvider);
-                                  final unlocked = await security.authenticateBiometrics(
-                                    reason: 'Unlock private commitment before copying',
+                                final security = ref.read(
+                                  vaultSecurityServiceProvider,
+                                );
+                                final unlocked = await security
+                                    .authenticateBiometrics(
+                                      reason:
+                                          'Unlock private commitment before copying',
                                   );
                                   if (!unlocked) return;
-                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .unlock(thought.id);
                                 }
                                 HapticFeedback.lightImpact();
                                 await Clipboard.setData(
@@ -2048,12 +2226,18 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 }
                               } else if (action == 'edit') {
                                 if (isPromiseLocked) {
-                                  final security = ref.read(vaultSecurityServiceProvider);
-                                  final unlocked = await security.authenticateBiometrics(
-                                    reason: 'Unlock private commitment before editing',
+                                final security = ref.read(
+                                  vaultSecurityServiceProvider,
+                                );
+                                final unlocked = await security
+                                    .authenticateBiometrics(
+                                      reason:
+                                          'Unlock private commitment before editing',
                                   );
                                   if (!unlocked) return;
-                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .unlock(thought.id);
                                 }
                                 HapticFeedback.lightImpact();
                                 if (!context.mounted) return;
@@ -2073,11 +2257,18 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 HapticFeedback.lightImpact();
                                 final isHigh = thought.content.contains('[HIGH]');
                                 final newContent = isHigh
-                                    ? thought.content.replaceAll('[HIGH] ', '').replaceAll('[HIGH]', '').trim()
+                                  ? thought.content
+                                        .replaceAll('[HIGH] ', '')
+                                        .replaceAll('[HIGH]', '')
+                                        .trim()
                                     : '[HIGH] ${thought.content}';
-                                await (ref.read(databaseProvider).update(
+                              await (ref
+                                      .read(databaseProvider)
+                                      .update(
                                   ref.read(databaseProvider).thoughtTable,
-                                )..where((t) => t.id.equals(thought.id))).write(
+                                      )
+                                    ..where((t) => t.id.equals(thought.id)))
+                                  .write(
                                   ThoughtTableCompanion(
                                     content: drift.Value(newContent),
                                   ),

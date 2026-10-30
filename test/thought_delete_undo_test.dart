@@ -217,9 +217,7 @@ void main() {
 
   for (final menu in [true, false]) {
     testWidgets(
-      menu
-          ? 'Menu Undo restores connected relationships'
-          : 'Left swipe preserves connected relationships',
+      '${menu ? 'Menu' : 'Swipe'} Undo restores connected relationships',
       (tester) async {
         final f = await fixture();
         await tester.pumpWidget(
@@ -251,13 +249,6 @@ void main() {
               .onSelected!('delete');
         } else {
           await tester.drag(find.byType(Dismissible), const Offset(-700, 0));
-          await flush(tester);
-          await tester.runAsync(
-            () => expectRestored(f.note.id, f.task, f.reminder, f.merge),
-          );
-          await tester.pumpWidget(const SizedBox());
-          await tester.pumpAndSettle();
-          return;
         }
         await flush(tester);
         expect(

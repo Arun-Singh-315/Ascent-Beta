@@ -363,7 +363,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
 
     return AscentScaffold(
       title: 'Focus Timer',
-      subtitle: 'Deep work & interval stopwatch',
+      subtitle: 'One thing at a time',
       glow2: g.amberSoft,
       actions: [
         IconButton(
@@ -650,10 +650,13 @@ class _BigClockCard extends StatelessWidget {
     final elapsed = trackingState.elapsedSeconds;
     final accent = context.accentPrimary;
 
-    return AscentCard(
+    return AscentCard.solid(
+      radius: 28,
+      hasShadow: false,
+      hasBorder: false,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.s24,
-        vertical: AppSpace.s28,
+        vertical: 40,
       ),
       child: Column(
         children: [
@@ -709,12 +712,16 @@ class _BigClockCard extends StatelessWidget {
           ],
 
           // Clock digits in JetBrains Mono
-          Text(
-            hasSession ? formatDuration(elapsed) : '00:00',
-            style: AppTypography.jetBrainsMono52W40074(
-              color: hasSession
-                  ? (isRunning ? context.textPrimary : context.textMuted)
-                  : context.textMuted.withValues(alpha: 0.5),
+          Semantics(
+            label: 'Focus time',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                hasSession ? formatDuration(elapsed) : '00:00',
+                style: AscentTextStyles.focusTimer.copyWith(
+                  color: isPaused ? context.textMuted : context.textPrimary,
+                ),
+              ),
             ),
           ),
 

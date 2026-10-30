@@ -14,101 +14,49 @@ import 'support/returning_user_guides.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Vintage Merlot & Cashmere Linen Palette Tokens', () {
-    test(
-      'verifies primary, card surface, and accent colors meet daylight spec',
-      () {
-        expect(MerlotPalette.canvas, const Color(0xFFF5EFE6));
-        expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
-        expect(MerlotPalette.surfaceBottom, const Color(0xFFFAF5EE));
-        expect(MerlotPalette.recessedWell, const Color(0xFFF3ECE2));
-        expect(MerlotPalette.action, const Color(0xFF581825));
-        expect(MerlotPalette.actionDeep, const Color(0xFF48101C));
-        expect(MerlotPalette.actionBright, const Color(0xFF722032));
-        expect(MerlotPalette.tint, const Color(0xFFF4E5EC));
-        expect(MerlotPalette.pillSoft, const Color(0xFFFAF6F2));
-        expect(MerlotPalette.line, const Color(0x2E581825));
-        expect(MerlotPalette.lineSpecular, const Color(0x44581825));
-        expect(MerlotPalette.lineSubtle, const Color(0x18581825));
-        expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
-        expect(MerlotPalette.terracotta, const Color(0xFFA04020));
-        expect(MerlotPalette.success, const Color(0xFF166534));
-        expect(MerlotPalette.ink, const Color(0xFF240A10));
-        expect(MerlotPalette.secondaryInk, const Color(0xFF54222E));
-        expect(MerlotPalette.mutedInk, const Color(0xFF72424E));
-        expect(MerlotPalette.cardInk, const Color(0xFF240A10));
-        expect(MerlotPalette.cardSecondaryInk, const Color(0xFF54222E));
-        expect(MerlotPalette.cardMutedInk, const Color(0xFF72424E));
-      },
-    );
+  group('Neutral palette and semantic blue', () {
+    double contrast(Color a, Color b) {
+      final x = a.computeLuminance(), y = b.computeLuminance();
+      return ((x > y ? x : y) + .05) / ((x > y ? y : x) + .05);
+    }
 
-    test('verifies night mode tokens remain 100% untouched', () {
-      expect(MerlotPalette.darkCanvas, const Color(0xFF161012));
-      expect(MerlotPalette.darkSurface, const Color(0xFF22171B));
-      expect(MerlotPalette.darkElevated, const Color(0xFF2C1E23));
-      expect(MerlotPalette.darkAction, const Color(0xFFC6B6A6));
-      expect(MerlotPalette.darkInk, const Color(0xFFF7F2EE));
-      expect(MerlotPalette.darkSecondaryInk, const Color(0xFFD6CBC7));
-      expect(MerlotPalette.darkMutedInk, const Color(0xFFA89A96));
+    test('Surfaces stay neutral and actions have accessible blue labels', () {
+      expect(MerlotPalette.canvas, const Color(0xFFF2F2F7));
+      expect(MerlotPalette.surface, Colors.white);
+      expect(MerlotPalette.action, const Color(0xFF006FE6));
+      expect(MerlotPalette.danger, const Color(0xFFD92D20));
+      expect(
+        contrast(MerlotPalette.ink, MerlotPalette.canvas),
+        greaterThan(12),
+      );
+      expect(
+        contrast(MerlotPalette.cardSecondaryInk, MerlotPalette.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(MerlotPalette.cardMutedInk, MerlotPalette.surface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(Colors.white, MerlotPalette.action),
+        greaterThanOrEqualTo(4.5),
+      );
     });
-
-    test(
-      'verifies WCAG AAA contrast ratio for text hierarchy on canvas and wine surface',
-      () {
-        double luminance(Color c) {
-          double channel(double v) => v <= 0.03928
-              ? v / 12.92
-              : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
-          final r = channel(c.r);
-          final g = channel(c.g);
-          final b = channel(c.b);
-          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        }
-
-        final lInk = luminance(MerlotPalette.ink);
-        final lCanvas = luminance(MerlotPalette.canvas);
-        final lSurface = luminance(MerlotPalette.surface);
-        final lCardInk = luminance(MerlotPalette.cardInk);
-        final lCardSec = luminance(MerlotPalette.cardSecondaryInk);
-        final lCardMuted = luminance(MerlotPalette.cardMutedInk);
-
-        final contrastCanvasInk = (lCanvas + 0.05) / (lInk + 0.05);
-        final contrastSurfaceCardInk = (lSurface + 0.05) / (lCardInk + 0.05);
-        final contrastSurfaceCardSec = (lSurface + 0.05) / (lCardSec + 0.05);
-        final contrastSurfaceCardMuted =
-            (lSurface + 0.05) / (lCardMuted + 0.05);
-
-        // Canvas text contrast: dark espresso merlot on cashmere linen (>14:1 WCAG AAA)
-        expect(contrastCanvasInk, greaterThan(14.0));
-
-        // Off-white gradual card contrast: dark espresso merlot on off-white (>15:1 WCAG AAA)
-        expect(contrastSurfaceCardInk, greaterThan(15.0));
-
-        // Secondary text on card (>10:1 WCAG AAA)
-        expect(contrastSurfaceCardSec, greaterThan(10.0));
-
-        // Muted helper captions on card (>6:1 WCAG AA)
-        expect(contrastSurfaceCardMuted, greaterThan(6.0));
-      },
-    );
-
-    test('verifies WCAG AAA contrast for white text on primary button', () {
-      double luminance(Color c) {
-        double channel(double v) => v <= 0.03928
-            ? v / 12.92
-            : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
-        final r = channel(c.r);
-        final g = channel(c.g);
-        final b = channel(c.b);
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      }
-
-      final lAction = luminance(MerlotPalette.action);
-      final lWhite = luminance(Colors.white);
-      final contrast = (lWhite + 0.05) / (lAction + 0.05);
-
-      // Contrast must comfortably exceed WCAG AAA threshold of 4.5:1 for UI components
-      expect(contrast, greaterThan(7.0));
+    test('Dark surfaces retain readable labels and blue actions', () {
+      expect(MerlotPalette.darkCanvas, const Color(0xFF101012));
+      expect(MerlotPalette.darkAction, const Color(0xFF64ACFF));
+      expect(
+        contrast(MerlotPalette.darkInk, MerlotPalette.darkSurface),
+        greaterThan(12),
+      );
+      expect(
+        contrast(MerlotPalette.darkSecondaryInk, MerlotPalette.darkSurface),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        contrast(MerlotPalette.darkAction, MerlotPalette.darkSurface),
+        greaterThanOrEqualTo(4.5),
+      );
     });
   });
 

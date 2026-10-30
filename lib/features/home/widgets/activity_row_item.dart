@@ -1,3 +1,5 @@
+import '../../../shared/widgets/ascent_star_button.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/utils/action_text.dart';
@@ -727,61 +729,26 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     );
   }
 
-  Future<void> _setPriority() async {
+  Future<void> _setStar(bool selected) async {
     final id = activity.linkedTaskId;
     if (id == null || activity.status == TodayActivityStatus.done) return;
-    final chosen = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      builder: (ctx) => SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Change priority'),
-            ),
-            for (final option in const [
-              ('high', 'Urgent', 'P0 · Do this first'),
-              ('medium', 'Important', 'P1 · Default, after urgent tasks'),
-              ('low', 'Normal', 'P2 · Flexible, after other tasks'),
-            ])
-              ListTile(
-                title: Text(option.$2),
-                subtitle: Text(option.$3),
-                trailing: (activity.priority ?? 'low') == option.$1
-                    ? const Icon(Icons.check)
-                    : null,
-                onTap: () => Navigator.pop(ctx, option.$1),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (chosen == null || !mounted) return;
-    try {
-      final saved = await ref
-          .read(taskDaoProvider)
-          .updateTask(
-            TaskTableCompanion(
-              id: Value(id),
-              priority: Value(chosen),
-              updatedAt: Value(DateTime.now()),
-            ),
-          );
-      if (mounted && !saved) {
-        AscentSnackBar.error(
-          context,
-          message: 'Could not save priority. Please retry.',
+    final saved = await ref
+        .read(taskDaoProvider)
+        .updateTask(
+          TaskTableCompanion(
+            id: Value(id),
+            priority: Value(selected ? 'high' : 'low'),
+            updatedAt: Value(DateTime.now()),
+          ),
         );
-      }
-    } catch (_) {
-      if (mounted) {
-        AscentSnackBar.error(
-          context,
-          message: 'Could not save priority. Please retry.',
-        );
-      }
+    if (!saved) throw StateError('Could not save star');
+    if (mounted) {
+      AscentSnackBar.show(
+        context,
+        message: selected
+            ? 'Marked important · Pinned to top of Today'
+            : 'Removed from important',
+      );
     }
   }
 
@@ -795,22 +762,30 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         lecture ||
         activity.kind != ActivityKind.todo ||
         (activity.targetMinutes ?? 0) > 0;
-    final priority = switch (activity.priority) {
-      'high' => 'Urgent',
-      'medium' => 'Important',
-      _ => 'Normal',
-    };
-    // Keep the status line short: a type/priority tag plus, only while it
-    // matters, the live timer or a "Paused" marker. Full details live in the
-    // lecture player, the focus screen and the board.
+
+    final liveSeconds = running
+        ? ref.watch(
+            timeTrackingProvider.select(
+              (s) => (s.isRunning &&
+                      s.activeSession?.linkedTaskId == activity.linkedTaskId)
+                  ? s.elapsedSeconds
+                  : null,
+            ),
+          )
+        : null;
+    final elapsedDisplay = liveSeconds != null
+        ? '${(liveSeconds ~/ 60).toString().padLeft(2, '0')}:${(liveSeconds % 60).toString().padLeft(2, '0')}'
+        : _elapsedShort(activity);
+
     final status = [
       if (activity.sourceType == 'medicine') 'Medicine',
       if (activity.sourceType == 'medicine' && activity.plannedDate != null)
         DateFormat('h:mm a').format(activity.plannedDate!),
       if (lecture) 'Lecture',
-      if (running) _elapsedShort(activity),
+      if (running) elapsedDisplay,
       if (paused) 'Paused',
     ].join(' · ');
+
     final actionLabel = done
         ? 'Done'
         : timed
@@ -820,48 +795,239 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               ? 'Resume'
               : 'Start')
         : 'Done';
-    final priorityControl = Semantics(
-      button: true,
-      label: 'Change priority, currently $priority',
-      child: InkWell(
-        key: ValueKey('activity_priority_${activity.id}'),
-        onTap: _setPriority,
-        borderRadius: BorderRadius.circular(9),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 34),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: g.ink.withValues(alpha: .24)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.flag_outlined, size: 13, color: g.inkMuted),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  'Priority: $priority',
-                  style: TextStyle(color: g.ink, fontSize: 11),
-                  maxLines: 2,
+
+    Future<void> completeTask() async {
+      if (done) return;
+      if (activity.isScheduledInFuture) {
+        HapticFeedback.lightImpact();
+        final timeStr = activity.scheduledTime != null
+            ? DateFormat('h:mm a').format(activity.scheduledTime!)
+            : 'later';
+        AscentSnackBar.show(
+          context,
+          message:
+              'Scheduled for $timeStr. You can complete it once that time arrives.',
+        );
+        return;
+      }
+      if (activity.linkedTaskId == null) return;
+      HapticFeedback.mediumImpact();
+      final messenger = ScaffoldMessenger.of(context);
+      final completedFeedback = AscentSnackBar.build(
+        context,
+        content: const Text('Task completed'),
+        action: widget.onViewCompleted == null
+            ? null
+            : SnackBarAction(
+                label: 'View completed',
+                onPressed: widget.onViewCompleted!,
+              ),
+      );
+      try {
+        final dao = ref.read(taskDaoProvider);
+        await dao.toggleTaskCompletion(
+          activity.linkedTaskId!,
+          true,
+        );
+        final task = await dao.getTaskById(
+          activity.linkedTaskId!,
+        );
+        if (task?.actualCompletedDate != null && messenger.mounted) {
+          messenger.removeCurrentSnackBar();
+          messenger.showSnackBar(completedFeedback);
+        } else if (context.mounted && task?.actualCompletedDate == null) {
+          AscentSnackBar.show(
+            context,
+            message:
+                'Finish the checklist steps before completing this task.',
+          );
+        }
+      } catch (_) {
+        if (context.mounted) {
+          AscentSnackBar.error(
+            context,
+            message: 'Could not complete the task. Please retry.',
+          );
+        }
+      }
+    }
+
+    Widget buildLeadingTarget() {
+      Widget content;
+      if (timed) {
+        content = Icon(
+          lecture
+              ? Icons.school_outlined
+              : (running ? Icons.timer_rounded : Icons.timer_outlined),
+          size: 20,
+          color: running
+              ? SharedControlColors.dueRed
+              : (paused ? g.clay : g.inkMuted),
+        );
+      } else if (activity.isScheduledInFuture) {
+        content = Icon(
+          Icons.schedule_rounded,
+          size: 20,
+          color: g.inkMuted,
+        );
+      } else {
+        content = Semantics(
+          button: true,
+          label: done ? 'Completed' : 'Mark complete',
+          child: InkResponse(
+            key: ValueKey('activity_action_${activity.id}'),
+            onTap: done ? null : completeTask,
+            radius: 18,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done ? SharedControlColors.actionBlue : Colors.transparent,
+                border: Border.all(
+                  color: done
+                      ? SharedControlColors.actionBlue
+                      : (context.isDark
+                          ? g.inkMuted.withValues(alpha: 0.6)
+                          : g.ink.withValues(alpha: 0.35)),
+                  width: 1.6,
                 ),
               ),
-              const SizedBox(width: 3),
-              Icon(Icons.expand_more, size: 14, color: g.inkMuted),
-            ],
+              child: done
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    )
+                  : null,
+            ),
           ),
-        ),
-      ),
-    );
-    final action = done
-        ? const GlassChip(
-            label: 'Done',
-            icon: Icons.check_rounded,
-            selected: true,
-            success: true,
-            tooltip: 'Completed',
-          )
-        : activity.isScheduledInFuture
+        );
+      }
+
+      return Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        margin: const EdgeInsets.only(right: 10),
+        child: content,
+      );
+    }
+
+    final Widget? timedAction = timed
+        ? (activity.isScheduledInFuture
+            ? Semantics(
+                button: true,
+                label:
+                    'Scheduled for ${activity.scheduledTime != null ? DateFormat('h:mm a').format(activity.scheduledTime!) : 'later'}',
+                child: InkWell(
+                  key: ValueKey('activity_scheduled_${activity.id}'),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    final timeStr = activity.scheduledTime != null
+                        ? DateFormat('h:mm a').format(activity.scheduledTime!)
+                        : 'later';
+                    AscentSnackBar.show(
+                      context,
+                      message:
+                          'Scheduled for $timeStr. You can complete it once that time arrives.',
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 28),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: g.ink.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: g.ink.withValues(alpha: 0.15)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded, size: 12, color: g.clay),
+                        const SizedBox(width: 4),
+                        Text(
+                          activity.scheduledTime != null
+                              ? DateFormat('h:mm a').format(activity.scheduledTime!)
+                              : '',
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : OutlinedButton.icon(
+                key: ValueKey('activity_action_${activity.id}'),
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: running
+                      ? SharedControlColors.dueRed.withValues(alpha: 0.12)
+                      : SharedControlColors.actionBlue.withValues(alpha: 0.08),
+                  foregroundColor: running
+                      ? SharedControlColors.dueRed
+                      : (context.isDark
+                          ? SharedControlColors.actionBlueDark
+                          : SharedControlColors.actionBlue),
+                  side: BorderSide(
+                    color: (running
+                            ? SharedControlColors.dueRed
+                            : SharedControlColors.actionBlue)
+                        .withValues(alpha: context.isDark ? 0.55 : 0.35),
+                    width: 1.0,
+                  ),
+                  minimumSize: const Size(0, 26),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: Icon(
+                  running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  size: 13,
+                ),
+                label: Text(actionLabel),
+                onPressed: () async {
+                  HapticFeedback.selectionClick();
+                  if (lecture) {
+                    if (_selectLecture(ref, activity)) {
+                      ref.read(learningHubProvider.notifier).togglePlayPause();
+                    }
+                    return;
+                  }
+                  final tracker = ref.read(timeTrackingProvider.notifier);
+                  if (running) {
+                    tracker.pauseSession();
+                  } else if (paused) {
+                    tracker.resumeSession();
+                  } else {
+                    await tracker.switchToTask(
+                      title: activity.title,
+                      taskId: activity.linkedTaskId,
+                      sourceType: activity.sourceType,
+                      autoStart: true,
+                    );
+                  }
+                },
+              ))
+        : null;
+
+    final Widget? scheduledBadge = (!timed && activity.isScheduledInFuture)
         ? Semantics(
             button: true,
             label:
@@ -881,10 +1047,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               },
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 34),
+                constraints: const BoxConstraints(minHeight: 28),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: g.ink.withValues(alpha: 0.05),
@@ -894,8 +1060,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.schedule_rounded, size: 13, color: g.clay),
-                    const SizedBox(width: 5),
+                    Icon(Icons.schedule_rounded, size: 12, color: g.clay),
+                    const SizedBox(width: 4),
                     Text(
                       activity.scheduledTime != null
                           ? DateFormat('h:mm a').format(activity.scheduledTime!)
@@ -911,226 +1077,212 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               ),
             ),
           )
-        : FilledButton.icon(
-            key: ValueKey('activity_action_${activity.id}'),
-            style: FilledButton.styleFrom(
-              backgroundColor: g.ink,
-              foregroundColor: g.bg,
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              textStyle: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: Icon(
-              timed
-                  ? (running ? Icons.pause_rounded : Icons.play_arrow_rounded)
-                  : Icons.check_rounded,
-              size: 15,
-            ),
-            label: Text(actionLabel),
-            onPressed: done
-                ? null
-                : () async {
-                    HapticFeedback.selectionClick();
-                    if (lecture) {
-                      if (_selectLecture(ref, activity)) {
-                        ref
-                            .read(learningHubProvider.notifier)
-                            .togglePlayPause();
-                      }
-                      return;
-                    }
-                    if (timed) {
-                      final tracker = ref.read(timeTrackingProvider.notifier);
-                      if (running) {
-                        tracker.pauseSession();
-                      } else if (paused) {
-                        tracker.resumeSession();
-                      } else {
-                        await tracker.switchToTask(
-                          title: activity.title,
-                          taskId: activity.linkedTaskId,
-                          sourceType: activity.sourceType,
-                          autoStart: true,
-                        );
-                      }
-                      return;
-                    }
-                    if (activity.linkedTaskId == null) return;
-                    final messenger = ScaffoldMessenger.of(context);
-                    final completedFeedback = AscentSnackBar.build(
-                      context,
-                      content: const Text('Task completed'),
-                      action: widget.onViewCompleted == null
-                          ? null
-                          : SnackBarAction(
-                              label: 'View completed',
-                              onPressed: widget.onViewCompleted!,
-                            ),
-                    );
-                    try {
-                      final dao = ref.read(taskDaoProvider);
-                      await dao.toggleTaskCompletion(
-                        activity.linkedTaskId!,
-                        true,
-                      );
-                      final task = await dao.getTaskById(
-                        activity.linkedTaskId!,
-                      );
-                      if (task?.actualCompletedDate != null &&
-                          messenger.mounted) {
-                        messenger.removeCurrentSnackBar();
-                        messenger.showSnackBar(completedFeedback);
-                      } else if (context.mounted &&
-                          task?.actualCompletedDate == null) {
-                        AscentSnackBar.show(
-                          context,
-                          message:
-                              'Finish the checklist steps before completing this task.',
-                        );
-                      }
-                    } catch (_) {
-                      if (context.mounted) {
-                        AscentSnackBar.error(
-                          context,
-                          message: 'Could not complete the task. Please retry.',
-                        );
-                      }
-                    }
-                  },
-          );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+        : null;
+
+    final isStarred = activity.priority == 'high' && !done;
+    final softBorderColor = isStarred
+        ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
+        : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25);
+    final cardColor = isStarred
+        ? (context.isDark
+            ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
+            : SharedControlColors.actionBlue.withValues(alpha: 0.035))
+        : (context.isDark
+            ? g.fill.withValues(alpha: 0.18)
+            : Theme.of(context).colorScheme.surface);
+
+    final rowContent = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Material(
-        color: done
-            ? Colors.green.withValues(alpha: .07)
-            : g.ink.withValues(alpha: .025),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: done
-                ? Colors.green.withValues(alpha: .28)
-                : g.ink.withValues(alpha: .16),
-          ),
-        ),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onLongPress: !done && activity.linkedTaskId != null
-              ? _setPriority
-              : null,
           onTap: () => lecture
               ? _openLecture(context, ref)
               : _showActivityDetailDialog(context, ref, activity),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: softBorderColor,
+                width: 0.65,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+            child: Row(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      key: const ValueKey('activity_row_arrow'),
-                      height: MediaQuery.textScalerOf(context).scale(15) * 1.4,
-                      width: 22,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 14,
-                          color: g.inkMuted,
+                buildLeadingTarget(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        activity.title,
+                        key: ValueKey('activity_title_${activity.id}'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: done ? g.inkMuted : g.ink,
+                          fontSize: 15,
+                          height: 1.3,
+                          decoration: done ? TextDecoration.lineThrough : null,
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            activity.title,
-                            key: ValueKey('activity_title_${activity.id}'),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style:
-                                AppTypography.thoughtContent(
-                                  color: done ? g.inkMuted : g.ink,
-                                ).copyWith(
-                                  fontSize: 15,
-                                  height: 1.4,
-                                  decoration: done
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
-                          ),
-                          if (status.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                status,
-                                style: TextStyle(
-                                  color: g.inkMuted,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final hasPriority = activity.linkedTaskId != null && !done;
-                    if (!hasPriority) {
-                      return Align(
-                        alignment: Alignment.centerRight,
-                        child: action,
-                      );
-                    }
-                    if (constraints.maxWidth < 240 ||
-                        MediaQuery.textScalerOf(context).scale(12) > 18) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: priorityControl,
-                          ),
-                          const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: action,
-                          ),
-                        ],
-                      );
-                    }
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: priorityControl,
+                      if (status.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            status,
+                            style: TextStyle(color: g.inkMuted, fontSize: 11),
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        action,
-                      ],
-                    );
-                  },
+                    ],
+                  ),
                 ),
+                if (activity.linkedTaskId != null && !done)
+                  AscentStarButton(
+                    key: ValueKey('activity_priority_${activity.id}'),
+                    selected: activity.priority == 'high',
+                    onChanged: _setStar,
+                  ),
+                if (timedAction != null) ...[
+                  const SizedBox(width: 6),
+                  timedAction,
+                ],
+                if (scheduledBadge != null) ...[
+                  const SizedBox(width: 6),
+                  scheduledBadge,
+                ],
+                if (!timed && done) ...[
+                  const SizedBox(width: 6),
+                  const GlassChip(
+                    label: 'Done',
+                    icon: Icons.check_rounded,
+                    selected: true,
+                    success: true,
+                    tooltip: 'Completed',
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+
+    return Dismissible(
+      key: ValueKey('activity_dismiss_${activity.id}'),
+      direction: done ? DismissDirection.none : DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        if (activity.linkedTaskId != null) {
+          final taskDao = ref.read(taskDaoProvider);
+          final protection = await taskDao.getTaskProtection(
+            activity.linkedTaskId!,
+          );
+          if (protection != null) {
+            HapticFeedback.mediumImpact();
+            if (context.mounted) {
+              await showPlanProtectionDialog(context, ref, protection);
+            }
+            return false;
+          }
+        }
+        return true;
+      },
+      onDismissed: (_) async {
+        HapticFeedback.mediumImpact();
+        final container = ProviderScope.containerOf(context, listen: false);
+        final messenger = ScaffoldMessenger.of(context);
+        final removedActivity = activity;
+        final taskDao = container.read(taskDaoProvider);
+        final dismissed = container.read(
+          dismissedTodayActivityIdsProvider.notifier,
+        );
+        setState(() => _removed = true);
+        try {
+          await deleteTodayActivity(container, removedActivity);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                removedActivity.sourceType == 'lecture'
+                    ? "Removed from today's activities"
+                    : 'Activity "${removedActivity.title}" deleted',
+              ),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  try {
+                    if (removedActivity.linkedTaskId != null &&
+                        removedActivity.sourceType != 'lecture') {
+                      final restored = await taskDao.restoreDeletedTask(
+                        removedActivity.linkedTaskId!,
+                      );
+                      if (!restored) {
+                        if (!messenger.mounted) return;
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not restore this activity.'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    await dismissed.unDismissActivityId(removedActivity.id);
+                    if (mounted) setState(() => _removed = false);
+                  } catch (_) {
+                    if (!messenger.mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not restore this activity.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          );
+        } catch (_) {
+          await dismissed.unDismissActivityId(removedActivity.id);
+          if (mounted) setState(() => _removed = false);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Could not delete this activity. Try again.'),
+            ),
+          );
+        }
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        margin: const EdgeInsets.symmetric(vertical: 2.5),
+        padding: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.errorSoftBg(context.isDark),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: SharedControlColors.errorInk(context.isDark),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.delete_outline_rounded,
+              color: SharedControlColors.errorInk(context.isDark),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+      child: rowContent,
     );
   }
 
@@ -1452,7 +1604,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ),
                     ),
                     const Spacer(),
-                    if (!isDone && activity.kind == ActivityKind.todo)
+                    if (!isDone && activity.linkedTaskId != null)
                       IconButton(
                         tooltip: 'Edit activity',
                         icon: Icon(
@@ -1507,6 +1659,85 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 ),
                 if (!isDone &&
                     activity.linkedTaskId != null &&
+                    activity.sourceType != 'lecture') ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (activity.kind == ActivityKind.todo)
+                        TextButton.icon(
+                          icon: Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: g.clay,
+                          ),
+                          label: Text(
+                            'Switch to 25m Focus Timer',
+                            style: TextStyle(
+                              color: g.clay,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await ref
+                                .read(taskDaoProvider)
+                                .updateTask(
+                                  TaskTableCompanion(
+                                    id: Value(activity.linkedTaskId!),
+                                    estimatedMinutes: const Value(25),
+                                    updatedAt: Value(DateTime.now()),
+                                  ),
+                                );
+                            if (context.mounted) {
+                              AscentSnackBar.show(
+                                context,
+                                message: 'Switched to 25m Focus Timer',
+                              );
+                            }
+                          },
+                        )
+                      else if (activity.kind == ActivityKind.duration)
+                        TextButton.icon(
+                          icon: Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: g.clay,
+                          ),
+                          label: Text(
+                            'Switch to To-do Checklist',
+                            style: TextStyle(
+                              color: g.clay,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await ref
+                                .read(taskDaoProvider)
+                                .updateTask(
+                                  TaskTableCompanion(
+                                    id: Value(activity.linkedTaskId!),
+                                    estimatedMinutes: const Value(null),
+                                    updatedAt: Value(DateTime.now()),
+                                  ),
+                                );
+                            if (context.mounted) {
+                              AscentSnackBar.show(
+                                context,
+                                message: 'Switched to To-do checklist',
+                              );
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+                if (!isDone &&
+                    activity.linkedTaskId != null &&
                     activity.sourceType != 'lecture' &&
                     (activity.targetMinutes ?? 0) > 0)
                   TextButton.icon(
@@ -1527,8 +1758,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     },
                   ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
@@ -1545,7 +1779,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ),
                       child: const Text('Cancel'),
                     ),
-                    const SizedBox(width: 8),
                     if (!isDone)
                       activity.isScheduledInFuture
                           ? FilledButton.icon(
