@@ -1174,58 +1174,137 @@ class _ThoughtWallHomePreviewState
             padding: const EdgeInsets.only(top: 9, right: 26),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Material(
-                color: g.ink.withValues(alpha: .045),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(17),
-                  topRight: Radius.circular(17),
-                  bottomRight: Radius.circular(17),
-                  bottomLeft: Radius.circular(5),
+              child: Dismissible(
+                key: ValueKey('home_thought_dismiss_${latest.id}'),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (direction) async {
+                  HapticFeedback.mediumImpact();
+                  final thoughtDao = ref.read(thoughtDaoProvider);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final snapshot = await thoughtDao.deleteThoughtForUndo(latest.id);
+                  if (snapshot == null) return false;
+
+                  Future<void> restore() async {
+                    try {
+                      if (!await thoughtDao.restoreThoughtDeletion(snapshot) &&
+                          messenger.mounted) {
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Undo is no longer available.'),
+                          ),
+                        );
+                      }
+                    } catch (_) {
+                      if (messenger.mounted) {
+                        messenger.hideCurrentSnackBar();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: const Text('Could not restore the thought.'),
+                            action: SnackBarAction(label: 'Retry', onPressed: restore),
+                          ),
+                        );
+                      }
+                    }
+                  }
+
+                  if (messenger.mounted) {
+                    messenger.hideCurrentSnackBar();
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: const Text('Thought deleted'),
+                        duration: const Duration(seconds: 4),
+                        behavior: SnackBarBehavior.floating,
+                        action: SnackBarAction(
+                          label: 'Undo',
+                          onPressed: restore,
+                        ),
+                      ),
+                    );
+                  }
+                  return true;
+                },
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 14),
+                  decoration: BoxDecoration(
+                    color: SharedControlColors.errorSoftBg(context.isDark),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Delete',
+                        style: TextStyle(
+                          color: SharedControlColors.errorInk(context.isDark),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.delete_outline_rounded,
+                        color: SharedControlColors.errorInk(context.isDark),
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
-                child: InkWell(
-                  key: const ValueKey('home_latest_thought_bubble'),
-                  borderRadius: BorderRadius.circular(17),
-                  onTap: () =>
-                      context.push('/thought-wall?thought=${latest.id}'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (locked)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 7),
-                            child: Icon(
-                              Icons.lock_outline_rounded,
-                              size: 15,
-                              color: g.inkMuted,
+                child: Material(
+                  color: g.ink.withValues(alpha: .045),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(17),
+                    topRight: Radius.circular(17),
+                    bottomRight: Radius.circular(17),
+                    bottomLeft: Radius.circular(5),
+                  ),
+                  child: InkWell(
+                    key: const ValueKey('home_latest_thought_bubble'),
+                    borderRadius: BorderRadius.circular(17),
+                    onTap: () =>
+                        context.push('/thought-wall?thought=${latest.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (locked)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 7),
+                              child: Icon(
+                                Icons.lock_outline_rounded,
+                                size: 15,
+                                color: g.inkMuted,
+                              ),
+                            ),
+                          Flexible(
+                            child: Text(
+                              locked
+                                  ? 'Private thought'
+                                  : ThoughtExcerpt.displayContent(latest.content),
+                              key: const ValueKey('home_latest_thought_text'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: g.inkSecondary,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
                             ),
                           ),
-                        Flexible(
-                          child: Text(
-                            locked
-                                ? 'Private thought'
-                                : ThoughtExcerpt.displayContent(latest.content),
-                            key: const ValueKey('home_latest_thought_text'),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: g.inkSecondary,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 17,
+                            color: g.inkMuted,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 17,
-                          color: g.inkMuted,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

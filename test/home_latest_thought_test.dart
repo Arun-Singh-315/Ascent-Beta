@@ -171,4 +171,53 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets(
+    'Home latest thought bubble supports swipe to delete with Undo snackbar',
+    (tester) async {
+      final id = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Test home preview swipe delete',
+          createdAt: Value(DateTime.now()),
+        ),
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(body: ThoughtWallHomePreview(compact: true)),
+          ),
+        ),
+      );
+      await settle(tester);
+      final bubble = find.byKey(const ValueKey('home_latest_thought_bubble'));
+      expect(bubble, findsOneWidget);
+
+      // Drag left to delete
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await settle(tester);
+
+      // Verify thought is deleted
+      final thoughtAfter = await db.thoughtDao.getThoughtById(id);
+      expect(thoughtAfter, isNull);
+
+      // Verify Undo snackbar is visible
+      expect(find.text('Undo'), findsOneWidget);
+
+      // Tap Undo to restore
+      await tester.tap(find.text('Undo'));
+      await settle(tester);
+
+      final thoughtRestored = await db.thoughtDao.getThoughtById(id);
+      expect(thoughtRestored, isNotNull);
+      expect(thoughtRestored!.content, 'Test home preview swipe delete');
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

@@ -1714,7 +1714,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           key: ValueKey('thought_${thought.id}'),
           direction: isSelectionMode
               ? DismissDirection.none
-              : DismissDirection.startToEnd,
+              : DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             final thoughtDao = ref.read(thoughtDaoProvider);
             final messenger = ScaffoldMessenger.of(context);
@@ -1752,6 +1752,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 );
               }
               return false;
+            } else if (direction == DismissDirection.endToStart) {
+              return await _deleteWithUndo(context, ref);
             } else {
               return false;
             }

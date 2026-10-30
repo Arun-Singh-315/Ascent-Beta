@@ -1093,7 +1093,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             ? g.fill.withValues(alpha: 0.18)
             : Theme.of(context).colorScheme.surface);
 
-    return Padding(
+    final rowContent = Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: Material(
         color: cardColor,
@@ -1171,6 +1171,120 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
         ),
       ),
+    );
+
+    return Dismissible(
+      key: ValueKey('activity_dismiss_${activity.id}'),
+      direction: done ? DismissDirection.none : DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        if (activity.linkedTaskId != null) {
+          final taskDao = ref.read(taskDaoProvider);
+          final protection = await taskDao.getTaskProtection(
+            activity.linkedTaskId!,
+          );
+          if (protection != null) {
+            HapticFeedback.mediumImpact();
+            if (context.mounted) {
+              await showPlanProtectionDialog(context, ref, protection);
+            }
+            return false;
+          }
+        }
+        return true;
+      },
+      onDismissed: (_) async {
+        HapticFeedback.mediumImpact();
+        final container = ProviderScope.containerOf(context, listen: false);
+        final messenger = ScaffoldMessenger.of(context);
+        final removedActivity = activity;
+        final taskDao = container.read(taskDaoProvider);
+        final dismissed = container.read(
+          dismissedTodayActivityIdsProvider.notifier,
+        );
+        setState(() => _removed = true);
+        try {
+          await deleteTodayActivity(container, removedActivity);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                removedActivity.sourceType == 'lecture'
+                    ? "Removed from today's activities"
+                    : 'Activity "${removedActivity.title}" deleted',
+              ),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  try {
+                    if (removedActivity.linkedTaskId != null &&
+                        removedActivity.sourceType != 'lecture') {
+                      final restored = await taskDao.restoreDeletedTask(
+                        removedActivity.linkedTaskId!,
+                      );
+                      if (!restored) {
+                        if (!messenger.mounted) return;
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not restore this activity.'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    await dismissed.unDismissActivityId(removedActivity.id);
+                    if (mounted) setState(() => _removed = false);
+                  } catch (_) {
+                    if (!messenger.mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not restore this activity.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          );
+        } catch (_) {
+          await dismissed.unDismissActivityId(removedActivity.id);
+          if (mounted) setState(() => _removed = false);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Could not delete this activity. Try again.'),
+            ),
+          );
+        }
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        margin: const EdgeInsets.symmetric(vertical: 2.5),
+        padding: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.errorSoftBg(context.isDark),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: SharedControlColors.errorInk(context.isDark),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.delete_outline_rounded,
+              color: SharedControlColors.errorInk(context.isDark),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+      child: rowContent,
     );
   }
 

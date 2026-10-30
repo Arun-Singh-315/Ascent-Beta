@@ -9,6 +9,7 @@ import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
+import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 
@@ -24,6 +25,7 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(db),
         taskDaoProvider.overrideWithValue(db.taskDao),
+        thoughtDaoProvider.overrideWithValue(db.thoughtDao),
       ],
     );
   });
@@ -268,6 +270,101 @@ void main() {
       final optionsFinder = find.byKey(const ValueKey('activity_options'));
       expect(optionsFinder, findsOneWidget);
       expect(find.descendant(of: optionsFinder, matching: find.byIcon(Icons.settings_outlined)), findsOneWidget);
+    });
+  });
+
+  group('Swipe to Delete in To-Do and Thought', () {
+    testWidgets('Compact to-do item supports swipe to delete with Undo snackbar', (tester) async {
+      final taskDao = container.read(taskDaoProvider);
+      final taskId = await taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Wash car',
+          priority: const drift.Value('low'),
+        ),
+      );
+
+      final todoActivity = TodayActivityItem(
+        id: 'task_$taskId',
+        title: 'Wash car',
+        sourceType: 'task',
+        categoryTag: 'Task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        linkedTaskId: taskId,
+        kind: ActivityKind.todo,
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Scaffold(
+              body: ActivityRowItem(
+                activity: todoActivity,
+                compact: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final dismissibleFinder = find.byKey(ValueKey('activity_dismiss_task_$taskId'));
+      expect(dismissibleFinder, findsOneWidget);
+
+      final dismissible = tester.widget<Dismissible>(dismissibleFinder);
+      expect(dismissible.direction, DismissDirection.endToStart);
+
+      // Perform swipe left
+      await tester.drag(dismissibleFinder, const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      // Verify task is deleted in database
+      final taskAfter = await taskDao.getTaskById(taskId);
+      expect(taskAfter, isNull);
+
+      // Verify Undo snackbar appears
+      expect(find.text('Undo'), findsOneWidget);
+    });
+
+    testWidgets('Thought Wall screen supports swipe to delete (endToStart) with Undo snackbar', (tester) async {
+      final thoughtDao = container.read(thoughtDaoProvider);
+      final thoughtId = await thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Important deep insight note',
+        ),
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: ThoughtWallScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final thoughtDismissible = find.byKey(ValueKey('thought_$thoughtId'));
+      expect(thoughtDismissible, findsOneWidget);
+
+      final dismissible = tester.widget<Dismissible>(thoughtDismissible);
+      expect(dismissible.direction, DismissDirection.horizontal);
+
+      // Swipe left to delete
+      await tester.drag(thoughtDismissible, const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      // Verify thought was deleted from database
+      final thoughtAfter = await thoughtDao.getThoughtById(thoughtId);
+      expect(thoughtAfter, isNull);
+
+      // Verify Undo snackbar is visible
+      expect(find.text('Undo'), findsOneWidget);
     });
   });
 
