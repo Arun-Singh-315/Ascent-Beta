@@ -334,13 +334,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               ref.read(sharedPreferencesProvider),
                             ),
 
-                            // 2. Ascent Dynamic Island (adaptive live activities & multi-app hub)
+                            // Live state is independent of shortcut preferences.
+                            const AscentDynamicIsland(),
                             if (layout.shortcuts.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(
                                   bottom: AppSpace.s16,
                                 ),
-                                child: AscentDynamicIsland(
+                                child: HomeShortcutPanel(
                                   shortcuts: layout.shortcuts,
                                   activeShortcutId: _activeShortcutId,
                                   onSelectShortcut: (id) =>

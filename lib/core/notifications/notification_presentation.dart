@@ -1,8 +1,12 @@
 /// Keeps the user's words intact in expansion, with a compact collapsed preview.
 class ReminderNotificationCopy {
-  ReminderNotificationCopy(String content) : expandedBody = content.trim();
+  ReminderNotificationCopy(String content, {this.redacted = false})
+      : expandedBody = content.trim();
   final String expandedBody;
+  final bool redacted;
+
   String get title {
+    if (redacted) return 'Ascent Reminder';
     final compact = expandedBody.replaceAll(RegExp(r'\s+'), ' ');
     final runes = compact.runes.toList();
     return runes.length <= 80
@@ -10,9 +14,11 @@ class ReminderNotificationCopy {
         : '${String.fromCharCodes(runes.take(79))}…';
   }
 
-  String get body => 'Due now · Tap to open Reminders';
+  String get body =>
+      redacted ? 'Ascent is locked · Tap to unlock' : 'Due now · Tap to open Reminders';
 
   String bodyFor(String destination) {
+    if (redacted) return 'Ascent is locked · Tap to unlock';
     if (destination.startsWith('/today')) {
       return '🎯 Time to focus · Tap to start this activity';
     }

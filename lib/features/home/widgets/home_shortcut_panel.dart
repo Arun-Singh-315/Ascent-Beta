@@ -206,17 +206,30 @@ class HomeShortcutPanel extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return GlassSurface(
+    return Padding(
       key: const ValueKey('home_shortcut_panel'),
-      radius: 24,
-      enableBlur: false,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AscentDimensions.spaceSm,
-        vertical: AscentDimensions.spaceMd,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: items.map((item) {
+      padding: const EdgeInsets.only(top: 10, bottom: 6),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: g.line,
+                width: 1.0,
+              ),
+              color: g.fill.withValues(alpha: isDark ? 0.15 : 0.25),
+            ),
+            padding: const EdgeInsets.fromLTRB(
+              AscentDimensions.spaceSm,
+              14,
+              AscentDimensions.spaceSm,
+              10,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: items.map((item) {
           final count = _resolveBadgeCount(ref, item.id);
           final isSelected = activeShortcutId == item.id;
           return Expanded(
@@ -315,6 +328,45 @@ class HomeShortcutPanel extends ConsumerWidget {
             ),
           );
         }).toList(),
+            ),
+          ),
+          Positioned(
+            top: -9,
+            left: 20,
+            child: Container(
+              key: const ValueKey('shortcut_legend_title'),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F1520) : const Color(0xFFF7F9FC),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: g.line.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.bolt_rounded,
+                    size: 11,
+                    color: g.clay,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'QUICK ACTIONS',
+                    style: TextStyle(
+                      color: g.inkSecondary,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

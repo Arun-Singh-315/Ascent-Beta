@@ -1,47 +1,43 @@
+import 'dart:async';
+import 'package:drift/drift.dart' show BooleanExpressionOperators;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/learning_hub/learning_hub_provider.dart';
+import '../../../core/providers/daily_briefing_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../../core/providers/daily_briefing_provider.dart';
+import '../../../core/providers/island_preferences_provider.dart';
+import '../../../core/walk/walk_tracking_service.dart';
+import 'island_surface.dart';
+import 'island_customization_sheet.dart';
 import '../../chai_break/chai_break_provider.dart';
-import '../../promises/providers/promise_providers.dart';
 
-/// Apple-inspired translucent micro-color tokens for subtle, refined vibrancy.
-class DynamicIslandColors {
-  DynamicIslandColors._();
+// Read the persisted session as well as playback state so a paused lecture
+// remains resumable without making every previously studied course appear live.
+final islandLectureSessionProvider = StreamProvider.autoDispose<TimeSession?>((
+  ref,
+) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.timeSessionTable)
+        ..where(
+          (s) =>
+              s.activityRefType.equals('lecture') &
+              s.status.isIn(['running', 'paused']),
+        )
+        ..limit(1))
+      .watchSingleOrNull();
+});
 
-  static const Color aquaTeal = Color(0xFF00C4B4);
-  static const Color azureBlue = Color(0xFF0A84FF);
-  static const Color emeraldMint = Color(0xFF30D158);
-  static const Color solarAmber = Color(0xFFFF9F0A);
-  static const Color coralRose = Color(0xFFFF375F);
-  static const Color royalIndigo = Color(0xFF5E5CE6);
-}
-
-/// The multi-app, reactive Dynamic Island for Ascent.
-///
-/// Intelligently adapts its presence:
-/// 1. Active Focus Timer (running session countdown & controls)
-/// 2. Chai Break Soundscape Audio (ambient audio track & equalizer)
-/// 3. Yesterday's Leftover Summary Alert (overdue task resolution)
-/// 4. Ambient Multi-App Hub (Apple micro-color shortcut pods & All Apps drawer)
+/// A live surface, never an app launcher. Every activity keeps its own identity
+/// and controls; selecting another activity does not pause the previous one.
 class AscentDynamicIsland extends ConsumerStatefulWidget {
-  const AscentDynamicIsland({
-    super.key,
-    this.shortcuts,
-    this.activeShortcutId,
-    this.onSelectShortcut,
-    this.initiallyExpanded = false,
-  });
+  const AscentDynamicIsland({super.key, this.initiallyExpanded = false});
 
-  final List<String>? shortcuts;
-  final String? activeShortcutId;
-  final ValueChanged<String?>? onSelectShortcut;
   final bool initiallyExpanded;
 
   @override
@@ -49,1186 +45,971 @@ class AscentDynamicIsland extends ConsumerStatefulWidget {
       _AscentDynamicIslandState();
 }
 
+class _IslandActivity {
+  const _IslandActivity({
+    required this.id,
+    required this.label,
+    required this.title,
+    required this.detail,
+    required this.icon,
+    required this.route,
+    this.metric,
+    this.progress,
+    this.paused = false,
+    this.toggle,
+    this.metricCaption = 'ELAPSED',
+    this.stats = const [],
+  });
+
+  final String id, label, title, detail, route;
+  final IconData icon;
+  final String? metric;
+  final String metricCaption;
+  final List<({String value, String label})> stats;
+  final double? progress;
+  final bool paused;
+  final VoidCallback? toggle;
+  bool get isLive => toggle != null;
+}
+
 class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
-    with SingleTickerProviderStateMixin {
-  late bool _isExpanded;
-  bool _showAllApps = false;
+    with WidgetsBindingObserver {
+  late bool _expanded;
+  String? _selectedId;
+  String? _dismissedContext;
+  late DateTime _now;
+  Timer? _clock;
 
   @override
   void initState() {
     super.initState();
-    _isExpanded = widget.initiallyExpanded;
-  }
-
-  void _toggleExpanded() {
-    HapticFeedback.lightImpact();
-    setState(() {
-      _isExpanded = !_isExpanded;
-      if (!_isExpanded) _showAllApps = false;
+    WidgetsBinding.instance.addObserver(this);
+    _expanded = widget.initiallyExpanded;
+    _now = DateTime.now();
+    // Refresh date boundaries and reminder eligibility even without DB writes.
+    _clock = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final timeState = ref.watch(timeTrackingProvider);
-    final chaiState = ref.watch(chaiBreakProvider);
-    final briefingAsync = ref.watch(
-      dailyBriefingProvider(briefingDay(DateTime.now())),
-    );
-    final overdueCount = briefingAsync.value?.overdue ?? 0;
-
-    final isFocusRunning = timeState.isRunning;
-    final isAudioPlaying = chaiState.isRunning &&
-        !chaiState.isAudioMuted &&
-        chaiState.selectedSoundscape != SoundscapePreset.silentZen;
-
-    return Semantics(
-      label: 'Ascent Dynamic Island',
-      container: true,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.symmetric(horizontal: 2),
-        decoration: BoxDecoration(
-          color: const Color(0xFF000000),
-          borderRadius: BorderRadius.circular(_isExpanded ? 24 : 28),
-          border: Border.all(
-            color: Colors.black,
-            width: 2.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isFocusRunning
-                  ? DynamicIslandColors.emeraldMint.withValues(alpha: 0.20)
-                  : isAudioPlaying
-                      ? DynamicIslandColors.solarAmber.withValues(alpha: 0.20)
-                      : overdueCount > 0
-                          ? DynamicIslandColors.solarAmber.withValues(alpha: 0.18)
-                          : Colors.black.withValues(alpha: 0.60),
-              blurRadius: _isExpanded ? 20 : 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(_isExpanded ? 22 : 26),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: _buildIslandContent(
-              context: context,
-              g: g,
-              isDark: isDark,
-              timeState: timeState,
-              chaiState: chaiState,
-              overdueCount: overdueCount,
-              isFocusRunning: isFocusRunning,
-              isAudioPlaying: isAudioPlaying,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildIslandContent({
-    required BuildContext context,
-    required AscentGlass g,
-    required bool isDark,
-    required TimeTrackingState timeState,
-    required ChaiBreakState chaiState,
-    required int overdueCount,
-    required bool isFocusRunning,
-    required bool isAudioPlaying,
-  }) {
-    if (isFocusRunning) {
-      return _buildFocusIsland(context, g, isDark, timeState);
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      setState(() => _now = DateTime.now());
     }
-
-    if (isAudioPlaying) {
-      return _buildAudioIsland(context, g, isDark, chaiState);
-    }
-
-    if (overdueCount > 0 && !_isExpanded) {
-      return _buildOverdueIslandCompact(context, g, isDark, overdueCount);
-    }
-
-    return _buildAmbientMultiAppIsland(
-      context: context,
-      g: g,
-      isDark: isDark,
-      overdueCount: overdueCount,
-    );
-  }
-
-  // ── 1. ACTIVE FOCUS TIMER ISLAND ──────────────────────────────────────────
-
-  Widget _buildFocusIsland(
-    BuildContext context,
-    AscentGlass g,
-    bool isDark,
-    TimeTrackingState state,
-  ) {
-    if (!_isExpanded) {
-      return InkWell(
-        key: const ValueKey('dynamic_island_focus_compact'),
-        onTap: _toggleExpanded,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: DynamicIslandColors.emeraldMint,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.timer_rounded,
-                size: 16,
-                color: DynamicIslandColors.emeraldMint,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  state.activeSession?.label.isNotEmpty == true
-                      ? state.activeSession!.label
-                      : 'Deep Focus',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: g.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                state.formattedTime,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  color: DynamicIslandColors.emeraldMint,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  state.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                  size: 18,
-                  color: g.ink,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  final notifier = ref.read(timeTrackingProvider.notifier);
-                  if (state.isPaused) {
-                    notifier.resumeSession();
-                  } else {
-                    notifier.pauseSession();
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: DynamicIslandColors.emeraldMint.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: DynamicIslandColors.emeraldMint.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.timer_rounded,
-                          size: 13,
-                          color: DynamicIslandColors.emeraldMint,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'ACTIVE FOCUS',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: DynamicIslandColors.emeraldMint,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(Icons.close_fullscreen_rounded, size: 16, color: g.inkMuted),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: _toggleExpanded,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            state.activeSession?.label ?? 'Focus Session',
-            style: AscentTextStyles.cardTitle.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            state.formattedTime,
-            style: AscentTextStyles.displayMedium.copyWith(
-              color: DynamicIslandColors.emeraldMint,
-              fontWeight: FontWeight.w700,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    final notifier = ref.read(timeTrackingProvider.notifier);
-                    if (state.isPaused) {
-                      notifier.resumeSession();
-                    } else {
-                      notifier.pauseSession();
-                    }
-                  },
-                  icon: Icon(
-                    state.isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    size: 18,
-                  ),
-                  label: Text(state.isPaused ? 'Resume' : 'Pause'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: DynamicIslandColors.emeraldMint.withValues(
-                      alpha: 0.20,
-                    ),
-                    foregroundColor: g.ink,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filledTonal(
-                tooltip: 'Open Focus Screen',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/focus');
-                },
-                icon: const Icon(Icons.open_in_new_rounded, size: 18),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 2. ACTIVE CHAI BREAK AUDIO ISLAND ─────────────────────────────────────
-
-  Widget _buildAudioIsland(
-    BuildContext context,
-    AscentGlass g,
-    bool isDark,
-    ChaiBreakState state,
-  ) {
-    if (!_isExpanded) {
-      return InkWell(
-        key: const ValueKey('dynamic_island_audio_compact'),
-        onTap: _toggleExpanded,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          child: Row(
-            children: [
-              const Text('☕', style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  state.isPlayingCustomAudio
-                      ? (state.customAudioName ?? 'Custom Song')
-                      : state.selectedSoundscape.title,
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: g.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 6),
-              _AudioWaveIndicator(color: DynamicIslandColors.solarAmber),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  state.isRunning
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  size: 17,
-                  color: g.ink,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  ref.read(chaiBreakProvider.notifier).togglePlayPause();
-                },
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: DynamicIslandColors.solarAmber.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: DynamicIslandColors.solarAmber.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('☕', style: TextStyle(fontSize: 11)),
-                        const SizedBox(width: 4),
-                        Text(
-                          'CHAI BREAK AUDIO',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: DynamicIslandColors.solarAmber,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(Icons.close_fullscreen_rounded, size: 16, color: g.inkMuted),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                onPressed: _toggleExpanded,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            state.isPlayingCustomAudio
-                ? (state.customAudioName ?? 'Custom Device Audio')
-                : state.selectedSoundscape.title,
-            style: AscentTextStyles.cardTitle.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            state.selectedSoundscape.description,
-            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    ref.read(chaiBreakProvider.notifier).togglePlayPause();
-                  },
-                  icon: Icon(
-                    state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    size: 18,
-                  ),
-                  label: Text(state.isRunning ? 'Pause Sanctuary' : 'Play Sanctuary'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: DynamicIslandColors.solarAmber.withValues(
-                      alpha: 0.20,
-                    ),
-                    foregroundColor: g.ink,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filledTonal(
-                tooltip: 'Open Chai Break',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/chai-break');
-                },
-                icon: const Icon(Icons.open_in_new_rounded, size: 18),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 3. OVERDUE TASK ALERT COMPACT ─────────────────────────────────────────
-
-  Widget _buildOverdueIslandCompact(
-    BuildContext context,
-    AscentGlass g,
-    bool isDark,
-    int count,
-  ) {
-    return InkWell(
-      key: const ValueKey('dynamic_island_overdue_compact'),
-      onTap: _toggleExpanded,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: DynamicIslandColors.solarAmber.withValues(alpha: 0.20),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.warning_amber_rounded,
-                size: 14,
-                color: DynamicIslandColors.solarAmber,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '$count leftover ${count == 1 ? 'task' : 'tasks'} from yesterday',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: g.ink,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: DynamicIslandColors.solarAmber.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Review →',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: DynamicIslandColors.solarAmber,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── 4. AMBIENT MULTI-APP HUB & SHORTCUTS (APPLE MICRO-COLORS) ─────────────
-
-  Widget _buildAmbientMultiAppIsland({
-    required BuildContext context,
-    required AscentGlass g,
-    required bool isDark,
-    required int overdueCount,
-  }) {
-    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-    final thoughtCount = ref.watch(todayThoughtsCountStreamProvider).value ?? 0;
-    final activePromises =
-        ref.watch(activePromisesStreamProvider).value?.length ?? 0;
-    final nextReminder = ref.watch(nextUpcomingReminderProvider).value;
-
-    if (!_isExpanded) {
-      return InkWell(
-        key: const ValueKey('dynamic_island_ambient_compact'),
-        onTap: _toggleExpanded,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-          child: Row(
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Aqua Teal Water Glanceable
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: DynamicIslandColors.aquaTeal,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${waterMl}ml',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: DynamicIslandColors.aquaTeal,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.15)),
-                      const SizedBox(width: 10),
-
-                      // Azure Sky Thought Glanceable
-                      const Icon(
-                        Icons.lightbulb_outline_rounded,
-                        size: 14,
-                        color: DynamicIslandColors.azureBlue,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$thoughtCount',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: DynamicIslandColors.azureBlue,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.15)),
-                      const SizedBox(width: 10),
-
-                      // Sacred Promises
-                      const Icon(
-                        Icons.bookmark_added_outlined,
-                        size: 14,
-                        color: DynamicIslandColors.coralRose,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$activePromises',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: DynamicIslandColors.coralRose,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: Colors.white.withValues(alpha: 0.60),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: DynamicIslandColors.emeraldMint,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: DynamicIslandColors.emeraldMint.withValues(alpha: 0.8),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Ascent Dynamic Island',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 10,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: Icon(
-                  Icons.close_fullscreen_rounded,
-                  size: 16,
-                  color: Colors.white.withValues(alpha: 0.60),
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                onPressed: _toggleExpanded,
-              ),
-            ],
-          ),
-
-          // Upcoming Activity Alert if any
-          if (nextReminder != null && nextReminder.isActive) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DynamicIslandColors.azureBlue.withValues(alpha: 0.35),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.notifications_active_rounded,
-                    size: 16,
-                    color: DynamicIslandColors.azureBlue,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Next: ${nextReminder.title}',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.push('/reminders');
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      child: Text(
-                        'View →',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: DynamicIslandColors.azureBlue,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // Yesterday's Leftover Alert if any
-          if (overdueCount > 0) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: DynamicIslandColors.solarAmber.withValues(alpha: 0.40),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_repeat_rounded,
-                    size: 16,
-                    color: DynamicIslandColors.solarAmber,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '$overdueCount tasks from yesterday need a decision',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.push('/today');
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
-                      child: Text(
-                        'Review →',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: DynamicIslandColors.solarAmber,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-
-          // 4 Curated Apple Micro-Color Pods
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 310;
-              final pod1 = _buildMicroColorPod(
-                color: DynamicIslandColors.aquaTeal,
-                icon: Icons.water_drop_rounded,
-                label: 'Water',
-                metric: '${waterMl}ml',
-                subActionText: '+250ml',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (widget.onSelectShortcut != null) {
-                    widget.onSelectShortcut!('hydration');
-                  } else {
-                    context.push('/hydration');
-                  }
-                },
-                onSubAction: () async {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(waterDaoProvider).addWater(250);
-                },
-              );
-              final pod2 = _buildMicroColorPod(
-                color: DynamicIslandColors.azureBlue,
-                icon: Icons.lightbulb_outline_rounded,
-                label: 'Thoughts',
-                metric: '$thoughtCount saved',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (widget.onSelectShortcut != null) {
-                    widget.onSelectShortcut!('thought-wall');
-                  } else {
-                    context.push('/thought-wall');
-                  }
-                },
-              );
-              final pod3 = _buildMicroColorPod(
-                color: DynamicIslandColors.coralRose,
-                icon: Icons.bookmark_added_outlined,
-                label: 'Promises',
-                metric: '$activePromises active',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (widget.onSelectShortcut != null) {
-                    widget.onSelectShortcut!('promises');
-                  } else {
-                    context.push('/promises');
-                  }
-                },
-              );
-              final pod4 = _buildMicroColorPod(
-                color: DynamicIslandColors.royalIndigo,
-                icon: Icons.shield_outlined,
-                label: 'Vault',
-                metric: 'Secure',
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (widget.onSelectShortcut != null) {
-                    widget.onSelectShortcut!('vault');
-                  } else {
-                    context.push('/vault');
-                  }
-                },
-              );
-
-              if (isNarrow) {
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: pod1),
-                        const SizedBox(width: 8),
-                        Expanded(child: pod2),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: pod3),
-                        const SizedBox(width: 8),
-                        Expanded(child: pod4),
-                      ],
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(child: pod1),
-                  const SizedBox(width: 8),
-                  Expanded(child: pod2),
-                  const SizedBox(width: 8),
-                  Expanded(child: pod3),
-                  const SizedBox(width: 8),
-                  Expanded(child: pod4),
-                ],
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          // Drawer Toggle for All Tools & Apps
-          Center(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _showAllApps = !_showAllApps);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _showAllApps
-                            ? Icons.expand_less_rounded
-                            : Icons.grid_view_rounded,
-                        size: 14,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _showAllApps ? 'Hide App Suite' : 'View All Tools & Apps',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.inkMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Expandable Full App Grid
-          if (_showAllApps) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: g.claySoft.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: g.line),
-              ),
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.spaceAround,
-                children: [
-                  _buildAppTile(context, g, 'Focus Timer', Icons.timer_outlined, '/focus', DynamicIslandColors.emeraldMint),
-                  _buildAppTile(context, g, 'Chai Break', Icons.coffee_outlined, '/chai-break', DynamicIslandColors.solarAmber),
-                  _buildAppTile(context, g, 'Today Tasks', Icons.calendar_today_rounded, '/today', DynamicIslandColors.azureBlue),
-                  _buildAppTile(context, g, 'Reminders', Icons.notifications_none_rounded, '/reminders', DynamicIslandColors.coralRose),
-                  _buildAppTile(context, g, 'Challenges', Icons.flag_outlined, '/momentum', DynamicIslandColors.coralRose),
-                  _buildAppTile(context, g, 'Money', Icons.account_balance_wallet_outlined, '/money', DynamicIslandColors.emeraldMint),
-                  _buildAppTile(context, g, 'Learning', Icons.school_outlined, '/learning', DynamicIslandColors.azureBlue),
-                  _buildAppTile(context, g, 'Walk', Icons.directions_walk_rounded, '/walk', DynamicIslandColors.aquaTeal),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMicroColorPod({
-    required Color color,
-    required IconData icon,
-    required String label,
-    required String metric,
-    VoidCallback? onSubAction,
-    String? subActionText,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: color.withValues(alpha: 0.38),
-              width: 1.0,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(height: 6),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.90),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  metric,
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.70),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (onSubAction != null && subActionText != null) ...[
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: onSubAction,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: color.withValues(alpha: 0.45),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      subActionText,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppTile(
-    BuildContext context,
-    AscentGlass g,
-    String label,
-    IconData icon,
-    String route,
-    Color color,
-  ) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        context.push(route);
-      },
-      child: Container(
-        width: 70,
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 18, color: color),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: AscentTextStyles.labelSmall.copyWith(
-                fontSize: 10.5,
-                color: g.ink,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Subtle 3-bar animated audio equalizer waveform indicator.
-class _AudioWaveIndicator extends StatefulWidget {
-  const _AudioWaveIndicator({required this.color});
-  final Color color;
-
-  @override
-  State<_AudioWaveIndicator> createState() => _AudioWaveIndicatorState();
-}
-
-class _AudioWaveIndicatorState extends State<_AudioWaveIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _clock?.cancel();
     super.dispose();
+  }
+
+  void _expand(bool expanded) {
+    if (_expanded == expanded) return;
+    HapticFeedback.selectionClick();
+    setState(() => _expanded = expanded);
+  }
+
+  List<_IslandActivity> _activities() {
+    final time = ref.watch(timeTrackingProvider);
+    final learning = ref.watch(learningHubProvider);
+    final lectureSession = ref.watch(islandLectureSessionProvider).value;
+    final walk = ref.watch(walkTrackingProvider);
+    final chai = ref.watch(chaiBreakProvider);
+    final briefing = ref.watch(dailyBriefingProvider(briefingDay(_now))).value;
+    final reminders = ref.watch(allRemindersProvider).value ?? [];
+    final upcoming =
+        reminders
+            .where(
+              (r) =>
+                  r.isActive &&
+                  !r.scheduledAt.isBefore(_now) &&
+                  r.scheduledAt.difference(_now) <= const Duration(hours: 2),
+            )
+            .toList()
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return [
+      if (time.activeSession != null && (time.isRunning || time.isPaused))
+        _IslandActivity(
+          id: 'focus',
+          label: time.isPaused ? 'Focus paused' : 'Focus',
+          title: time.activeSession!.label.isEmpty
+              ? 'Focus session'
+              : time.activeSession!.label,
+          detail:
+              'Time spent · ${time.activeCategory?.name ?? 'Focus session'}',
+          metric: time.formattedTime,
+          icon: Icons.timer_outlined,
+          route: '/focus',
+          paused: time.isPaused,
+          toggle: () {
+            final notifier = ref.read(timeTrackingProvider.notifier);
+            if (time.isPaused) {
+              notifier.resumeSession();
+            } else {
+              notifier.pauseSession();
+            }
+          },
+        ),
+      if (learning.isPlaying ||
+          (lectureSession != null &&
+              lectureSession.learningCourseId == learning.activeCourseId))
+        _IslandActivity(
+          id: 'learning',
+          label: learning.isPlaying ? 'Learning' : 'Learning paused',
+          title: learning.activeLecture.title,
+          detail: '${learning.course.title} · time remaining',
+          metric: learning.formattedRemaining,
+          metricCaption: 'REMAINING',
+          progress: learning.progressFraction,
+          icon: Icons.school_outlined,
+          route: '/learning',
+          paused: !learning.isPlaying,
+          toggle: () =>
+              ref.read(learningHubProvider.notifier).togglePlayPause(),
+        ),
+      if (walk.status != WalkTrackingStatus.idle)
+        _IslandActivity(
+          id: 'walk',
+          label: walk.status == WalkTrackingStatus.paused
+              ? 'Walk paused'
+              : 'Walking',
+          title: 'Outdoor walk',
+          detail: 'Distance and pace from your walking tracker',
+          stats: [
+            (value: walk.distanceKm.toStringAsFixed(2), label: 'Kilometres'),
+            (value: walk.formattedPace, label: 'Pace /km'),
+            (value: '${walk.calories}', label: 'Est. kcal'),
+          ],
+          metric: walk.formattedDuration,
+          icon: Icons.directions_walk_rounded,
+          route: '/walk',
+          paused: walk.status == WalkTrackingStatus.paused,
+          toggle: () {
+            final notifier = ref.read(walkTrackingProvider.notifier);
+            if (walk.status == WalkTrackingStatus.paused) {
+              notifier.resumeWalk();
+            } else {
+              notifier.pauseWalk();
+            }
+          },
+        ),
+      if (chai.isRunning || (chai.hasStarted && chai.remainingSeconds > 0))
+        _IslandActivity(
+          id: 'chai',
+          label: chai.isRunning ? 'Chai break' : 'Break paused',
+          title:
+              chai.isAudioMuted ||
+                  chai.selectedSoundscape == SoundscapePreset.silentZen
+              ? 'A moment to breathe'
+              : chai.isPlayingCustomAudio
+              ? (chai.customAudioName ?? 'Your audio')
+              : chai.selectedSoundscape.title,
+          detail: chai.isAudioMuted
+              ? 'Sound muted · time remaining'
+              : 'Time remaining · ${chai.selectedSoundscape.description}',
+          metric: chai.formattedRemaining,
+          metricCaption: 'REMAINING',
+          progress: chai.progressFraction,
+          icon: Icons.coffee_outlined,
+          route: '/chai-break',
+          paused: !chai.isRunning,
+          toggle: () => ref.read(chaiBreakProvider.notifier).togglePlayPause(),
+        ),
+      for (final reminder in upcoming)
+        _IslandActivity(
+          id: 'reminder-${reminder.id}',
+          label: 'Coming up',
+          metricCaption: 'UP NEXT',
+          title: reminder.title,
+          detail:
+              'Reminder · ${TimeOfDay.fromDateTime(reminder.scheduledAt).format(context)}',
+          metric: reminder.scheduledAt.difference(_now).inMinutes < 1
+              ? 'Now'
+              : 'in ${reminder.scheduledAt.difference(_now).inMinutes}m',
+          icon: Icons.notifications_active_outlined,
+          route: '/reminders',
+        ),
+      if (briefing != null &&
+          (briefing.completedYesterday > 0 ||
+              briefing.trackedMinutesYesterday > 0 ||
+              briefing.overdue > 0))
+        _IslandActivity(
+          id: 'summary',
+          label: 'Daily recap',
+          title: "Yesterday's Executive Report",
+          detail: briefing.overdue > 0
+              ? 'Your recorded progress from yesterday, with overdue work to review.'
+              : 'Your recorded progress from yesterday.',
+          stats: [
+            (value: '${briefing.completedYesterday}', label: 'Completed'),
+            (
+              value: '${briefing.trackedMinutesYesterday}',
+              label: 'Minutes tracked',
+            ),
+            (value: '${briefing.overdue}', label: 'Overdue tasks'),
+          ],
+          icon: Icons.assignment_outlined,
+          route: '/today',
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final val = _controller.value;
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+    final preferences = ref.watch(islandPreferencesProvider);
+    final all = _activities();
+    final activities = [
+      ...all.where((a) => a.isLive && !a.paused),
+      if (preferences.showPaused) ...all.where((a) => a.isLive && a.paused),
+      ...all.where(
+        (a) =>
+            !a.isLive &&
+            (a.id == 'summary'
+                ? preferences.showRecap
+                : preferences.showUpcoming),
+      ),
+    ];
+    final contextKey =
+        '${briefingDay(_now)}:${activities.where((a) => !a.isLive).map((a) => a.id).join(',')}';
+    final visible = activities
+        .where((a) => a.isLive || _dismissedContext != contextKey)
+        .toList();
+    final duration = Duration(
+      milliseconds:
+          !preferences.animate || MediaQuery.disableAnimationsOf(context)
+          ? 0
+          : 320,
+    );
+    if (visible.isEmpty) {
+      _selectedId = null;
+      _expanded = widget.initiallyExpanded;
+    }
+    final selected = visible.isEmpty
+        ? null
+        : visible.firstWhere(
+            (a) => a.id == _selectedId,
+            orElse: () => visible.first,
+          );
+    final palette = IslandPalette.resolve(
+      preferences.finish,
+      Theme.of(context).brightness == Brightness.dark,
+    );
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: selected == null
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Semantics(
+                container: true,
+                label: 'Ascent live activities',
+                child: TapRegion(
+                  onTapOutside: (_) => _expand(false),
+                  child: GestureDetector(
+                    onVerticalDragEnd: _expanded
+                        ? null
+                        : (details) {
+                            if ((details.primaryVelocity ?? 0) > 100) {
+                              _expand(true);
+                            }
+                          },
+                    child: IslandSurface(
+                      key: const ValueKey('dynamic_island_surface'),
+                      palette: palette,
+                      radius: _expanded ? 28 : 34,
+                      child: DefaultTextStyle.merge(
+                        style: TextStyle(color: palette.ink),
+                        child: IconTheme(
+                          data: IconThemeData(color: palette.accent, size: 22),
+                          child: _expanded
+                              ? _expandedContent(
+                                  visible,
+                                  selected,
+                                  palette,
+                                  contextKey,
+                                  duration,
+                                )
+                              : _compact(
+                                  visible,
+                                  selected,
+                                  palette,
+                                  preferences.density,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _activityBadge(
+    _IslandActivity item,
+    IslandPalette p, {
+    double size = 42,
+  }) => SizedBox(
+    width: size,
+    height: size,
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                p.accent.withValues(alpha: .18),
+                p.accent.withValues(alpha: .03),
+              ],
+            ),
+            border: Border.all(color: p.accent.withValues(alpha: .16)),
+          ),
+        ),
+        if (item.progress != null)
+          Positioned.fill(
+            child: CircularProgressIndicator(
+              value: item.progress!.clamp(0, 1),
+              strokeWidth: 2,
+              strokeCap: StrokeCap.round,
+              color: p.accent,
+              backgroundColor: p.accent.withValues(alpha: .09),
+            ),
+          ),
+        Icon(
+          item.paused ? Icons.pause_rounded : item.icon,
+          size: size * .46,
+          color: p.accent,
+        ),
+      ],
+    ),
+  );
+
+  Widget _compact(
+    List<_IslandActivity> items,
+    _IslandActivity selected,
+    IslandPalette p,
+    IslandDensity density,
+  ) {
+    final extra = items.where((a) => a.id != selected.id).firstOrNull;
+    final minimal = density == IslandDensity.minimal;
+    return InkWell(
+      key: const ValueKey('dynamic_island_compact'),
+      onTap: () => _expand(true),
+      onLongPress: () => _expand(true),
+      borderRadius: BorderRadius.circular(34),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(12, minimal ? 8 : 12, 4, minimal ? 8 : 12),
+        child: Row(
           children: [
-            Container(
-              width: 2.5,
-              height: 4 + (val * 8),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(1.5),
+            _activityBadge(selected, p, size: minimal ? 34 : 42),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    minimal ? selected.label : selected.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    minimal
+                        ? (selected.metric ??
+                              (selected.id == 'summary'
+                                  ? 'Yesterday'
+                                  : selected.detail))
+                        : '${selected.label}${selected.metric == null ? '' : ' · ${selected.metric}'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: p.secondary,
+                      fontSize: 12,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 2),
-            Container(
-              width: 2.5,
-              height: 12 - (val * 6),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(1.5),
+            if (extra != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Semantics(
+                  label:
+                      '${items.length - 1} more activities. Show ${extra.title}',
+                  button: true,
+                  child: Tooltip(
+                    message: 'Show ${extra.title}',
+                    child: InkWell(
+                      key: const ValueKey('island_secondary_activity'),
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () {
+                        setState(() => _selectedId = extra.id);
+                        _expand(true);
+                      },
+                      child: SizedBox(
+                        width: 46,
+                        height: 48,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            _activityBadge(extra, p, size: 32),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: p.tile,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: p.accent.withValues(alpha: .22),
+                                  ),
+                                ),
+                                child: Text(
+                                  '+${items.length - 1}',
+                                  style: TextStyle(
+                                    color: p.accent,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 2),
-            Container(
-              width: 2.5,
-              height: 6 + (val * 7),
-              decoration: BoxDecoration(
-                color: widget.color,
-                borderRadius: BorderRadius.circular(1.5),
+            IconButton(
+              tooltip: 'Expand live activities',
+              onPressed: () => _expand(true),
+              icon: Icon(
+                Icons.expand_more_rounded,
+                color: p.secondary,
+                size: 20,
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _activitySelectors(
+    List<_IslandActivity> items,
+    _IslandActivity selected,
+    IslandPalette p,
+    Duration duration,
+  ) => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns =
+          constraints.maxWidth >= 270 &&
+              MediaQuery.textScalerOf(context).scale(1) < 1.5
+          ? 2
+          : 1;
+      final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final item in items)
+            SizedBox(
+              width: width,
+              child: Semantics(
+                selected: item.id == selected.id,
+                button: true,
+                child: InkWell(
+                  key: ValueKey('island_select_${item.id}'),
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedId = item.id);
+                  },
+                  child: AnimatedContainer(
+                    duration: duration,
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Color.alphaBlend(
+                        p.accent.withValues(
+                          alpha: item.id == selected.id ? .13 : .025,
+                        ),
+                        p.tile,
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: p.accent.withValues(
+                          alpha: item.id == selected.id ? .5 : .12,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(item.icon, size: 18, color: p.accent),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.id.startsWith('reminder-')
+                                    ? item.title
+                                    : item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.ink,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                item.metric ??
+                                    (item.id == 'summary'
+                                        ? 'Yesterday'
+                                        : 'Review'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: p.secondary,
+                                  fontSize: 12,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    },
+  );
+
+  Widget _statistics(_IslandActivity item, IslandPalette p) {
+    String getPhrase(String label, String value) {
+      final count = int.tryParse(value) ?? 0;
+      switch (label) {
+        case 'Completed':
+          return count == 1
+              ? '1 task finished on schedule'
+              : '$count tasks finished on schedule';
+        case 'Minutes tracked':
+          return '$count minutes of deep tracked flow';
+        case 'Overdue tasks':
+          return count == 1
+              ? '1 overdue task pending review'
+              : '$count overdue tasks pending review';
+        default:
+          return label;
+      }
+    }
+
+    IconData getIcon(String label) {
+      switch (label) {
+        case 'Completed':
+          return Icons.check_circle_outline_rounded;
+        case 'Minutes tracked':
+          return Icons.hourglass_bottom_rounded;
+        case 'Overdue tasks':
+          return Icons.assignment_late_outlined;
+        default:
+          return Icons.assessment_outlined;
+      }
+    }
+
+    String getDisplayTitle(String label) {
+      switch (label) {
+        case 'Completed':
+          return 'Completed Tasks';
+        case 'Minutes tracked':
+          return 'Focus & Flow';
+        case 'Overdue tasks':
+          return 'Action Needed';
+        default:
+          return label;
+      }
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: p.accent.withValues(alpha: .04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: p.accent.withValues(alpha: .12)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.assessment_outlined, size: 14, color: p.accent),
+              const SizedBox(width: 6),
+              Text(
+                'EXECUTIVE AUDIT BREAKDOWN',
+                style: TextStyle(
+                  color: p.secondary,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (int i = 0; i < item.stats.length; i++) ...[
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child:
+                    Divider(color: p.accent.withValues(alpha: .08), height: 1),
+              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: p.accent.withValues(alpha: .10),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      getIcon(item.stats[i].label),
+                      size: 16,
+                      color: p.accent,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            getDisplayTitle(item.stats[i].label),
+                            style: TextStyle(
+                              color: p.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            item.stats[i].label,
+                            style: TextStyle(
+                              color: p.secondary.withValues(alpha: 0.7),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        getPhrase(item.stats[i].label, item.stats[i].value),
+                        style: TextStyle(
+                          color: p.secondary,
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: p.accent.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: p.accent.withValues(alpha: .15)),
+                  ),
+                  child: Text(
+                    item.stats[i].value,
+                    style: TextStyle(
+                      color: p.accent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _expandedContent(
+    List<_IslandActivity> items,
+    _IslandActivity selected,
+    IslandPalette p,
+    String contextKey,
+    Duration duration,
+  ) {
+    return Padding(
+      key: const ValueKey('dynamic_island_expanded'),
+      padding: const EdgeInsets.fromLTRB(18, 6, 18, 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GestureDetector(
+            key: const ValueKey('island_drag_handle'),
+            behavior: HitTestBehavior.opaque,
+            onVerticalDragEnd: (details) {
+              if ((details.primaryVelocity ?? 0) < -100) _expand(false);
+            },
+            child: Row(
+              children: [
+                Container(
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: p.accent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    items.any((a) => a.isLive && !a.paused)
+                        ? 'LIVE NOW'
+                        : 'AT A GLANCE',
+                    style: TextStyle(
+                      color: p.secondary,
+                      fontSize: 9,
+                      letterSpacing: 1.8,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Customize Dynamic Island',
+                  onPressed: () => showIslandCustomization(context),
+                  icon: Icon(Icons.tune_rounded, size: 18, color: p.secondary),
+                ),
+                if (!items.any((a) => a.isLive))
+                  IconButton(
+                    tooltip: 'Dismiss this update',
+                    onPressed: () =>
+                        setState(() => _dismissedContext = contextKey),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: p.secondary,
+                    ),
+                  ),
+                IconButton(
+                  tooltip: 'Collapse live activities',
+                  onPressed: () => _expand(false),
+                  icon: Icon(
+                    Icons.expand_less_rounded,
+                    size: 20,
+                    color: p.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _activityBadge(selected, p, size: 48),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  selected.label,
+                  style: TextStyle(
+                    color: p.secondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: .2,
+                  ),
+                ),
+              ),
+              if (selected.progress != null)
+                Text(
+                  '${(selected.progress! * 100).round()}%',
+                  style: TextStyle(
+                    color: p.accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          AnimatedSwitcher(
+            duration: duration,
+            switchInCurve: Curves.easeOutCubic,
+            layoutBuilder: (current, previous) =>
+                current ?? const SizedBox.shrink(),
+            child: Align(
+              key: ValueKey(selected.id),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                selected.title,
+                style: TextStyle(
+                  color: p.ink,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            selected.detail,
+            style: TextStyle(color: p.secondary, fontSize: 12, height: 1.5),
+          ),
+          if (selected.metric != null) ...[
+            const SizedBox(height: 18),
+            Text(
+              selected.metricCaption,
+              style: TextStyle(
+                color: p.secondary,
+                fontSize: 9,
+                letterSpacing: 1.7,
+              ),
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                selected.metric!,
+                style: TextStyle(
+                  color: p.accent,
+                  fontSize: selected.isLive ? 46 : 30,
+                  height: 1.15,
+                  fontWeight: FontWeight.w500,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  letterSpacing: -1.8,
+                ),
+              ),
+            ),
+          ],
+          if (selected.stats.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _statistics(selected, p),
+          ],
+          if (selected.progress != null) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: selected.progress!.clamp(0, 1),
+              minHeight: 3,
+              borderRadius: BorderRadius.circular(3),
+              color: p.accent,
+              backgroundColor: p.accent.withValues(alpha: .12),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              if (selected.toggle != null)
+                FilledButton.icon(
+                  key: ValueKey('island_toggle_${selected.id}'),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _selectedId = selected.id);
+                    selected.toggle!();
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: p.accent,
+                    foregroundColor: p.isDark
+                        ? const Color(0xFF102B45)
+                        : Colors.white,
+                  ),
+                  icon: Icon(
+                    selected.paused
+                        ? Icons.play_arrow_rounded
+                        : Icons.pause_rounded,
+                    size: 18,
+                  ),
+                  label: Text(selected.paused ? 'Resume' : 'Pause'),
+                ),
+              OutlinedButton.icon(
+                onPressed: () => context.push(selected.route),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: p.ink,
+                  side: BorderSide(color: p.accent.withValues(alpha: .3)),
+                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: Text(selected.isLive ? 'Open' : 'Review'),
+              ),
+              if (!selected.isLive)
+                OutlinedButton.icon(
+                  key: const ValueKey('island_dismiss_report_button'),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _dismissedContext = contextKey;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: p.secondary,
+                    side: BorderSide(color: p.accent.withValues(alpha: .2)),
+                  ),
+                  icon: const Icon(Icons.done_all_rounded, size: 16),
+                  label: const Text('Got it · Dismiss'),
+                ),
+            ],
+          ),
+          if (items.length > 1) ...[
+            const SizedBox(height: 22),
+            Divider(color: p.accent.withValues(alpha: .12), height: 1),
+            const SizedBox(height: 16),
+            Text(
+              'YOUR ACTIVITIES',
+              style: TextStyle(
+                color: p.secondary,
+                fontSize: 9,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _activitySelectors(items, selected, p, duration),
+          ],
+        ],
+      ),
     );
   }
 }

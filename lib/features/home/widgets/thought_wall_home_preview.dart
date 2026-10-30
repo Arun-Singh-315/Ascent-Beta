@@ -299,8 +299,98 @@ class _ThoughtWallHomePreviewState
           recentThoughtsAsync.value ?? [],
         ).any((t) => t.id == pendingDraft['thoughtId']);
 
-    // The composer and the recent thoughts live in ONE card: the composer
-    // stays on top exactly as before and saved thoughts appear right below it.
+    Widget buildComposerContainer({required bool standalone}) {
+      return Container(
+        key: standalone ? const ValueKey('home_mind_space_card') : null,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: context.isDark
+              ? g.fill.withValues(alpha: 0.35)
+              : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen
+                          ? const Color(0xFFFBFDFF)
+                          : const Color(0xFFFFFDFB))),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _focusNode.hasFocus ? g.clay : g.line,
+            width: _focusNode.hasFocus ? 1.5 : .75,
+          ),
+        ),
+        child: Row(
+          children: [
+            InlineListAddButton(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: !_saving,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: TextField(
+                key: _fieldKey,
+                controller: _controller,
+                focusNode: _focusNode,
+                onTap: () {
+                  try {
+                    InlineListAddButton.maybeShowFirstTimeDiscovery(
+                      context,
+                      prefs: ref.read(sharedPreferencesProvider),
+                    );
+                  } catch (_) {}
+                },
+                cursorColor: g.clay,
+                minLines: 1,
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+                style: AppTypography.plusJakartaSans14W60080(color: g.ink),
+                decoration: InputDecoration(
+                  hintText: "Capture a thought…",
+                  hintStyle: TextStyle(
+                    color: g.inkMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  filled: false,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            IconButton.filled(
+              tooltip: 'Send capture',
+              style: IconButton.styleFrom(
+                backgroundColor: g.clay,
+                disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
+                minimumSize: const Size(44, 44),
+              ),
+              onPressed: _saving || _controller.text.trim().isEmpty
+                  ? null
+                  : _send,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white,
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final shellChildren = <Widget>[
       if (widget.showComposer) ...[
         if (_focusNode.hasFocus && _controller.text.isEmpty)
@@ -343,94 +433,7 @@ class _ThoughtWallHomePreviewState
               ),
             ),
           ),
-        AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          nightDecoration: BoxDecoration(
-            color: context.isDark
-                ? g.fill
-                : (g.merlot
-                      ? MerlotPalette.surface
-                      : (g.frozen
-                            ? const Color(0xFFFBFDFF)
-                            : const Color(0xFFFFFDFB))),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _focusNode.hasFocus ? g.clay : g.line,
-              width: _focusNode.hasFocus ? 1.5 : .75,
-            ),
-          ),
-          child: Row(
-            children: [
-              InlineListAddButton(
-                controller: _controller,
-                focusNode: _focusNode,
-                enabled: !_saving,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: TextField(
-                  key: _fieldKey,
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  onTap: () {
-                    try {
-                      InlineListAddButton.maybeShowFirstTimeDiscovery(
-                        context,
-                        prefs: ref.read(sharedPreferencesProvider),
-                      );
-                    } catch (_) {}
-                  },
-                  cursorColor: g.clay,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: AppTypography.plusJakartaSans14W60080(color: g.ink),
-                  decoration: InputDecoration(
-                    hintText: "Capture a thought…",
-                    hintStyle: TextStyle(
-                      color: g.inkMuted,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    filled: false,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              IconButton.filled(
-                tooltip: 'Send capture',
-                style: IconButton.styleFrom(
-                  backgroundColor: g.clay,
-                  disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
-                  minimumSize: const Size(44, 44),
-                ),
-                onPressed: _saving || _controller.text.trim().isEmpty
-                    ? null
-                    : _send,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.arrow_upward_rounded,
-                        color: Colors.white,
-                      ),
-              ),
-            ],
-          ),
-        ),
+        buildComposerContainer(standalone: false),
       ],
 
       // ── THOUGHTS PREVIEW (grows smoothly below the composer) ──────
@@ -576,14 +579,14 @@ class _ThoughtWallHomePreviewState
                             .withValues(alpha: .6)
                       : hasBubbleFraming
                       ? Color.lerp(
-                          g.ink.withValues(alpha: isDark ? .35 : .40),
+                          g.ink.withValues(alpha: isDark ? .20 : .24),
                           moodAccent,
-                          isDark ? 0.45 : 0.40,
+                          isDark ? 0.35 : 0.30,
                         )!
-                      : g.ink.withValues(alpha: isDark ? .34 : .38);
+                      : g.ink.withValues(alpha: isDark ? .18 : .22);
                   final itemBubbleBorder = Border.all(
                     color: itemHardBorderColor,
-                    width: hasBubbleFraming ? bubbleBorderWidth : 1.0,
+                    width: hasBubbleFraming ? bubbleBorderWidth.clamp(0.8, 1.2) : 1.0,
                   );
                   final itemBubbleFill = !bubbleFilled && hasBubbleFraming
                       ? Colors.transparent
@@ -591,11 +594,11 @@ class _ThoughtWallHomePreviewState
                       ? (isDark
                                 ? const Color(0xFF86EFAC)
                                 : const Color(0xFF166534))
-                            .withValues(alpha: .08)
+                            .withValues(alpha: .06)
                       : Color.lerp(
-                          g.fill,
-                          moodAccent.withValues(alpha: isDark ? 0.06 : 0.04),
-                          0.5,
+                          g.fill.withValues(alpha: isDark ? 0.25 : 0.40),
+                          moodAccent.withValues(alpha: isDark ? 0.05 : 0.03),
+                          0.4,
                         );
 
                   return _ThoughtEntrance(
@@ -1001,6 +1004,10 @@ class _ThoughtWallHomePreviewState
       );
     }
 
+    final hasThoughts =
+        (recentThoughtsAsync.value?.isNotEmpty ?? false) ||
+        pendingDraft != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1059,17 +1066,18 @@ class _ThoughtWallHomePreviewState
             },
           ),
         ),
-        // One continuous frame encloses the composer and saved thoughts,
-        // including the empty state.
-        HomeOutlineSurface(
-          surfaceKey: const ValueKey('home_mind_space_card'),
-          radius: 24,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: shellChildren,
+        if (!hasThoughts)
+          buildComposerContainer(standalone: true)
+        else
+          HomeOutlineSurface(
+            surfaceKey: const ValueKey('home_mind_space_card'),
+            radius: 24,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: shellChildren,
+            ),
           ),
-        ),
       ],
     );
   }

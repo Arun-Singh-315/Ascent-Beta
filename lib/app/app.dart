@@ -1,4 +1,5 @@
 import '../core/notifications/promise_check_ins_provider.dart';
+import '../core/security/app_lock_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'router.dart';
@@ -30,6 +31,8 @@ class AscentApp extends ConsumerWidget {
 
       // Router
       routerConfig: ascentRouter,
+      builder: (context, child) =>
+          AppLockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

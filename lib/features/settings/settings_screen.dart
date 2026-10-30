@@ -1,3 +1,5 @@
+import '../home/widgets/island_customization_sheet.dart';
+import '../../core/security/app_lock_provider.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -775,6 +777,297 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
+  Future<bool?> _showSetPinDialog(
+    BuildContext context, {
+    bool isChanging = false,
+  }) async {
+    final pinController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? errorText;
+
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final g = ctx.glass;
+          return AlertDialog(
+            backgroundColor: g.bg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: g.line),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.lock_outline_rounded, color: g.clay),
+                const SizedBox(width: 8),
+                Text(
+                  isChanging ? 'Change Master PIN' : 'Set Master PIN',
+                  style: AscentTextStyles.headlineMedium.copyWith(color: g.ink),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Set a 4-digit PIN to secure your Ascent workspace and prevent unauthorized access.',
+                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  key: const ValueKey('set_pin_input'),
+                  controller: pinController,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  maxLength: 4,
+                  style: TextStyle(
+                    letterSpacing: 4,
+                    color: g.ink,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'New 4-digit PIN',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const ValueKey('confirm_pin_input'),
+                  controller: confirmController,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  maxLength: 4,
+                  style: TextStyle(
+                    letterSpacing: 4,
+                    color: g.ink,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Confirm PIN',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                if (errorText != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    errorText!,
+                    style: TextStyle(
+                      color: g.coral,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                key: const ValueKey('save_pin_button'),
+                style: FilledButton.styleFrom(backgroundColor: g.clay),
+                onPressed: () async {
+                  final pin = pinController.text.trim();
+                  final confirm = confirmController.text.trim();
+                  if (pin.length < 4) {
+                    setDialogState(() => errorText = 'PIN must be 4 digits');
+                    return;
+                  }
+                  if (pin != confirm) {
+                    setDialogState(() => errorText = 'PINs do not match');
+                    return;
+                  }
+                  final ok =
+                      await ref.read(appLockProvider.notifier).setPin(pin);
+                  if (ok && dialogCtx.mounted) {
+                    Navigator.pop(dialogCtx, true);
+                  }
+                },
+                child: const Text('Save PIN'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    final g = context.glass;
+    final lockState = ref.watch(appLockProvider);
+    final notifier = ref.read(appLockProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: 'Security & App Lock', dotColor: g.coral),
+        AscentCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Require App Lock',
+                          style:
+                              AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Require PIN or Biometrics whenever Ascent opens',
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    key: const ValueKey('setting_app_lock_switch'),
+                    value: lockState.isEnabled,
+                    activeColor: g.clay,
+                    onChanged: (val) async {
+                      HapticFeedback.lightImpact();
+                      if (val && !lockState.hasMasterPin) {
+                        final setPin = await _showSetPinDialog(context);
+                        if (setPin == true) {
+                          await notifier.toggleAppLock(true);
+                        }
+                      } else {
+                        await notifier.toggleAppLock(val);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              if (lockState.hasMasterPin) ...[
+                const SizedBox(height: 8),
+                Divider(color: g.line, height: 1),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () => _showSetPinDialog(context, isChanging: true),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.password_rounded,
+                              size: 20,
+                              color: g.clay,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Change Master PIN',
+                              style: AscentTextStyles.labelMedium
+                                  .copyWith(color: g.ink),
+                            ),
+                          ],
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: g.inkMuted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Divider(color: g.line, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Allow Notifications When Locked',
+                          style:
+                              AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Deliver reminders even while app lock is engaged',
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    key: const ValueKey('setting_allow_notifications_switch'),
+                    value: lockState.allowNotifications,
+                    activeColor: g.clay,
+                    onChanged: (val) {
+                      HapticFeedback.lightImpact();
+                      notifier.setAllowNotifications(val);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Divider(color: g.line, height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Redact Notification Content',
+                          style:
+                              AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Hide private task and thought text on notifications when locked',
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    key: const ValueKey('setting_redact_notifications_switch'),
+                    value: lockState.redactNotificationContent,
+                    activeColor: g.clay,
+                    onChanged: (val) {
+                      HapticFeedback.lightImpact();
+                      notifier.setRedactContent(val);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -907,6 +1200,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ],
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            AscentCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                leading: Icon(Icons.blur_on_rounded, color: g.clay),
+                title: const Text('Dynamic Island'),
+                subtitle: const Text('Glass finish, compact view and what appears'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => showIslandCustomization(context),
               ),
             ),
             const SizedBox(height: 20),
@@ -1169,6 +1474,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             // ── Section 3: App Permissions & System Access (Always Visible) ─
             _buildPermissionsSection(),
+            const SizedBox(height: 20),
+
+            // ── Section 4: Security & App Lock ──────────────────────────────
+            _buildSecuritySection(),
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
