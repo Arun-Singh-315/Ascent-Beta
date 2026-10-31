@@ -174,6 +174,93 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     });
   }
 
+  int? _customCategoryId(String key) =>
+      key.startsWith('custom_') ? int.tryParse(key.substring(7)) : null;
+
+  Future<void> _requireCategory(String key) async {
+    if (builtInCategories.containsKey(key)) return;
+    final id = _customCategoryId(key);
+    if (id == null ||
+        await (db.select(
+              db.thoughtCategoryTable,
+            )..where((t) => t.id.equals(id))).getSingleOrNull() ==
+            null) {
+      throw ArgumentError.value(key, 'category');
+    }
+  }
+
+  /// Renames a space the user created. Built-in spaces keep their names.
+  Future<void> renameCategory(String key, String name) =>
+      db.transaction(() async {
+        final id = _customCategoryId(key);
+        if (id == null) throw ArgumentError.value(key, 'category');
+        final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+        if (clean.isEmpty || clean.length > 50) {
+          throw ArgumentError(
+            'Use a category name between 1 and 50 characters.',
+          );
+        }
+        final normalized = clean.toLowerCase();
+        final usedByBuiltIn = builtInCategories.values.any(
+          (v) => v.toLowerCase() == normalized,
+        );
+        final clash =
+            await (db.select(db.thoughtCategoryTable)..where(
+                  (t) => t.normalizedName.equals(normalized) & t.id.equals(id).not(),
+                ))
+                .getSingleOrNull();
+        if (usedByBuiltIn || clash != null) {
+          throw ArgumentError('That name is already used.');
+        }
+        await (db.update(
+          db.thoughtCategoryTable,
+        )..where((t) => t.id.equals(id))).write(
+          ThoughtCategoryTableCompanion(
+            name: Value(clean),
+            normalizedName: Value(normalized),
+          ),
+        );
+      });
+
+  /// Removes a space the user created. Its entries are kept and move back to
+  /// the wall. Returns how many entries moved.
+  Future<int> deleteCategory(String key) => db.transaction(() async {
+    final id = _customCategoryId(key);
+    if (id == null) throw ArgumentError.value(key, 'category');
+    final moved = await (update(thoughtTable)
+          ..where((t) => t.category.equals(key)))
+        .write(const ThoughtTableCompanion(category: Value('general')));
+    await (db.delete(
+      db.thoughtCategoryTable,
+    )..where((t) => t.id.equals(id))).go();
+    return moved;
+  });
+
+  /// Adds several entries to a space in one transaction. They are inserted
+  /// last-to-first so the first line ends up first when entries are listed
+  /// newest-first. Returns the new ids in the order given.
+  Future<List<int>> insertEntries(List<String> contents, String category) =>
+      db.transaction(() async {
+        await _requireCategory(category);
+        final ids = List<int>.filled(contents.length, 0);
+        for (var i = contents.length - 1; i >= 0; i--) {
+          ids[i] = await insertThought(
+            ThoughtTableCompanion.insert(
+              content: contents[i],
+              category: Value(category),
+            ),
+          );
+        }
+        return ids;
+      });
+
+  /// Replaces only the text of a thought.
+  Future<void> setContent(int id, String content) async {
+    await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+      ThoughtTableCompanion(content: Value(content)),
+    );
+  }
+
   /// Partial, serialized updates preserve concurrent content edits.
   Future<void> togglePin(int id) => db.transaction(() async {
     final thought = await getThoughtById(id);

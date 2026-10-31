@@ -30,7 +30,10 @@ import '../features/momentum/momentum_screen.dart';
 import '../core/database/app_database.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/medicine/medicine_screen.dart';
-import '../features/thought_wall/thought_wall_screen.dart';
+import '../features/thought_wall/board/board_logic.dart' show wallCategoryKey;
+import '../features/thought_wall/board/board_routes.dart';
+import '../features/thought_wall/board/thought_board_screen.dart';
+import '../features/thought_wall/board/thought_space_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
 import '../features/plans/plans_screen.dart';
@@ -213,10 +216,17 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.thoughtWall,
-      builder: (context, state) => ThoughtWallScreen(
+      builder: (context, state) => ThoughtBoardScreen(
         initialThoughtId: int.tryParse(
           state.uri.queryParameters['thought'] ?? '',
         ),
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: thoughtSpacePath,
+      builder: (context, state) => ThoughtSpaceScreen(
+        spaceKey: state.uri.queryParameters['key'] ?? wallCategoryKey,
       ),
     ),
     GoRoute(
