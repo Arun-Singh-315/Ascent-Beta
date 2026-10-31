@@ -108,3 +108,9 @@ Next separate feature requested by the user: a reusable compact calendar, starti
 Final feedback verification: the full 392-test regression suite and combined Nothing A142 UI/timer suite passed. The final Medicine boundary guard was followed by a passing 11-test selection/timer batch and clean static analysis: a timer cannot fabricate dose-taking even if a linked dose task is assigned a duration. Native checks exercised Home note routing, visible selection chips, merge exit, original Home input, reviewed Todo creation, four-preview collapse/expand, Thought Wall outlines, timer-only detail controls and automatic task completion.
 
 Release 1.0.11 (12), ARM64 phone build, installed and cold-launched successfully on 14 October 2026. Actual device Home inspection confirmed the unclipped date/actions, Customize Home beside Backend Engineer, one recent thought by default, no standalone Quick capture, and retained user note content.
+
+## Thought Wall board and spaces (unverified draft, 31 October 2026)
+
+`/thought-wall` now opens `ThoughtBoardScreen` (`lib/features/thought_wall/board/`): a spaces row, a hero card for the newest thought, then a two-column (or one-column) board grouped by day. Cards carry no buttons: tap opens the detail sheet, long-press selects (Move, Done, Archive, Delete, More), double-tap completes. A leading `#space` tag in the composer files the thought into that space. `/thought-wall/space?key=` opens `ThoughtSpaceScreen`: quick-add field that stays open, paste-a-list, To do / Done / All tabs, tap-circle completion, list or poster view, rename/delete for user-made spaces. The previous `ThoughtWallScreen` is kept for its existing tests and is no longer routed.
+
+Not yet run: `dart format`, `flutter analyze`, `flutter test`, device check. New unit tests: `test/thought_board/board_logic_test.dart`.
