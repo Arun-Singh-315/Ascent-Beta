@@ -167,8 +167,19 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
               continue;
             }
 
-            if (t.actualCompletedDate != null) {
+            final isDoneToday = t.actualCompletedDate != null &&
+                (!t.isDailyStanding ||
+                    (t.actualCompletedDate!.year == today.year &&
+                        t.actualCompletedDate!.month == today.month &&
+                        t.actualCompletedDate!.day == today.day));
+
+            if (isDoneToday) {
               completedTasks.add(t);
+              continue;
+            }
+
+            if (t.isDailyStanding) {
+              todayTasks.add(t);
               continue;
             }
 
@@ -475,7 +486,12 @@ class _TaskItemTile extends ConsumerWidget {
         ),
       );
     }
-    final isDone = task.actualCompletedDate != null;
+    final now = DateTime.now();
+    final isDone = task.actualCompletedDate != null &&
+        (!task.isDailyStanding ||
+            (task.actualCompletedDate!.year == now.year &&
+                task.actualCompletedDate!.month == now.month &&
+                task.actualCompletedDate!.day == now.day));
     final isTimeBound =
         task.estimatedMinutes != null && task.estimatedMinutes! > 0;
 
@@ -850,6 +866,16 @@ class _TaskItemTile extends ConsumerWidget {
                                       ),
                                 ),
                               ],
+                              if (task.isDailyStanding) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.repeat_rounded,
+                                  size: 13,
+                                  color: isDone
+                                      ? context.textMuted
+                                      : context.accentPrimary,
+                                ),
+                              ],
                               if (hasReminder) ...[
                                 const SizedBox(width: 8),
                                 Icon(
@@ -865,7 +891,9 @@ class _TaskItemTile extends ConsumerWidget {
                                   const SizedBox(width: 8),
                                 Text(
                                   task.actualCompletedDate != null
-                                      ? '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}'
+                                      ? (task.isDailyStanding
+                                            ? '✓ Done for today • Resets tomorrow'
+                                            : '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}')
                                       : '✓ Completed',
                                   style: AppTypeRoles.typeRole16.copyWith(
                                     color: context.accentPrimary,

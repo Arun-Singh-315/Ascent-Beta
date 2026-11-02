@@ -74,7 +74,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
               autofocus: true,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Minutes (1–1440)',
+                hintText: 'Minutes (1–1440)',
                 errorText: error,
               ),
             ),

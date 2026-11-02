@@ -153,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -311,6 +311,9 @@ class AppDatabase extends _$AppDatabase {
         await addColumnSafely(taskTable, taskTable.isArchived);
         await HistoryLedger.install(this);
         await HistoryLedger.backfill(this);
+      }
+      if (from < 23) {
+        await addColumnSafely(taskTable, taskTable.isDailyStanding);
       }
     },
   );

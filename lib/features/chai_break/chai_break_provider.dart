@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, OrderingTerm;
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import 'dart:async';
@@ -178,7 +178,11 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       occurredAt: now,
     );
     unawaited(
-      db.into(db.historyEventTable).insert(entry).then<void>((_) {}).catchError(
+      db.into(db.historyEventTable).insert(entry).then<void>((_) {
+        if (ref.mounted) {
+          ref.invalidate(todayBreaksProvider);
+        }
+      }).catchError(
         (Object error) {
           debugPrint('Break history save deferred: $error');
         },
@@ -431,3 +435,12 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
 final chaiBreakProvider = NotifierProvider<ChaiBreakNotifier, ChaiBreakState>(
   ChaiBreakNotifier.new,
 );
+
+final todayBreaksProvider = FutureProvider.autoDispose<List<HistoryEvent>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.historyEventTable)
+    ..where((t) => t.module.equals('breaks'))
+    ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)])
+    ..limit(10)
+  ).get();
+});

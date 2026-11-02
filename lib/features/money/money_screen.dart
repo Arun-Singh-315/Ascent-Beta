@@ -1,8 +1,10 @@
+import 'package:go_router/go_router.dart';
 import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
@@ -28,6 +30,7 @@ class MoneyScreen extends ConsumerStatefulWidget {
 class _MoneyScreenState extends ConsumerState<MoneyScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  bool _showAllTransactions = false;
 
   @override
   void initState() {
@@ -536,10 +539,17 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     );
                     days.putIfAbsent(day, () => []).add(tx);
                   }
+
+                  final allDayEntries = days.entries.toList();
+                  final hasHighVolume = allDayEntries.length > 2 || transactions.length > 6;
+                  final visibleEntries = _showAllTransactions
+                      ? allDayEntries
+                      : allDayEntries.take(2).toList();
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (final entry in days.entries)
+                      for (final entry in visibleEntries)
                         AscentCard(
                           key: ValueKey(
                             'transactions_${entry.key.toIso8601String()}',
@@ -565,6 +575,80 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             ],
                           ),
                         ),
+
+                      // High-Volume Protection: Expand / Collapse Toggle
+                      if (hasHighVolume) ...[
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _showAllTransactions = !_showAllTransactions);
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _showAllTransactions
+                                        ? 'Show Recent Only'
+                                        : 'Show All ${transactions.length} Transactions',
+                                    style: TextStyle(
+                                      color: g.clay,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _showAllTransactions
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  size: 18,
+                                  color: g.clay,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      // Direct Link to Full Module History
+                      AscentCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s16,
+                          vertical: AppSpace.s12,
+                        ),
+                        child: InkWell(
+                          onTap: () => context.push('/history?module=money'),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.history_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'View Full Ledger in History (${transactions.length} records)',
+                                  style: TextStyle(
+                                    color: g.inkMuted,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },

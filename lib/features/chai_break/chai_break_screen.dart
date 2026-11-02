@@ -1,19 +1,31 @@
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/surface_tokens.dart';
+import '../../app/theme/text_styles.dart';
+import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/history_action.dart';
 import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
 import 'widgets/brew_with_me_view.dart';
 import 'widgets/mindful_breathing_guide.dart';
-import 'widgets/steaming_cup_painter.dart';
 
+enum ChaiBreakMode {
+  mindfulPause,
+  brewWithMe,
+}
+
+/// Apple Mindfulness & Zen-inspired Chai & Coffee Screen
+/// Minimalist, serene, tactile, informative with high-volume structured break history.
 class ChaiBreakScreen extends ConsumerStatefulWidget {
   const ChaiBreakScreen({super.key});
 
@@ -24,7 +36,7 @@ class ChaiBreakScreen extends ConsumerStatefulWidget {
 class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   int _quoteIndex = 0;
   Timer? _quoteTimer;
-  bool _isBrewWithMe = false;
+  ChaiBreakMode _selectedMode = ChaiBreakMode.mindfulPause;
 
   static const _mindfulQuotes = [
     'Take a slow sip. Let your eyes wander away from the screen.',
@@ -57,316 +69,199 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(chaiBreakProvider);
     final notifier = ref.read(chaiBreakProvider.notifier);
-    const accentColor = AppPalette.colorFF6B3A1C;
+    final todayBreaksAsync = ref.watch(todayBreaksProvider);
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: g.bg,
-      body: AppCard(
-        nightDecoration: BoxDecoration(color: g.bg),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Top Bar
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s16,
-                  vertical: AppSpace.s10,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: g.ink,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).pop();
-                      },
-                      tooltip: 'Back',
-                    ),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.coffee_rounded, color: g.clay, size: 18),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              'Chai & Coffee',
-                              style: AppTypography.plusJakartaSans13W70016(
-                                color: g.ink,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        state.isBreathingGuideEnabled
-                            ? Icons.spa_rounded
-                            : Icons.spa_outlined,
-                        color: state.isBreathingGuideEnabled
-                            ? g.clay
-                            : g.inkMuted,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        notifier.toggleBreathingGuide();
-                      },
-                      tooltip: 'Toggle breathing guide',
-                    ),
-                  ],
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Top Navigation Bar ──────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s8,
               ),
-
-              // Scrollable Body
-              Expanded(
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s20,
-                    vertical: AppSpace.s8,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: g.ink,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).pop();
+                    },
+                    tooltip: 'Back',
                   ),
-                  children: [
-                    // Mode Switcher (Mindful Pause vs Brew With Me)
-                    AppCard(
-                      padding: const EdgeInsets.all(AppSpace.s4),
-                      nightDecoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: AppGeometry.roundedr16,
-                        border: Border.all(color: g.edge),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: AppTapArea(
-                              onTap: () {
-                                if (_isBrewWithMe) {
-                                  HapticFeedback.selectionClick();
-                                  setState(() => _isBrewWithMe = false);
-                                }
-                              },
-                              borderRadius: AppGeometry.roundedr12,
-                              child: AppCard(
-                                constraints: const BoxConstraints(
-                                  minHeight: 48,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpace.s12,
-                                ),
-                                alignment: Alignment.center,
-                                nightDecoration: BoxDecoration(
-                                  color: !_isBrewWithMe
-                                      ? g.claySoft
-                                      : AppPalette.transparent,
-                                  borderRadius: AppGeometry.roundedr12,
-                                  border: Border.all(
-                                    color: !_isBrewWithMe
-                                        ? g.clay
-                                        : AppPalette.transparent,
-                                    width: AppBorderScale.w1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.spa_rounded,
-                                      size: 16,
-                                      color: !_isBrewWithMe
-                                          ? g.clay
-                                          : g.inkMuted,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        'Mindful Pause',
-                                        style: AppStateTypography.stateType9(
-                                          state0: !_isBrewWithMe,
-                                          color: !_isBrewWithMe
-                                              ? g.ink
-                                              : g.inkMuted,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.coffee_rounded, color: g.clay, size: 20),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Chai & Coffee',
+                            style: AscentTextStyles.cardTitle.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: AppTapArea(
-                              onTap: () {
-                                if (!_isBrewWithMe) {
-                                  HapticFeedback.selectionClick();
-                                  setState(() => _isBrewWithMe = true);
-                                }
-                              },
-                              borderRadius: AppGeometry.roundedr12,
-                              child: AppCard(
-                                constraints: const BoxConstraints(
-                                  minHeight: 48,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpace.s12,
-                                ),
-                                alignment: Alignment.center,
-                                nightDecoration: BoxDecoration(
-                                  color: _isBrewWithMe
-                                      ? g.claySoft
-                                      : AppPalette.transparent,
-                                  borderRadius: AppGeometry.roundedr12,
-                                  border: Border.all(
-                                    color: _isBrewWithMe
-                                        ? g.clay
-                                        : AppPalette.transparent,
-                                    width: AppBorderScale.w1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.coffee_maker_rounded,
-                                      size: 16,
-                                      color: _isBrewWithMe
-                                          ? g.clay
-                                          : g.inkMuted,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
-                                      child: Text(
-                                        'Brew With Me',
-                                        style: AppStateTypography.stateType9(
-                                          state0: _isBrewWithMe,
-                                          color: _isBrewWithMe
-                                              ? g.ink
-                                              : g.inkMuted,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-                    Text(
-                      _isBrewWithMe
-                          ? 'Follow a gentle guide while you make your drink.'
-                          : 'Choose a short pause, breathe and enjoy your drink.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.plusJakartaSans13Regular18(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    if (_isBrewWithMe) ...[
-                      const BrewWithMeView(),
-                    ] else ...[
-                      // Duration presets wrap comfortably at larger text sizes.
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _PresetChip(
-                            label: '5m Chai',
-                            minutes: 5,
-                            isSelected: state.totalDurationSeconds == 300,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              notifier.setPresetMinutes(5);
-                            },
-                          ),
-                          _PresetChip(
-                            label: '10m Coffee',
-                            minutes: 10,
-                            isSelected: state.totalDurationSeconds == 600,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              notifier.setPresetMinutes(10);
-                            },
-                          ),
-                          _PresetChip(
-                            label: '15m Reset',
-                            minutes: 15,
-                            isSelected: state.totalDurationSeconds == 900,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              notifier.setPresetMinutes(15);
-                            },
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Center Animated Steaming Cup
-                      Center(
-                        child: SteamingCupWidget(
-                          isRunning: state.isRunning,
-                          accentColor: accentColor,
                         ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Big Countdown Timer
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              state.formattedRemaining,
-                              style: AppTypography.jetBrainsMono48W70019(
-                                color: isDark ? AppPalette.white : g.ink,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'remaining of ${state.totalDurationSeconds ~/ 60} minutes mindful break',
-                              style: AppTypography.plusJakartaSans12W50020(
-                                color: isDark ? AppPalette.white54 : g.inkMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Mindful Breathing Guide (if enabled)
-                      if (state.isBreathingGuideEnabled) ...[
-                        MindfulBreathingGuide(
-                          phase: state.breathPhase,
-                          isRunning: state.isRunning,
-                          accentColor: accentColor,
-                        ),
-                        const SizedBox(height: 18),
                       ],
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          state.isBreathingGuideEnabled
+                              ? Icons.spa_rounded
+                              : Icons.spa_outlined,
+                          color: state.isBreathingGuideEnabled
+                              ? g.clay
+                              : g.inkMuted,
+                          size: 22,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          notifier.toggleBreathingGuide();
+                        },
+                        tooltip: 'Toggle breathing guide',
+                      ),
+                      const HistoryAction(module: 'breaks'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
 
-                      // Play / Pause / Reset Controls
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            iconSize: 22,
+            // ── Scrollable Body ─────────────────────────────────────────────
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s8,
+                ),
+                children: [
+                  // 1. Canonical Segmented Mode Switcher
+                  AscentSegmentedControl<ChaiBreakMode>(
+                    segments: const [
+                      AscentSegment(
+                        value: ChaiBreakMode.mindfulPause,
+                        label: 'Mindful Pause',
+                      ),
+                      AscentSegment(
+                        value: ChaiBreakMode.brewWithMe,
+                        label: 'Brew With Me',
+                      ),
+                    ],
+                    selected: _selectedMode,
+                    onChanged: (mode) => setState(() => _selectedMode = mode),
+                  ),
+
+                  const SizedBox(height: 12),
+                  Text(
+                    _selectedMode == ChaiBreakMode.brewWithMe
+                        ? 'Follow a step-by-step artisanal brewing guide.'
+                        : 'Choose a short pause, breathe and enjoy your drink.',
+                    textAlign: TextAlign.center,
+                    style: AscentTextStyles.captionMedium.copyWith(
+                      color: g.inkMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  if (_selectedMode == ChaiBreakMode.brewWithMe) ...[
+                    const BrewWithMeView(),
+                  ] else ...[
+                    // Duration Preset Pills (Pristine Apple-style buttons)
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: [
+                        _ApplePresetPill(
+                          label: '5m Chai',
+                          isSelected: state.totalDurationSeconds == 300,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            notifier.setPresetMinutes(5);
+                          },
+                        ),
+                        _ApplePresetPill(
+                          label: '10m Coffee',
+                          isSelected: state.totalDurationSeconds == 600,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            notifier.setPresetMinutes(10);
+                          },
+                        ),
+                        _ApplePresetPill(
+                          label: '15m Reset',
+                          isSelected: state.totalDurationSeconds == 900,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            notifier.setPresetMinutes(15);
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // 2. Apple Mindfulness Glowing Circular Countdown Dial
+                    Center(
+                      child: _AppleMindfulnessTimerDial(
+                        state: state,
+                        isDark: isDark,
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Optional Breathing Phase Banner
+                    if (state.isBreathingGuideEnabled) ...[
+                      MindfulBreathingGuide(
+                        phase: state.breathPhase,
+                        isRunning: state.isRunning,
+                        accentColor: g.clay,
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+
+                    // 3. Synchronized Apple-Style Controls
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Reset button
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.04),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: g.line.withValues(alpha: 0.5),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: IconButton(
+                            iconSize: 20,
                             icon: Icon(
                               Icons.replay_rounded,
-                              color: isDark ? AppPalette.white60 : g.inkMuted,
+                              color: g.inkMuted,
                             ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
@@ -376,63 +271,42 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             },
                             tooltip: 'Reset break timer',
                           ),
-                          const SizedBox(width: 14),
-                          Material(
-                            color: AppPalette.transparent,
-                            child: AppTapArea(
-                              onTap: () {
-                                HapticFeedback.mediumImpact();
-                                notifier.togglePlayPause();
-                              },
-                              borderRadius: AppGeometry.roundedr30,
-                              child: AppCard(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpace.s24,
-                                  vertical: AppSpace.s12,
-                                ),
-                                nightDecoration: BoxDecoration(
-                                  color: accentColor.withValues(
-                                    alpha: isDark ? 0.22 : 0.16,
-                                  ),
-                                  borderRadius: AppGeometry.roundedr30,
-                                  border: Border.all(
-                                    color: accentColor.withValues(
-                                      alpha: isDark ? 0.7 : 0.8,
-                                    ),
-                                    width: AppBorderScale.w1point2,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      state.isRunning
-                                          ? Icons.pause_rounded
-                                          : Icons.play_arrow_rounded,
-                                      color: isDark ? AppPalette.white : g.ink,
-                                      size: 22,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      state.isRunning ? 'Pause' : 'Resume',
-                                      style:
-                                          AppTypography.plusJakartaSans14W70021(
-                                            color: isDark
-                                                ? AppPalette.white
-                                                : g.ink,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Primary Start / Pause button
+                        AscentButton.primary(
+                          label: state.isRunning ? 'Pause' : 'Resume',
+                          icon: state.isRunning
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          expanded: false,
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            notifier.togglePlayPause();
+                          },
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Finish early button
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.04),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: g.line.withValues(alpha: 0.5),
+                              width: 0.8,
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          IconButton(
-                            iconSize: 22,
+                          child: IconButton(
+                            iconSize: 20,
                             icon: Icon(
                               Icons.check_circle_outline_rounded,
-                              color: isDark ? AppPalette.white60 : g.inkMuted,
+                              color: g.inkMuted,
                             ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
@@ -440,83 +314,277 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             },
                             tooltip: 'Finish break early',
                           ),
-                        ],
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-
-                    // Ambient Soundscape Bar
-                    AmbientSoundscapeBar(
-                      selectedSoundscape: state.selectedSoundscape,
-                      isPlaying: state.isRunning,
-                      isMuted: state.isAudioMuted,
-                      customAudioName: state.customAudioName,
-                      volume: state.volume,
-                      onToggleMute: notifier.toggleAudioMute,
-                      onSoundscapeChanged: (s) => notifier.selectSoundscape(s),
-                      onPickCustomAudio: notifier.pickCustomAudioFile,
-                      onClearCustomAudio: notifier.clearCustomAudio,
-                      onVolumeChanged: notifier.setVolume,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Mindful Quote / Reflection
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s16,
-                        vertical: AppSpace.s12,
-                      ),
-                      nightDecoration: BoxDecoration(
-                        color: isDark
-                            ? AppPalette.white.withValues(alpha: 0.04)
-                            : AppPalette.black.withValues(alpha: 0.03),
-                        borderRadius: AppGeometry.roundedr14,
-                        border: Border.all(
-                          color: isDark
-                              ? AppPalette.white.withValues(alpha: 0.08)
-                              : AppPalette.black.withValues(alpha: 0.08),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.format_quote_rounded,
-                            color: AppPalette.colorFFE28B57,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 500),
-                              child: Text(
-                                _mindfulQuotes[_quoteIndex],
-                                key: ValueKey(_quoteIndex),
-                                style: AppTypography.plusJakartaSans14Regular22(
-                                  color: isDark ? AppPalette.white70 : g.ink,
-                                ),
+                      ],
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // 4. Ambient Soundscape Bar
+                  AmbientSoundscapeBar(
+                    selectedSoundscape: state.selectedSoundscape,
+                    isPlaying: state.isRunning,
+                    isMuted: state.isAudioMuted,
+                    customAudioName: state.customAudioName,
+                    volume: state.volume,
+                    onToggleMute: notifier.toggleAudioMute,
+                    onSoundscapeChanged: (s) => notifier.selectSoundscape(s),
+                    onPickCustomAudio: notifier.pickCustomAudioFile,
+                    onClearCustomAudio: notifier.clearCustomAudio,
+                    onVolumeChanged: notifier.setVolume,
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // 5. Mindful Quote Card
+                  AscentCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s16,
+                      vertical: AppSpace.s12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.format_quote_rounded,
+                          color: g.clay,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            child: Text(
+                              _mindfulQuotes[_quoteIndex],
+                              key: ValueKey(_quoteIndex),
+                              style: AscentTextStyles.bodyMedium.copyWith(
+                                color: g.ink,
+                                height: 1.35,
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.edit_note_rounded,
-                              color: isDark ? AppPalette.white54 : g.inkMuted,
-                              size: 20,
-                            ),
-                            onPressed: () => DropThoughtSheet.show(context),
-                            tooltip: 'Drop a thought into Thought Wall',
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_note_rounded,
+                            color: g.inkMuted,
+                            size: 20,
                           ),
-                        ],
-                      ),
+                          onPressed: () => DropThoughtSheet.show(context),
+                          tooltip: 'Drop a thought into Thought Wall',
+                        ),
+                      ],
                     ),
+                  ),
 
-                    const SizedBox(height: 12),
-                  ],
-                ),
+                  const SizedBox(height: 22),
+
+                  // 6. Break History & Pauses Today (High-Volume Protected)
+                  _TodayBreakHistorySection(
+                    todayBreaksAsync: todayBreaksAsync,
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Serene Apple Watch Mindfulness-style glowing countdown dial
+class _AppleMindfulnessTimerDial extends StatelessWidget {
+  final ChaiBreakState state;
+  final bool isDark;
+
+  const _AppleMindfulnessTimerDial({
+    required this.state,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final progress = state.progressFraction;
+
+    return SizedBox(
+      width: 190,
+      height: 190,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Outer subtle glowing boundary
+          Container(
+            width: 190,
+            height: 190,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDark
+                  ? g.clay.withValues(alpha: 0.05)
+                  : g.clay.withValues(alpha: 0.04),
+              border: Border.all(
+                color: g.line.withValues(alpha: 0.4),
+                width: 1,
+              ),
+            ),
+          ),
+
+          // Glowing Concentric Progress Ring
+          CustomPaint(
+            size: const Size(180, 180),
+            painter: _MindfulnessRingPainter(
+              progress: progress,
+              trackColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
+              progressColor: g.clay,
+              isRunning: state.isRunning,
+            ),
+          ),
+
+          // Digital Timer Center
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    state.formattedRemaining,
+                    style: AscentTextStyles.displaySmall.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 38,
+                      letterSpacing: -0.5,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    state.isRunning && state.isBreathingGuideEnabled
+                        ? state.breathPhase.label
+                        : '${state.totalDurationSeconds ~/ 60}m mindful pause',
+                    style: AscentTextStyles.captionMedium.copyWith(
+                      color: state.isRunning ? g.clay : g.inkMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom painter for the serene circular countdown ring
+class _MindfulnessRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+  final bool isRunning;
+
+  _MindfulnessRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+    required this.isRunning,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 16) / 2;
+    const strokeWidth = 9.0;
+
+    // Track
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0.0) return;
+
+    // Active Arc
+    final sweepAngle = (progress * 2 * 3.1415926535).clamp(0.0, 2 * 3.1415926535);
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.1415926535 / 2,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MindfulnessRingPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.progressColor != progressColor ||
+        oldDelegate.isRunning != isRunning;
+  }
+}
+
+/// Apple-style duration preset pill
+class _ApplePresetPill extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ApplePresetPill({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 9,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? g.claySoft
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.04)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? g.clay
+                : g.line.withValues(alpha: 0.4),
+            width: isSelected ? 1.4 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AscentTextStyles.bodyMedium.copyWith(
+            color: isSelected ? g.clay : g.inkMuted,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ),
@@ -524,65 +592,183 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   }
 }
 
-class _PresetChip extends StatelessWidget {
-  final String label;
-  final int minutes;
-  final bool isSelected;
-  final VoidCallback onTap;
+/// Today's Break History Section with High-Volume Data Protection
+class _TodayBreakHistorySection extends StatelessWidget {
+  final AsyncValue<List<dynamic>> todayBreaksAsync;
 
-  const _PresetChip({
-    required this.label,
-    required this.minutes,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _TodayBreakHistorySection({required this.todayBreaksAsync});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final g = context.glass;
 
-    return Material(
-      color: AppPalette.transparent,
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr12,
-        child: AppCard(
-          selected: isSelected,
-          constraints: const BoxConstraints(minHeight: 48),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s14,
-            vertical: AppSpace.s12,
-          ),
-          nightDecoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                      ? AppPalette.colorFFE28B57.withValues(alpha: 0.22)
-                      : g.claySoft)
-                : (isDark
-                      ? AppPalette.colorFF322922
-                      : AppPalette.black.withValues(alpha: 0.04)),
-            borderRadius: AppGeometry.roundedr12,
-            border: Border.all(
-              color: isSelected
-                  ? AppPalette.colorFFE28B57
-                  : (isDark
-                        ? AppPalette.white.withValues(alpha: 0.08)
-                        : AppPalette.black.withValues(alpha: 0.08)),
-              width: AppBorderScale.w1,
+    return todayBreaksAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (events) {
+        final today = DateTime.now();
+        final todayBreaks = events.where((e) {
+          final dt = e.occurredAt as DateTime;
+          return dt.year == today.year &&
+              dt.month == today.month &&
+              dt.day == today.day;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'PAUSE HISTORY',
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: g.inkMuted,
+                    letterSpacing: 1.1,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '${todayBreaks.length} today',
+                  style: AscentTextStyles.captionMedium.copyWith(
+                    color: g.inkMuted,
+                  ),
+                ),
+              ],
             ),
-          ),
-          child: Text(
-            label,
-            style: AppStateTypography.stateType9(
-              state0: isSelected,
-              color: context.surfaces.contentForeground(isSelected, isSelected
-                  ? (isDark ? AppPalette.colorFFE28B57 : g.clay)
-                  : (isDark ? AppPalette.white70 : g.ink)),
+            const SizedBox(height: 8),
+
+            AscentCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s10,
+              ),
+              child: Column(
+                children: [
+                  if (todayBreaks.isEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.coffee_outlined,
+                            size: 28,
+                            color: g.inkMuted.withValues(alpha: 0.4),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'No mindful breaks logged today',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: g.inkMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Complete a pause to track your daily rest',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: g.inkMuted.withValues(alpha: 0.7),
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    // High-volume protection: cap to top 3 breaks
+                    for (var i = 0; i < math.min(3, todayBreaks.length); i++) ...[
+                      if (i > 0)
+                        Divider(
+                          height: 1,
+                          color: g.line.withValues(alpha: 0.4),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: g.claySoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.coffee_rounded,
+                                size: 16,
+                                color: g.clay,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    todayBreaks[i].title.toString().isNotEmpty
+                                        ? todayBreaks[i].title.toString()
+                                        : 'Mindful Break',
+                                    style: AscentTextStyles.bodyMedium.copyWith(
+                                      color: g.ink,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 1),
+                                  Text(
+                                    todayBreaks[i].detail?.toString() ?? 'Pause recorded',
+                                    style: AscentTextStyles.captionMedium.copyWith(
+                                      color: g.inkMuted,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              DateFormat('h:mm a').format(todayBreaks[i].occurredAt as DateTime),
+                              style: AscentTextStyles.captionMedium.copyWith(
+                                color: g.inkMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+
+                  Divider(height: 1, color: g.line.withValues(alpha: 0.4)),
+                  // Direct Link to Breaks in History Module
+                  InkWell(
+                    onTap: () => context.push('/history?module=breaks'),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.history_rounded,
+                            size: 15,
+                            color: g.inkMuted,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'View Full Pause History',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: g.inkMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
+          ],
+        );
+      },
     );
   }
 }

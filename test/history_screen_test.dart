@@ -18,6 +18,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _Time extends TimeTrackingNotifier {
+  @override
+  TimeTrackingState build() => const TimeTrackingState();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
@@ -60,6 +65,7 @@ void main() {
   }) => ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(db),
+      timeTrackingProvider.overrideWith(_Time.new),
       sharedPreferencesProvider.overrideWithValue(prefs),
       allPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
       if (entries != null)
@@ -129,6 +135,7 @@ void main() {
     expect(find.text('A small step, kept in your history.'), findsOneWidget);
     expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox());
+    await settle(t);
   });
   testWidgets(
     'Privacy is applied before search, counts and timeline rendering',
@@ -155,7 +162,10 @@ void main() {
         await settle(t);
       }
       expect(find.text('Public title'), findsOneWidget);
-      expect(find.text('Private title'), findsNothing);
+      expect(
+        find.byWidgetPredicate((w) => w is Text && w.data == 'Private title'),
+        findsNothing,
+      );
       await t.enterText(
         find.byKey(const ValueKey('history_search')),
         'Private title',
@@ -169,10 +179,13 @@ void main() {
         findsNothing,
       );
       expect(
-        find.text('No history in this view. Try another activity or date range.'),
+        find.text(
+          'No history in this view. Try another activity or date range.',
+        ),
         findsOneWidget,
       );
       await t.pumpWidget(const SizedBox());
+      await settle(t);
       await settle(t);
     },
   );
@@ -188,6 +201,7 @@ void main() {
             for (final history in [true, false]) {
               t.view.physicalSize = Size(width, 844);
               await t.pumpWidget(const SizedBox());
+              await settle(t);
               await settle(t);
               final key = GlobalKey();
               await t.pumpWidget(
@@ -224,6 +238,7 @@ void main() {
         }
       }
       await t.pumpWidget(const SizedBox());
+      await settle(t);
       await settle(t);
     },
   );

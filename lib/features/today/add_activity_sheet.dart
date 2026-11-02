@@ -96,6 +96,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   bool _saving = false;
   bool _reminderEdited = false;
   bool _loadingReminder = false;
+  bool _isDailyStanding = false;
   PlanChildRestriction? _protection;
   String? _titleError;
 
@@ -119,6 +120,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       _notesController.text = t.notes ?? '';
       _selectedDate = t.plannedDate ?? DateTime.now();
       _priority = t.priority;
+      _isDailyStanding = t.isDailyStanding;
       if (t.estimatedMinutes != null && t.estimatedMinutes! > 0) {
         _kind = ActivityKind.duration;
         _targetMinutes = t.estimatedMinutes!;
@@ -256,6 +258,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               parentTaskId: widget.parentTaskId,
               applicationId: widget.prefilledApplicationId,
               reminderAt: reminderAt,
+              isDailyStanding: _isDailyStanding,
             )
           : [
               await ActivityEntryService(db).save(
@@ -269,13 +272,16 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 applicationId: widget.prefilledApplicationId,
                 reminderAt: reminderAt,
                 replaceReminders: _reminderEdited,
+                isDailyStanding: _isDailyStanding,
               ),
             ];
       final reminderIds = results.expand((r) => r.reminderIds).toList();
       var message = widget.existingTask == null
-          ? (results.length == 1
-                ? 'Activity added'
-                : '${results.length} to-dos added')
+          ? (_isDailyStanding
+                ? 'Standing daily to-do added'
+                : (results.length == 1
+                      ? 'Activity added'
+                      : '${results.length} to-dos added'))
           : 'Activity updated';
       if (reminderIds.isNotEmpty) {
         try {
@@ -826,6 +832,33 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             ),
                           ),
                       ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Standing Daily To-Do Switch
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppPalette.colorFF1A1A1A
+                          : AppPalette.colorFFF7F6F2,
+                      borderRadius: AppGeometry.roundedr14,
+                      border: Border.all(
+                        color: context.divider.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: AscentSwitchRow(
+                      title: 'Repeat daily',
+                      helper: _isDailyStanding
+                          ? 'Appears fresh every day until you turn it off'
+                          : 'Keep this in your to-do list every day',
+                      value: _isDailyStanding,
+                      onChanged: (val) {
+                        setState(() {
+                          _isDailyStanding = val;
+                        });
+                      },
                     ),
                   ),
 

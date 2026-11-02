@@ -507,6 +507,7 @@ class TodayActivityItem {
   final int? medicineId;
   final String? timeSlot;
   final DateTime? scheduledTime;
+  final bool isDailyStanding;
 
   const TodayActivityItem({
     required this.id,
@@ -530,6 +531,7 @@ class TodayActivityItem {
     this.medicineId,
     this.timeSlot,
     this.scheduledTime,
+    this.isDailyStanding = false,
   });
 
   bool get isScheduledInFuture {
@@ -560,6 +562,7 @@ class TodayActivityItem {
     int? medicineId,
     String? timeSlot,
     DateTime? scheduledTime,
+    bool? isDailyStanding,
   }) {
     return TodayActivityItem(
       id: id ?? this.id,
@@ -583,6 +586,7 @@ class TodayActivityItem {
       medicineId: medicineId ?? this.medicineId,
       timeSlot: timeSlot ?? this.timeSlot,
       scheduledTime: scheduledTime ?? this.scheduledTime,
+      isDailyStanding: isDailyStanding ?? this.isDailyStanding,
     );
   }
 }

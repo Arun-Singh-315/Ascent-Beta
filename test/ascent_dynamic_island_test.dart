@@ -306,6 +306,7 @@ void main() {
         priority: 'high',
         revisitFlag: false,
         isArchived: false,
+        isDailyStanding: false,
         createdAt: now,
         updatedAt: now,
       );
@@ -603,6 +604,7 @@ void main() {
     final entries = [for (var id = 1; id <= 3; id++) Task(id: id,
       title: 'Small step $id', priority: 'low', revisitFlag: false,
       isArchived: false,
+      isDailyStanding: false,
       createdAt: now, updatedAt: now)];
     await tester.pumpWidget(app(taskStream: tasks.stream,
       preferences: const IslandPreferences(autoRotate: false)));
@@ -665,6 +667,7 @@ void main() {
     await tester.pumpWidget(app(taskStream: Stream.value([Task(id: 1,
       title: 'Reply to message', priority: 'low', revisitFlag: false,
       isArchived: false,
+      isDailyStanding: false,
       createdAt: now, updatedAt: now)])));
     await settle(tester);
     expect(find.text('Reply to message'), findsOneWidget);

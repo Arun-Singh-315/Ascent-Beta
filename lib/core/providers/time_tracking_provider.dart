@@ -728,6 +728,18 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
         }
       }
 
+      bool isTaskDoneToday = false;
+      if (task.actualCompletedDate != null) {
+        if (task.isDailyStanding) {
+          final comp = task.actualCompletedDate!;
+          isTaskDoneToday = (comp.year == today.year &&
+              comp.month == today.month &&
+              comp.day == today.day);
+        } else {
+          isTaskDoneToday = true;
+        }
+      }
+
       TodayActivityStatus status;
       if (activeSessionState.linkedTaskId == task.id &&
           activeSessionState.isRunning) {
@@ -736,7 +748,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           (activeSessionState.linkedTaskId == task.id &&
               activeSessionState.isPaused)) {
         status = TodayActivityStatus.paused;
-      } else if (task.actualCompletedDate != null) {
+      } else if (isTaskDoneToday) {
         status = TodayActivityStatus.done;
       } else {
         status = TodayActivityStatus.notStarted;
@@ -757,6 +769,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       final isOverdue =
+          !task.isDailyStanding &&
           status != TodayActivityStatus.done &&
           task.plannedDate != null &&
           DateTime(
@@ -813,10 +826,11 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
-          completedAt: task.actualCompletedDate,
+          completedAt: isTaskDoneToday ? task.actualCompletedDate : null,
           medicineId: medicineDose?.medicineId,
           timeSlot: medicineDose?.timeSlot,
           scheduledTime: scheduledTime,
+          isDailyStanding: task.isDailyStanding,
         ),
       );
     }
