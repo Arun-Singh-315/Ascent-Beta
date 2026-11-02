@@ -104,6 +104,8 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
                               .read(promiseRepositoryProvider)
                               .completePromise(p.id),
                         );
+                      } else if (value == 'archive') {
+                        await _run(() => ref.read(promiseRepositoryProvider).setPromiseStatus(p.id, PromiseStatus.archived));
                       } else if (value == 'delete') {
                         await _delete(p);
                       }
@@ -119,9 +121,11 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
                           value: 'finish',
                           child: Text('Finish this promise'),
                         ),
+                      if (p.status != PromiseStatus.archived)
+                        const PopupMenuItem(value:'archive',child:Text('Archive · keep history')),
                       const PopupMenuItem(
                         value: 'delete',
-                        child: Text('Delete promise'),
+                        child: Text('Delete permanently'),
                       ),
                     ],
                   ),

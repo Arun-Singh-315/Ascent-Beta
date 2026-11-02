@@ -1,3 +1,6 @@
+import 'package:drift/drift.dart' show Value;
+import '../../core/database/app_database.dart';
+import '../../core/providers/database_provider.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -158,6 +161,30 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   Timer? _breathTimer;
   int _breathTick = 0;
   AudioPlayer? _player;
+  String? _historySession;
+  void _record(String action) {
+    _historySession ??= DateTime.now().microsecondsSinceEpoch.toString();
+    final now = DateTime.now();
+    final db = ref.read(databaseProvider);
+    final entry = HistoryEventTableCompanion.insert(
+      id: 'break:$_historySession:$action:${now.microsecondsSinceEpoch}',
+      module: 'breaks',
+      entityId: _historySession!,
+      action: action,
+      title: state.selectedSoundscape.title,
+      detail: Value(
+        '${state.totalDurationSeconds - state.remainingSeconds} seconds of a ${state.totalDurationSeconds ~/ 60}-minute break',
+      ),
+      occurredAt: now,
+    );
+    unawaited(
+      db.into(db.historyEventTable).insert(entry).then<void>((_) {}).catchError(
+        (Object error) {
+          debugPrint('Break history save deferred: $error');
+        },
+      ),
+    );
+  }
 
   @override
   ChaiBreakState build() {
@@ -290,6 +317,8 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void _finish() {
+    if (state.hasStarted) _record('completed');
+    _historySession = null;
     _timer?.cancel();
     _breathTimer?.cancel();
     state = state.copyWith(isRunning: false, hasStarted: false);
@@ -320,6 +349,8 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void setPresetMinutes(int minutes) {
+    if (state.hasStarted) _record('cancelled');
+    _historySession = null;
     final seconds = minutes * 60;
     state = state.copyWith(
       totalDurationSeconds: seconds,
@@ -327,6 +358,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       isRunning: true,
       hasStarted: true,
     );
+    _record('started');
     _initAudioPlayerIfNeeded();
     _startTimer();
     _startBreathCycle();
@@ -347,6 +379,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void pause() {
+    if (state.hasStarted && state.isRunning) _record('paused');
     state = state.copyWith(isRunning: false);
     _playCurrentSoundscape();
     NotificationService.instance.showOngoingChaiBreakNotification(
@@ -361,6 +394,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void resume() {
+    _record(state.hasStarted ? 'resumed' : 'started');
     if (state.remainingSeconds <= 0) {
       state = state.copyWith(remainingSeconds: state.totalDurationSeconds);
     }

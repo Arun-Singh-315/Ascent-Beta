@@ -119,7 +119,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               content: Text(
                 removedActivity.sourceType == 'lecture'
                     ? "Removed from today's activities"
-                    : 'Activity "${removedActivity.title}" deleted',
+                    : 'Activity "${removedActivity.title}" archived',
               ),
               action: SnackBarAction(
                 label: 'Undo',
@@ -160,7 +160,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           if (!messenger.mounted) return;
           messenger.showSnackBar(
             const SnackBar(
-              content: Text('Could not delete this activity. Try again.'),
+              content: Text('Could not archive this activity. Try again.'),
             ),
           );
         }
@@ -168,10 +168,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpace.s16),
-        color: context.stateDanger.withValues(alpha: 0.15),
+        decoration:BoxDecoration(color:Color.alphaBlend(g.primaryButtonBg.withValues(alpha:0.12),g.surface),borderRadius:BorderRadius.circular(14)),
         child: Icon(
-          Icons.delete_outline_rounded,
-          color: context.stateDanger,
+          Icons.archive_outlined,
+          color: g.primaryButtonBg,
           size: 22,
         ),
       ),
@@ -1208,7 +1208,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               content: Text(
                 removedActivity.sourceType == 'lecture'
                     ? "Removed from today's activities"
-                    : 'Activity "${removedActivity.title}" deleted',
+                    : 'Activity "${removedActivity.title}" archived',
               ),
               action: SnackBarAction(
                 label: 'Undo',
@@ -1249,7 +1249,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           if (!messenger.mounted) return;
           messenger.showSnackBar(
             const SnackBar(
-              content: Text('Could not delete this activity. Try again.'),
+              content: Text('Could not archive this activity. Try again.'),
             ),
           );
         }
@@ -1259,24 +1259,24 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         margin: const EdgeInsets.symmetric(vertical: 2.5),
         padding: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: SharedControlColors.errorSoftBg(context.isDark),
+          color: Color.alphaBlend(g.primaryButtonBg.withValues(alpha:0.12),g.surface),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text(
-              'Delete',
+              'Archive',
               style: TextStyle(
-                color: SharedControlColors.errorInk(context.isDark),
+                color: g.primaryButtonBg,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
             ),
             const SizedBox(width: 6),
             Icon(
-              Icons.delete_outline_rounded,
-              color: SharedControlColors.errorInk(context.isDark),
+              Icons.archive_outlined,
+              color: g.primaryButtonBg,
               size: 20,
             ),
           ],
@@ -1757,6 +1757,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       }
                     },
                   ),
+                TextButton.icon(icon:const Icon(Icons.history_rounded,size:18),label:const Text('History'),onPressed:(){
+                  Navigator.of(ctx).pop();context.push(Uri(path:'/history',queryParameters:{'module':activity.linkedTaskId!=null?'tasks':'focus','entity':'${activity.linkedTaskId??activity.linkedSessionId}'}).toString());
+                }),
                 const SizedBox(height: 24),
                 Wrap(
                   alignment: WrapAlignment.end,

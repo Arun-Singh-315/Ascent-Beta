@@ -146,7 +146,9 @@ class ChoicePill extends StatelessWidget {
             vertical: AppSpace.s8,
           ),
           decoration: BoxDecoration(
-            color: selected ? g.clay.withValues(alpha: .14) : Colors.transparent,
+            color: selected
+                ? g.clay.withValues(alpha: .14)
+                : Colors.transparent,
             borderRadius: AppGeometry.roundedr14,
             border: Border.all(
               color: selected ? g.clay : ink.withValues(alpha: .28),
@@ -237,10 +239,12 @@ Future<int> deleteThoughtsWithUndo(
   final dao = ref.read(thoughtDaoProvider);
   try {
     final snapshots = <ThoughtDeletion>[];
-    for (final thought in thoughts) {
-      final snapshot = await dao.deleteThoughtForUndo(thought.id);
-      if (snapshot != null) snapshots.add(snapshot);
-    }
+    await ref.read(databaseProvider).transaction(() async {
+      for (final thought in thoughts) {
+        final snapshot = await dao.deleteThoughtForUndo(thought.id);
+        if (snapshot != null) snapshots.add(snapshot);
+      }
+    });
     if (snapshots.isEmpty) {
       if (context.mounted) {
         AscentSnackBar.error(
@@ -290,13 +294,17 @@ Future<void> archiveThoughtsWithUndo(
   final dao = ref.read(thoughtDaoProvider);
   final archive = thoughts.any((t) => !t.isArchived);
   try {
-    for (final thought in thoughts) {
-      if (archive) {
-        await dao.archiveThought(thought.id);
-      } else {
-        await dao.unarchiveThought(thought.id);
+    final db = ref.read(databaseProvider);
+    final revision = db.workspaceRevision;
+    await db.transaction(() async {
+      for (final thought in thoughts) {
+        if (archive) {
+          await dao.archiveThought(thought.id);
+        } else {
+          await dao.unarchiveThought(thought.id);
+        }
       }
-    }
+    });
     if (!context.mounted) return;
     AscentSnackBar.show(
       context,
@@ -310,13 +318,19 @@ Future<void> archiveThoughtsWithUndo(
       icon: archive ? Icons.archive_outlined : Icons.unarchive_outlined,
       actionLabel: 'Undo',
       onAction: () async {
-        for (final thought in thoughts) {
-          if (archive) {
-            await dao.unarchiveThought(thought.id);
-          } else {
-            await dao.archiveThought(thought.id);
+        if (db.workspaceRevision != revision) return;
+        await db.transaction(() async {
+          for (final thought in thoughts) {
+            final current = await dao.getThoughtById(thought.id);
+            if (current == thought.copyWith(isArchived: archive)) {
+              if (thought.isArchived) {
+                await dao.archiveThought(thought.id);
+              } else {
+                await dao.unarchiveThought(thought.id);
+              }
+            }
           }
-        }
+        });
       },
     );
   } catch (_) {

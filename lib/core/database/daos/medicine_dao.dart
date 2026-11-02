@@ -146,5 +146,10 @@ class MedicineDao extends DatabaseAccessor<AppDatabase>
       }
     }
     await (delete(medicineTable)..where((m) => m.id.equals(id))).go();
+    await (db.delete(db.historyEventTable)..where((e) =>
+      (e.module.equals('medicines') & e.entityId.equals('$id')) |
+      (e.module.equals('medicine_doses') & e.entityId.isIn(logs.map((l)=>'${l.id}'))) |
+      (e.module.equals('tasks') & e.entityId.isIn(logs.where((l)=>l.linkedTaskId!=null).map((l)=>'${l.linkedTaskId}')))
+    )).go();
   });
 }

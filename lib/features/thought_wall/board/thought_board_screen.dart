@@ -25,6 +25,7 @@ import '../thought_wall_appearance_sheet.dart';
 import '../thought_wall_preferences.dart';
 import '../thought_wall_screen.dart' show shareMultipleThoughts;
 import 'board_actions.dart';
+import 'board_background.dart';
 import 'board_cards.dart';
 import 'board_logic.dart';
 import 'board_preferences.dart';
@@ -56,6 +57,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   final Set<int> _selected = <int>{};
   bool _selecting = false;
   bool _saving = false;
+  bool _applying = false;
   bool _showDone = false;
   int? _openedId;
 
@@ -144,9 +146,11 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     }
     setState(() {
       _openedId = id;
+      _showDone = thought.isCompleted;
       _selected.clear();
       _selecting = false;
     });
+    if (thought.isCompleted) await ThoughtDetailSheet.show(context, thought);
   }
 
   Future<void> _send() async {
@@ -159,13 +163,15 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     final tag = parseSpaceTag(raw, categories);
     setState(() => _saving = true);
     try {
-      await ref.read(thoughtDaoProvider).insertThought(
-        ThoughtTableCompanion.insert(
-          content: tag?.text ?? raw,
-          mood: const drift.Value('thought'),
-          category: drift.Value(tag?.key ?? wallCategoryKey),
-        ),
-      );
+      await ref
+          .read(thoughtDaoProvider)
+          .insertThought(
+            ThoughtTableCompanion.insert(
+              content: tag?.text ?? raw,
+              mood: const drift.Value('thought'),
+              category: drift.Value(tag?.key ?? wallCategoryKey),
+            ),
+          );
       if (_input.text.trim() == raw) _input.clear();
       if (!mounted) return;
       setState(() => _openedId = null);
@@ -247,6 +253,20 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   Future<void> _more(List<Thought> picked) async {
     final g = context.glass;
     final db = ref.read(databaseProvider);
+    if (picked.any(
+      (t) => isPrivateLocked(
+        t,
+        ref.read(privatePromiseIdsProvider),
+        ref.read(unlockedPromiseIdsProvider),
+      ),
+    )) {
+      AscentSnackBar.error(
+        context,
+        message:
+            'Unlock private commitments before sharing or converting them.',
+      );
+      return;
+    }
     final action = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
@@ -287,6 +307,20 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       ),
     );
     if (action == null || !mounted) return;
+    if (picked.any(
+      (t) => isPrivateLocked(
+        t,
+        ref.read(privatePromiseIdsProvider),
+        ref.read(unlockedPromiseIdsProvider),
+      ),
+    )) {
+      AscentSnackBar.error(
+        context,
+        message:
+            'Unlock private commitments before sharing or converting them.',
+      );
+      return;
+    }
     if (action == 'share') {
       await shareMultipleThoughts(picked);
       return;
@@ -298,11 +332,23 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   Widget _selectionBar(List<Thought> all) {
     final g = context.glass;
     final picked = _selectedThoughts(all);
-    final enabled = picked.isNotEmpty;
+    final enabled = picked.isNotEmpty && !_applying;
     Future<void> run(Future<void> Function() job) async {
-      if (!enabled) return;
-      await job();
-      if (mounted) _stopSelecting();
+      if (!enabled || _applying) return;
+      setState(() => _applying = true);
+      try {
+        await job();
+        if (mounted) _stopSelecting();
+      } catch (_) {
+        if (mounted) {
+          AscentSnackBar.error(
+            context,
+            message: 'Could not update the selection. Try again.',
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _applying = false);
+      }
     }
 
     return Container(
@@ -349,9 +395,14 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   ? null
                   : () => run(() async {
                       final dao = ref.read(thoughtDaoProvider);
-                      for (final t in picked.where((t) => !t.isCompleted)) {
-                        await dao.toggleCompleted(t.id);
-                      }
+                      await ref.read(databaseProvider).transaction(() async {
+                        for (final t in picked.where((t) => !t.isCompleted)) {
+                          final current = await dao.getThoughtById(t.id);
+                          if (current != null && !current.isCompleted) {
+                            await dao.toggleCompleted(t.id);
+                          }
+                        }
+                      });
                     }),
             ),
             ChoicePill(
@@ -387,26 +438,15 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     );
   }
 
-  Widget _composer(AscentGlass g) => Container(
-    padding: const EdgeInsets.fromLTRB(
-      AppSpace.s10,
-      AppSpace.s8,
-      AppSpace.s10,
-      AppSpace.s10,
-    ),
-    decoration: BoxDecoration(
-      color: g.bg,
-      border: Border(top: BorderSide(color: g.edge)),
-    ),
-    child: SafeArea(
-      top: false,
-      child: MessageComposer(
-        controller: _input,
-        focusNode: _focus,
-        hint: 'Write a thought…  (#movies to file it)',
-        busy: _saving,
-        onSend: (_) => _send(),
-      ),
+  Widget _composer(AscentGlass g) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+    child: MessageComposer(
+      quiet: true,
+      controller: _input,
+      focusNode: _focus,
+      hint: 'Write a thought…',
+      busy: _saving,
+      onSend: (_) => _send(),
     ),
   );
 
@@ -422,16 +462,27 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     child: Row(
       children: [
         Text(
-          label.toUpperCase(),
-          style: AscentTextStyles.labelSmall.copyWith(
-            color: g.inkMuted,
-            letterSpacing: 1.1,
+          label,
+          style: AscentTextStyles.sectionHeading.copyWith(
+            color: g.ink,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
           ),
         ),
         const SizedBox(width: AppSpace.s8),
-        Text(
-          '$count',
-          style: AscentTextStyles.labelSmall.copyWith(color: g.inkMuted),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: g.claySoft.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$count',
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: g.clay,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ],
     ),
@@ -443,7 +494,9 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     required ThoughtBoardLayout layout,
     required double width,
   }) {
-    if (layout == ThoughtBoardLayout.stream) {
+    if (layout == ThoughtBoardLayout.stream ||
+        width < 340 ||
+        MediaQuery.textScalerOf(context).scale(1) >= 1.45) {
       return Column(
         children: [
           for (var i = 0; i < thoughts.length; i++) ...[
@@ -454,7 +507,9 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       );
     }
     final columnWidth = (width - AppSpace.s10) / 2;
-    final indexed = [for (var i = 0; i < thoughts.length; i++) (thoughts[i], i)];
+    final indexed = [
+      for (var i = 0; i < thoughts.length; i++) (thoughts[i], i),
+    ];
     final columns = balanceColumns<(Thought, int)>(
       indexed,
       2,
@@ -494,6 +549,19 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         ref.watch(thoughtCategoriesStreamProvider).value ??
         ThoughtDao.builtInCategories;
     final activeAsync = ref.watch(allThoughtsStreamProvider);
+    if (activeAsync.hasError && !activeAsync.hasValue) {
+      return AscentScaffold(
+        title: 'Thought Wall',
+        showFeatureHelp: false,
+        body: EmptyState(
+          icon: Icons.cloud_off_outlined,
+          title: 'Could not load your thoughts',
+          subtitle: 'Your records have not been changed.',
+          actionLabel: 'Retry',
+          onAction: () => ref.invalidate(allThoughtsStreamProvider),
+        ),
+      );
+    }
     final active = activeAsync.value ?? <Thought>[];
     final archived =
         ref.watch(archivedThoughtsStreamProvider).value ?? <Thought>[];
@@ -502,7 +570,8 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     final now = DateTime.now();
 
     final wall = active.where((t) => t.category == wallCategoryKey).toList();
-    _selected.retainAll(wall.map((t) => t.id));
+    final visibleWall = wall.where((t) => !t.isCompleted || _showDone).toList();
+    _selected.retainAll(visibleWall.map((t) => t.id));
     if (_selected.isEmpty) _selecting = false;
 
     final lockedIds = {
@@ -547,8 +616,10 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         if (!didPop && _selecting) _stopSelecting();
       },
       child: AscentScaffold(
-        title: _selecting ? '${_selected.length} selected' : 'Thought Wall',
-        subtitle: _selecting ? 'Tap cards to add or remove' : 'Notes to myself',
+        title: _selecting ? '${_selected.length} selected' : 'Mind Palace',
+        subtitle: _selecting
+            ? 'Tap cards to add or remove'
+            : 'Capture & clarity',
         glow2: g.glow2,
         showFeatureHelp: false,
         leading: _selecting
@@ -564,7 +635,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 TextButton(
                   key: const ValueKey('select_all'),
                   onPressed: () => setState(() {
-                    final ids = wall.map((t) => t.id).toSet();
+                    final ids = visibleWall.map((t) => t.id).toSet();
                     if (_selected.length == ids.length) {
                       _selected.clear();
                       _selecting = false;
@@ -573,181 +644,306 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     }
                   }),
                   child: Text(
-                    _selected.length == wall.length ? 'None' : 'All',
+                    _selected.length == visibleWall.length ? 'None' : 'All',
                   ),
                 ),
               ]
             : [
-                IconButton(
-                  key: const ValueKey('board_layout_toggle'),
-                  tooltip: layout == ThoughtBoardLayout.board
-                      ? 'One column'
-                      : 'Two columns',
-                  icon: Icon(
-                    layout == ThoughtBoardLayout.board
-                        ? Icons.view_agenda_outlined
-                        : Icons.dashboard_outlined,
-                  ),
-                  onPressed: () => ref
-                      .read(thoughtBoardLayoutProvider.notifier)
-                      .set(
+                if (MediaQuery.sizeOf(context).width >= 360 &&
+                    MediaQuery.textScalerOf(context).scale(1) < 1.45)
+                  Tooltip(
+                    message: layout == ThoughtBoardLayout.board
+                        ? 'Switch to List view'
+                        : 'Switch to Grid view',
+                    child: TextButton.icon(
+                      key: const ValueKey('board_layout_toggle'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(48, 40),
+                      ),
+                      icon: Icon(
                         layout == ThoughtBoardLayout.board
-                            ? ThoughtBoardLayout.stream
-                            : ThoughtBoardLayout.board,
-                      )
-                      .catchError((_) {
-                        if (mounted) {
+                            ? Icons.view_agenda_outlined
+                            : Icons.dashboard_outlined,
+                        size: 16,
+                        color: g.clay,
+                      ),
+                      label: Text(
+                        layout == ThoughtBoardLayout.board ? 'List' : 'Grid',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      onPressed: () async {
+                        try {
+                          await ref
+                              .read(thoughtBoardLayoutProvider.notifier)
+                              .set(
+                                layout == ThoughtBoardLayout.board
+                                    ? ThoughtBoardLayout.stream
+                                    : ThoughtBoardLayout.board,
+                              );
+                        } catch (_) {
+                          if (context.mounted) {
+                            AscentSnackBar.error(
+                              context,
+                              message: 'Could not save the layout.',
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                IconButton(
+                  key: const ValueKey('board_top_promises'),
+                  tooltip: 'Promises',
+                  icon: Icon(Icons.handshake_outlined, color: g.ink),
+                  onPressed: () => context.push('/promises'),
+                ),
+                PopupMenuButton<String>(
+                  key: const ValueKey('board_settings'),
+                  tooltip: 'Settings',
+                  icon: Icon(Icons.tune_rounded, color: g.ink),
+                  onSelected: (value) async {
+                    if (value == 'history') {
+                      context.push('/history?module=thoughts');
+                    } else if (value == 'promises') {
+                      context.push('/promises');
+                    } else if (value == 'layout') {
+                      try {
+                        await ref
+                            .read(thoughtBoardLayoutProvider.notifier)
+                            .set(
+                              layout == ThoughtBoardLayout.board
+                                  ? ThoughtBoardLayout.stream
+                                  : ThoughtBoardLayout.board,
+                            );
+                      } catch (_) {
+                        if (context.mounted) {
                           AscentSnackBar.error(
                             context,
                             message: 'Could not save the layout.',
                           );
                         }
-                      }),
-                ),
-                IconButton(
-                  tooltip: 'Your promises',
-                  icon: const Icon(Icons.handshake_rounded),
-                  onPressed: () => context.push('/promises'),
-                ),
-                IconButton(
-                  tooltip: 'Wall appearance',
-                  icon: const Icon(Icons.tune_rounded),
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    builder: (_) => const ThoughtWallAppearanceSheet(),
-                  ),
+                      }
+                    } else if (value == 'background') {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        useSafeArea: true,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        builder: (_) => const BoardBackgroundSheet(),
+                      );
+                    } else {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        useSafeArea: true,
+                        isScrollControlled: true,
+                        builder: (_) => const ThoughtWallAppearanceSheet(),
+                      );
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value:'history',child:Text('History')),
+                    const PopupMenuItem(
+                      value: 'background',
+                      child: Row(
+                        children: [
+                          Icon(Icons.palette_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Background'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'appearance',
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Wall appearance'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'layout',
+                      child: Row(
+                        children: [
+                          Icon(
+                            layout == ThoughtBoardLayout.board
+                                ? Icons.view_agenda_outlined
+                                : Icons.dashboard_outlined,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            layout == ThoughtBoardLayout.board
+                                ? 'Switch to List view'
+                                : 'Switch to Grid view',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'promises',
+                      child: Row(
+                        children: [
+                          Icon(Icons.handshake_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Your promises'),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
-        body: Column(
-          children: [
-            Expanded(
-              child: activeAsync.isLoading && !activeAsync.hasValue
-                  ? const Center(child: CircularProgressIndicator())
-                  : LayoutBuilder(
-                      builder: (context, constraints) {
-                        final inner =
-                            constraints.maxWidth - AppSpace.s16 * 2;
-                        return CustomScrollView(
-                          controller: _scroll,
-                          slivers: [
-                            if (!_selecting && !keyboardOpen)
-                              SliverToBoxAdapter(
-                                child: SpacesShelf(
-                                  spaces: spaces,
-                                  archivedCount: archived.length,
-                                  onOpen: (s) =>
-                                      context.push(thoughtSpaceLocation(s.key)),
-                                  onNew: _newSpace,
-                                  onOpenArchive: () => context.push(
-                                    thoughtSpaceLocation(archiveSpaceKey),
+        body: BoardBackground(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: activeAsync.isLoading && !activeAsync.hasValue
+                    ? const Center(child: CircularProgressIndicator())
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final inner = constraints.maxWidth - AppSpace.s16 * 2;
+                          return CustomScrollView(
+                            controller: _scroll,
+                            slivers: [
+                              if (!_selecting && !keyboardOpen)
+                                SliverToBoxAdapter(
+                                  child: SpacesShelf(
+                                    spaces: spaces,
+                                    archivedCount: archived.length,
+                                    onOpen: (s) => context.push(
+                                      thoughtSpaceLocation(s.key),
+                                    ),
+                                    onNew: _newSpace,
+                                    onOpenArchive: () => context.push(
+                                      thoughtSpaceLocation(archiveSpaceKey),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            if (content.isEmpty)
-                              SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: EmptyState(
-                                  icon: Icons.bubble_chart_rounded,
-                                  title: 'Your wall is empty',
-                                  subtitle:
-                                      'Write below. Add #movies (or any space) '
-                                      'to file a thought straight into it.',
-                                  actionLabel: 'Write a thought',
-                                  onAction: _focus.requestFocus,
-                                ),
-                              )
-                            else
-                              SliverPadding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  AppSpace.s16,
-                                  AppSpace.s4,
-                                  AppSpace.s16,
-                                  AppSpace.s24,
-                                ),
-                                sliver: SliverList.list(
-                                  children: [
-                                    if (hero != null) ...[
-                                      BoardHeroCard(
-                                        key: ValueKey('board_hero_${hero.id}'),
-                                        thought: hero,
-                                        now: now,
-                                        label: _openedId == hero.id
-                                            ? 'Opened'
-                                            : 'Latest',
-                                        isSelected: _selected.contains(hero.id),
-                                        isSelectionMode: _selecting,
-                                        onTap: () => _selecting
-                                            ? _toggle(hero.id)
-                                            : ThoughtDetailSheet.show(
-                                                context,
-                                                hero,
-                                              ),
-                                        onLongPress: () => _selecting
-                                            ? _toggle(hero.id)
-                                            : _startSelecting(hero.id),
-                                        onDoubleTap: () =>
-                                            toggleThoughtDone(context, ref, hero),
-                                      ),
-                                      const SizedBox(height: AppSpace.s4),
-                                    ],
-                                    for (final section in content.sections) ...[
-                                      _sectionHeader(
-                                        g,
-                                        section.label,
-                                        section.thoughts.length,
-                                      ),
-                                      _grid(
-                                        section.thoughts,
-                                        card: cardFor,
-                                        layout: layout,
-                                        width: inner,
-                                      ),
-                                    ],
-                                    if (content.done.isNotEmpty) ...[
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          top: AppSpace.s8,
-                                        ),
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: TextButton.icon(
-                                            key: const ValueKey(
-                                              'board_done_toggle',
-                                            ),
-                                            onPressed: () => setState(
-                                              () => _showDone = !_showDone,
-                                            ),
-                                            icon: Icon(
-                                              _showDone
-                                                  ? Icons.expand_less_rounded
-                                                  : Icons.expand_more_rounded,
-                                            ),
-                                            label: Text(
-                                              'Done · ${content.done.length}',
-                                            ),
+                              if (content.isEmpty)
+                                SliverFillRemaining(
+                                  hasScrollBody: false,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 140),
+                                    child: EmptyState(
+                                      icon: Icons.bubble_chart_rounded,
+                                      title: 'Your wall is empty',
+                                      subtitle:
+                                          'Write below. Add #movies (or any space) '
+                                          'to file a thought straight into it.',
+                                      actionLabel: 'Write a thought',
+                                      onAction: _focus.requestFocus,
+                                    ),
+                                  ),
+                                )
+                              else
+                                SliverPadding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    AppSpace.s16,
+                                    AppSpace.s4,
+                                    AppSpace.s16,
+                                    _selecting ? 90.0 : 160.0,
+                                  ),
+                                  sliver: SliverList.list(
+                                    children: [
+                                      if (hero != null) ...[
+                                        BoardHeroCard(
+                                          key: ValueKey(
+                                            'board_hero_${hero.id}',
+                                          ),
+                                          thought: hero,
+                                          now: now,
+                                          label: _openedId == hero.id
+                                              ? 'Opened'
+                                              : 'Latest',
+                                          isSelected: _selected.contains(
+                                            hero.id,
+                                          ),
+                                          isSelectionMode: _selecting,
+                                          onTap: () => _selecting
+                                              ? _toggle(hero.id)
+                                              : ThoughtDetailSheet.show(
+                                                  context,
+                                                  hero,
+                                                ),
+                                          onLongPress: () => _selecting
+                                              ? _toggle(hero.id)
+                                              : _startSelecting(hero.id),
+                                          onDoubleTap: () => toggleThoughtDone(
+                                            context,
+                                            ref,
+                                            hero,
                                           ),
                                         ),
-                                      ),
-                                      if (_showDone)
+                                        const SizedBox(height: AppSpace.s4),
+                                      ],
+                                      for (final section
+                                          in content.sections) ...[
+                                        _sectionHeader(
+                                          g,
+                                          section.label,
+                                          section.thoughts.length,
+                                        ),
                                         _grid(
-                                          content.done,
+                                          section.thoughts,
                                           card: cardFor,
                                           layout: layout,
                                           width: inner,
                                         ),
+                                      ],
+                                      if (content.done.isNotEmpty) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: AppSpace.s8,
+                                          ),
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: TextButton.icon(
+                                              key: const ValueKey(
+                                                'board_done_toggle',
+                                              ),
+                                              onPressed: () => setState(
+                                                () => _showDone = !_showDone,
+                                              ),
+                                              icon: Icon(
+                                                _showDone
+                                                    ? Icons.expand_less_rounded
+                                                    : Icons.expand_more_rounded,
+                                              ),
+                                              label: Text(
+                                                'Done · ${content.done.length}',
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        if (_showDone)
+                                          _grid(
+                                            content.done,
+                                            card: cardFor,
+                                            layout: layout,
+                                            width: inner,
+                                          ),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-            ),
-            if (_selecting) _selectionBar(wall) else _composer(g),
-          ],
+                            ],
+                          );
+                        },
+                      ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _selecting ? _selectionBar(wall) : _composer(g),
+              ),
+            ],
+          ),
         ),
       ),
     );

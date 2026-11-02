@@ -126,9 +126,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   void _prefillText(String text) {
     HapticFeedback.lightImpact();
     _textController.text = text;
-    _textController.selection = TextSelection.collapsed(
-      offset: text.length,
-    );
+    _textController.selection = TextSelection.collapsed(offset: text.length);
     _composerFocus.requestFocus();
   }
 
@@ -1022,8 +1020,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 // Consecutive AI message grouping:
                                 // If the previous message was also from assistant,
                                 // suppress the name label for visual clustering.
-                                final prevMsg = index > 0 ? messages[index - 1] : null;
-                                final isFirstInRun = prevMsg == null ||
+                                final prevMsg = index > 0
+                                    ? messages[index - 1]
+                                    : null;
+                                final isFirstInRun =
+                                    prevMsg == null ||
                                     prevMsg.sender != msg.sender;
 
                                 Map<String, dynamic>? actionData;
@@ -1047,7 +1048,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                   child: Padding(
                                     padding: EdgeInsets.only(
                                       bottom: AscentSpacing.sm,
-                                      top: isFirstInRun && !isUser && index != 0 ? 6 : 0,
+                                      top: isFirstInRun && !isUser && index != 0
+                                          ? 6
+                                          : 0,
                                     ),
                                     child: Align(
                                       alignment: isUser
@@ -1153,20 +1156,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     ],
 
                     // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: AscentSpacing.sm,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        border: Border(
-                          top: BorderSide(
-                            color: g.edge.withValues(alpha: 0.5),
-                            width: 0.8,
-                          ),
-                        ),
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
                       child: SafeArea(
                         top: false,
                         child: MessageComposer(
@@ -1273,7 +1264,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           child: Container(
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF16181D) : const Color(0xFFF9F9FB),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               border: Border.all(
                 color: isDark ? g.edge : const Color(0x1F000000),
                 width: 1,
@@ -1321,12 +1314,15 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       sheetContext: sheetContext,
                       name: 'Aria',
                       tagline: 'Reflective & Calm',
-                      description: 'Quiet clarity, intentional pacing, and mindful focus.',
+                      description:
+                          'Quiet clarity, intentional pacing, and mindful focus.',
                       icon: Icons.auto_awesome_rounded,
                       selected: currentName == 'Aria',
                       onSelect: () {
                         HapticFeedback.mediumImpact();
-                        ref.read(assistantNameProvider.notifier).setName('Aria');
+                        ref
+                            .read(assistantNameProvider.notifier)
+                            .setName('Aria');
                         Navigator.pop(sheetContext);
                       },
                     ),
@@ -1335,18 +1331,24 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       sheetContext: sheetContext,
                       name: 'Riya',
                       tagline: 'Vibrant & Action-Driven',
-                      description: 'High energy, proactive habits, and relentless momentum.',
+                      description:
+                          'High energy, proactive habits, and relentless momentum.',
                       icon: Icons.bolt_rounded,
                       selected: currentName == 'Riya',
                       onSelect: () {
                         HapticFeedback.mediumImpact();
-                        ref.read(assistantNameProvider.notifier).setName('Riya');
+                        ref
+                            .read(assistantNameProvider.notifier)
+                            .setName('Riya');
                         Navigator.pop(sheetContext);
                       },
                     ),
                     const SizedBox(height: 16),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E2129) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -1377,7 +1379,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 final trimmed = val.trim();
                                 if (trimmed.isNotEmpty) {
                                   HapticFeedback.mediumImpact();
-                                  ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                  ref
+                                      .read(assistantNameProvider.notifier)
+                                      .setName(trimmed);
                                   Navigator.pop(sheetContext);
                                 }
                               },
@@ -1388,7 +1392,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               final trimmed = customController.text.trim();
                               if (trimmed.isNotEmpty) {
                                 HapticFeedback.mediumImpact();
-                                ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                ref
+                                    .read(assistantNameProvider.notifier)
+                                    .setName(trimmed);
                                 Navigator.pop(sheetContext);
                               }
                             },
@@ -1433,7 +1439,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             border: Border.all(
               color: selected
                   ? accent
-                  : (isDark ? sheetContext.glass.edge : const Color(0x1F000000)),
+                  : (isDark
+                        ? sheetContext.glass.edge
+                        : const Color(0x1F000000)),
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -1446,7 +1454,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   shape: BoxShape.circle,
                   color: selected
                       ? accent.withValues(alpha: 0.22)
-                      : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                      : (isDark
+                            ? Colors.white10
+                            : Colors.black.withValues(alpha: 0.05)),
                 ),
                 child: Icon(
                   icon,
@@ -1494,11 +1504,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               ),
               if (selected) ...[
                 const SizedBox(width: 8),
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: accent,
-                  size: 20,
-                ),
+                Icon(Icons.check_circle_rounded, color: accent, size: 20),
               ],
             ],
           ),
@@ -1562,11 +1568,17 @@ class _ConversationMessageBubble extends StatelessWidget {
     if (isUser) {
       // User bubble — translucent glass with dark border & razor-sharp text
       bubbleFill = isDark
-          ? const Color(0xFF141926).withValues(alpha: 0.60) // translucent obsidian-glass
-          : const Color(0xFFF1F4F9).withValues(alpha: 0.72); // translucent pearl-glass
+          ? const Color(0xFF141926).withValues(
+              alpha: 0.60,
+            ) // translucent obsidian-glass
+          : const Color(
+              0xFFF1F4F9,
+            ).withValues(alpha: 0.72); // translucent pearl-glass
       bubbleBorder = isDark
           ? const Color(0xFF2C384E) // crisp dark-slate rim
-          : const Color(0xFF334155).withValues(alpha: 0.50); // crisp dark charcoal rim
+          : const Color(
+              0xFF334155,
+            ).withValues(alpha: 0.50); // crisp dark charcoal rim
       messageTextColor = isDark
           ? const Color(0xFFF8FAFC) // crystal-clear bright ink (slate-50)
           : const Color(0xFF0F172A); // deep ink (slate-900)
@@ -1576,14 +1588,14 @@ class _ConversationMessageBubble extends StatelessWidget {
     } else {
       // AI bubble — opaque surface for guaranteed readability
       bubbleFill = isDark
-          ? const Color(0xFF1E2430)   // rich dark blue-charcoal
-          : const Color(0xFFFFFFFF);  // crisp white
+          ? const Color(0xFF1E2430) // rich dark blue-charcoal
+          : const Color(0xFFFFFFFF); // crisp white
       bubbleBorder = isDark
-          ? const Color(0xFF2D3548)   // subtle rim
-          : const Color(0xFFE8ECF4);  // soft light rim
+          ? const Color(0xFF2D3548) // subtle rim
+          : const Color(0xFFE8ECF4); // soft light rim
       messageTextColor = isDark
-          ? const Color(0xFFE8EDF5)   // bright near-white on dark
-          : const Color(0xFF1A2233);  // deep ink on light
+          ? const Color(0xFFE8EDF5) // bright near-white on dark
+          : const Color(0xFF1A2233); // deep ink on light
       timestampColor = isDark
           ? const Color(0xFF6B7A99)
           : const Color(0xFF9AA3B8);
@@ -1613,11 +1625,7 @@ class _ConversationMessageBubble extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                size: 11,
-                color: accentColor,
-              ),
+              Icon(Icons.auto_awesome_rounded, size: 11, color: accentColor),
               const SizedBox(width: 4),
               Text(
                 assistantName,
@@ -1714,209 +1722,257 @@ class _ConversationMessageBubble extends StatelessWidget {
 
         if (!isUser && actionData?['executionStatus'] == 'proposed')
           Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Builder(
-              builder: (context) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                final rawText = (actionData?['pendingCommand']?['arguments']?['text'] as String?) ?? '';
-                final proposal = msg.actionType == 'promises.create' && rawText.isNotEmpty
-                    ? PromiseIntentParser.parse(rawText)
-                    : null;
-                final taskTitle = msg.actionType == 'tasks.create'
-                    ? (actionData?['pendingCommand']?['arguments']?['title'] as String?)
-                    : null;
-                final taskDate = msg.actionType == 'tasks.create'
-                    ? (actionData?['pendingCommand']?['arguments']?['plannedDate'] as String?)?.split('T').first
-                    : null;
+                padding: const EdgeInsets.only(top: 6),
+                child: Builder(
+                  builder: (context) {
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
+                    final rawText =
+                        (actionData?['pendingCommand']?['arguments']?['text']
+                            as String?) ??
+                        '';
+                    final proposal =
+                        msg.actionType == 'promises.create' &&
+                            rawText.isNotEmpty
+                        ? PromiseIntentParser.parse(rawText)
+                        : null;
+                    final taskTitle = msg.actionType == 'tasks.create'
+                        ? (actionData?['pendingCommand']?['arguments']?['title']
+                              as String?)
+                        : null;
+                    final taskDate = msg.actionType == 'tasks.create'
+                        ? (actionData?['pendingCommand']?['arguments']?['plannedDate']
+                                  as String?)
+                              ?.split('T')
+                              .first
+                        : null;
 
-                return Container(
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1A2035)
-                        : const Color(0xFFF7F9FF),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF2A3550)
-                          : const Color(0xFFDDE3F0),
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: accentColor.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(6),
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1A2035)
+                            : const Color(0xFFF7F9FF),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF2A3550)
+                              : const Color(0xFFDDE3F0),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.25 : 0.06,
                             ),
-                            child: Text(
-                              msg.actionType?.startsWith('promises.') == true
-                                  ? 'PROMISE PREVIEW'
-                                  : (msg.actionType?.startsWith('tasks.') == true
-                                      ? 'TODO PREVIEW'
-                                      : 'REVIEW ACTION'),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                letterSpacing: 1.0,
-                                color: accentColor,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        proposal?.title ?? taskTitle ?? (actionData?['title'] as String? ?? 'Review'),
-                        style: TextStyle(
-                          color: context.glass.ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                        ),
-                      ),
-                      if (proposal != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: context.glass.fill.withValues(alpha: isDark ? 0.25 : 0.45),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: context.glass.line, width: 0.8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.event_outlined, size: 14, color: accentColor),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      proposal.targetDate != null
-                                          ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
-                                          : (proposal.schedule?.summary != null
-                                              ? 'Schedule: ${proposal.schedule!.summary}'
-                                              : 'Schedule: Every day (Daily)'),
-                                      style: TextStyle(
-                                        color: context.glass.ink,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withValues(alpha: 0.14),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  msg.actionType?.startsWith('promises.') ==
+                                          true
+                                      ? 'PROMISE PREVIEW'
+                                      : (msg.actionType?.startsWith('tasks.') ==
+                                                true
+                                            ? 'TODO PREVIEW'
+                                            : 'REVIEW ACTION'),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    letterSpacing: 1.0,
+                                    color: accentColor,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  Icon(Icons.timer_outlined, size: 14, color: accentColor),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      proposal.trackingType == PromiseTrackingType.duration
-                                          ? '${proposal.targetValue.toInt()} minutes per session'
-                                          : (proposal.trackingType == PromiseTrackingType.frequency
-                                              ? '${proposal.frequencyPerWeek} times a week'
-                                              : 'Daily check-in commitment'),
-                                      style: TextStyle(
-                                        color: context.glass.inkSecondary,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  Icon(Icons.notifications_active_outlined, size: 14, color: accentColor),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      proposal.reminderTime != null
-                                          ? 'Reminder: ${proposal.reminderTime}'
-                                          : 'No reminder',
-                                      style: TextStyle(
-                                        color: context.glass.inkSecondary,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ] else if (taskDate != null) ...[
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today_rounded, size: 14, color: accentColor),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Planned: $taskDate',
-                              style: TextStyle(
-                                color: context.glass.inkSecondary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: busy ? null : () => onReview(true),
-                            icon: Icon(
-                              msg.actionType?.endsWith('.delete') == true
-                                  ? Icons.delete_outline_rounded
-                                  : Icons.check_rounded,
-                              size: 16,
-                            ),
-                            label: Text(
-                              msg.actionType?.endsWith('.delete') == true
-                                  ? 'Delete'
-                                  : 'Save',
+                          const SizedBox(height: 8),
+                          Text(
+                            proposal?.title ??
+                                taskTitle ??
+                                (actionData?['title'] as String? ?? 'Review'),
+                            style: TextStyle(
+                              color: context.glass.ink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
                             ),
                           ),
-                          if (msg.actionType?.endsWith('.create') == true ||
-                              msg.actionType?.endsWith('.edit') == true)
-                            TextButton.icon(
-                              onPressed: busy ? null : onEditDraft,
-                              icon: const Icon(Icons.edit_outlined, size: 14),
-                              label: const Text('Change words'),
+                          if (proposal != null) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: context.glass.fill.withValues(
+                                  alpha: isDark ? 0.25 : 0.45,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: context.glass.line,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.event_outlined,
+                                        size: 14,
+                                        color: accentColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          proposal.targetDate != null
+                                              ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
+                                              : (proposal.schedule?.summary !=
+                                                        null
+                                                    ? 'Schedule: ${proposal.schedule!.summary}'
+                                                    : 'Schedule: Every day (Daily)'),
+                                          style: TextStyle(
+                                            color: context.glass.ink,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.timer_outlined,
+                                        size: 14,
+                                        color: accentColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          proposal.trackingType ==
+                                                  PromiseTrackingType.duration
+                                              ? '${proposal.targetValue.toInt()} minutes per session'
+                                              : (proposal.trackingType ==
+                                                        PromiseTrackingType
+                                                            .frequency
+                                                    ? '${proposal.frequencyPerWeek} times a week'
+                                                    : 'Daily check-in commitment'),
+                                          style: TextStyle(
+                                            color: context.glass.inkSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.notifications_active_outlined,
+                                        size: 14,
+                                        color: accentColor,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          proposal.reminderTime != null
+                                              ? 'Reminder: ${proposal.reminderTime}'
+                                              : 'No reminder',
+                                          style: TextStyle(
+                                            color: context.glass.inkSecondary,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          TextButton(
-                            onPressed: busy ? null : () => onReview(false),
-                            child: const Text('Cancel'),
+                          ] else if (taskDate != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 14,
+                                  color: accentColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Planned: $taskDate',
+                                  style: TextStyle(
+                                    color: context.glass.inkSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              FilledButton.icon(
+                                onPressed: busy ? null : () => onReview(true),
+                                icon: Icon(
+                                  msg.actionType?.endsWith('.delete') == true
+                                      ? Icons.delete_outline_rounded
+                                      : Icons.check_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(
+                                  msg.actionType?.endsWith('.delete') == true
+                                      ? 'Delete'
+                                      : 'Save',
+                                ),
+                              ),
+                              if (msg.actionType?.endsWith('.create') == true ||
+                                  msg.actionType?.endsWith('.edit') == true)
+                                TextButton.icon(
+                                  onPressed: busy ? null : onEditDraft,
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Change words'),
+                                ),
+                              TextButton(
+                                onPressed: busy ? null : () => onReview(false),
+                                child: const Text('Cancel'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ) as Widget,
+                    );
+                  },
+                ),
+              )
+              as Widget,
         if (!isUser)
           for (final record in (actionData?['records'] as List? ?? []))
             if (record is Map &&
@@ -1956,7 +2012,9 @@ class _ConversationMessageBubble extends StatelessWidget {
                     color: isDark ? const Color(0xFF1E2430) : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF2D3548) : const Color(0xFFE8ECF4),
+                      color: isDark
+                          ? const Color(0xFF2D3548)
+                          : const Color(0xFFE8ECF4),
                     ),
                   ),
                   child: Column(
@@ -1967,14 +2025,18 @@ class _ConversationMessageBubble extends StatelessWidget {
                             ? 'Verification pending'
                             : 'Action needs attention',
                         style: TextStyle(
-                          color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                          color: isDark
+                              ? const Color(0xFFE8EDF5)
+                              : const Color(0xFF1A2233),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         'Review saved changes before sending this request again.',
                         style: TextStyle(
-                          color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                          color: isDark
+                              ? const Color(0xFF6B7A99)
+                              : const Color(0xFF6B7A99),
                         ),
                       ),
                       TextButton.icon(
@@ -2002,12 +2064,19 @@ class _ConversationMessageBubble extends StatelessWidget {
             builder: (context) {
               final isDark = Theme.of(context).brightness == Brightness.dark;
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A2430) : const Color(0xFFF0F9F4),
+                  color: isDark
+                      ? const Color(0xFF1A2430)
+                      : const Color(0xFFF0F9F4),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF243040) : const Color(0xFFCFEADA),
+                    color: isDark
+                        ? const Color(0xFF243040)
+                        : const Color(0xFFCFEADA),
                   ),
                 ),
                 child: Row(
@@ -2031,7 +2100,9 @@ class _ConversationMessageBubble extends StatelessWidget {
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                              color: isDark
+                                  ? const Color(0xFFE8EDF5)
+                                  : const Color(0xFF1A2233),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -2041,7 +2112,9 @@ class _ConversationMessageBubble extends StatelessWidget {
                               actionData!['summary'].toString(),
                               style: TextStyle(
                                 fontSize: 10.5,
-                                color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                                color: isDark
+                                    ? const Color(0xFF6B7A99)
+                                    : const Color(0xFF6B7A99),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -2108,7 +2181,8 @@ class _ConversationMessageBubble extends StatelessWidget {
             children: messageQuickChips.map((chipText) {
               return Builder(
                 builder: (context) {
-                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
                   return Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -2224,6 +2298,7 @@ class _ThinkingBubble extends StatelessWidget {
 class _SoftChatWelcome extends StatefulWidget {
   final String assistantName;
   final ValueChanged<String> onSelectPrompt;
+
   /// Pre-fills the message composer with a partial prompt so the user can
   /// complete it before sending. Used for accelerator cards that need context.
   final ValueChanged<String> onPrefill;
@@ -2245,8 +2320,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
   @override
   void initState() {
     super.initState();
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     _sparkleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -2304,7 +2380,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                         gradient: LinearGradient(
                           colors: [
                             accent.withValues(alpha: 0.25 + pulse * 0.15),
-                            context.glass.clay.withValues(alpha: 0.20 + pulse * 0.10),
+                            context.glass.clay.withValues(
+                              alpha: 0.20 + pulse * 0.10,
+                            ),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -2316,7 +2394,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                         boxShadow: [
                           BoxShadow(
                             color: accent.withValues(
-                              alpha: isDark ? (0.28 + pulse * 0.20) : (0.16 + pulse * 0.12),
+                              alpha: isDark
+                                  ? (0.28 + pulse * 0.20)
+                                  : (0.16 + pulse * 0.12),
                             ),
                             blurRadius: 22 + pulse * 10,
                             spreadRadius: 2 + pulse * 3,
@@ -2405,7 +2485,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final isCompact = constraints.maxWidth < 360;
-                    final cardWidth = isCompact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+                    final cardWidth = isCompact
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - 10) / 2;
                     return Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -2578,13 +2660,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                     shape: BoxShape.circle,
                     color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
                   ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      color: accent,
-                      size: 16,
-                    ),
-                  ),
+                  child: Center(child: Icon(icon, color: accent, size: 16)),
                 ),
                 const SizedBox(width: 9),
                 Expanded(
@@ -2653,7 +2729,7 @@ class _AtmosphericChatBackground extends StatelessWidget {
     if (g.frozen) {
       gradientColors = isDark
           ? const [
-              Color(0xFF0B1420),  // deep nordic night
+              Color(0xFF0B1420), // deep nordic night
               Color(0xFF0F1C30),
               Color(0xFF0D1828),
             ]
@@ -2662,12 +2738,16 @@ class _AtmosphericChatBackground extends StatelessWidget {
               FrozenPalette.canvas,
               FrozenPalette.elevated,
             ];
-      aurora1 = isDark ? const Color(0xFF1E3A5F) : FrozenPalette.action.withValues(alpha: 0.08);
-      aurora2 = isDark ? const Color(0xFF0E2A45) : FrozenPalette.action.withValues(alpha: 0.05);
+      aurora1 = isDark
+          ? const Color(0xFF1E3A5F)
+          : FrozenPalette.action.withValues(alpha: 0.08);
+      aurora2 = isDark
+          ? const Color(0xFF0E2A45)
+          : FrozenPalette.action.withValues(alpha: 0.05);
     } else if (g.merlot) {
       gradientColors = isDark
           ? const [
-              Color(0xFF180F14),  // deep merlot night
+              Color(0xFF180F14), // deep merlot night
               Color(0xFF1E1018),
               Color(0xFF160D12),
             ]
@@ -2676,26 +2756,30 @@ class _AtmosphericChatBackground extends StatelessWidget {
               MerlotPalette.surface,
               MerlotPalette.canvas,
             ];
-      aurora1 = isDark ? const Color(0xFF3D1828) : MerlotPalette.action.withValues(alpha: 0.07);
-      aurora2 = isDark ? const Color(0xFF2A1020) : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
+      aurora1 = isDark
+          ? const Color(0xFF3D1828)
+          : MerlotPalette.action.withValues(alpha: 0.07);
+      aurora2 = isDark
+          ? const Color(0xFF2A1020)
+          : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
       // Default: warm midnight indigo → violet for dark; soft lavender cream for light
       gradientColors = isDark
           ? const [
-              Color(0xFF0C0F1A),  // deep midnight
-              Color(0xFF111526),  // soft indigo depth
-              Color(0xFF0E1220),  // rich dark base
+              Color(0xFF0C0F1A), // deep midnight
+              Color(0xFF111526), // soft indigo depth
+              Color(0xFF0E1220), // rich dark base
             ]
           : const [
-              Color(0xFFF5F4FC),  // soft lavender white
-              Color(0xFFF8F7FE),  // near white
-              Color(0xFFF2F1FB),  // gentle tint
+              Color(0xFFF5F4FC), // soft lavender white
+              Color(0xFFF8F7FE), // near white
+              Color(0xFFF2F1FB), // gentle tint
             ];
       aurora1 = isDark
-          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6)  // warm violet glow
+          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6) // warm violet glow
           : accentColor.withValues(alpha: 0.06);
       aurora2 = isDark
-          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5)  // cool indigo glow
+          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5) // cool indigo glow
           : const Color(0xFF7C6FD0).withValues(alpha: 0.05);
     }
 

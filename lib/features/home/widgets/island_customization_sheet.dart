@@ -191,6 +191,15 @@ class IslandCustomizationSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 18),
             AscentSwitchRow(
+              title: 'Cycle through updates',
+              helper:
+                  'Browse a different update every 8 seconds. Pauses while expanded; swipe to browse at your own pace.',
+              value: prefs.autoRotate,
+              onChanged: (value) => ref
+                  .read(islandPreferencesProvider.notifier)
+                  .update((p) => p.copyWith(autoRotate: value)),
+            ),
+            AscentSwitchRow(
               title: 'Upcoming reminders',
               helper: 'Show reminders due soon, including recently due alerts.',
               value: prefs.showUpcoming,
@@ -200,7 +209,8 @@ class IslandCustomizationSheet extends ConsumerWidget {
             ),
             AscentSwitchRow(
               title: 'Daily recap',
-              helper: 'A brief text reflection shown once, then cleared automatically.',
+              helper:
+                  'A brief text reflection shown once, then cleared automatically.',
               value: prefs.showRecap,
               onChanged: (value) => ref
                   .read(islandPreferencesProvider.notifier)

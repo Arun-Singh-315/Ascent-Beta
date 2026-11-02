@@ -427,6 +427,15 @@ void main() {
       );
       await stored.close();
       final old = sqlite.sqlite3.open(file.path);
+      final triggers = old.select(
+        "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'history_%'",
+      );
+      for (final row in triggers) {
+        old.execute('DROP TRIGGER ${row['name']}');
+      }
+      old.execute('DROP TABLE IF EXISTS history_events');
+      old.execute('DROP TABLE IF EXISTS water_goal_versions');
+      old.execute('DROP TABLE IF EXISTS history_capture_control');
       old.execute('DROP TABLE ai_command_table');
       old.execute('DROP TABLE backup_restore_state');
       old.execute('ALTER TABLE reminders DROP COLUMN alarm_enabled');

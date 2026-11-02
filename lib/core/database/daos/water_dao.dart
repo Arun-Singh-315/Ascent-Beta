@@ -1,9 +1,6 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [
-  WaterLogTable,
-  WaterGoalTable,
-])
+@DriftAccessor(tables: [WaterLogTable, WaterGoalTable])
 class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
   WaterDao(super.db);
 
@@ -16,8 +13,10 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
     final amountSum = waterLogTable.amountMl.sum();
     final query = selectOnly(waterLogTable)
       ..addColumns([amountSum])
-      ..where(waterLogTable.date.isBiggerOrEqualValue(startOfDay) &
-          waterLogTable.date.isSmallerOrEqualValue(endOfDay));
+      ..where(
+        waterLogTable.date.isBiggerOrEqualValue(startOfDay) &
+            waterLogTable.date.isSmallerOrEqualValue(endOfDay),
+      );
 
     return query.watchSingle().map((row) => row.read(amountSum) ?? 0);
   }
@@ -29,9 +28,11 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
     final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
     return (select(waterLogTable)
-          ..where((l) =>
-              l.date.isBiggerOrEqualValue(startOfDay) &
-              l.date.isSmallerOrEqualValue(endOfDay))
+          ..where(
+            (l) =>
+                l.date.isBiggerOrEqualValue(startOfDay) &
+                l.date.isSmallerOrEqualValue(endOfDay),
+          )
           ..orderBy([(l) => OrderingTerm.desc(l.id)]))
         .watch();
   }
@@ -62,8 +63,10 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
     final amountSum = waterLogTable.amountMl.sum();
     final query = selectOnly(waterLogTable)
       ..addColumns([amountSum])
-      ..where(waterLogTable.date.isBiggerOrEqualValue(startOfDay) &
-          waterLogTable.date.isSmallerOrEqualValue(endOfDay));
+      ..where(
+        waterLogTable.date.isBiggerOrEqualValue(startOfDay) &
+            waterLogTable.date.isSmallerOrEqualValue(endOfDay),
+      );
 
     final row = await query.getSingleOrNull();
     return row?.read(amountSum) ?? 0;
@@ -71,13 +74,21 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
 
   /// Watch daily water goal in mL (default 2500 mL).
   Stream<int> watchDailyWaterGoal() {
-    return (select(waterGoalTable)..limit(1))
-        .watchSingleOrNull()
-        .map((goal) => goal?.targetMl ?? 2500);
+    return (select(
+      waterGoalTable,
+    )..limit(1)).watchSingleOrNull().map((goal) => goal?.targetMl ?? 2500);
   }
 
   /// Update daily water goal.
-  Future<void> setDailyWaterGoal(int targetMl) async {
+  Future<void> setDailyWaterGoal(int targetMl) => db.transaction(() async {
+    if (targetMl <= 0) throw ArgumentError('Water goal must be positive');
+    final now = DateTime.now();
+    final day = DateFormat('yyyy-MM-dd').format(now);
+    await db
+        .into(db.waterGoalVersionTable)
+        .insertOnConflictUpdate(
+          WaterGoalVersionTableCompanion.insert(day: day, targetMl: targetMl),
+        );
     final existing = await (select(waterGoalTable)..limit(1)).getSingleOrNull();
     if (existing == null) {
       await into(waterGoalTable).insert(
@@ -95,7 +106,7 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
         ),
       );
     }
-  }
+  });
 
   /// Add water log for a specific date (useful for backfill and testing).
   Future<int> addWaterForDate(int amountMl, DateTime date) {
@@ -120,18 +131,38 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
     for (int i = 6; i >= 0; i--) {
       final date = today.subtract(Duration(days: i));
       final ml = await getWaterForDate(date);
-      records.add(DailyHydrationRecord(
-        date: date,
-        totalMl: ml,
-        goalMl: goalMl,
-      ));
+      final versions =
+          await (db.select(db.waterGoalVersionTable)
+                ..where(
+                  (v) => v.day.isSmallerOrEqualValue(
+                    DateFormat('yyyy-MM-dd').format(date),
+                  ),
+                )
+                ..orderBy([(v) => OrderingTerm.desc(v.day)])
+                ..limit(1))
+              .get();
+      records.add(
+        DailyHydrationRecord(
+          date: date,
+          totalMl: ml,
+          goalMl: versions.isNotEmpty
+              ? versions.first.targetMl
+              : (i == 0 ? goalMl : 0),
+        ),
+      );
     }
     return records;
   }
 
   /// Watch past 7 days hydration history stream.
   Stream<List<DailyHydrationRecord>> watchPast7DaysHistory() {
-    return select(waterLogTable).watch().asyncMap((_) => getPast7DaysHistory());
+    return db
+        .customSelect(
+          'SELECT 1',
+          readsFrom: {waterLogTable, waterGoalTable, db.waterGoalVersionTable},
+        )
+        .watch()
+        .asyncMap((_) => getPast7DaysHistory());
   }
 }
 
@@ -146,6 +177,6 @@ class DailyHydrationRecord {
     this.goalMl = 2500,
   });
 
-  bool get isGoalMet => totalMl >= goalMl;
+  bool get isGoalMet => goalMl > 0 && totalMl >= goalMl;
   double get progress => goalMl > 0 ? (totalMl / goalMl).clamp(0.0, 1.5) : 0.0;
 }

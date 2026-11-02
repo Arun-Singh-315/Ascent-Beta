@@ -127,7 +127,7 @@ class AscentDrawer extends ConsumerWidget {
             ),
             _DrawerTile(
               icon: Icons.bubble_chart_rounded,
-              label: 'Mind Space',
+              label: 'Mind Palace',
               route: '/thought-wall',
               color: context.accentSecondary,
             ),
@@ -148,6 +148,8 @@ class AscentDrawer extends ConsumerWidget {
               title: 'INSIGHTS',
               color: context.accentPrimary,
             ),
+            _DrawerTile(icon:Icons.history_rounded,label:'History',route:'/history',color:context.accentPrimary),
+            _DrawerTile(icon:Icons.view_agenda_outlined,label:'Things hub',route:'/things',color:context.accentPrimary),
             _DrawerTile(
               icon: Icons.insights_rounded,
               label: 'Analytics & Insights',

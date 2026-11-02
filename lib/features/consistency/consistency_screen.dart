@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -46,6 +47,7 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
     return AscentScaffold(
       title: 'Consistency Tracker',
       subtitle: 'Daily habits & study streak',
+      actions:const[HistoryAction(module:'consistency')],
       body: StreamBuilder<List<ConsistencyLog>>(
         stream: consistencyDao.watchAllLogs(),
         builder: (context, snapshot) {

@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_switch_row.dart';
 import '../../shared/widgets/ascent_switch.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../home/widgets/island_customization_sheet.dart';
@@ -577,6 +578,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 onAction: _requestNotificationAccess,
               ),
 
+              _Divider(color: g.line),
+
+              AscentSwitchRow(
+                title: 'Things hub check-ins',
+                helper:
+                    'Up to two brief bundles a day, at 11:30 and 18:30. Includes to-dos without reminders; stays quiet near scheduled alerts.',
+                value: ref.watch(thingsCheckInsEnabledProvider),
+                onChanged: ref
+                    .read(thingsCheckInsEnabledProvider.notifier)
+                    .setEnabled,
+              ),
               _Divider(color: g.line),
 
               // 2. Alarms & Exact Timing

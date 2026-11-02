@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -137,6 +138,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
       subtitle: 'Daily fluid health & vitality',
       glow2: g.slateSoft,
       actions: [
+        const HistoryAction(module:'hydration'),
         IconButton(
           tooltip: 'Edit Daily Goal',
           icon: Icon(Icons.settings_outlined, color: g.clay),
@@ -430,6 +432,7 @@ class _HydrationHistorySection extends StatelessWidget {
     final totalVolume = history.fold<int>(0, (sum, r) => sum + r.totalMl);
     final avgVolume = (totalVolume / history.length).round();
     final daysMet = history.where((r) => r.isGoalMet).length;
+    final knownGoals = history.where((r)=>r.goalMl>0).length;
 
     final maxVal = history.fold<int>(
       2500,
@@ -490,7 +493,7 @@ class _HydrationHistorySection extends StatelessWidget {
                   borderRadius: AppGeometry.roundedr8,
                 ),
                 child: Text(
-                  '$daysMet/7 Goals Met',
+                  '$daysMet/$knownGoals Known Goals Met',
                   style: AppTypography.inter11W7003(
                     color: daysMet >= 4 ? AppPalette.colorFF10B981 : g.clay,
                   ),

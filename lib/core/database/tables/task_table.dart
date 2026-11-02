@@ -18,6 +18,8 @@ class TaskTable extends Table {
 
   TextColumn get title => text().withLength(min: 1, max: 300)();
 
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+
   /// Optional free-text notes about the task.
   TextColumn get notes => text().nullable()();
 

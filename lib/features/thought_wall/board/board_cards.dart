@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
@@ -50,17 +51,16 @@ IconData? boardMoodIcon(String mood) => switch (mood) {
   _ => null,
 };
 
-BorderRadius _boardRadius(ThoughtCardStyle style, int index) =>
-    switch (style) {
-      ThoughtCardStyle.soft => AppGeometry.roundedr18,
-      ThoughtCardStyle.bubble => BorderRadius.only(
-        topLeft: AppGeometry.radiusr18,
-        topRight: AppGeometry.radiusr18,
-        bottomLeft: index.isEven ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
-        bottomRight: index.isOdd ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
-      ),
-      ThoughtCardStyle.minimal => AppGeometry.roundedr8,
-    };
+BorderRadius _boardRadius(ThoughtCardStyle style, int index) => switch (style) {
+  ThoughtCardStyle.soft => AppGeometry.roundedr18,
+  ThoughtCardStyle.bubble => BorderRadius.only(
+    topLeft: AppGeometry.radiusr18,
+    topRight: AppGeometry.radiusr18,
+    bottomLeft: index.isEven ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
+    bottomRight: index.isOdd ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
+  ),
+  ThoughtCardStyle.minimal => AppGeometry.roundedr8,
+};
 
 /// One thought on the board. It shows the thought and nothing else: no
 /// buttons, no menus. Tap opens it, long-press selects, double-tap completes.
@@ -105,22 +105,16 @@ class BoardCard extends StatelessWidget {
     final minimal = appearance.style == ThoughtCardStyle.minimal;
     final comfortable = appearance.density == ThoughtCardDensity.comfortable;
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
-    final tint = thought.mood == 'thought' ? .09 : .16;
-
     final fill = (!appearance.bubbleFilled || minimal)
         ? Colors.transparent
         : Color.alphaBlend(
-            accent.withValues(alpha: dark ? tint + .04 : tint),
-            g.fill,
+            g.ink.withValues(alpha: dark ? .065 : .012),
+            dark ? g.bg : g.fill,
           );
     final borderColor = isSelected
-        ? g.clay
-        : thought.isCompleted
-        ? context.doneInk.withValues(alpha: .5)
-        : accent.withValues(alpha: dark ? .55 : .45);
-    final borderWidth = isSelected
-        ? 2.0
-        : appearance.bubbleBorderWidth.clamp(1.0, 2.5).toDouble();
+        ? SharedControlColors.actionBlue
+        : g.ink.withValues(alpha: dark ? .12 : .07);
+    final borderWidth = isSelected ? 1.8 : .7;
     final radius = _boardRadius(appearance.style, index);
 
     final moodIcon = boardMoodIcon(thought.mood);
@@ -148,7 +142,14 @@ class BoardCard extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (moodIcon != null) Icon(moodIcon, size: 15, color: accent),
-                if (high) Icon(Icons.flag_rounded, size: 15, color: g.coral),
+                if (high)
+                  Icon(
+                    Icons.star_rounded,
+                    size: 15,
+                    color: dark
+                        ? SharedControlColors.actionBlueDark
+                        : SharedControlColors.actionBlue,
+                  ),
                 if (spaceName != null)
                   Text('#$spaceName', style: tagStyle, maxLines: 1),
               ],
@@ -288,9 +289,53 @@ class BoardCard extends StatelessWidget {
         );
       case BoardCardKind.note:
       case BoardCardKind.long:
+        final isVeryLong =
+            kind == BoardCardKind.long ||
+            text.length > 220 ||
+            text.contains('\n\n');
+        if (isVeryLong) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ShaderMask(
+                shaderCallback: (rect) => const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black, Colors.black, Colors.transparent],
+                  stops: [0.0, 0.72, 1.0],
+                ).createShader(rect),
+                blendMode: BlendMode.dstIn,
+                child: Text(
+                  text,
+                  maxLines: kind == BoardCardKind.long ? 6 : 5,
+                  overflow: TextOverflow.clip,
+                  style: AppTypography.thoughtContent(color: g.ink),
+                ),
+              ),
+              const SizedBox(height: AppSpace.s6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.notes_rounded, size: 12, color: g.clay),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Read more',
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: g.clay,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_rounded, size: 10, color: g.clay),
+                ],
+              ),
+            ],
+          );
+        }
         return Text(
           text,
-          maxLines: kind == BoardCardKind.long ? 10 : 7,
+          maxLines: 6,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.thoughtContent(color: g.ink),
         );
@@ -327,7 +372,9 @@ class BoardHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     final dark = context.isDark;
-    final fill = dark ? Color.alphaBlend(g.clay.withValues(alpha: .22), g.fill) : g.ink;
+    final fill = dark
+        ? Color.alphaBlend(g.ink.withValues(alpha: .07), g.bg)
+        : g.ink;
     final onFill = dark ? g.ink : g.bg;
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
@@ -343,9 +390,23 @@ class BoardHeroCard extends StatelessWidget {
         onDoubleTap: isSelectionMode ? null : onDoubleTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(AppSpace.s20),
+          padding: const EdgeInsets.all(AppSpace.s24),
           decoration: BoxDecoration(
-            color: fill,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                fill,
+                Color.alphaBlend(Colors.white.withValues(alpha: .07), fill),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
             borderRadius: AppGeometry.roundedr24,
             border: Border.all(
               color: isSelected ? g.clay : Colors.transparent,
@@ -384,19 +445,69 @@ class BoardHeroCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpace.s10),
-              Text(
-                text,
-                maxLines: short ? 4 : 8,
-                overflow: TextOverflow.ellipsis,
-                style: short
-                    ? AscentTextStyles.pageTitle.copyWith(
-                        color: onFill,
-                        height: 1.25,
-                      )
-                    : AppTypography.thoughtContent(color: onFill).copyWith(
-                        fontSize: 17,
+              if (!short && (text.length > 200 || text.contains('\n\n'))) ...[
+                ShaderMask(
+                  shaderCallback: (rect) => const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black, Colors.black, Colors.transparent],
+                    stops: [0.0, 0.72, 1.0],
+                  ).createShader(rect),
+                  blendMode: BlendMode.dstIn,
+                  child: Text(
+                    text,
+                    maxLines: 6,
+                    overflow: TextOverflow.clip,
+                    style: AppTypography.thoughtContent(
+                      color: onFill,
+                    ).copyWith(fontSize: 17),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: onFill.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.notes_rounded, size: 13, color: onFill),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Read full note',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: onFill,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-              ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 11,
+                        color: onFill,
+                      ),
+                    ],
+                  ),
+                ),
+              ] else
+                Text(
+                  text,
+                  maxLines: short ? 4 : 8,
+                  overflow: TextOverflow.ellipsis,
+                  style: short
+                      ? AscentTextStyles.pageTitle.copyWith(
+                          color: onFill,
+                          height: 1.25,
+                        )
+                      : AppTypography.thoughtContent(
+                          color: onFill,
+                        ).copyWith(fontSize: 17),
+                ),
               const SizedBox(height: AppSpace.s12),
               Text(
                 [

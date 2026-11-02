@@ -25,6 +25,17 @@ void main() {
       final reminderIds = (await db.reminderDao.watchAllReminders().first)
           .map((r) => r.id)
           .toList();
+      final triggers = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='trigger' AND name LIKE 'history_%'",
+          )
+          .get();
+      for (final row in triggers) {
+        await db.customStatement('DROP TRIGGER ${row.read<String>('name')}');
+      }
+      await db.customStatement('DROP TABLE IF EXISTS history_events');
+      await db.customStatement('DROP TABLE IF EXISTS water_goal_versions');
+      await db.customStatement('DROP TABLE IF EXISTS history_capture_control');
       await db.customStatement('DROP TABLE plan_collection_items');
       await db.customStatement('DROP TABLE plan_collections');
       await db.customStatement('ALTER TABLE thoughts DROP COLUMN category');

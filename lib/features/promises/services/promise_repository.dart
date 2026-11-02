@@ -1,3 +1,4 @@
+import '../../../core/history/history_ledger.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:drift/drift.dart' as drift;
@@ -86,6 +87,7 @@ class PromiseRepository {
     await _db.customStatement(
       'CREATE INDEX IF NOT EXISTS promise_events_owner_date ON promise_progress_events(promise_id, occurrence_date)',
     );
+    await HistoryLedger.installPromises(_db);
   }
 
   Future<List<Map<String, dynamic>>> _rows(
@@ -673,6 +675,8 @@ class PromiseRepository {
         ]);
       }
       await _db.thoughtDao.deleteThought(id);
+      await (_db.delete(_db.historyEventTable)..where((e) => e.privacyThoughtId.equals(id) |
+        (e.module.equals('promises') & e.entityId.equals('$id')))).go();
     });
     await (_reminderTails[id] ?? Future<void>.value());
     await _cancelReminders(id);

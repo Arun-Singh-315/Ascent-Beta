@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -316,6 +317,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
       subtitle: 'Personal ledger & savings goals',
       glow2: g.amberSoft,
       actions: [
+        const HistoryAction(module:'money'),
         IconButton(
           icon: Icon(Icons.tune_outlined, color: g.ink),
           tooltip: 'Budget Limits',

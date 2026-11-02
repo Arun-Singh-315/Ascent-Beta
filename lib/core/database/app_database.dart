@@ -1,3 +1,5 @@
+import '../history/history_ledger.dart';
+import 'tables/history_tables.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
@@ -62,6 +64,8 @@ part 'daos/plan_dao.dart';
 
 @DriftDatabase(
   tables: [
+    HistoryEventTable,
+    WaterGoalVersionTable,
     UserProfileTable,
     StudyPhaseTable,
     SeriesTable,
@@ -149,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -157,6 +161,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       await _createThoughtLinkIndex();
       await _createPlanningIndexes();
+      await HistoryLedger.install(this);
       // Seed built-in categories on fresh install
       await into(sessionCategoryTable).insert(
         SessionCategoryTableCompanion.insert(
@@ -278,8 +283,34 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(planCollectionItemTable);
         await _createPlanningIndexes();
       }
+      Future<void> addColumnSafely(TableInfo table, GeneratedColumn column) async {
+        final pragma = await customSelect(
+          "PRAGMA table_info('${table.actualTableName}')",
+        ).get();
+        if (!pragma.any((row) => row.read<String>('name') == column.name)) {
+          await m.addColumn(table, column);
+        }
+      }
+
+      Future<void> createTableSafely(TableInfo table) async {
+        final tables = await customSelect(
+          "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+          variables: [Variable.withString(table.actualTableName)],
+        ).get();
+        if (tables.isEmpty) {
+          await m.createTable(table);
+        }
+      }
+
       if (from < 21) {
-        await m.addColumn(userProfileTable, userProfileTable.dateOfBirth);
+        await addColumnSafely(userProfileTable, userProfileTable.dateOfBirth);
+      }
+      if (from < 22) {
+        await createTableSafely(historyEventTable);
+        await createTableSafely(waterGoalVersionTable);
+        await addColumnSafely(taskTable, taskTable.isArchived);
+        await HistoryLedger.install(this);
+        await HistoryLedger.backfill(this);
       }
     },
   );
@@ -327,7 +358,10 @@ class AppDatabase extends _$AppDatabase {
   /// for a fresh production v0.01 start.
   Future<void> wipeAllUserData() async {
     await transaction(() async {
+      await HistoryLedger.capture(this, false);
       final tablesToClear = [
+        'history_events',
+        'water_goal_versions',
         'thought_reminder_links',
         'thought_merge_sources',
         'thought_categories',
@@ -378,6 +412,7 @@ class AppDatabase extends _$AppDatabase {
           // Table might not exist in old migrations
         }
       }
+      await HistoryLedger.capture(this, true);
     });
   }
 

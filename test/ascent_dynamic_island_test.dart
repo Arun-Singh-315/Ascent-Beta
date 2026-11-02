@@ -40,6 +40,7 @@ class _Time extends TimeTrackingNotifier {
   Future<void> resumeSession() async =>
       state = state.copyWith(isRunning: true, isPaused: false);
   void end() => state = const TimeTrackingState();
+  void start(TimeTrackingState next) => state = next;
 }
 
 class _Chai extends ChaiBreakNotifier {
@@ -146,6 +147,8 @@ void main() {
     bool learning = false,
     WalkTrackingState walk = const WalkTrackingState(),
     double scale = 1,
+    bool accessibleNavigation = false,
+    bool disableAnimations = false,
     GlobalKey? capture,
     IslandPreferences preferences = const IslandPreferences(),
   }) => ProviderScope(
@@ -177,7 +180,8 @@ void main() {
     child: MaterialApp(
       theme: dark ? AscentTheme.dark() : AscentTheme.light(),
       home: MediaQuery(
-        data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+        data: MediaQueryData(textScaler: TextScaler.linear(scale),
+          accessibleNavigation: accessibleNavigation, disableAnimations: disableAnimations),
         child: Scaffold(
           backgroundColor: dark
               ? const Color(0xFF111B27)
@@ -573,6 +577,101 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Compact screen cycles through every live update and wraps', (tester) async {
+    await tester.pumpWidget(app(time: focus(), learning: true,
+      chai: const ChaiBreakState(isRunning: true)));
+    await settle(tester);
+    for (final id in ['learning', 'chai', 'focus']) {
+      await tester.pump(const Duration(seconds: 8));
+      await settle(tester);
+      expect(find.byKey(ValueKey('island_update_$id')), findsOneWidget);
+      expect(find.byKey(const ValueKey('dynamic_island_expanded')), findsNothing);
+    }
+    await expand(tester);
+    await tester.pump(const Duration(seconds: 24));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('island_toggle_focus')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Swipe browses both directions with rotation off and resets on removal', (tester) async {
+    final tasks = StreamController<List<Task>>();
+    addTearDown(tasks.close);
+    final now = DateTime.now();
+    final entries = [for (var id = 1; id <= 3; id++) Task(id: id,
+      title: 'Small step $id', priority: 'low', revisitFlag: false,
+      createdAt: now, updatedAt: now)];
+    await tester.pumpWidget(app(taskStream: tasks.stream,
+      preferences: const IslandPreferences(autoRotate: false)));
+    tasks.add(entries);
+    await settle(tester);
+    expect(find.text('Small step 1'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 24));
+    await settle(tester);
+    expect(find.text('Small step 1'), findsOneWidget);
+    final header = find.byKey(const ValueKey('island_drag_handle'));
+    await tester.drag(header, const Offset(-90, 0));
+    await settle(tester);
+    expect(find.text('Small step 2'), findsOneWidget);
+    await tester.drag(header, const Offset(90, 0));
+    await settle(tester);
+    expect(find.text('Small step 1'), findsOneWidget);
+    tasks.add(entries.skip(1).toList());
+    await settle(tester);
+    await settle(tester);
+    expect(find.text('Small step 1'), findsNothing);
+    expect(find.text('Small step 2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Cycling suspends in the background and restarts on resume', (tester) async {
+    await tester.pumpWidget(app(time: focus(), learning: true,
+      chai: const ChaiBreakState(isRunning: true)));
+    await settle(tester);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump(const Duration(seconds: 24));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('island_update_focus')), findsOneWidget);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await settle(tester);
+    await tester.pump(const Duration(seconds: 8));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('island_update_learning')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Accessibility keeps updates still while manual browsing stays available', (tester) async {
+    for (final reduceMotion in [false, true]) {
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(app(time: focus(), learning: true,
+        accessibleNavigation: !reduceMotion, disableAnimations: reduceMotion));
+      await settle(tester);
+      await tester.pump(const Duration(seconds: 24));
+      await settle(tester);
+      expect(find.byKey(const ValueKey('island_update_focus')), findsOneWidget);
+      await tester.drag(find.byKey(const ValueKey('island_drag_handle')), const Offset(-90, 0));
+      await settle(tester);
+      expect(find.byKey(const ValueKey('island_update_learning')), findsOneWidget);
+    }
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('A newly started live session takes over a compact task update', (tester) async {
+    final now = DateTime.now();
+    await tester.pumpWidget(app(taskStream: Stream.value([Task(id: 1,
+      title: 'Reply to message', priority: 'low', revisitFlag: false,
+      createdAt: now, updatedAt: now)])));
+    await settle(tester);
+    expect(find.text('Reply to message'), findsOneWidget);
+    final container = ProviderScope.containerOf(tester.element(find.byType(AscentDynamicIsland)));
+    (container.read(timeTrackingProvider.notifier) as _Time).start(focus());
+    await settle(tester);
+    await settle(tester);
+    expect(find.byKey(const ValueKey('island_update_focus')), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 
   testWidgets('Secondary bubble opens that activity directly', (tester) async {
     await tester.pumpWidget(

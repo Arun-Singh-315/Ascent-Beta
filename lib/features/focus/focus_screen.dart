@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/music_companion_card.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -366,6 +367,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       subtitle: 'One thing at a time',
       glow2: g.amberSoft,
       actions: [
+        const HistoryAction(module:'focus'),
         IconButton(
           onPressed: () {
             HapticFeedback.lightImpact();

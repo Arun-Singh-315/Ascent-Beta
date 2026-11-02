@@ -26,7 +26,7 @@ const homeTools = <String, String>{
 const homeShortcutRoutes = <String, String>{
   'promises': 'Promises',
   'today': 'Today',
-  'thought-wall': 'Mind Space',
+  'thought-wall': 'Mind Palace',
   'learning': 'Learning',
   'reminders': 'Reminders',
   'money': 'Money',

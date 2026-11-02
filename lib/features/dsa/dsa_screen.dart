@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -58,6 +59,7 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
       title: 'DSA Problem Tracker',
       subtitle: 'LeetCode & algorithmic patterns',
       actions: [
+        const HistoryAction(module:'dsa'),
         IconButton(
           icon: Icon(
             _filterNeedsRevisit

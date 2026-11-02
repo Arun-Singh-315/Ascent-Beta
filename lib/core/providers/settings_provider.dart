@@ -254,3 +254,20 @@ final accountabilityFollowUpEnabledProvider =
     NotifierProvider<AccountabilityFollowUpNotifier, bool>(
       AccountabilityFollowUpNotifier.new,
     );
+
+/// Bounded, combined Things hub check-ins, independent of explicit reminders.
+final thingsCheckInsEnabledProvider =
+    NotifierProvider<ThingsCheckInsNotifier, bool>(ThingsCheckInsNotifier.new);
+
+class ThingsCheckInsNotifier extends Notifier<bool> {
+  @override
+  bool build() =>
+      ref.watch(sharedPreferencesProvider).getBool('things_check_ins_v1') ??
+      true;
+  Future<void> setEnabled(bool value) async {
+    await ref
+        .read(sharedPreferencesProvider)
+        .setBool('things_check_ins_v1', value);
+    state = value;
+  }
+}

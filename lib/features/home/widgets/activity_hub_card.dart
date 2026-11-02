@@ -77,7 +77,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             TextButton(
               onPressed: () {
                 HapticFeedback.selectionClick();
-                context.push('/today');
+                context.push('/things');
               },
               child: Text(
                 'View ›',
@@ -100,7 +100,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             children: [
               _HubTabs(
                 key: const ValueKey('activity_hub_tabs'),
-                labels: const ['Active', 'Completed', 'Plans'],
+                labels: const ['Active', 'Finished today', 'Plans'],
                 selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
                 onSelected: (i) => setState(() {
                   _showCompleted = i == 1;
@@ -273,6 +273,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               'Browse all ${allEntries.length} activities',
                             ),
                           ),
+                        if (_showCompleted)
+                          TextButton.icon(onPressed:()=>context.push('/history'),icon:const Icon(Icons.history_rounded,size:18),label:const Text('Browse all history')),
                         if (_showAll)
                           TextButton(
                             onPressed: () => setState(() => _showAll = false),
@@ -325,30 +327,51 @@ class _HubTabs extends StatelessWidget {
 List<TodayActivityItem> _prioritizeActivities(
   Iterable<TodayActivityItem> items,
 ) {
-  final running = <TodayActivityItem>[];
-  final paused = <TodayActivityItem>[];
-  final upcoming = <TodayActivityItem>[];
+  final inProgress = <TodayActivityItem>[];
+  final needsAttention = <TodayActivityItem>[];
+  final next = <TodayActivityItem>[];
+  final now = DateTime.now();
+
   for (final item in items) {
-    switch (item.status) {
-      case TodayActivityStatus.inProgress:
-        running.add(item);
-      case TodayActivityStatus.paused:
-        paused.add(item);
-      default:
-        upcoming.add(item);
+    if (item.status == TodayActivityStatus.inProgress ||
+        item.status == TodayActivityStatus.paused) {
+      inProgress.add(item);
+    } else if (item.isOverdue ||
+        item.priority == 'high' ||
+        (item.scheduledTime != null &&
+            item.scheduledTime!.difference(now) <= const Duration(hours: 1))) {
+      needsAttention.add(item);
+    } else {
+      next.add(item);
     }
   }
+
   int rank(TodayActivityItem item) => switch (item.priority) {
     'high' => 0,
     'medium' => 1,
     _ => 2,
   };
-  final order = {for (var i = 0; i < upcoming.length; i++) upcoming[i].id: i};
-  upcoming.sort((a, b) {
+
+  needsAttention.sort((a, b) {
+    if (a.isOverdue != b.isOverdue) return a.isOverdue ? -1 : 1;
     final priority = rank(a).compareTo(rank(b));
-    return priority != 0 ? priority : order[a.id]!.compareTo(order[b.id]!);
+    if (priority != 0) return priority;
+    if (a.scheduledTime != null && b.scheduledTime != null) {
+      return a.scheduledTime!.compareTo(b.scheduledTime!);
+    }
+    return a.scheduledTime != null ? -1 : 1;
   });
-  return [...running, ...paused, ...upcoming];
+
+  next.sort((a, b) {
+    final priority = rank(a).compareTo(rank(b));
+    if (priority != 0) return priority;
+    if (a.scheduledTime != null && b.scheduledTime != null) {
+      return a.scheduledTime!.compareTo(b.scheduledTime!);
+    }
+    return 0;
+  });
+
+  return [...inProgress, ...needsAttention, ...next];
 }
 
 String _activityType(TodayActivityItem item) =>

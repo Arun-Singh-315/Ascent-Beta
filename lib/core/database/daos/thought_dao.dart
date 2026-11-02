@@ -190,46 +190,48 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   }
 
   /// Renames a space the user created. Built-in spaces keep their names.
-  Future<void> renameCategory(String key, String name) =>
-      db.transaction(() async {
-        final id = _customCategoryId(key);
-        if (id == null) throw ArgumentError.value(key, 'category');
-        final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
-        if (clean.isEmpty || clean.length > 50) {
-          throw ArgumentError(
-            'Use a category name between 1 and 50 characters.',
-          );
-        }
-        final normalized = clean.toLowerCase();
-        final usedByBuiltIn = builtInCategories.values.any(
-          (v) => v.toLowerCase() == normalized,
-        );
-        final clash =
-            await (db.select(db.thoughtCategoryTable)..where(
-                  (t) => t.normalizedName.equals(normalized) & t.id.equals(id).not(),
-                ))
-                .getSingleOrNull();
-        if (usedByBuiltIn || clash != null) {
-          throw ArgumentError('That name is already used.');
-        }
-        await (db.update(
-          db.thoughtCategoryTable,
-        )..where((t) => t.id.equals(id))).write(
-          ThoughtCategoryTableCompanion(
-            name: Value(clean),
-            normalizedName: Value(normalized),
-          ),
-        );
-      });
+  Future<void> renameCategory(String key, String name) => db.transaction(
+    () async {
+      final id = _customCategoryId(key);
+      if (id == null) throw ArgumentError.value(key, 'category');
+      await _requireCategory(key);
+      final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (clean.isEmpty || clean.length > 50) {
+        throw ArgumentError('Use a category name between 1 and 50 characters.');
+      }
+      final normalized = clean.toLowerCase();
+      final usedByBuiltIn = builtInCategories.values.any(
+        (v) => v.toLowerCase() == normalized,
+      );
+      final clash =
+          await (db.select(db.thoughtCategoryTable)..where(
+                (t) =>
+                    t.normalizedName.equals(normalized) & t.id.equals(id).not(),
+              ))
+              .getSingleOrNull();
+      if (usedByBuiltIn || clash != null) {
+        throw ArgumentError('That name is already used.');
+      }
+      await (db.update(
+        db.thoughtCategoryTable,
+      )..where((t) => t.id.equals(id))).write(
+        ThoughtCategoryTableCompanion(
+          name: Value(clean),
+          normalizedName: Value(normalized),
+        ),
+      );
+    },
+  );
 
   /// Removes a space the user created. Its entries are kept and move back to
   /// the wall. Returns how many entries moved.
   Future<int> deleteCategory(String key) => db.transaction(() async {
     final id = _customCategoryId(key);
     if (id == null) throw ArgumentError.value(key, 'category');
-    final moved = await (update(thoughtTable)
-          ..where((t) => t.category.equals(key)))
-        .write(const ThoughtTableCompanion(category: Value('general')));
+    await _requireCategory(key);
+    final moved =
+        await (update(thoughtTable)..where((t) => t.category.equals(key)))
+            .write(const ThoughtTableCompanion(category: Value('general')));
     await (db.delete(
       db.thoughtCategoryTable,
     )..where((t) => t.id.equals(id))).go();
@@ -242,6 +244,10 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<List<int>> insertEntries(List<String> contents, String category) =>
       db.transaction(() async {
         await _requireCategory(category);
+        if (contents.length > 100 ||
+            contents.any((text) => text.trim().isEmpty)) {
+          throw ArgumentError('Use up to 100 non-empty entries.');
+        }
         final ids = List<int>.filled(contents.length, 0);
         for (var i = contents.length - 1; i >= 0; i--) {
           ids[i] = await insertThought(

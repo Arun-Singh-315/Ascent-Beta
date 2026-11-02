@@ -25,17 +25,14 @@ enum BoardCardKind {
   long,
 }
 
-final _bulletLine = RegExp(r'^\s*(?:[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+(.+)$');
-final _bulletPrefix = RegExp(r'^\s*(?:[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+');
+final _bulletLine = RegExp(
+  r'^\s*(?:-->|→|[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+(.+)$',
+);
+final _bulletPrefix = RegExp(r'^\s*(?:-->|→|[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+');
 final _lineBreak = RegExp(r'\r?\n');
 
 /// True when the text carries the legacy high-priority markers.
-bool isHighPriorityContent(String content) {
-  final lower = content.toLowerCase();
-  return content.contains('[HIGH]') ||
-      lower.contains('#high') ||
-      lower.contains('#urgent');
-}
+bool isHighPriorityContent(String content) => content.startsWith('[HIGH]');
 
 /// A private promise that has not been unlocked in this session. Its text must
 /// not be shown anywhere (card, hero, detail, share).
@@ -50,12 +47,12 @@ bool isPrivateLocked(
 
 /// Text shown on a card, without the "[HIGH] " storage marker.
 String displayContent(String content) =>
-    content.startsWith('[HIGH] ') ? content.substring(7) : content;
+    content.startsWith('[HIGH]') ? content.substring(6).trimLeft() : content;
 
 /// Adds or removes the "[HIGH] " marker (same storage format as before).
 String toggleHighPriorityContent(String content) {
-  if (content.contains('[HIGH]')) {
-    return content.replaceAll('[HIGH] ', '').replaceAll('[HIGH]', '').trim();
+  if (isHighPriorityContent(content)) {
+    return displayContent(content);
   }
   return '[HIGH] $content';
 }
@@ -182,7 +179,9 @@ BoardContent buildBoardContent(
 
   Thought? hero;
   if (heroId != null) {
-    hero = open.where((t) => t.id == heroId).firstOrNull;
+    hero = open
+        .where((t) => t.id == heroId && !excludedFromHero.contains(t.id))
+        .firstOrNull;
   }
   hero ??= open.where((t) => !excludedFromHero.contains(t.id)).firstOrNull;
   final rest = open.where((t) => t.id != hero?.id).toList();
@@ -314,10 +313,9 @@ SpaceTag? parseSpaceTag(String raw, Map<String, String> categories) {
   final text = raw.trimLeft();
   if (!text.startsWith('#')) return null;
   final lower = text.toLowerCase();
-  final candidates = categories.entries
-      .where((e) => e.key != wallCategoryKey)
-      .toList()
-    ..sort((a, b) => b.value.length.compareTo(a.value.length));
+  final candidates =
+      categories.entries.where((e) => e.key != wallCategoryKey).toList()
+        ..sort((a, b) => b.value.length.compareTo(a.value.length));
   for (final entry in candidates) {
     final tag = '#${entry.value.toLowerCase()}';
     if (!lower.startsWith(tag)) continue;
