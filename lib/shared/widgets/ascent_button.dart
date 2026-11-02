@@ -190,6 +190,16 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
 
   bool get _isEnabled => widget.onPressed != null && !widget.loading;
 
+  void _triggerTap() {
+    if (!_isEnabled) return;
+    if (widget.type == AscentButtonType.destructive) {
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact();
+    }
+    widget.onPressed?.call();
+  }
+
   void _onTapDown(TapDownDetails _) {
     if (!_isEnabled) return;
     setState(() => _pressed = true);
@@ -198,8 +208,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
   void _onTapUp(TapUpDetails _) {
     if (!_isEnabled) return;
     setState(() => _pressed = false);
-    HapticFeedback.lightImpact();
-    widget.onPressed?.call();
+    _triggerTap();
   }
 
   void _onTapCancel() {
@@ -379,7 +388,10 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       child: Semantics(
         button: true,
         enabled: _isEnabled,
-        label: effectiveLabel,
+        label: widget.loading
+            ? '${effectiveLabel ?? ''}, busy'
+            : effectiveLabel,
+        onTap: _isEnabled ? _triggerTap : null,
         child: interactiveWidget,
       ),
     );

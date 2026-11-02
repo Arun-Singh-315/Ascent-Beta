@@ -17,6 +17,14 @@ void main() {
         '/today',
       );
       expect(
+        NotificationService.destinationForPayload('/things'),
+        '/things',
+      );
+      expect(
+        NotificationService.destinationForPayload('/history'),
+        '/history',
+      );
+      expect(
         NotificationService.destinationForPayload('/plans'),
         '/plans',
       );
@@ -90,10 +98,37 @@ void main() {
         '/thought-wall?thought=5',
       );
       expect(
+        NotificationService.destinationForPayload('/things?focus=42&mode=wrapup'),
+        '/things?focus=42&mode=wrapup',
+      );
+      expect(
+        NotificationService.destinationForPayload('/history?module=hydration'),
+        '/history?module=hydration',
+      );
+      expect(
         NotificationService.destinationForPayload(
           '/home?checkin=12&at=1700000000&occ=morning_chai&answer=done',
         ),
         '/home?checkin=12&at=1700000000&occ=morning_chai&answer=done',
+      );
+    });
+
+    test('supports ascent:// custom scheme deep links', () {
+      expect(
+        NotificationService.destinationForPayload('ascent://open/things?focus=99'),
+        '/things?focus=99',
+      );
+      expect(
+        NotificationService.destinationForPayload('ascent://things'),
+        '/things',
+      );
+      expect(
+        NotificationService.destinationForPayload('ascent://open/history'),
+        '/history',
+      );
+      expect(
+        NotificationService.destinationForPayload('ascent://today?task=12'),
+        '/today?task=12',
       );
     });
 

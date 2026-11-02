@@ -115,7 +115,12 @@ Future<void> main() async {
       return;
     }
     if (currentUri != destination) {
-      ascentRouter.go(destination);
+      if (destination != '/home' && !destination.startsWith('/home?')) {
+        ascentRouter.go('/home');
+        ascentRouter.push(destination);
+      } else {
+        ascentRouter.go(destination);
+      }
     }
   });
 
@@ -139,6 +144,36 @@ Future<void> main() async {
         ).hasMatch(effectivePayload)) {
       NotificationService.onNotificationNavigate?.call(
         '$effectivePayload&answer=${actionId.substring(5)}',
+      );
+      return;
+    }
+    if (actionId == 'things_start' && effectivePayload != null) {
+      NotificationService.onNotificationNavigate?.call(effectivePayload);
+      return;
+    }
+    if (actionId == 'things_review') {
+      NotificationService.onNotificationNavigate?.call('/things?mode=wrapup');
+      return;
+    }
+    if (actionId == 'things_done' && effectivePayload != null) {
+      final uri = Uri.tryParse(effectivePayload);
+      final idStr = uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
+      final taskId = int.tryParse(idStr ?? '');
+      if (taskId != null) {
+        final db = container.read(databaseProvider);
+        unawaited(db.taskDao.markComplete(taskId));
+      }
+      return;
+    }
+    if (actionId == 'things_snooze' && effectivePayload != null) {
+      unawaited(
+        NotificationService.instance.scheduleThingsCheckIn(
+          id: 830199,
+          at: DateTime.now().add(const Duration(minutes: 30)),
+          title: 'Snoozed check-in',
+          body: 'Ready to take on this item now?',
+          payload: effectivePayload,
+        ),
       );
       return;
     }

@@ -965,65 +965,73 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   ),
                 ),
               )
-            : OutlinedButton.icon(
-                key: ValueKey('activity_action_${activity.id}'),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: running
-                      ? SharedControlColors.dueRed.withValues(alpha: 0.12)
-                      : SharedControlColors.actionBlue.withValues(alpha: 0.08),
-                  foregroundColor: running
-                      ? SharedControlColors.dueRed
-                      : (context.isDark
-                          ? SharedControlColors.actionBlueDark
-                          : SharedControlColors.actionBlue),
-                  side: BorderSide(
-                    color: (running
-                            ? SharedControlColors.dueRed
-                            : SharedControlColors.actionBlue)
-                        .withValues(alpha: context.isDark ? 0.55 : 0.35),
-                    width: 1.0,
-                  ),
-                  minimumSize: const Size(0, 26),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            : ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: 44,
+                  minWidth: 44,
+                ),
+                child: Center(
+                  child: OutlinedButton.icon(
+                    key: ValueKey('activity_action_${activity.id}'),
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: running
+                          ? SharedControlColors.dueRed.withValues(alpha: 0.12)
+                          : SharedControlColors.actionBlue.withValues(alpha: 0.08),
+                      foregroundColor: running
+                          ? SharedControlColors.dueRed
+                          : (context.isDark
+                              ? SharedControlColors.actionBlueDark
+                              : SharedControlColors.actionBlue),
+                      side: BorderSide(
+                        color: (running
+                                ? SharedControlColors.dueRed
+                                : SharedControlColors.actionBlue)
+                            .withValues(alpha: context.isDark ? 0.55 : 0.35),
+                        width: 1.0,
+                      ),
+                      minimumSize: const Size(0, 26),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: Icon(
+                      running ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      size: 13,
+                    ),
+                    label: Text(actionLabel),
+                    onPressed: () async {
+                      HapticFeedback.selectionClick();
+                      if (lecture) {
+                        if (_selectLecture(ref, activity)) {
+                          ref.read(learningHubProvider.notifier).togglePlayPause();
+                        }
+                        return;
+                      }
+                      final tracker = ref.read(timeTrackingProvider.notifier);
+                      if (running) {
+                        tracker.pauseSession();
+                      } else if (paused) {
+                        tracker.resumeSession();
+                      } else {
+                        await tracker.switchToTask(
+                          title: activity.title,
+                          taskId: activity.linkedTaskId,
+                          sourceType: activity.sourceType,
+                          autoStart: true,
+                        );
+                      }
+                    },
                   ),
                 ),
-                icon: Icon(
-                  running ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  size: 13,
-                ),
-                label: Text(actionLabel),
-                onPressed: () async {
-                  HapticFeedback.selectionClick();
-                  if (lecture) {
-                    if (_selectLecture(ref, activity)) {
-                      ref.read(learningHubProvider.notifier).togglePlayPause();
-                    }
-                    return;
-                  }
-                  final tracker = ref.read(timeTrackingProvider.notifier);
-                  if (running) {
-                    tracker.pauseSession();
-                  } else if (paused) {
-                    tracker.resumeSession();
-                  } else {
-                    await tracker.switchToTask(
-                      title: activity.title,
-                      taskId: activity.linkedTaskId,
-                      sourceType: activity.sourceType,
-                      autoStart: true,
-                    );
-                  }
-                },
               ))
         : null;
 
