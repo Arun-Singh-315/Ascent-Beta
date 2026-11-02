@@ -450,28 +450,36 @@ class _MedicineActivityGroupCardState
               ),
             ),
           ] else ...[
-            FilledButton.icon(
-              key: ValueKey('activity_action_${dose.id}'),
-              style: FilledButton.styleFrom(
-                backgroundColor: g.ink,
-                foregroundColor: g.bg,
-                minimumSize: const Size(0, 32),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: 48,
+                minWidth: 48,
+              ),
+              child: Center(
+                child: FilledButton.icon(
+                  key: ValueKey('activity_action_${dose.id}'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: g.ink,
+                    foregroundColor: g.bg,
+                    minimumSize: const Size(0, 32),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  icon: const Icon(Icons.check_rounded, size: 13),
+                  label: const Text('Done'),
+                  onPressed: () => _completeDose(dose),
                 ),
               ),
-              icon: const Icon(Icons.check_rounded, size: 13),
-              label: const Text('Done'),
-              onPressed: () => _completeDose(dose),
             ),
           ],
         ],

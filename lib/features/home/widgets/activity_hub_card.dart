@@ -4,13 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../core/providers/database_provider.dart';
-import '../../../shared/widgets/glass_surface.dart';
-import '../../../shared/widgets/ascent_segmented_control.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/streak/study_streak_provider.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
+import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../plans/widgets/home_plans_preview.dart';
-import 'activity_row_item.dart';
+import '../../today/widgets/things_hero_card.dart';
 import 'activity_composer.dart';
+import 'activity_row_item.dart';
 import 'medicine_activity_group_card.dart';
 
 sealed class _HubEntry {
@@ -38,9 +43,11 @@ class ActivityHubCard extends ConsumerStatefulWidget {
     super.key,
     this.previewLimit = 4,
     this.excludedTaskIds = const {},
+    this.showHero = false,
   });
   final int previewLimit;
   final Set<int> excludedTaskIds;
+  final bool showHero;
   @override
   ConsumerState<ActivityHubCard> createState() => _ActivityHubCardState();
 }
@@ -56,6 +63,26 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final activities = ref.watch(todayActivitiesProvider);
+    final streak = ref.watch(studyStreakProvider).currentStreakDays;
+
+    ref.listen(todayActivitiesProvider, (prev, next) {
+      next.whenData((items) {
+        if (!mounted) return;
+        if (!_listLoadedOnce) {
+          _listLoadedOnce = true;
+        }
+        _seenActivityIds.addAll(items.map((e) => e.id));
+      });
+    });
+
+    final (totalCount, doneCount) = activities.maybeWhen(
+      data: (items) => (
+        items.length,
+        items.where((a) => a.status == TodayActivityStatus.done).length,
+      ),
+      orElse: () => (0, 0),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -65,13 +92,58 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(
-              child: Text(
-                'Things hub',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Things hub',
+                    style: AscentTextStyles.homeTitle.copyWith(
+                      color: g.ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (totalCount > 0 && doneCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(
+                          '$doneCount of $totalCount done',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: g.inkMuted,
+                          ),
+                        ),
+                        if (streak > 0) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '🔥 $streak',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: g.clay,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: (doneCount / totalCount).clamp(0.0, 1.0),
+                              minHeight: 3,
+                              backgroundColor: g.line,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                SharedControlColors.actionBlue,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
             TextButton(
@@ -79,13 +151,20 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 HapticFeedback.selectionClick();
                 context.push('/things');
               },
-              child: Text(
-                'View ›',
-                style: TextStyle(
-                  color: g.clay,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View',
+                    style: TextStyle(
+                      color: g.clay,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: g.clay),
+                ],
               ),
             ),
           ],
@@ -108,88 +187,119 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   _showAll = false;
                 }),
               ),
-              if (_showPlans)
-                const HomePlansPreview()
-              else
-                activities.when(
-                  skipLoadingOnReload: true,
-                  skipError: true,
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: LinearProgressIndicator(),
-                  ),
-                  error: (_, _) => TextButton(
-                    onPressed: () => ref.invalidate(todayActivitiesProvider),
-                    child: const Text('Retry activities'),
-                  ),
-                  data: (items) {
-                    final medicineItems = items
-                        .where((a) => a.sourceType == 'medicine')
-                        .toList();
-                    final nonMedicineItems = items
-                        .where(
-                          (a) =>
-                              a.sourceType != 'medicine' &&
-                              (_showCompleted ||
-                                  !widget.excludedTaskIds.contains(
-                                    a.linkedTaskId,
-                                  )),
-                        )
-                        .toList();
-
-                    final standardRows = _prioritizeActivities(
-                      nonMedicineItems.where(
-                        (a) =>
-                            (a.status == TodayActivityStatus.done) ==
-                            _showCompleted,
-                      ),
-                    );
-
-                    final medGroups = <String, List<TodayActivityItem>>{};
-                    for (final med in medicineItems) {
-                      final match = RegExp(
-                        r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
-                      ).firstMatch(med.title);
-                      final name = match?.group(1)?.trim() ?? med.title;
-                      medGroups.putIfAbsent(name, () => []).add(med);
-                    }
-
-                    final medGroupEntries = <_MedicineGroupEntry>[];
-                    for (final entry in medGroups.entries) {
-                      final doses = entry.value;
-                      final isAllDone = doses.every(
-                        (d) => d.status == TodayActivityStatus.done,
-                      );
-                      if (isAllDone == _showCompleted) {
-                        final match = RegExp(
-                          r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
-                        ).firstMatch(doses.first.title);
-                        final dosage = match?.group(2)?.trim() ?? '';
-                        medGroupEntries.add(
-                          _MedicineGroupEntry(
-                            medicineName: entry.key,
-                            dosage: dosage,
-                            activities: doses,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: _showPlans
+                    ? const HomePlansPreview(key: ValueKey('tab_plans'))
+                    : activities.when(
+                        skipLoadingOnReload: true,
+                        skipError: true,
+                        loading: () => Padding(
+                          key: const ValueKey('hub_loading'),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Column(
+                            children: [
+                              SkeletonShimmer(height: 48),
+                              const SizedBox(height: 8),
+                              SkeletonShimmer(height: 48),
+                            ],
                           ),
-                        );
-                      }
-                    }
+                        ),
+                        error: (_, _) => Padding(
+                          key: const ValueKey('hub_error'),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Unable to refresh activities. Your tasks are safely preserved.',
+                                  style: TextStyle(
+                                    color: g.inkMuted,
+                                    fontSize: 13,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                AscentButton.tonal(
+                                  compact: true,
+                                  label: 'Retry',
+                                  icon: Icons.refresh_rounded,
+                                  onPressed: () => ref.invalidate(
+                                    todayActivitiesProvider,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        data: (items) {
+                          final medicineItems = items
+                              .where((a) => a.sourceType == 'medicine')
+                              .toList();
+                          final nonMedicineItems = items
+                              .where(
+                                (a) =>
+                                    a.sourceType != 'medicine' &&
+                                    (_showCompleted ||
+                                        !widget.excludedTaskIds.contains(
+                                          a.linkedTaskId,
+                                        )),
+                              )
+                              .toList();
 
-                    final allEntries = <_HubEntry>[
-                      ...medGroupEntries,
-                      ...standardRows.map((r) => _ActivityRowEntry(r)),
-                    ];
+                          final standardRows = _prioritizeActivities(
+                            nonMedicineItems.where(
+                              (a) =>
+                                  (a.status == TodayActivityStatus.done) ==
+                                  _showCompleted,
+                            ),
+                          );
 
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (!mounted) return;
-                      final rowIds = allEntries
-                          .whereType<_ActivityRowEntry>()
-                          .map((e) => e.activity.id);
-                      if (!_listLoadedOnce) {
-                        _listLoadedOnce = true;
-                      }
-                      _seenActivityIds.addAll(rowIds);
-                    });
+                          final medGroups = <String, List<TodayActivityItem>>{};
+                          for (final med in medicineItems) {
+                            final match = RegExp(
+                              r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
+                            ).firstMatch(med.title);
+                            final name = match?.group(1)?.trim() ?? med.title;
+                            medGroups.putIfAbsent(name, () => []).add(med);
+                          }
+
+                          final medGroupEntries = <_MedicineGroupEntry>[];
+                          for (final entry in medGroups.entries) {
+                            final doses = entry.value;
+                            final isAllDone = doses.every(
+                              (d) => d.status == TodayActivityStatus.done,
+                            );
+                            if (isAllDone == _showCompleted) {
+                              final match = RegExp(
+                                r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
+                              ).firstMatch(doses.first.title);
+                              final dosage = match?.group(2)?.trim() ?? '';
+                              medGroupEntries.add(
+                                _MedicineGroupEntry(
+                                  medicineName: entry.key,
+                                  dosage: dosage,
+                                  activities: doses,
+                                ),
+                              );
+                            }
+                          }
+
+                          final hasHero = widget.showHero &&
+                              !_showCompleted &&
+                              standardRows.isNotEmpty;
+                          final heroActivity =
+                              hasHero ? standardRows.first : null;
+                          final displayStandardRows =
+                              hasHero ? standardRows.skip(1).toList() : standardRows;
+
+                          final allEntries = <_HubEntry>[
+                            ...displayStandardRows.map((r) => _ActivityRowEntry(r)),
+                            ...medGroupEntries,
+                          ];
 
                     final limit = _showAll
                         ? 20
@@ -211,6 +321,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                         ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
                                         : 'Nothing pending. Add something below.'),
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
+                            ),
+                          ),
+                        if (hasHero && heroActivity != null)
+                          ThingsHeroCard(
+                            activity: heroActivity,
+                            onTap: () => context.push(
+                              '/things?focus=${heroActivity.id}',
                             ),
                           ),
                         for (final entry in allEntries.take(limit)) ...[
@@ -274,7 +391,11 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             ),
                           ),
                         if (_showCompleted)
-                          TextButton.icon(onPressed:()=>context.push('/history'),icon:const Icon(Icons.history_rounded,size:18),label:const Text('Browse all history')),
+                          TextButton.icon(
+                            onPressed: () => context.push('/history'),
+                            icon: const Icon(Icons.history_rounded, size: 18),
+                            label: const Text('Browse all history'),
+                          ),
                         if (_showAll)
                           TextButton(
                             onPressed: () => setState(() => _showAll = false),
@@ -284,6 +405,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     );
                   },
                 ),
+              ),
               if (!_showPlans && !_showCompleted) ...[
                 const SizedBox(height: 10),
                 const ActivityComposer(),

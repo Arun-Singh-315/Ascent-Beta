@@ -252,7 +252,7 @@ class AscentTheme {
         style: FilledButton.styleFrom(
           backgroundColor: SharedControlColors.actionBlue,
           foregroundColor: Colors.white,
-          minimumSize: const Size(44, 44),
+          minimumSize: const Size(48, 48),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -466,13 +466,8 @@ class AscentTheme {
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
-          minimumSize: WidgetStatePropertyAll(
-            Size(
-              64,
-              (isNordicSky || isMerlotLinen)
-                  ? 48
-                  : (day ? AppSurfaces.day.minTapTarget : 42),
-            ),
+          minimumSize: const WidgetStatePropertyAll(
+            Size(64, 48),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(

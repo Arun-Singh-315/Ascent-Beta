@@ -16,14 +16,16 @@ import '../../../core/notifications/notification_service.dart';
 
 /// Type first. Optional controls keep the normal path to a single send.
 class ActivityComposer extends ConsumerStatefulWidget {
-  const ActivityComposer({super.key});
+  const ActivityComposer({super.key, this.focusNode});
+  final FocusNode? focusNode;
   @override
   ConsumerState<ActivityComposer> createState() => _ActivityComposerState();
 }
 
 class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   final _text = TextEditingController();
-  final _inputFocus = FocusNode();
+  FocusNode? _internalFocus;
+  FocusNode get _effectiveFocus => widget.focusNode ?? (_internalFocus ??= FocusNode());
   ActivityKind _kind = ActivityKind.todo;
   int _minutes = 30;
   DateTime? _date;
@@ -36,7 +38,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   void initState() {
     super.initState();
     _text.addListener(_changed);
-    _inputFocus.addListener(_changed);
+    _effectiveFocus.addListener(_changed);
   }
 
   void _changed() {
@@ -46,8 +48,8 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void dispose() {
     _text.removeListener(_changed);
-    _inputFocus.removeListener(_changed);
-    _inputFocus.dispose();
+    _effectiveFocus.removeListener(_changed);
+    _internalFocus?.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -191,7 +193,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       if (!mounted) return;
       HapticFeedback.lightImpact();
       _text.clear();
-      _inputFocus.unfocus();
+      _effectiveFocus.unfocus();
       setState(() {
         _kind = ActivityKind.todo;
         _date = null;
@@ -234,7 +236,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   }
 
   Future<void> _options() async {
-    _inputFocus.unfocus();
+    _effectiveFocus.unfocus();
     await showModalBottomSheet<void>(
       context: context,
       useSafeArea: true,
@@ -385,14 +387,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             children: [
               InlineListAddButton(
                 controller: _text,
-                focusNode: _inputFocus,
+                focusNode: _effectiveFocus,
                 enabled: !_saving,
               ),
               Expanded(
                 child: TextField(
                   key: const ValueKey('activity_quick_input'),
                   controller: _text,
-                  focusNode: _inputFocus,
+                  focusNode: _effectiveFocus,
                   enabled: !_saving,
                   minLines: 1,
                   maxLines: 4,
@@ -438,7 +440,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             ],
           ),
         ),
-        if (_inputFocus.hasFocus || hasText || customized)
+        if (_effectiveFocus.hasFocus || hasText || customized)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(

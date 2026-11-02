@@ -1,11 +1,29 @@
 import '../database/app_database.dart';
 import 'boost_notification_copy.dart';
 
+enum ThingsNotificationType {
+  morningPlan,
+  middayCheckIn,
+  eveningWrapUp,
+}
+
 /// One bundle per slot. A short horizon prevents stale, indefinitely repeating copy.
 class ThingsCheckIn {
-  const ThingsCheckIn(this.at, this.message);
+  const ThingsCheckIn(
+    this.at,
+    this.message, {
+    this.taskId,
+    this.payload,
+    this.type = ThingsNotificationType.middayCheckIn,
+    this.actions = const [],
+  });
+
   final DateTime at;
   final NotificationMessage message;
+  final int? taskId;
+  final String? payload;
+  final ThingsNotificationType type;
+  final List<String> actions;
 
   static List<ThingsCheckIn> plan({
     required DateTime now,
@@ -13,9 +31,10 @@ class ThingsCheckIn {
     required List<Reminder> reminders,
     Set<int> privateThoughtIds = const {},
     bool redact = false,
+    int horizonDays = 2,
   }) {
     final result = <ThingsCheckIn>[];
-    for (var day = 0; day < 2; day++) {
+    for (var day = 0; day < horizonDays; day++) {
       for (final hour in [11, 18]) {
         final at = DateTime(now.year, now.month, now.day + day, hour, 30);
         if (!at.isAfter(now.add(const Duration(minutes: 30)))) continue;
@@ -32,7 +51,8 @@ class ThingsCheckIn {
         final pending = tasks
             .where(
               (t) =>
-                  !t.isArchived && t.actualCompletedDate == null &&
+                  !t.isArchived &&
+                  t.actualCompletedDate == null &&
                   t.parentTaskId == null &&
                   !privateThoughtIds.contains(t.linkedThoughtId) &&
                   (t.plannedDate == null || t.plannedDate!.isBefore(end)) &&
@@ -63,6 +83,9 @@ class ThingsCheckIn {
         final overdue =
             task.plannedDate != null &&
             task.plannedDate!.isBefore(DateTime(at.year, at.month, at.day));
+        final notifType = hour == 18
+            ? ThingsNotificationType.eveningWrapUp
+            : ThingsNotificationType.middayCheckIn;
         final title = redact
             ? 'A little room for your things?'
             : overdue
@@ -77,15 +100,29 @@ class ThingsCheckIn {
             : '';
         final body = redact
             ? 'Your Things hub has unfinished items. Pick one small next step.'
+            : hour == 18
+            ? '“$short”$rest Close it out or carry it over to tomorrow.'
             : '“$short”$rest ${task.estimatedMinutes != null ? 'Got 5 minutes to start?' : 'One small step is enough.'}';
+
+        final payload = '/things?focus=${task.id}${notifType == ThingsNotificationType.eveningWrapUp ? '&mode=wrapup' : ''}';
+        final actions = notifType == ThingsNotificationType.eveningWrapUp
+            ? const ['things_carry', 'things_review']
+            : const ['things_start', 'things_done', 'things_snooze'];
+
         result.add(
           ThingsCheckIn(
             at,
             NotificationMessage(
               title: title,
               body: body,
-              summary: 'Things hub · A gentle check-in',
+              summary: notifType == ThingsNotificationType.eveningWrapUp
+                  ? 'Things hub · Evening wrap-up'
+                  : 'Things hub · A gentle check-in',
             ),
+            taskId: task.id,
+            payload: payload,
+            type: notifType,
+            actions: actions,
           ),
         );
       }

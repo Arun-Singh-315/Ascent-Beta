@@ -101,9 +101,27 @@ class NotificationService {
   /// Preserves query parameters while falling back to /home for invalid routes.
   static String destinationForPayload(String? payload) {
     if (payload == null || payload.trim().isEmpty) return '/home';
-    final trimmed = payload.trim();
-    final uri = Uri.tryParse(trimmed);
-    if (uri == null || uri.hasScheme || !uri.path.startsWith('/')) {
+    var trimmed = payload.trim();
+    var uri = Uri.tryParse(trimmed);
+    if (uri == null) return '/home';
+
+    // Handle ascent:// custom schemes, e.g. ascent://open/things?focus=10 or ascent://things?focus=10
+    if (uri.scheme == 'ascent') {
+      String resolvedPath;
+      if (uri.host == 'open') {
+        resolvedPath = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
+      } else if (uri.host.isNotEmpty) {
+        resolvedPath = '/${uri.host}${uri.path}';
+      } else {
+        resolvedPath = uri.path.startsWith('/') ? uri.path : '/${uri.path}';
+      }
+      final querySuffix = uri.hasQuery ? '?${uri.query}' : '';
+      trimmed = '$resolvedPath$querySuffix';
+      uri = Uri.tryParse(trimmed);
+      if (uri == null) return '/home';
+    }
+
+    if (uri.hasScheme || !uri.path.startsWith('/')) {
       return '/home';
     }
 
@@ -135,6 +153,8 @@ class NotificationService {
       '/momentum/onboarding',
       '/vault',
       '/today',
+      '/things',
+      '/history',
       '/plans',
       '/book-reader',
       '/backup',
@@ -840,6 +860,10 @@ class NotificationService {
     required DateTime at,
     required String title,
     required String body,
+    String payload = '/things',
+    String channelId = 'ascent_things_check_ins_v1',
+    String channelName = 'Things hub check-ins',
+    List<AndroidNotificationAction>? actions,
   }) async {
     if (!_isInitialized) await initialize();
     await refreshLocalTimeZone();
@@ -851,15 +875,16 @@ class NotificationService {
       scheduledDate: tz.TZDateTime.from(at, tz.local),
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          'ascent_things_check_ins_v1',
-          'Things hub check-ins',
+          channelId,
+          channelName,
           channelDescription:
-              'Up to two combined check-ins a day for unfinished things',
+              'Gentle check-ins and wrap-ups for unfinished things',
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           groupKey: 'ascent.things',
           onlyAlertOnce: true,
           visibility: NotificationVisibility.private,
+          actions: actions,
           styleInformation: BigTextStyleInformation(
             body,
             contentTitle: title,
@@ -869,7 +894,7 @@ class NotificationService {
         iOS: const DarwinNotificationDetails(threadIdentifier: 'ascent.things'),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: '/today',
+      payload: payload,
     );
   }
 

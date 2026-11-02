@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import '../security/app_lock_provider.dart';
@@ -22,7 +23,8 @@ final thingsCheckInsProvider = Provider<void>((ref) {
     try {
       do {
         dirty = false;
-        for (var id = 830100; id < 830104; id++) {
+        // Clear up to 30 potential slots for the 7-day horizon
+        for (var id = 830100; id < 830130; id++) {
           await service.cancel(id);
         }
         if (disposed) break;
@@ -43,14 +45,75 @@ final thingsCheckInsProvider = Provider<void>((ref) {
           reminders: reminders,
           privateThoughtIds: ref.read(privatePromiseIdsProvider),
           redact: lock.isEnabled && lock.redactNotificationContent,
+          horizonDays: 7,
         );
         for (var i = 0; i < plan.length && !disposed && !dirty; i++) {
           final item = plan[i];
+          final actions = <AndroidNotificationAction>[];
+          for (final a in item.actions) {
+            switch (a) {
+              case 'things_start':
+                actions.add(
+                  const AndroidNotificationAction(
+                    'things_start',
+                    'Start',
+                    showsUserInterface: true,
+                  ),
+                );
+                break;
+              case 'things_done':
+                actions.add(
+                  const AndroidNotificationAction(
+                    'things_done',
+                    'Done',
+                    showsUserInterface: true,
+                  ),
+                );
+                break;
+              case 'things_snooze':
+                actions.add(
+                  const AndroidNotificationAction(
+                    'things_snooze',
+                    'Snooze (30m)',
+                    showsUserInterface: true,
+                  ),
+                );
+                break;
+              case 'things_carry':
+                actions.add(
+                  const AndroidNotificationAction(
+                    'things_carry',
+                    'Carry over',
+                    showsUserInterface: true,
+                  ),
+                );
+                break;
+              case 'things_review':
+                actions.add(
+                  const AndroidNotificationAction(
+                    'things_review',
+                    'Review',
+                    showsUserInterface: true,
+                  ),
+                );
+                break;
+            }
+          }
+
+          final isWrapup = item.type == ThingsNotificationType.eveningWrapUp;
           await service.scheduleThingsCheckIn(
             id: 830100 + i,
             at: item.at,
             title: item.message.title,
             body: item.message.body,
+            payload: item.payload ?? '/things',
+            channelId: isWrapup
+                ? 'ascent_things_wrapup_v1'
+                : 'ascent_things_check_ins_v1',
+            channelName: isWrapup
+                ? 'Things hub evening wrap-up'
+                : 'Things hub check-ins',
+            actions: actions.isNotEmpty ? actions : null,
           );
         }
       } while (dirty && !disposed);

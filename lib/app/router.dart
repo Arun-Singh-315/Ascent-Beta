@@ -165,8 +165,15 @@ final ascentRouter = GoRouter(
 
     GoRoute(parentNavigatorKey:rootNavigatorKey,path:AscentRoutes.history,
       builder:(context,state)=>HistoryScreen(module:state.uri.queryParameters['module'],entity:state.uri.queryParameters['entity'])),
-    GoRoute(parentNavigatorKey:rootNavigatorKey,path:AscentRoutes.things,
-      builder:(context,state)=>const ThingsHubScreen()),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.things,
+      builder: (context, state) => ThingsHubScreen(
+        initialTab: state.uri.queryParameters['tab'],
+        initialFocusId: state.uri.queryParameters['focus'],
+        initialMode: state.uri.queryParameters['mode'],
+      ),
+    ),
 
     // ── Parent destinations (pushed over the shell) ───────────────────────
     GoRoute(

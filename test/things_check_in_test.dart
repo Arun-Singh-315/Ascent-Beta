@@ -116,4 +116,32 @@ void main() {
     final items = await plan();
     expect(items.every((e) => e.at.day == 3), isTrue);
   });
+
+  test('carries task id, deep-link payload and actionable buttons for midday and evening', () async {
+    final id = await task('Finish quarterly taxes', priority: 'high');
+    final items = await plan();
+    expect(items.isNotEmpty, isTrue);
+
+    final midday = items.firstWhere((e) => e.type == ThingsNotificationType.middayCheckIn);
+    expect(midday.taskId, id);
+    expect(midday.payload, '/things?focus=$id');
+    expect(midday.actions, containsAll(['things_start', 'things_done', 'things_snooze']));
+
+    final evening = items.firstWhere((e) => e.type == ThingsNotificationType.eveningWrapUp);
+    expect(evening.taskId, id);
+    expect(evening.payload, contains('/things?focus=$id&mode=wrapup'));
+    expect(evening.actions, containsAll(['things_carry', 'things_review']));
+  });
+
+  test('supports 7-day horizon when requested', () async {
+    await task('Weekly review', priority: 'medium');
+    final items = ThingsCheckIn.plan(
+      now: now,
+      tasks: await db.select(db.taskTable).get(),
+      reminders: await db.select(db.reminderTable).get(),
+      horizonDays: 7,
+    );
+    // 7 days * 2 slots = 14 slots
+    expect(items.length, 14);
+  });
 }
