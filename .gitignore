@@ -17,6 +17,7 @@ migrate_working_dir/
 *.webm
 *.apk
 docs/renovation/
+backup_user_data/
 
 # IntelliJ related
 *.iml
