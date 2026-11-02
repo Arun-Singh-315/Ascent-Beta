@@ -306,6 +306,7 @@ class HomeCaptureService {
     required DateTime at,
     DateTime? checkInAt,
     bool linkedTodo = true,
+    bool isDailyStanding = false,
   }) => db.transaction(() async {
     final requestId = 'home.schedule:${source.id}';
     final receipt = await (db.select(
@@ -360,6 +361,7 @@ class HomeCaptureService {
           TaskTableCompanion(
             title: Value(title.trim()),
             plannedDate: Value(at),
+            isDailyStanding: Value(isDailyStanding),
           ),
         );
         task = await db.taskDao.getTaskById(task.id);
@@ -372,6 +374,7 @@ class HomeCaptureService {
             notes: Value(taskNotes),
             linkedThoughtId: Value(source.id),
             plannedDate: Value(at),
+            isDailyStanding: Value(isDailyStanding),
           ),
         );
         task = await db.taskDao.getTaskById(id);

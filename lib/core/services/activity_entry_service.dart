@@ -24,6 +24,7 @@ class ActivityEntryService {
     int? parentTaskId,
     int? applicationId,
     DateTime? reminderAt,
+    bool isDailyStanding = false,
   }) => db.transaction(() async {
     if (titles.isEmpty || titles.length > 200) {
       throw StateError('Add between 1 and 200 items.');
@@ -40,6 +41,7 @@ class ActivityEntryService {
           parentTaskId: parentTaskId,
           applicationId: applicationId,
           reminderAt: reminderAt,
+          isDailyStanding: isDailyStanding,
         ),
       );
     }
@@ -57,6 +59,7 @@ class ActivityEntryService {
     int? applicationId,
     DateTime? reminderAt,
     bool replaceReminders = true,
+    bool? isDailyStanding,
   }) => db.transaction(() async {
     final trimmed = title.trim();
     if (trimmed.isEmpty || trimmed.length > 300) {
@@ -118,6 +121,7 @@ class ActivityEntryService {
             plannedDate: Value(planned),
             estimatedMinutes: Value(estimatedMinutes),
             priority: Value(priority ?? current?.priority ?? 'low'),
+            isDailyStanding: Value(isDailyStanding ?? current?.isDailyStanding ?? false),
             notes: Value(
               cleanNotes == null || cleanNotes.isEmpty || cleanNotes == trimmed
                   ? null
@@ -136,6 +140,7 @@ class ActivityEntryService {
           plannedDate: Value(planned),
           estimatedMinutes: Value(estimatedMinutes),
           priority: Value(priority ?? current.priority),
+          isDailyStanding: Value(isDailyStanding ?? current.isDailyStanding),
           notes: Value(
             cleanNotes == null || cleanNotes.isEmpty || cleanNotes == trimmed
                 ? null

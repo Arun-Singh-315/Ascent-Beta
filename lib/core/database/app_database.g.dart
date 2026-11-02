@@ -4124,6 +4124,21 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isDailyStandingMeta = const VerificationMeta(
+    'isDailyStanding',
+  );
+  @override
+  late final GeneratedColumn<bool> isDailyStanding = GeneratedColumn<bool>(
+    'is_daily_standing',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_daily_standing" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -4347,6 +4362,7 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
     id,
     title,
     isArchived,
+    isDailyStanding,
     notes,
     linkedThoughtId,
     learningCourseId,
@@ -4393,6 +4409,15 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
       context.handle(
         _isArchivedMeta,
         isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('is_daily_standing')) {
+      context.handle(
+        _isDailyStandingMeta,
+        isDailyStanding.isAcceptableOrUnknown(
+          data['is_daily_standing']!,
+          _isDailyStandingMeta,
+        ),
       );
     }
     if (data.containsKey('notes')) {
@@ -4563,6 +4588,10 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_archived'],
       )!,
+      isDailyStanding: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_daily_standing'],
+      )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -4649,6 +4678,9 @@ class Task extends DataClass implements Insertable<Task> {
   final String title;
   final bool isArchived;
 
+  /// Whether this task automatically recurs every day until toggled off.
+  final bool isDailyStanding;
+
   /// Optional free-text notes about the task.
   final String? notes;
   final int? linkedThoughtId;
@@ -4699,6 +4731,7 @@ class Task extends DataClass implements Insertable<Task> {
     required this.id,
     required this.title,
     required this.isArchived,
+    required this.isDailyStanding,
     this.notes,
     this.linkedThoughtId,
     this.learningCourseId,
@@ -4724,6 +4757,7 @@ class Task extends DataClass implements Insertable<Task> {
     map['id'] = Variable<int>(id);
     map['title'] = Variable<String>(title);
     map['is_archived'] = Variable<bool>(isArchived);
+    map['is_daily_standing'] = Variable<bool>(isDailyStanding);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -4778,6 +4812,7 @@ class Task extends DataClass implements Insertable<Task> {
       id: Value(id),
       title: Value(title),
       isArchived: Value(isArchived),
+      isDailyStanding: Value(isDailyStanding),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -4836,6 +4871,7 @@ class Task extends DataClass implements Insertable<Task> {
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
+      isDailyStanding: serializer.fromJson<bool>(json['isDailyStanding']),
       notes: serializer.fromJson<String?>(json['notes']),
       linkedThoughtId: serializer.fromJson<int?>(json['linkedThoughtId']),
       learningCourseId: serializer.fromJson<String?>(json['learningCourseId']),
@@ -4869,6 +4905,7 @@ class Task extends DataClass implements Insertable<Task> {
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
       'isArchived': serializer.toJson<bool>(isArchived),
+      'isDailyStanding': serializer.toJson<bool>(isDailyStanding),
       'notes': serializer.toJson<String?>(notes),
       'linkedThoughtId': serializer.toJson<int?>(linkedThoughtId),
       'learningCourseId': serializer.toJson<String?>(learningCourseId),
@@ -4894,6 +4931,7 @@ class Task extends DataClass implements Insertable<Task> {
     int? id,
     String? title,
     bool? isArchived,
+    bool? isDailyStanding,
     Value<String?> notes = const Value.absent(),
     Value<int?> linkedThoughtId = const Value.absent(),
     Value<String?> learningCourseId = const Value.absent(),
@@ -4916,6 +4954,7 @@ class Task extends DataClass implements Insertable<Task> {
     id: id ?? this.id,
     title: title ?? this.title,
     isArchived: isArchived ?? this.isArchived,
+    isDailyStanding: isDailyStanding ?? this.isDailyStanding,
     notes: notes.present ? notes.value : this.notes,
     linkedThoughtId: linkedThoughtId.present
         ? linkedThoughtId.value
@@ -4962,6 +5001,9 @@ class Task extends DataClass implements Insertable<Task> {
       isArchived: data.isArchived.present
           ? data.isArchived.value
           : this.isArchived,
+      isDailyStanding: data.isDailyStanding.present
+          ? data.isDailyStanding.value
+          : this.isDailyStanding,
       notes: data.notes.present ? data.notes.value : this.notes,
       linkedThoughtId: data.linkedThoughtId.present
           ? data.linkedThoughtId.value
@@ -5015,6 +5057,7 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('isArchived: $isArchived, ')
+          ..write('isDailyStanding: $isDailyStanding, ')
           ..write('notes: $notes, ')
           ..write('linkedThoughtId: $linkedThoughtId, ')
           ..write('learningCourseId: $learningCourseId, ')
@@ -5042,6 +5085,7 @@ class Task extends DataClass implements Insertable<Task> {
     id,
     title,
     isArchived,
+    isDailyStanding,
     notes,
     linkedThoughtId,
     learningCourseId,
@@ -5068,6 +5112,7 @@ class Task extends DataClass implements Insertable<Task> {
           other.id == this.id &&
           other.title == this.title &&
           other.isArchived == this.isArchived &&
+          other.isDailyStanding == this.isDailyStanding &&
           other.notes == this.notes &&
           other.linkedThoughtId == this.linkedThoughtId &&
           other.learningCourseId == this.learningCourseId &&
@@ -5092,6 +5137,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   final Value<int> id;
   final Value<String> title;
   final Value<bool> isArchived;
+  final Value<bool> isDailyStanding;
   final Value<String?> notes;
   final Value<int?> linkedThoughtId;
   final Value<String?> learningCourseId;
@@ -5114,6 +5160,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.isArchived = const Value.absent(),
+    this.isDailyStanding = const Value.absent(),
     this.notes = const Value.absent(),
     this.linkedThoughtId = const Value.absent(),
     this.learningCourseId = const Value.absent(),
@@ -5137,6 +5184,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     this.id = const Value.absent(),
     required String title,
     this.isArchived = const Value.absent(),
+    this.isDailyStanding = const Value.absent(),
     this.notes = const Value.absent(),
     this.linkedThoughtId = const Value.absent(),
     this.learningCourseId = const Value.absent(),
@@ -5160,6 +5208,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     Expression<int>? id,
     Expression<String>? title,
     Expression<bool>? isArchived,
+    Expression<bool>? isDailyStanding,
     Expression<String>? notes,
     Expression<int>? linkedThoughtId,
     Expression<String>? learningCourseId,
@@ -5183,6 +5232,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (isArchived != null) 'is_archived': isArchived,
+      if (isDailyStanding != null) 'is_daily_standing': isDailyStanding,
       if (notes != null) 'notes': notes,
       if (linkedThoughtId != null) 'linked_thought_id': linkedThoughtId,
       if (learningCourseId != null) 'learning_course_id': learningCourseId,
@@ -5210,6 +5260,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     Value<int>? id,
     Value<String>? title,
     Value<bool>? isArchived,
+    Value<bool>? isDailyStanding,
     Value<String?>? notes,
     Value<int?>? linkedThoughtId,
     Value<String?>? learningCourseId,
@@ -5233,6 +5284,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
       id: id ?? this.id,
       title: title ?? this.title,
       isArchived: isArchived ?? this.isArchived,
+      isDailyStanding: isDailyStanding ?? this.isDailyStanding,
       notes: notes ?? this.notes,
       linkedThoughtId: linkedThoughtId ?? this.linkedThoughtId,
       learningCourseId: learningCourseId ?? this.learningCourseId,
@@ -5265,6 +5317,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     }
     if (isArchived.present) {
       map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (isDailyStanding.present) {
+      map['is_daily_standing'] = Variable<bool>(isDailyStanding.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -5331,6 +5386,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('isArchived: $isArchived, ')
+          ..write('isDailyStanding: $isDailyStanding, ')
           ..write('notes: $notes, ')
           ..write('linkedThoughtId: $linkedThoughtId, ')
           ..write('learningCourseId: $learningCourseId, ')
@@ -28941,6 +28997,7 @@ typedef $$TaskTableTableCreateCompanionBuilder =
       Value<int> id,
       required String title,
       Value<bool> isArchived,
+      Value<bool> isDailyStanding,
       Value<String?> notes,
       Value<int?> linkedThoughtId,
       Value<String?> learningCourseId,
@@ -28965,6 +29022,7 @@ typedef $$TaskTableTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> title,
       Value<bool> isArchived,
+      Value<bool> isDailyStanding,
       Value<String?> notes,
       Value<int?> linkedThoughtId,
       Value<String?> learningCourseId,
@@ -29224,6 +29282,11 @@ class $$TaskTableTableFilterComposer
 
   ColumnFilters<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDailyStanding => $composableBuilder(
+    column: $table.isDailyStanding,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29583,6 +29646,11 @@ class $$TaskTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isDailyStanding => $composableBuilder(
+    column: $table.isDailyStanding,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -29781,6 +29849,11 @@ class $$TaskTableTableAnnotationComposer
 
   GeneratedColumn<bool> get isArchived => $composableBuilder(
     column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDailyStanding => $composableBuilder(
+    column: $table.isDailyStanding,
     builder: (column) => column,
   );
 
@@ -30154,6 +30227,7 @@ class $$TaskTableTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
+                Value<bool> isDailyStanding = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> linkedThoughtId = const Value.absent(),
                 Value<String?> learningCourseId = const Value.absent(),
@@ -30176,6 +30250,7 @@ class $$TaskTableTableTableManager
                 id: id,
                 title: title,
                 isArchived: isArchived,
+                isDailyStanding: isDailyStanding,
                 notes: notes,
                 linkedThoughtId: linkedThoughtId,
                 learningCourseId: learningCourseId,
@@ -30200,6 +30275,7 @@ class $$TaskTableTableTableManager
                 Value<int> id = const Value.absent(),
                 required String title,
                 Value<bool> isArchived = const Value.absent(),
+                Value<bool> isDailyStanding = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> linkedThoughtId = const Value.absent(),
                 Value<String?> learningCourseId = const Value.absent(),
@@ -30222,6 +30298,7 @@ class $$TaskTableTableTableManager
                 id: id,
                 title: title,
                 isArchived: isArchived,
+                isDailyStanding: isDailyStanding,
                 notes: notes,
                 linkedThoughtId: linkedThoughtId,
                 learningCourseId: learningCourseId,

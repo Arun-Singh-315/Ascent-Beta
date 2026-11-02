@@ -312,7 +312,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                       context,
                                       message:
                                           saved?.actualCompletedDate != null
-                                          ? 'Task completed'
+                                          ? (activity.isDailyStanding
+                                                ? 'Completed for today • Resets tomorrow'
+                                                : 'Task completed')
                                           : 'Finish the checklist steps before completing this task.',
                                     );
                                   }
@@ -555,6 +557,14 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 style: AscentTextStyles.homeSecondary
                                     .copyWith(color: context.stateDanger)
                                     .merge(AppTypeRoles.typeRole8),
+                              ),
+                            ],
+                            if (activity.isDailyStanding) ...[
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.repeat_rounded,
+                                size: 12,
+                                color: isDone ? g.inkMuted : g.clay,
                               ),
                             ],
                             if (activity.hasReminder) ...[
@@ -815,7 +825,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       final messenger = ScaffoldMessenger.of(context);
       final completedFeedback = AscentSnackBar.build(
         context,
-        content: const Text('Task completed'),
+        content: Text(
+          activity.isDailyStanding
+              ? 'Completed for today • Resets tomorrow'
+              : 'Task completed',
+        ),
         action: widget.onViewCompleted == null
             ? null
             : SnackBarAction(
@@ -1529,6 +1543,12 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     }
 
     if (act.status == TodayActivityStatus.done) {
+      if (act.isDailyStanding) {
+        if (act.completedAt != null) {
+          return '✓ Done for today at ${DateFormat('h:mm a').format(act.completedAt!)} • Resets tomorrow';
+        }
+        return '✓ Done for today • Resets tomorrow';
+      }
       if (act.completedAt != null) {
         return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';
       }
@@ -1544,6 +1564,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       final p = (act.priority != null && act.priority!.isNotEmpty)
           ? act.priority![0].toUpperCase() + act.priority!.substring(1)
           : 'Medium';
+      if (act.isDailyStanding) {
+        return 'Daily • $p to-do';
+      }
       return '$p • To-do';
     }
     if (act.kind == ActivityKind.duration || (act.targetMinutes ?? 0) > 0) {
@@ -1611,8 +1634,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         style: AppTypography.inter12W600111(color: g.clay),
                       ),
                     ),
+                    if (activity.isDailyStanding) ...[
+                      const SizedBox(width: 8),
+                      AppCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s10,
+                          vertical: AppSpace.s4,
+                        ),
+                        nightDecoration: BoxDecoration(
+                          color: g.claySoft,
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        child: Text(
+                          'Daily Standing',
+                          style: AppTypography.inter12W600111(color: g.clay),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
-                    if (!isDone && activity.linkedTaskId != null)
+                    if ((!isDone || activity.isDailyStanding) && activity.linkedTaskId != null)
                       IconButton(
                         tooltip: 'Edit activity',
                         icon: Icon(

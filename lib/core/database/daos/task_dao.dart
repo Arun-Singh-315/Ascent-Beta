@@ -43,8 +43,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
           ..where(
             (t) =>
                 t.isArchived.equals(false) &
-                t.plannedDate.isBiggerOrEqualValue(dayStart) &
-                t.plannedDate.isSmallerThanValue(dayEnd),
+                ((t.plannedDate.isBiggerOrEqualValue(dayStart) &
+                        t.plannedDate.isSmallerThanValue(dayEnd)) |
+                    t.isDailyStanding.equals(true)),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .watch();
@@ -59,6 +60,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
           ..where(
             (t) =>
                 t.isArchived.equals(false) &
+                t.isDailyStanding.equals(false) &
                 t.plannedDate.isSmallerThanValue(todayStart) &
                 t.actualCompletedDate.isNull(),
           )
@@ -72,7 +74,8 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
               t.actualCompletedDate.isSmallerThanValue(end)) |
           (t.actualCompletedDate.isNull() &
               (t.plannedDate.isNull() |
-                  t.plannedDate.isSmallerThanValue(end))));
+                  t.plannedDate.isSmallerThanValue(end))) |
+          t.isDailyStanding.equals(true));
 
   Stream<List<Task>> watchTodayAndOverdueTasks([DateTime? date]) {
     final now = date ?? DateTime.now();
@@ -378,7 +381,18 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       taskTable,
     )..where((t) => t.parentTaskId.equals(id))).get();
     if (children.any((t) => t.actualCompletedDate == null)) return false;
-    if (task.actualCompletedDate != null) return true;
+    if (task.actualCompletedDate != null) {
+      if (task.isDailyStanding) {
+        final now = DateTime.now();
+        final comp = task.actualCompletedDate!;
+        final doneToday = comp.year == now.year &&
+            comp.month == now.month &&
+            comp.day == now.day;
+        if (doneToday) return true;
+      } else {
+        return true;
+      }
+    }
     await _writeCompletedTask(task);
     return true;
   });
@@ -493,7 +507,10 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   /// for the linked medical task lifecycle.
   Future<bool> markIncomplete(int id) async {
     final task = await getTaskById(id);
-    if (task == null || task.actualCompletedDate != null) return false;
+    if (task == null ||
+        (task.actualCompletedDate != null && !task.isDailyStanding)) {
+      return false;
+    }
     await _writeIncompleteTask(task);
     return true;
   }

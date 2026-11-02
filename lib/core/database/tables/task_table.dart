@@ -20,6 +20,10 @@ class TaskTable extends Table {
 
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
+  /// Whether this task automatically recurs every day until toggled off.
+  BoolColumn get isDailyStanding =>
+      boolean().withDefault(const Constant(false))();
+
   /// Optional free-text notes about the task.
   TextColumn get notes => text().nullable()();
 
