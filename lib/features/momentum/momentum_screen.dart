@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/date_range_calendar.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -35,6 +36,7 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen> {
       title: 'Challenge Partner',
       subtitle: 'A clear plan, measured by real progress',
       actions: [
+        const HistoryAction(module:'challenges'),
         if (viewingDetail)
           IconButton(
             tooltip: 'Add challenge',

@@ -21,6 +21,14 @@ import 'board_actions.dart';
 import 'board_logic.dart';
 import 'space_style.dart';
 
+final boardThoughtRecordProvider = StreamProvider.autoDispose
+    .family<Thought?, int>((ref, id) {
+      final db = ref.watch(databaseProvider);
+      return (db.select(
+        db.thoughtTable,
+      )..where((t) => t.id.equals(id))).watchSingleOrNull();
+    });
+
 /// Everything you can do with one thought lives here, behind a tap, so the
 /// wall itself stays calm. The sheet follows the live record: toggling Done or
 /// Pin updates it immediately.
@@ -41,12 +49,14 @@ class ThoughtDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
-    final active = ref.watch(allThoughtsStreamProvider).value ?? <Thought>[];
-    final archived =
-        ref.watch(archivedThoughtsStreamProvider).value ?? <Thought>[];
-    final thought =
-        [...active, ...archived].where((t) => t.id == initial.id).firstOrNull ??
-        initial;
+    final record = ref.watch(boardThoughtRecordProvider(initial.id));
+    if (record.hasValue && record.value == null) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('This thought is no longer available.'),
+      );
+    }
+    final thought = record.value ?? initial;
     final categories =
         ref.watch(thoughtCategoriesStreamProvider).value ??
         ThoughtDao.builtInCategories;
@@ -57,7 +67,9 @@ class ThoughtDetailSheet extends ConsumerWidget {
     );
     final isPromise = thought.mood == 'promise';
     final inWall = thought.category == wallCategoryKey;
-    final spaceName = inWall ? 'Wall' : (categories[thought.category] ?? 'Space');
+    final spaceName = inWall
+        ? 'Wall'
+        : (categories[thought.category] ?? 'Space');
     final style = spaceStyleFor(spaceName);
     final high = isHighPriorityContent(thought.content);
     final prompt = thought.promptQuestion?.trim();
@@ -91,7 +103,9 @@ class ThoughtDetailSheet extends ConsumerWidget {
 
     Future<void> copy() async {
       HapticFeedback.lightImpact();
-      await Clipboard.setData(ClipboardData(text: displayContent(thought.content)));
+      await Clipboard.setData(
+        ClipboardData(text: displayContent(thought.content)),
+      );
       if (context.mounted) {
         AscentSnackBar.success(context, message: 'Copied to clipboard');
       }
@@ -106,7 +120,10 @@ class ThoughtDetailSheet extends ConsumerWidget {
         );
       } catch (_) {
         if (context.mounted) {
-          AscentSnackBar.error(context, message: 'Could not update. Try again.');
+          AscentSnackBar.error(
+            context,
+            message: 'Could not update. Try again.',
+          );
         }
       }
     }
@@ -141,9 +158,7 @@ class ThoughtDetailSheet extends ConsumerWidget {
                 children: [
                   ChoicePill(
                     key: const ValueKey('detail_space'),
-                    icon: inWall
-                        ? Icons.bubble_chart_rounded
-                        : style.icon,
+                    icon: inWall ? Icons.bubble_chart_rounded : style.icon,
                     label: spaceName,
                     onTap: move,
                   ),
@@ -171,7 +186,7 @@ class ThoughtDetailSheet extends ConsumerWidget {
               if (showPrompt && !locked) ...[
                 const SizedBox(height: AppSpace.s12),
                 Text(
-                  prompt!,
+                  prompt,
                   style: AscentTextStyles.bodySmall.copyWith(
                     color: context.textMuted,
                     fontStyle: FontStyle.italic,
@@ -179,120 +194,151 @@ class ThoughtDetailSheet extends ConsumerWidget {
                 ),
               ],
               const SizedBox(height: AppSpace.s20),
-              Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  ChoicePill(
-                    key: const ValueKey('detail_done'),
-                    icon: thought.isCompleted
-                        ? Icons.replay_rounded
-                        : Icons.check_circle_outline_rounded,
-                    label: thought.isCompleted
-                        ? 'Reopen'
-                        : (inWall ? 'Done' : style.doneLabel),
-                    onTap: () => toggleThoughtDone(context, ref, thought),
-                  ),
-                  ChoicePill(
-                    key: const ValueKey('detail_pin'),
-                    icon: thought.isPinned
-                        ? Icons.push_pin_rounded
-                        : Icons.push_pin_outlined,
-                    label: thought.isPinned ? 'Unpin' : 'Pin',
-                    onTap: () => dao.togglePin(thought.id),
-                  ),
-                  if (!locked)
-                    ChoicePill(
-                      key: const ValueKey('detail_edit'),
-                      icon: Icons.edit_outlined,
-                      label: 'Edit',
-                      onTap: () => DropThoughtSheet.show(
-                        context,
-                        existingThought: thought,
-                      ),
-                    ),
-                  if (!locked && !isPromise) ...[
-                    ChoicePill(
-                      key: const ValueKey('detail_todo'),
-                      icon: Icons.add_task_rounded,
-                      label: 'Todo',
-                      onTap: () => convert('todo'),
-                    ),
-                    ChoicePill(
-                      key: const ValueKey('detail_reminder'),
-                      icon: Icons.notifications_active_outlined,
-                      label: 'Reminder',
-                      onTap: () => convert('reminder'),
-                    ),
-                    ChoicePill(
-                      key: const ValueKey('detail_plan'),
-                      icon: Icons.event_outlined,
-                      label: 'Plan',
-                      onTap: plan,
-                    ),
-                  ],
-                  if (isPromise) ...[
-                    ChoicePill(
-                      key: const ValueKey('detail_promises'),
-                      icon: Icons.handshake_rounded,
-                      label: 'Promises',
-                      onTap: () => openRoute('/promises'),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final actions = <Widget>[
+                    _PrimaryAction(
+                      key: const ValueKey('detail_done'),
+                      icon: thought.isCompleted
+                          ? Icons.replay_rounded
+                          : Icons.check_rounded,
+                      label: thought.isCompleted
+                          ? 'Reopen'
+                          : (inWall ? 'Done' : style.doneLabel),
+                      onTap: () => toggleThoughtDone(context, ref, thought),
                     ),
                     if (!locked)
-                      ChoicePill(
-                        key: const ValueKey('detail_challenge'),
-                        icon: Icons.flag_outlined,
-                        label: 'Track with Challenge',
-                        onTap: () => openRoute('/momentum', extra: thought),
+                      _PrimaryAction(
+                        key: const ValueKey('detail_edit'),
+                        icon: Icons.edit_outlined,
+                        label: 'Edit',
+                        onTap: () => DropThoughtSheet.show(
+                          context,
+                          existingThought: thought,
+                        ),
                       ),
+                    if (!locked)
+                      _PrimaryAction(
+                        key: const ValueKey('detail_priority'),
+                        icon: high
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        label: high ? 'Unstar' : 'Star',
+                        onTap: togglePriority,
+                      ),
+                  ];
+                  if (MediaQuery.textScalerOf(context).scale(1) >= 1.45) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: actions,
+                    );
+                  }
+                  return Row(
+                    children: [
+                      for (var i = 0; i < actions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 10),
+                        Expanded(child: actions[i]),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  key: const ValueKey('detail_more'),
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('More actions'),
+                  children: [
+                    _DetailAction(
+                      key: const ValueKey('detail_pin'),
+                      icon: Icons.push_pin_outlined,
+                      label: thought.isPinned ? 'Unpin' : 'Pin',
+                      onTap: () => dao.togglePin(thought.id),
+                    ),
+                    _DetailAction(
+                      icon: Icons.drive_file_move_outlined,
+                      label: 'Move to space',
+                      onTap: move,
+                    ),
+                    if (!locked && !isPromise) ...[
+                      _DetailAction(
+                        key: const ValueKey('detail_todo'),
+                        icon: Icons.add_task_rounded,
+                        label: 'Create todo',
+                        onTap: () => convert('todo'),
+                      ),
+                      _DetailAction(
+                        key: const ValueKey('detail_reminder'),
+                        icon: Icons.notifications_none_rounded,
+                        label: 'Set reminder',
+                        onTap: () => convert('reminder'),
+                      ),
+                      _DetailAction(
+                        key: const ValueKey('detail_plan'),
+                        icon: Icons.event_outlined,
+                        label: 'Add to plan',
+                        onTap: plan,
+                      ),
+                    ],
+                    if (isPromise) ...[
+                      _DetailAction(
+                        key: const ValueKey('detail_promises'),
+                        icon: Icons.handshake_outlined,
+                        label: 'Promises',
+                        onTap: () => openRoute('/promises'),
+                      ),
+                      if (!locked)
+                        _DetailAction(
+                          key: const ValueKey('detail_challenge'),
+                          icon: Icons.flag_outlined,
+                          label: 'Track with Challenge',
+                          onTap: () => openRoute('/momentum', extra: thought),
+                        ),
+                    ],
+                    if (!locked) ...[
+                      _DetailAction(
+                        key: const ValueKey('detail_share'),
+                        icon: Icons.ios_share_rounded,
+                        label: 'Share',
+                        onTap: () => shareThought(thought),
+                      ),
+                      _DetailAction(
+                        key: const ValueKey('detail_copy'),
+                        icon: Icons.copy_outlined,
+                        label: 'Copy text',
+                        onTap: copy,
+                      ),
+                    ],
+                    const Divider(height: 24),
+                    _DetailAction(
+                      key: const ValueKey('detail_archive'),
+                      icon: Icons.archive_outlined,
+                      label: thought.isArchived ? 'Unarchive' : 'Archive',
+                      onTap: () async {
+                        await archiveThoughtsWithUndo(context, ref, [thought]);
+                        close();
+                      },
+                    ),
+                    _DetailAction(
+                      key: const ValueKey('detail_delete'),
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete',
+                      color: g.errorInk,
+                      onTap: () async {
+                        final removed = await deleteThoughtsWithUndo(
+                          context,
+                          ref,
+                          [thought],
+                        );
+                        if (removed > 0) close();
+                      },
+                    ),
                   ],
-                  if (!locked) ...[
-                    ChoicePill(
-                      key: const ValueKey('detail_share'),
-                      icon: Icons.share_outlined,
-                      label: 'Share',
-                      onTap: () => shareThought(thought),
-                    ),
-                    ChoicePill(
-                      key: const ValueKey('detail_copy'),
-                      icon: Icons.copy_rounded,
-                      label: 'Copy',
-                      onTap: copy,
-                    ),
-                    ChoicePill(
-                      key: const ValueKey('detail_priority'),
-                      icon: high ? Icons.flag_rounded : Icons.flag_outlined,
-                      label: high ? 'Remove priority' : 'Priority',
-                      color: high ? g.coral : null,
-                      onTap: togglePriority,
-                    ),
-                  ],
-                  ChoicePill(
-                    key: const ValueKey('detail_archive'),
-                    icon: thought.isArchived
-                        ? Icons.unarchive_outlined
-                        : Icons.archive_outlined,
-                    label: thought.isArchived ? 'Unarchive' : 'Archive',
-                    onTap: () async {
-                      await archiveThoughtsWithUndo(context, ref, [thought]);
-                      close();
-                    },
-                  ),
-                  ChoicePill(
-                    key: const ValueKey('detail_delete'),
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Delete',
-                    color: g.errorInk,
-                    onTap: () async {
-                      final removed = await deleteThoughtsWithUndo(
-                        context,
-                        ref,
-                        [thought],
-                      );
-                      if (removed > 0) close();
-                    },
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -300,4 +346,67 @@ class ThoughtDetailSheet extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _PrimaryAction extends StatelessWidget {
+  const _PrimaryAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: g.ink.withValues(alpha: .05),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 23),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailAction extends StatelessWidget {
+  const _DetailAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  @override
+  Widget build(BuildContext context) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: Icon(icon, color: color ?? context.glass.inkSecondary, size: 22),
+    title: Text(label, style: TextStyle(color: color)),
+    onTap: onTap,
+  );
 }

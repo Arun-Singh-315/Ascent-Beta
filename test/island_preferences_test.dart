@@ -36,6 +36,7 @@ void main() {
       expect(prefs.finish, IslandFinish.sapphire);
       expect(prefs.density, IslandDensity.detailed);
       expect(prefs.showRecap, isTrue);
+      expect(prefs.autoRotate, isTrue);
     }
   });
 
@@ -51,6 +52,7 @@ void main() {
             showPaused: false,
             showUpcoming: false,
             animate: false,
+            autoRotate: false,
           ),
         );
     final stored = scope.read(sharedPreferencesProvider);
@@ -65,6 +67,7 @@ void main() {
     expect(prefs.showUpcoming, isFalse);
     expect(prefs.showPaused, isFalse);
     expect(prefs.animate, isFalse);
+    expect(prefs.autoRotate, isFalse);
   });
 
   test('Rapid edits merge without overwriting each other', () async {

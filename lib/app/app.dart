@@ -1,3 +1,4 @@
+import '../core/notifications/things_check_ins_provider.dart';
 import '../core/notifications/promise_check_ins_provider.dart';
 import '../core/security/app_lock_gate.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ class AscentApp extends ConsumerWidget {
     final translucency = ref.watch(glassTranslucencyPresetProvider);
     ref.watch(pendingReminderEffectsProvider);
     ref.watch(promiseCheckInsProvider);
+    ref.watch(thingsCheckInsProvider);
 
     return MaterialApp.router(
       title: 'Ascent',

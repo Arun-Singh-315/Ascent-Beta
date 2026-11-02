@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -55,6 +56,7 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
       subtitle: '${courses.length} courses · Choose your next step',
       glow2: g.slate,
       actions: [
+        const HistoryAction(module:'learning'),
         IconButton(
           tooltip: 'Kindle Book Reader',
           icon: const Icon(Icons.auto_stories_rounded),

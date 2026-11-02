@@ -8,6 +8,8 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/ascent_scaffold.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
@@ -15,9 +17,9 @@ import '../../../shared/widgets/empty_state.dart';
 import '../../promises/providers/promise_providers.dart';
 import 'board_actions.dart';
 import 'board_cards.dart';
+import 'board_background.dart';
 import 'board_logic.dart';
 import 'space_style.dart';
-import 'spaces_shelf.dart';
 import 'thought_detail_sheet.dart';
 
 enum SpaceViewMode { list, grid }
@@ -25,33 +27,77 @@ enum SpaceViewMode { list, grid }
 /// One space ("Movies", "Books", …): every entry in one place, with a field
 /// that stays open so several entries can be added in a row.
 class ThoughtSpaceScreen extends ConsumerStatefulWidget {
-  const ThoughtSpaceScreen({super.key, required this.spaceKey});
+  const ThoughtSpaceScreen({
+    super.key,
+    required this.spaceKey,
+    this.initialThoughtId,
+  });
 
   final String spaceKey;
+  final int? initialThoughtId;
 
   @override
   ConsumerState<ThoughtSpaceScreen> createState() => _ThoughtSpaceScreenState();
 }
 
-class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
+class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
+    with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _focus = FocusNode();
-  String _tab = 'open';
+  late String _tab = widget.initialThoughtId == null ? 'open' : 'all';
   SpaceViewMode _mode = SpaceViewMode.list;
   bool _saving = false;
+  NoteDraftBinding? _draft;
+  UnlockedPromiseIdsNotifier? _unlocked;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (!_isArchive) {
+      _draft = NoteDraftBinding(
+        _input,
+        ref.read(sharedPreferencesProvider),
+        'space_${widget.spaceKey}',
+      );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unlocked = ref.read(unlockedPromiseIdsProvider.notifier);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _unlocked?.lockAll();
+    }
+  }
 
   bool get _isArchive => widget.spaceKey == archiveSpaceKey;
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _draft?.dispose();
     _input.dispose();
     _focus.dispose();
     super.dispose();
   }
 
   Future<void> _add(String raw) async {
-    final entries = splitEntries(raw);
+    if (!mounted) return;
+    final entries = splitEntries(raw, max: 101);
     if (entries.isEmpty || _saving) return;
+    if (entries.length > 100) {
+      AscentSnackBar.error(
+        context,
+        message: 'Add up to 100 entries at a time. Your text is kept.',
+      );
+      return;
+    }
     setState(() => _saving = true);
     HapticFeedback.mediumImpact();
     try {
@@ -59,7 +105,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
           .read(thoughtDaoProvider)
           .insertEntries(entries, widget.spaceKey);
       if (!mounted) return;
-      _input.clear();
+      if (_input.text.trim() == raw.trim()) _input.clear();
       if (_tab == 'done') setState(() => _tab = 'open');
       _focus.requestFocus();
     } catch (_) {
@@ -72,80 +118,26 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
   }
 
   Future<void> _pasteList(SpaceStyle style) async {
-    final controller = TextEditingController();
-    final text = await showDialog<String>(
+    final text = await showModalBottomSheet<String>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setLocal) {
-          final count = splitEntries(controller.text).length;
-          return AlertDialog(
-            title: Text('Add several ${style.noun}s'),
-            scrollable: true,
-            content: TextField(
-              key: const ValueKey('space_paste_field'),
-              controller: controller,
-              autofocus: true,
-              minLines: 5,
-              maxLines: 10,
-              onChanged: (_) => setLocal(() {}),
-              decoration: const InputDecoration(
-                hintText: 'One per line',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                key: const ValueKey('space_paste_save'),
-                onPressed: count == 0
-                    ? null
-                    : () => Navigator.pop(dialogContext, controller.text),
-                child: Text(count == 0 ? 'Add' : 'Add $count'),
-              ),
-            ],
-          );
-        },
-      ),
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) =>
+          _SpaceTextDialog(title: 'Add several ${style.noun}s', bulk: true),
     );
-    controller.dispose();
     if (text != null) await _add(text);
   }
 
   Future<void> _rename(String current) async {
-    final controller = TextEditingController(text: current);
     final name = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename space'),
-        scrollable: true,
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 50,
-          textCapitalization: TextCapitalization.sentences,
-          onSubmitted: (v) => Navigator.pop(dialogContext, v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => _SpaceTextDialog(title: 'Rename space', initial: current),
     );
-    controller.dispose();
+    if (!mounted) return;
     if (name == null || name.trim() == current) return;
     try {
-      await ref
-          .read(thoughtDaoProvider)
-          .renameCategory(widget.spaceKey, name);
+      await ref.read(thoughtDaoProvider).renameCategory(widget.spaceKey, name);
     } catch (e) {
       if (mounted) {
         AscentSnackBar.error(
@@ -163,9 +155,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('Delete "$name"?'),
-        content: const Text(
-          'Your entries are kept and move back to the wall.',
-        ),
+        content: const Text('Your entries are kept and move back to the wall.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -195,11 +185,10 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
       useSafeArea: true,
       builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(AppSpace.s20),
-        child: Wrap(
-          spacing: AppSpace.s8,
-          runSpacing: AppSpace.s8,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            ChoicePill(
+            _SpaceMenuAction(
               key: const ValueKey('space_view_toggle'),
               icon: _mode == SpaceViewMode.list
                   ? Icons.grid_view_rounded
@@ -215,7 +204,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
               },
             ),
             if (custom) ...[
-              ChoicePill(
+              _SpaceMenuAction(
                 key: const ValueKey('space_rename'),
                 icon: Icons.edit_outlined,
                 label: 'Rename',
@@ -224,7 +213,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
                   _rename(name);
                 },
               ),
-              ChoicePill(
+              _SpaceMenuAction(
                 key: const ValueKey('space_delete'),
                 icon: Icons.delete_outline_rounded,
                 label: 'Delete space',
@@ -247,12 +236,37 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
     final categories =
         ref.watch(thoughtCategoriesStreamProvider).value ??
         ThoughtDao.builtInCategories;
+    final source = _isArchive
+        ? ref.watch(archivedThoughtsStreamProvider)
+        : ref.watch(allThoughtsStreamProvider);
+    if (source.isLoading && !source.hasValue) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (source.hasError && !source.hasValue) {
+      return AscentScaffold(
+        title: 'Space',
+        showFeatureHelp: false,
+        body: EmptyState(
+          icon: Icons.cloud_off_outlined,
+          title: 'Could not load these entries',
+          subtitle: 'Your records have not been changed.',
+          actionLabel: 'Retry',
+          onAction: () => _isArchive
+              ? ref.invalidate(archivedThoughtsStreamProvider)
+              : ref.invalidate(allThoughtsStreamProvider),
+        ),
+      );
+    }
     final active = ref.watch(allThoughtsStreamProvider).value ?? <Thought>[];
     final archived =
         ref.watch(archivedThoughtsStreamProvider).value ?? <Thought>[];
     final privateIds = ref.watch(privatePromiseIdsProvider);
     final unlocked = ref.watch(unlockedPromiseIdsProvider);
 
+    final categoryState = ref.watch(thoughtCategoriesStreamProvider);
+    if (categoryState.isLoading && !categoryState.hasValue) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final exists = _isArchive || categories.containsKey(widget.spaceKey);
     final name = _isArchive
         ? 'Archive'
@@ -275,6 +289,8 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
         ? all
         : all.where((t) => t.isCompleted == (_tab == 'done')).toList();
     shown.sort((a, b) {
+      if (a.id == widget.initialThoughtId) return -1;
+      if (b.id == widget.initialThoughtId) return 1;
       if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
       final byDate = b.createdAt.compareTo(a.createdAt);
       return byDate != 0 ? byDate : b.id.compareTo(a.id);
@@ -301,19 +317,23 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
         style: style,
         accent: accent,
         locked: locked,
-        grid: _mode == SpaceViewMode.grid,
+        grid:
+            _mode == SpaceViewMode.grid &&
+            MediaQuery.sizeOf(context).width >= 360 &&
+            MediaQuery.textScalerOf(context).scale(1) < 1.45,
         showCheck: !_isArchive,
         onToggle: () => toggleThoughtDone(context, ref, t),
         onOpen: () => ThoughtDetailSheet.show(context, t),
       );
     }
 
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return AscentScaffold(
       title: name,
       subtitle: all.isEmpty
-          ? 'Nothing here yet'
-          : '$doneCount of ${all.length} ${style.doneLabel.toLowerCase()}',
+          ? 'Your own collection'
+          : '${all.length} ${all.length == 1 ? 'entry' : 'entries'} · $doneCount ${style.doneLabel.toLowerCase()}',
       glow2: g.glow2,
       showFeatureHelp: false,
       actions: [
@@ -322,125 +342,161 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
             key: const ValueKey('space_menu'),
             tooltip: 'Space options',
             icon: const Icon(Icons.more_horiz_rounded),
-            onPressed: () =>
-                _menu(name, widget.spaceKey.startsWith('custom_')),
+            onPressed: () => _menu(name, widget.spaceKey.startsWith('custom_')),
           ),
       ],
-      body: Column(
-        children: [
-          if (!_isArchive) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s16,
-                AppSpace.s8,
-                AppSpace.s16,
-                AppSpace.s4,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const ValueKey('space_add_field'),
-                      controller: _input,
-                      focusNode: _focus,
-                      textInputAction: TextInputAction.done,
-                      textCapitalization: TextCapitalization.sentences,
-                      onSubmitted: _add,
-                      decoration: InputDecoration(
-                        hintText: style.addHint,
-                        prefixIcon: Icon(style.icon, color: accent),
+      body: BoardBackground(
+        child: Column(
+          children: [
+            if (!_isArchive) ...[
+              if (all.isNotEmpty && !keyboardOpen)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s8,
+                  ),
+                  child: Column(
+                    children: [
+                      AscentSegmentedControl<String>(
+                        segments: [
+                          AscentSegment(
+                            value: 'open',
+                            label: style.openLabel,
+                            key: const ValueKey('space_tab_open'),
+                          ),
+                          AscentSegment(
+                            value: 'done',
+                            label: style.doneLabel,
+                            key: const ValueKey('space_tab_done'),
+                          ),
+                          const AscentSegment(
+                            value: 'all',
+                            label: 'All',
+                            key: ValueKey('space_tab_all'),
+                          ),
+                        ],
+                        selected: _tab,
+                        onChanged: (v) => setState(() => _tab = v),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: AppSpace.s8),
-                  IconButton.filled(
-                    key: const ValueKey('space_add_button'),
-                    tooltip: 'Add',
-                    onPressed: _saving ? null : () => _add(_input.text),
-                    icon: const Icon(Icons.add_rounded),
-                  ),
-                  IconButton(
-                    key: const ValueKey('space_paste_button'),
-                    tooltip: 'Add several at once',
-                    onPressed: () => _pasteList(style),
-                    icon: const Icon(Icons.playlist_add_rounded),
-                  ),
-                ],
-              ),
-            ),
-            if (all.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s16,
-                  vertical: AppSpace.s8,
                 ),
-                child: Column(
-                  children: [
-                    ProgressBar(
-                      value: doneCount / all.length,
-                      color: accent,
+            ],
+            Expanded(
+              child: shown.isEmpty
+                  ? SingleChildScrollView(
+                      child: EmptyState(
+                        icon: style.icon,
+                        title: all.isEmpty
+                            ? (_isArchive
+                                  ? 'Archive is empty'
+                                  : 'Start your $name list')
+                            : (_tab == 'done'
+                                  ? 'Nothing ${style.doneLabel.toLowerCase()} yet'
+                                  : 'All caught up'),
+                        subtitle: all.isEmpty
+                            ? (_isArchive
+                                  ? 'Archived thoughts are kept here.'
+                                  : 'Add your first entry below. Keep going at your own pace.')
+                            : 'Switch tabs to see the rest.',
+                      ),
+                    )
+                  : _mode == SpaceViewMode.grid &&
+                        MediaQuery.sizeOf(context).width >= 360 &&
+                        MediaQuery.textScalerOf(context).scale(1) < 1.45
+                  ? _grid(shown, entryFor, bottomInset)
+                  : ListView.separated(
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpace.s16,
+                        AppSpace.s8,
+                        AppSpace.s16,
+                        AppSpace.s24 + bottomInset,
+                      ),
+                      itemCount: shown.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: AppSpace.s8),
+                      itemBuilder: (_, i) => entryFor(shown[i], i),
                     ),
-                    const SizedBox(height: AppSpace.s10),
-                    AscentSegmentedControl<String>(
-                      segments: [
-                        AscentSegment(
-                          value: 'open',
-                          label: style.openLabel,
-                          key: const ValueKey('space_tab_open'),
-                        ),
-                        AscentSegment(
-                          value: 'done',
-                          label: style.doneLabel,
-                          key: const ValueKey('space_tab_done'),
-                        ),
-                        const AscentSegment(
-                          value: 'all',
-                          label: 'All',
-                          key: ValueKey('space_tab_all'),
+            ),
+            if (!_isArchive)
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
+                    decoration: BoxDecoration(
+                      color: g.fill,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: g.ink.withValues(alpha: .1),
+                        width: .7,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: .04),
+                          blurRadius: 18,
+                          offset: const Offset(0, 4),
                         ),
                       ],
-                      selected: _tab,
-                      onChanged: (v) => setState(() => _tab = v),
                     ),
-                  ],
+                    child: Row(
+                      children: [
+                        IconButton(
+                          key: const ValueKey('space_paste_button'),
+                          tooltip: 'Add several at once',
+                          onPressed: () => _pasteList(style),
+                          icon: Icon(Icons.add_rounded, color: g.inkSecondary),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            key: const ValueKey('space_add_field'),
+                            controller: _input,
+                            focusNode: _focus,
+                            textInputAction: TextInputAction.done,
+                            textCapitalization: TextCapitalization.sentences,
+                            onSubmitted: _add,
+                            decoration: InputDecoration(
+                              hintText: style.addHint,
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton.filled(
+                          key: const ValueKey('space_add_button'),
+                          tooltip: 'Add',
+                          style: IconButton.styleFrom(
+                            backgroundColor: g.ink,
+                            foregroundColor: g.bg,
+                          ),
+                          onPressed: _saving ? null : () => _add(_input.text),
+                          icon: _saving
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: g.bg,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.arrow_upward_rounded,
+                                  size: 22,
+                                ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
           ],
-          Expanded(
-            child: shown.isEmpty
-                ? SingleChildScrollView(
-                    child: EmptyState(
-                      icon: style.icon,
-                      title: all.isEmpty
-                          ? (_isArchive
-                                ? 'Archive is empty'
-                                : 'Start your $name list')
-                          : (_tab == 'done'
-                                ? 'Nothing ${style.doneLabel.toLowerCase()} yet'
-                                : 'All caught up'),
-                      subtitle: all.isEmpty
-                          ? (_isArchive
-                                ? 'Archived thoughts are kept here.'
-                                : 'Type above and press done. Keep typing to add more.')
-                          : 'Switch tabs to see the rest.',
-                    ),
-                  )
-                : _mode == SpaceViewMode.grid
-                ? _grid(shown, entryFor, bottomInset)
-                : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(
-                      AppSpace.s16,
-                      AppSpace.s8,
-                      AppSpace.s16,
-                      AppSpace.s24 + bottomInset,
-                    ),
-                    itemCount: shown.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpace.s8),
-                    itemBuilder: (_, i) => entryFor(shown[i], i),
-                  ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -542,12 +598,17 @@ class _SpaceEntry extends StatelessWidget {
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    width: 26,
-                    height: 26,
+                    width: 22,
+                    height: 22,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: done ? accent : Colors.transparent,
-                      border: Border.all(color: accent, width: 2),
+                      border: Border.all(
+                        color: done
+                            ? accent
+                            : g.inkMuted.withValues(alpha: .45),
+                        width: 1.4,
+                      ),
                     ),
                     child: done
                         ? Icon(Icons.check_rounded, size: 18, color: g.bg)
@@ -582,12 +643,9 @@ class _SpaceEntry extends StatelessWidget {
     );
 
     final shape = BoxDecoration(
-      color: Color.alphaBlend(
-        accent.withValues(alpha: grid ? .16 : .07),
-        g.fill,
-      ),
+      color: Color.alphaBlend(g.ink.withValues(alpha: .045), g.bg),
       borderRadius: grid ? AppGeometry.roundedr18 : AppGeometry.roundedr14,
-      border: Border.all(color: accent.withValues(alpha: .4)),
+      border: Border.all(color: g.ink.withValues(alpha: .07), width: .7),
     );
 
     return Opacity(
@@ -616,7 +674,7 @@ class _SpaceEntry extends StatelessWidget {
                         const Spacer(),
                         if (thought.isPinned)
                           Icon(Icons.push_pin_rounded, size: 14, color: accent),
-                        if (check != null) check,
+                        ?check,
                       ],
                     ),
                     text,
@@ -645,4 +703,169 @@ class _SpaceEntry extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Dialog owns its controller until the closing transition has unmounted it.
+class _SpaceTextDialog extends StatefulWidget {
+  const _SpaceTextDialog({
+    required this.title,
+    this.initial = '',
+    this.bulk = false,
+  });
+  final String title, initial;
+  final bool bulk;
+  @override
+  State<_SpaceTextDialog> createState() => _SpaceTextDialogState();
+}
+
+class _SpaceTextDialogState extends State<_SpaceTextDialog> {
+  late final _text = TextEditingController(text: widget.initial);
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = splitEntries(_text.text, max: 101).length;
+    final valid = widget.bulk
+        ? count > 0 && count <= 100
+        : _text.text.trim().isNotEmpty;
+    if (widget.bulk) {
+      final g = context.glass;
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .7,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: AscentTextStyles.sectionHeading.copyWith(color: g.ink),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Paste a list. Each line becomes its own entry.',
+                  style: TextStyle(color: g.inkSecondary),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  key: const ValueKey('space_paste_field'),
+                  controller: _text,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 6,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'One per line',
+                    filled: true,
+                    fillColor: g.ink.withValues(alpha: .04),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide(
+                        color: g.ink.withValues(alpha: .2),
+                      ),
+                    ),
+                    helperText: count > 100
+                        ? 'Add up to 100 entries at a time.'
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const Spacer(),
+                    FilledButton(
+                      key: const ValueKey('space_paste_save'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: g.ink,
+                        foregroundColor: g.bg,
+                      ),
+                      onPressed: valid
+                          ? () => Navigator.pop(context, _text.text)
+                          : null,
+                      child: Text('Add ${count > 100 ? 100 : count}'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return AlertDialog(
+      title: Text(widget.title),
+      scrollable: true,
+      content: TextField(
+        key: ValueKey(widget.bulk ? 'space_paste_field' : 'space_rename_field'),
+        controller: _text,
+        autofocus: true,
+        minLines: widget.bulk ? 5 : 1,
+        maxLines: widget.bulk ? 10 : 1,
+        maxLength: widget.bulk ? null : 50,
+        onChanged: (_) => setState(() {}),
+        decoration: InputDecoration(
+          hintText: widget.bulk ? 'One per line' : 'Space name',
+          helperText: widget.bulk && count > 100
+              ? 'Add up to 100 entries at a time.'
+              : null,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: widget.bulk ? const ValueKey('space_paste_save') : null,
+          onPressed: valid ? () => Navigator.pop(context, _text.text) : null,
+          child: Text(
+            widget.bulk ? 'Add ${count > 100 ? 100 : count}' : 'Save',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SpaceMenuAction extends StatelessWidget {
+  const _SpaceMenuAction({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: Icon(icon, color: color ?? context.glass.inkSecondary),
+    title: Text(label, style: TextStyle(color: color)),
+    onTap: onTap,
+  );
 }

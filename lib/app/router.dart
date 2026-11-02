@@ -1,3 +1,5 @@
+import '../features/history/history_screen.dart';
+import '../features/today/things_hub_screen.dart';
 import '../features/promises/promises_screen.dart';
 import 'theme/app_theme.dart';
 import '../features/backup/workspace_backup_screen.dart';
@@ -47,6 +49,8 @@ class AscentRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const home = '/home';
+  static const history = '/history';
+  static const things = '/things';
   static const vault = '/vault';
   static const bookReader = '/book-reader';
   static const today = '/today';
@@ -159,6 +163,11 @@ final ascentRouter = GoRouter(
       ],
     ),
 
+    GoRoute(parentNavigatorKey:rootNavigatorKey,path:AscentRoutes.history,
+      builder:(context,state)=>HistoryScreen(module:state.uri.queryParameters['module'],entity:state.uri.queryParameters['entity'])),
+    GoRoute(parentNavigatorKey:rootNavigatorKey,path:AscentRoutes.things,
+      builder:(context,state)=>const ThingsHubScreen()),
+
     // ── Parent destinations (pushed over the shell) ───────────────────────
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -227,6 +236,9 @@ final ascentRouter = GoRouter(
       path: thoughtSpacePath,
       builder: (context, state) => ThoughtSpaceScreen(
         spaceKey: state.uri.queryParameters['key'] ?? wallCategoryKey,
+        initialThoughtId: int.tryParse(
+          state.uri.queryParameters['thought'] ?? '',
+        ),
       ),
     ),
     GoRoute(

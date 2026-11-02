@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -107,6 +108,7 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
       title: 'Application Pipeline',
       subtitle: 'Job hunt stages & interview tracker',
       actions: [
+        const HistoryAction(module:'pipeline'),
         IconButton(
           icon: const Icon(Icons.mark_email_read_outlined),
           tooltip: 'Summarize Recruiter Email',

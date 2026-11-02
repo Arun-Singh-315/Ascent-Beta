@@ -309,6 +309,8 @@ class MoreScreen extends ConsumerWidget {
                   route: '/vault',
                 ),
                 _TileDivider(),
+                _MoreListTile(icon:Icons.history_rounded,iconTint:g.primaryButtonBg,title:'History',subtitle:'Search activity across your workspace',route:'/history'),
+                _TileDivider(),
                 _MoreListTile(
                   icon: Icons.insights_rounded,
                   iconTint: g.slate,

@@ -834,6 +834,45 @@ class NotificationService {
     return scheduledDate;
   }
 
+  /// Replaces a bounded Things hub bundle; never creates reminder records.
+  Future<void> scheduleThingsCheckIn({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+  }) async {
+    if (!_isInitialized) await initialize();
+    await refreshLocalTimeZone();
+    if (!at.isAfter(DateTime.now()) || !await areNotificationsEnabled()) return;
+    await _plugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tz.TZDateTime.from(at, tz.local),
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          'ascent_things_check_ins_v1',
+          'Things hub check-ins',
+          channelDescription:
+              'Up to two combined check-ins a day for unfinished things',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          groupKey: 'ascent.things',
+          onlyAlertOnce: true,
+          visibility: NotificationVisibility.private,
+          styleInformation: BigTextStyleInformation(
+            body,
+            contentTitle: title,
+            summaryText: 'Things hub · A gentle check-in',
+          ),
+        ),
+        iOS: const DarwinNotificationDetails(threadIdentifier: 'ascent.things'),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: '/today',
+    );
+  }
+
   /// One shared, personal check-in for today's promises; no reminder records.
   Future<bool> schedulePromiseCheckIn({
     required int id,

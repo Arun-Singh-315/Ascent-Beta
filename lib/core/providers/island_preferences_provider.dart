@@ -18,11 +18,12 @@ class IslandPreferences {
     this.showRecap = true,
     this.showPaused = true,
     this.animate = true,
+    this.autoRotate = true,
   });
 
   final IslandFinish finish;
   final IslandDensity density;
-  final bool showUpcoming, showRecap, showPaused, animate;
+  final bool showUpcoming, showRecap, showPaused, animate, autoRotate;
 
   IslandPreferences copyWith({
     IslandFinish? finish,
@@ -31,6 +32,7 @@ class IslandPreferences {
     bool? showRecap,
     bool? showPaused,
     bool? animate,
+    bool? autoRotate,
   }) => IslandPreferences(
     finish: finish ?? this.finish,
     density: density ?? this.density,
@@ -38,6 +40,7 @@ class IslandPreferences {
     showRecap: showRecap ?? this.showRecap,
     showPaused: showPaused ?? this.showPaused,
     animate: animate ?? this.animate,
+    autoRotate: autoRotate ?? this.autoRotate,
   );
 
   Map<String, Object> toJson() => {
@@ -47,6 +50,7 @@ class IslandPreferences {
     'showRecap': showRecap,
     'showPaused': showPaused,
     'animate': animate,
+    'autoRotate': autoRotate,
   };
 
   factory IslandPreferences.fromJson(Map<String, dynamic> json) {
@@ -68,6 +72,7 @@ class IslandPreferences {
       showRecap: flag('showRecap'),
       showPaused: flag('showPaused'),
       animate: flag('animate'),
+      autoRotate: flag('autoRotate'),
     );
   }
 }

@@ -12,7 +12,11 @@ class _DeletedTaskTree {
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
   final _deletedTrees = <int, _DeletedTaskTree>{};
-  void clearDeletionUndo() => _deletedTrees.clear();
+  void clearDeletionUndo() {
+    _deletedTrees.clear();
+    _archivedReminders.clear();
+    _archivedChildren.clear();
+  }
 
   // ---------------------------------------------------------------------------
   // Watch helpers
@@ -20,10 +24,12 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
 
   /// Stream of all tasks ordered by plannedDate asc, then createdAt asc.
   Stream<List<Task>> watchAllTasks() =>
-      (select(taskTable)..orderBy([
-            (t) => OrderingTerm.asc(t.plannedDate),
-            (t) => OrderingTerm.asc(t.createdAt),
-          ]))
+      (select(taskTable)
+            ..where((t) => t.isArchived.equals(false))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.plannedDate),
+              (t) => OrderingTerm.asc(t.createdAt),
+            ]))
           .watch();
 
   /// Stream of tasks for today.
@@ -36,6 +42,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return (select(taskTable)
           ..where(
             (t) =>
+                t.isArchived.equals(false) &
                 t.plannedDate.isBiggerOrEqualValue(dayStart) &
                 t.plannedDate.isSmallerThanValue(dayEnd),
           )
@@ -51,6 +58,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return (select(taskTable)
           ..where(
             (t) =>
+                t.isArchived.equals(false) &
                 t.plannedDate.isSmallerThanValue(todayStart) &
                 t.actualCompletedDate.isNull(),
           )
@@ -58,18 +66,24 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         .watch();
   }
 
-  /// Stream of tasks planned for today OR overdue (plannedDate before today and uncompleted).
+  Expression<bool> _visibleToday(TaskTable t, DateTime start, DateTime end) =>
+      t.isArchived.equals(false) &
+      ((t.actualCompletedDate.isBiggerOrEqualValue(start) &
+              t.actualCompletedDate.isSmallerThanValue(end)) |
+          (t.actualCompletedDate.isNull() &
+              (t.plannedDate.isNull() |
+                  t.plannedDate.isSmallerThanValue(end))));
+
   Stream<List<Task>> watchTodayAndOverdueTasks([DateTime? date]) {
     final now = date ?? DateTime.now();
-    final dayStart = DateTime(now.year, now.month, now.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
+    final start = DateTime(now.year, now.month, now.day);
     return (select(taskTable)
           ..where(
-            (t) =>
-                (t.plannedDate.isBiggerOrEqualValue(dayStart) &
-                    t.plannedDate.isSmallerThanValue(dayEnd)) |
-                (t.plannedDate.isSmallerThanValue(dayStart) &
-                    t.actualCompletedDate.isNull()),
+            (t) => _visibleToday(
+              t,
+              start,
+              DateTime(start.year, start.month, start.day + 1),
+            ),
           )
           ..orderBy([
             (t) => OrderingTerm.asc(t.plannedDate),
@@ -78,25 +92,83 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         .watch();
   }
 
-  /// Get tasks planned for today OR overdue (plannedDate before today and uncompleted).
   Future<List<Task>> getTodayAndOverdueTasks([DateTime? date]) {
     final now = date ?? DateTime.now();
-    final dayStart = DateTime(now.year, now.month, now.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-    return (select(taskTable)
-          ..where(
-            (t) =>
-                (t.plannedDate.isBiggerOrEqualValue(dayStart) &
-                    t.plannedDate.isSmallerThanValue(dayEnd)) |
-                (t.plannedDate.isSmallerThanValue(dayStart) &
-                    t.actualCompletedDate.isNull()),
-          )
-          ..orderBy([
-            (t) => OrderingTerm.asc(t.plannedDate),
-            (t) => OrderingTerm.asc(t.createdAt),
-          ]))
+    final start = DateTime(now.year, now.month, now.day);
+    return (select(taskTable)..where(
+          (t) => _visibleToday(
+            t,
+            start,
+            DateTime(start.year, start.month, start.day + 1),
+          ),
+        ))
         .get();
   }
+
+  final _archivedReminders = <int, List<Reminder>>{};
+  final _archivedChildren = <int, List<int>>{};
+  Future<void> archiveTask(int id) => db.transaction(() async {
+    final protection = await getTaskProtection(id);
+    if (protection != null) throw PlanChildProtectionException(protection);
+    final running =
+        await (db.select(db.timeSessionTable)..where(
+              (s) =>
+                  s.linkedTaskId.equals(id) &
+                  s.status.isIn(['running', 'paused']),
+            ))
+            .get();
+    if (running.isNotEmpty) {
+      throw StateError('Finish or cancel the active session before archiving.');
+    }
+    final children =
+        await (select(taskTable)..where(
+              (t) => t.parentTaskId.equals(id) & t.isArchived.equals(false),
+            ))
+            .get();
+    _archivedChildren[id] = children.map((t) => t.id).toList();
+    for (final child in children) {
+      await archiveTask(child.id);
+    }
+    final reminders = await db.reminderDao.getRemindersByTaskId(id);
+    _archivedReminders[id] = reminders;
+    await (update(taskTable)..where((t) => t.id.equals(id))).write(
+      const TaskTableCompanion(isArchived: Value(true)),
+    );
+    await (db.update(
+      db.reminderTable,
+    )..where((r) => r.linkedTaskId.equals(id))).write(
+      const ReminderTableCompanion(
+        isActive: Value(false),
+        alertSyncPending: Value(true),
+      ),
+    );
+  });
+
+  Future<bool> restoreArchivedTask(int id) => db.transaction(() async {
+    final task = await getTaskById(id);
+    if (task == null || !task.isArchived) return false;
+    await (update(taskTable)..where((t) => t.id.equals(id))).write(
+      const TaskTableCompanion(isArchived: Value(false)),
+    );
+    for (final childId in _archivedChildren.remove(id) ?? <int>[]) {
+      await restoreArchivedTask(childId);
+    }
+    for (final reminder in _archivedReminders.remove(id) ?? <Reminder>[]) {
+      await (db.update(
+        db.reminderTable,
+      )..where((r) => r.id.equals(reminder.id))).write(
+        ReminderTableCompanion(
+          isActive: Value(
+            reminder.isActive &&
+                task.actualCompletedDate == null &&
+                reminder.scheduledAt.isAfter(DateTime.now()),
+          ),
+          alertSyncPending: const Value(true),
+        ),
+      );
+    }
+    return true;
+  });
 
   /// Stream of incomplete tasks due within the next [days] calendar days.
   Stream<List<Task>> watchUpcomingTasks(int days) {
@@ -106,6 +178,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return (select(taskTable)
           ..where(
             (t) =>
+                t.isArchived.equals(false) &
                 t.plannedDate.isBiggerOrEqualValue(todayStart) &
                 t.plannedDate.isSmallerThanValue(windowEnd) &
                 t.actualCompletedDate.isNull(),
@@ -117,21 +190,30 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   /// Stream of tasks belonging to [seriesId], ordered by seriesItemIndex asc.
   Stream<List<Task>> watchTasksBySeries(int seriesId) =>
       (select(taskTable)
-            ..where((t) => t.seriesId.equals(seriesId))
+            ..where(
+              (t) => t.seriesId.equals(seriesId) & t.isArchived.equals(false),
+            )
             ..orderBy([(t) => OrderingTerm.asc(t.seriesItemIndex)]))
           .watch();
 
   /// Stream of tasks linked to a study phase, ordered by plannedDate.
   Stream<List<Task>> watchTasksForPhase(int phaseId) =>
       (select(taskTable)
-            ..where((t) => t.linkedPhaseId.equals(phaseId))
+            ..where(
+              (t) =>
+                  t.linkedPhaseId.equals(phaseId) & t.isArchived.equals(false),
+            )
             ..orderBy([(t) => OrderingTerm.asc(t.plannedDate)]))
           .watch();
 
   /// Stream of tasks linked to an application, ordered by plannedDate.
   Stream<List<Task>> watchTasksForApplication(int applicationId) =>
       (select(taskTable)
-            ..where((t) => t.linkedApplicationId.equals(applicationId))
+            ..where(
+              (t) =>
+                  t.linkedApplicationId.equals(applicationId) &
+                  t.isArchived.equals(false),
+            )
             ..orderBy([
               (t) => OrderingTerm.asc(t.actualCompletedDate),
               (t) => OrderingTerm.asc(t.plannedDate),
@@ -622,9 +704,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       );
       cancelled.addAll(reminders.map((r) => r.id));
       await db.reminderDao.deleteRemindersByTaskId(current);
-      await (db.delete(
-        db.timeSessionTable,
-      )..where((s) => s.linkedTaskId.equals(current))).go();
+      await (db.update(db.timeSessionTable)
+            ..where((s) => s.linkedTaskId.equals(current)))
+          .write(const TimeSessionTableCompanion(linkedTaskId: Value(null)));
       await (delete(taskTable)..where((t) => t.id.equals(current))).go();
     }
 
@@ -638,6 +720,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return cancelled;
   });
   Future<bool> restoreDeletedTask(int id) => db.transaction(() async {
+    if ((await getTaskById(id))?.isArchived == true) {
+      return restoreArchivedTask(id);
+    }
     final snapshot = _deletedTrees[id];
     if (snapshot == null) return false;
     for (final task in snapshot.tasks) {
@@ -645,14 +730,6 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     }
     for (final reminder in snapshot.reminders) {
       if (await db.reminderDao.getReminderById(reminder.id) != null) {
-        return false;
-      }
-    }
-    for (final session in snapshot.sessions) {
-      if (await (db.select(
-            db.timeSessionTable,
-          )..where((s) => s.id.equals(session.id))).getSingleOrNull() !=
-          null) {
         return false;
       }
     }
@@ -731,7 +808,18 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
           pausedIntervals: Value(jsonEncode(intervals)),
         );
       }
-      await db.into(db.timeSessionTable).insert(restored);
+      final existing = await (db.select(
+        db.timeSessionTable,
+      )..where((s) => s.id.equals(session.id))).getSingleOrNull();
+      if (existing != null && existing.linkedTaskId == null) {
+        await (db.update(
+          db.timeSessionTable,
+        )..where((s) => s.id.equals(session.id))).write(
+          TimeSessionTableCompanion(linkedTaskId: Value(session.linkedTaskId)),
+        );
+      } else if (existing == null) {
+        await db.into(db.timeSessionTable).insert(restored);
+      }
     }
     _deletedTrees.remove(id);
     return true;

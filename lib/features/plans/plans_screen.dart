@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/glass_theme.dart';
@@ -56,6 +57,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
 
     return AscentScaffold(
       title: 'Plans',
+      actions:const[HistoryAction(module:'routines')],
       body: Column(
         children: [
           Padding(

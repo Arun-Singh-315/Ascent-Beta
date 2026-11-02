@@ -1,3 +1,4 @@
+import '../history/history_ledger.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
@@ -303,6 +304,23 @@ class WorkspaceBackupService {
       );
       payload['schema'] = 20;
     }
+    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
+        payload['schema'] == 20 && db.schemaVersion >= 21 && payload['tables'] is Map) {
+      for (final row in (payload['tables']['user_profiles'] as List? ?? [])) {
+        (row as Map).putIfAbsent('date_of_birth', () => null);
+      }
+      payload['schema'] = 21;
+    }
+    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
+        payload['schema'] == 21 && db.schemaVersion >= 22 && payload['tables'] is Map) {
+      for (final row in (payload['tables']['tasks'] as List? ?? [])) {
+        (row as Map).putIfAbsent('is_archived', () => 0);
+      }
+      payload['tables']['history_events'] = <dynamic>[];
+      payload['tables']['water_goal_versions'] = <dynamic>[];
+      payload['historyBackfillRequired'] = true;
+      payload['schema'] = 22;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {
@@ -477,6 +495,7 @@ class WorkspaceBackupService {
         paths[file['source']] = path;
       }
       await db.transaction(() async {
+        await HistoryLedger.capture(db, false);
         await db.customStatement('PRAGMA defer_foreign_keys = ON');
         for (final name in _promiseTables.reversed) {
           await db.customStatement('DELETE FROM $name');
@@ -530,6 +549,11 @@ class WorkspaceBackupService {
           }
         }
         await db.backfillThoughtLinks();
+        if (payload['historyBackfillRequired'] == true) {
+          await HistoryLedger.backfill(db);
+          await HistoryLedger.installPromises(db);
+        }
+        await HistoryLedger.capture(db, true);
         if ((await db.customSelect('PRAGMA foreign_key_check').get())
             .isNotEmpty) {
           throw const FormatException(

@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../shared/widgets/ascent_star_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -101,6 +102,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
       title: 'Tasks & Today',
       subtitle: 'Actionable to-dos & study tasks',
       actions: [
+        const HistoryAction(module:'tasks'),
         PopupMenuButton<String>(
           icon: Icon(
             Icons.filter_list_rounded,

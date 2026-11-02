@@ -922,9 +922,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Delete Activity?'),
+                              title: const Text('Archive Activity?'),
                               content: Text(
-                                'Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.',
+                                'Are you sure you want to delete "${widget.existingTask!.title}"? Your history is kept and linked reminders will stop.',
                               ),
                               actions: [
                                 TextButton(
@@ -940,7 +940,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     icon: false,
                                   ),
                                   onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Delete'),
+                                  child: const Text('Archive'),
                                 ),
                               ],
                             ),
@@ -963,7 +963,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               AscentSnackBar.undo(
                                 context,
                                 message:
-                                    'Activity "${taskBackup.title}" deleted',
+                                    'Activity "${taskBackup.title}" archived',
                                 onUndo: () async {
                                   HapticFeedback.lightImpact();
                                   await ref
@@ -1005,7 +1005,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         label: Text(
                           _protection != null
                               ? 'Skip session or manage routine'
-                              : 'Delete Activity',
+                              : 'Archive Activity',
                           style: AppTypeRoles.typeRole8,
                         ),
                       ),

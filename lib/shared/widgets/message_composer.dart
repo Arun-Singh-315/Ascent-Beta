@@ -1,5 +1,4 @@
 import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
@@ -17,12 +16,14 @@ class MessageComposer extends StatefulWidget {
     this.busy = false,
     this.focusNode,
     this.autofocus = false,
+    this.quiet = false,
   });
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onSend;
   final bool busy;
   final bool autofocus;
+  final bool quiet;
   final FocusNode? focusNode;
   @override
   State<MessageComposer> createState() => _MessageComposerState();
@@ -74,108 +75,137 @@ class _MessageComposerState extends State<MessageComposer> {
         builder: (context, _) {
           final canSend =
               !widget.busy && widget.controller.text.trim().isNotEmpty;
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: AppCard(
-                  constraints: const BoxConstraints(minHeight: 48),
-                  nightDecoration: BoxDecoration(
-                    color: context.isDark
-                        ? context.bgSurfaceElevated
-                        : (g.merlot
-                              ? MerlotPalette.surface
-                              : (g.frozen
-                                    ? const Color(0xFFFFFFFF)
-                                    : const Color(0xFFFFFFFF))),
-                    borderRadius: AppGeometry.roundedr24,
-                    border: Border.all(
-                      color: _focus.hasFocus
-                          ? g.clay
-                          : g.ink.withValues(alpha: context.isDark ? .48 : .42),
-                      width: _focus.hasFocus ? 2.6 : 2.0,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: InlineListAddButton(
-                          controller: widget.controller,
-                          focusNode: _focus,
-                          enabled: !widget.busy,
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          key: _fieldKey,
-                          autofocus: widget.autofocus,
-                          controller: widget.controller,
-                          focusNode: _focus,
-                          minLines: 1,
-                          maxLines: 4,
-                          keyboardType: TextInputType.multiline,
-                          textInputAction: TextInputAction.newline,
-                          textCapitalization: TextCapitalization.sentences,
-                          cursorColor: context.isDark && g.merlot
-                              ? g.inkSecondary
-                              : g.clay,
-                          style: AscentTextStyles.bodyMedium.copyWith(
-                            color: g.ink,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: widget.hint,
-                            hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                              color: g.inkMuted,
-                            ),
-                            contentPadding: const EdgeInsets.only(
-                              right: AppSpace.s16,
-                              top: AppSpace.s14,
-                              bottom: AppSpace.s14,
-                            ),
-                            isDense: true,
-                            filled: false,
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                          ),
-                        ),
-                      ),
-                    ],
+          final isDark = context.isDark;
+          final hasFocus = _focus.hasFocus;
+
+          final containerBg = isDark
+              ? (g.merlot ? const Color(0xFF1E171E) : const Color(0xFF181C25))
+              : (g.merlot ? MerlotPalette.surface : const Color(0xFFFAFCFF));
+
+          final borderColor = isDark
+              ? (hasFocus
+                    ? const Color(0xFF64B5F6)
+                    : const Color(0xFF64B5F6).withValues(alpha: 0.28))
+              : (hasFocus
+                    ? const Color(0xFF2196F3)
+                    : const Color(0xFF90CAF9).withValues(alpha: 0.55));
+
+          return Container(
+            decoration: BoxDecoration(
+              color: containerBg,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: borderColor,
+                width: hasFocus ? 1.5 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(
+                    0xFF1E88E5,
+                  ).withValues(alpha: isDark ? 0.12 : 0.07),
+                  blurRadius: 18,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: InlineListAddButton(
+                    controller: widget.controller,
+                    focusNode: _focus,
+                    enabled: !widget.busy,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 48,
-                height: 48,
-                child: IconButton.filled(
-                  key: const ValueKey('message_composer_send'),
-                  tooltip: 'Send message',
-                  onPressed: canSend ? _send : null,
-                  style: context.surfaces.buttonStyle(
-                    IconButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: AppPalette.white,
-                      disabledBackgroundColor: g.fill,
-                      disabledForegroundColor: g.inkMuted,
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
                     ),
-                    filled: true,
-                    icon: true,
+                    child: TextField(
+                      key: _fieldKey,
+                      autofocus: widget.autofocus,
+                      controller: widget.controller,
+                      focusNode: _focus,
+                      minLines: 1,
+                      maxLines: 5,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
+                      textCapitalization: TextCapitalization.sentences,
+                      cursorColor: isDark && g.merlot ? g.inkSecondary : g.clay,
+                      style: AscentTextStyles.bodyLarge.copyWith(
+                        color: g.ink,
+                        height: 1.35,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: widget.hint,
+                        hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                          color: g.inkMuted,
+                        ),
+                        isDense: true,
+                        filled: false,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s4,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                      ),
+                    ),
                   ),
-                  icon: widget.busy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.send_rounded, size: 20),
                 ),
-              ),
-            ],
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: IconButton(
+                    key: const ValueKey('message_composer_send'),
+                    tooltip: 'Send message',
+                    onPressed: canSend ? _send : null,
+                    style: IconButton.styleFrom(
+                      backgroundColor: canSend ? g.clay : Colors.transparent,
+                      foregroundColor: canSend
+                          ? AppPalette.white
+                          : Colors.transparent,
+                      shape: const CircleBorder(),
+                      padding: EdgeInsets.zero,
+                    ),
+                    icon: widget.busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            transitionBuilder: (child, anim) =>
+                                ScaleTransition(scale: anim, child: child),
+                            child: canSend
+                                ? const Icon(
+                                    Icons.arrow_upward_rounded,
+                                    key: ValueKey('send_icon'),
+                                    size: 20,
+                                    color: AppPalette.white,
+                                  )
+                                : const SizedBox.shrink(
+                                    key: ValueKey('blank_icon'),
+                                  ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),

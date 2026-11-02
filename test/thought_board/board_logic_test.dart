@@ -53,9 +53,15 @@ void main() {
     final all = [t(1, 'a'), t(2, 'b', at: DateTime(2026, 10, 30))];
     expect(buildBoardContent(all, now: now, heroId: 2).hero!.id, 2);
     expect(
-      buildBoardContent(all, now: now, excludedFromHero: {1}).hero!.id,
+      buildBoardContent(
+        all,
+        now: now,
+        heroId: 1,
+        excludedFromHero: {1},
+      ).hero!.id,
       2,
     );
+    expect(buildBoardContent(all, now: now, excludedFromHero: {1}).hero!.id, 2);
   });
 
   test('balanceColumns fills the shorter column', () {
@@ -74,11 +80,7 @@ void main() {
 
   test('space summaries hide empty built-ins but keep own spaces', () {
     final summaries = buildSpaceSummaries(
-      {
-        'general': 'General',
-        'bugs': 'Bugs',
-        'custom_1': 'Movies',
-      },
+      {'general': 'General', 'bugs': 'Bugs', 'custom_1': 'Movies'},
       [
         t(1, 'Inception', category: 'custom_1'),
         t(2, 'Dune', category: 'custom_1', done: true),
@@ -91,7 +93,11 @@ void main() {
   });
 
   test('#space tag routes a thought', () {
-    final cats = {'general': 'General', 'custom_1': 'Movies', 'custom_2': 'Life Goals'};
+    final cats = {
+      'general': 'General',
+      'custom_1': 'Movies',
+      'custom_2': 'Life Goals',
+    };
     expect(parseSpaceTag('#movies Inception', cats)!.key, 'custom_1');
     expect(parseSpaceTag('#movies Inception', cats)!.text, 'Inception');
     expect(parseSpaceTag('#life goals Run a marathon', cats)!.key, 'custom_2');

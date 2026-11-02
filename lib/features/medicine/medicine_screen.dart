@@ -1,3 +1,4 @@
+import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
 import 'dart:async';
@@ -92,7 +93,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       builder: (ctx) => AlertDialog(
         title: Text('Remove ${medicine.name}?'),
         content: const Text(
-          'This removes the medicine, dose history, and its linked reminders and tasks.',
+          'This permanently removes the medicine, dose history, and its linked reminders and tasks. Archive the schedule to keep your history.',
         ),
         actions: [
           TextButton(
@@ -449,7 +450,14 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                 ),
               ),
               IconButton(
-                tooltip: 'Delete Prescription',
+                tooltip: medicine.isActive ? 'Archive schedule, keep history' : 'Restore schedule',
+                onPressed: () async {
+                  await ref.read(medicineServiceProvider).updateMedicine(medicine.id, active: !medicine.isActive);
+                },
+                icon: Icon(medicine.isActive ? Icons.archive_outlined : Icons.unarchive_outlined, color: g.primaryButtonBg),
+              ),
+              IconButton(
+                tooltip: 'Delete prescription and history permanently',
                 onPressed: () => _delete(medicine),
                 icon: Icon(Icons.delete_outline_rounded, color: g.inkMuted),
               ),
@@ -523,6 +531,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       subtitle: 'Daily care',
       showFeatureHelp: false,
       actions: [
+        const HistoryAction(module:'medicines'),
         IconButton(
           tooltip: 'Add Medicine',
           onPressed: () => showMedicineEditor(context),

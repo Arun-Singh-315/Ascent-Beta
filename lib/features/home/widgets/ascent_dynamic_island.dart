@@ -1,3 +1,4 @@
+import 'package:flutter/semantics.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../app/theme/shared_control_tokens.dart';
@@ -90,6 +91,13 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   late DateTime _now;
   Timer? _clock;
   Timer? _recapTimer;
+  Timer? _rotation;
+  List<_IslandActivity> _visibleItems = const [];
+  Set<String> _runningIds = {};
+  bool _foreground = true;
+  bool _autoRotateAllowed = true;
+  bool _touching = false;
+  double _horizontalDrag = 0;
   ScrollPosition? _scrollPosition;
 
   String get _day => briefingDay(_now).toIso8601String().split('T').first;
@@ -119,17 +127,21 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     _scrollPosition?.isScrollingNotifier.removeListener(_onScroll);
     _recapTimer?.cancel();
     _clock?.cancel();
+    _rotation?.cancel();
     _expansion.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
+    _foreground = state == AppLifecycleState.resumed;
+    if (_foreground && mounted) {
       _signature = '';
       setState(() => _now = DateTime.now());
     } else {
       _recapTimer?.cancel();
+      _rotation?.cancel();
+      _rotation = null;
       if (state == AppLifecycleState.paused && _selectedId == 'summary') {
         _consumeRecap();
       }
@@ -142,6 +154,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     final changed = _expanded != value;
     setState(() => _expanded = value);
     _scheduleRecapExpiry();
+    _restartRotation();
     if (manual && changed) HapticFeedback.selectionClick();
     final animate =
         ref.read(islandPreferencesProvider).animate &&
@@ -182,7 +195,15 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   }
 
   void _syncActivities(List<_IslandActivity> items) {
-    final signature = '$_day:${items.map((a) => a.id).join(',')}';
+    _visibleItems = items;
+    final running = items
+        .where((a) => a.isLive && !a.paused)
+        .map((a) => a.id)
+        .toSet();
+    final newlyRunning = running.difference(_runningIds);
+    _runningIds = running;
+    final signature =
+        '$_day:${items.map((a) => '${a.id}:${a.paused}').join(',')}';
     if (_signature == signature) return;
     _signature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -194,12 +215,52 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
         _expand(false, manual: false);
       } else {
         _hadActivities = true;
-        if (!items.any((a) => a.id == _selectedId)) {
-          _selectedId = items.first.id;
-        }
+        setState(() {
+          if (!_expanded && newlyRunning.isNotEmpty) {
+            _selectedId = newlyRunning.first;
+          } else if (!items.any((a) => a.id == _selectedId)) {
+            _selectedId = items.first.id;
+          }
+        });
         _scheduleRecapExpiry();
+        _restartRotation();
       }
     });
+  }
+
+  void _restartRotation() {
+    _rotation?.cancel();
+    _rotation = null;
+    if (!_foreground ||
+        _expanded ||
+        _touching ||
+        !_autoRotateAllowed ||
+        _visibleItems.length < 2) {
+      return;
+    }
+    _rotation = Timer(const Duration(seconds: 8), () {
+      _rotation = null;
+      if (!mounted) return;
+      if (ModalRoute.of(context)?.isCurrent != false &&
+          _scrollPosition?.isScrollingNotifier.value != true) {
+        _browse(1, manual: false);
+      }
+      _restartRotation();
+    });
+  }
+
+  void _browse(int direction, {bool manual = true}) {
+    final items = _visibleItems;
+    if (items.length < 2) return;
+    final current = items.indexWhere((a) => a.id == _selectedId);
+    final next = ((current < 0 ? 0 : current) + direction) % items.length;
+    if (_selectedId == 'summary') unawaited(_consumeRecap());
+    setState(() => _selectedId = items[next].id);
+    _scheduleRecapExpiry();
+    if (manual) {
+      HapticFeedback.selectionClick();
+      _restartRotation();
+    }
   }
 
   void _scheduleRecapExpiry() {
@@ -247,7 +308,13 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     final chai = ref.watch(chaiBreakProvider);
     final briefing = ref.watch(dailyBriefingProvider(briefingDay(_now))).value;
     final tasks = ref.watch(islandTasksProvider).value ?? <Task>[];
-    final starred = ref.watch(islandStarredTasksProvider(briefingDay(_now)));
+    final starred = ref
+        .watch(islandStarredTasksProvider(briefingDay(_now)))
+        .where((task) => task.id != time.activeSession?.linkedTaskId);
+    final pending = islandPendingTasks(
+      tasks,
+      _now,
+    ).where((task) => task.id != time.activeSession?.linkedTaskId).take(3);
     final reminders = ref.watch(allRemindersProvider).value ?? [];
     final upcoming =
         reminders
@@ -376,6 +443,21 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
           icon: Icons.star_rounded,
           route: '/today',
         ),
+      for (final task in pending)
+        _IslandActivity(
+          id: 'task-${task.id}-$_day',
+          label:
+              task.plannedDate != null &&
+                  briefingDay(task.plannedDate!).isBefore(briefingDay(_now))
+              ? 'Still on your list'
+              : 'Next small step',
+          title: task.title,
+          detail: task.estimatedMinutes != null
+              ? 'A ${task.estimatedMinutes}-minute focus task. Start with a little room for it.'
+              : 'No reminder needed. Pick this up when you have a little room.',
+          icon: Icons.check_circle_outline_rounded,
+          route: '/today',
+        ),
       if (briefing != null &&
           (briefing.completedYesterday > 0 ||
               briefing.trackedMinutesYesterday > 0))
@@ -399,6 +481,16 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
   @override
   Widget build(BuildContext context) {
     final preferences = ref.watch(islandPreferencesProvider);
+    final autoRotate =
+        preferences.autoRotate &&
+        !MediaQuery.accessibleNavigationOf(context) &&
+        !MediaQuery.disableAnimationsOf(context);
+    if (_autoRotateAllowed != autoRotate) {
+      _autoRotateAllowed = autoRotate;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _restartRotation();
+      });
+    }
     final all = _activities();
     final items = [
       ...all.where((a) => a.isLive && !a.paused),
@@ -433,6 +525,14 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
             child: Semantics(
               container: true,
               label: 'Ascent live activities',
+              customSemanticsActions: items.length > 1
+                  ? {
+                      CustomSemanticsAction(label: 'Next update'): () =>
+                          _browse(1),
+                      CustomSemanticsAction(label: 'Previous update'): () =>
+                          _browse(-1),
+                    }
+                  : null,
               child: TapRegion(
                 onTapOutside: (_) {
                   if (_expanded) {
@@ -512,106 +612,157 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     IslandPalette p,
     IslandDensity density,
   ) {
-    final other = items.where((a) => a.id != item.id).firstOrNull;
-    return GestureDetector(
-      key: const ValueKey('island_drag_handle'),
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragStart: (_) {
-        _expansion.stop();
+    final liveCount = items.where((a) => a.isLive && !a.paused).length;
+    final index = items.indexWhere((a) => a.id == item.id);
+    final other = items.length > 1 ? items[(index + 1) % items.length] : null;
+    return Listener(
+      onPointerDown: (_) {
+        _touching = true;
+        _restartRotation();
       },
-      onVerticalDragUpdate: (d) {
-        if (!_expanded) setState(() => _expanded = true);
-        _expansion.value = (_expansion.value + d.delta.dy / 180).clamp(0, 1);
+      onPointerUp: (_) {
+        _touching = false;
+        _restartRotation();
       },
-      onVerticalDragEnd: (d) {
-        final v = d.primaryVelocity ?? 0;
-        _expand(v.abs() > 150 ? v > 0 : _expansion.value > .35);
+      onPointerCancel: (_) {
+        _touching = false;
+        _restartRotation();
       },
-      onVerticalDragCancel: () => _expand(_expansion.value > .35),
-      child: InkWell(
-        key: const ValueKey('dynamic_island_compact'),
-        onTap: () => _expand(!_expanded),
-        onLongPress: () => _expand(true),
-        borderRadius: BorderRadius.circular(32),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 9, 4, 9),
-          child: Row(
-            children: [
-              _badge(item, p),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      density == IslandDensity.minimal
-                          ? item.label
-                          : _headline(item),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: item.id == 'summary' ? _accent(item, p) : p.ink,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      density == IslandDensity.minimal
-                          ? (item.metric ?? item.title)
-                          : _subtitle(item),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: p.secondary,
-                        fontSize: 11,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!_expanded && other != null)
-                InkWell(
-                  key: const ValueKey('island_secondary_activity'),
-                  onTap: () => _select(other.id),
-                  borderRadius: BorderRadius.circular(22),
-                  child: Tooltip(
-                    message: 'Show ${other.title}',
-                    child: SizedBox(
-                      width: 43,
-                      height: 44,
-                      child: _badge(other, p, size: 27),
+      child: GestureDetector(
+        key: const ValueKey('island_drag_handle'),
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: (_) => _horizontalDrag = 0,
+        onHorizontalDragUpdate: (details) =>
+            _horizontalDrag += details.delta.dx,
+        onHorizontalDragEnd: (details) {
+          if (_horizontalDrag.abs() > 24 ||
+              (details.primaryVelocity ?? 0).abs() > 150) {
+            _browse(
+              (_horizontalDrag != 0
+                          ? _horizontalDrag
+                          : details.primaryVelocity ?? 0) <
+                      0
+                  ? 1
+                  : -1,
+            );
+          }
+        },
+        onVerticalDragStart: (_) {
+          _expansion.stop();
+        },
+        onVerticalDragUpdate: (d) {
+          if (!_expanded) setState(() => _expanded = true);
+          _expansion.value = (_expansion.value + d.delta.dy / 180).clamp(0, 1);
+        },
+        onVerticalDragEnd: (d) {
+          final v = d.primaryVelocity ?? 0;
+          _expand(v.abs() > 150 ? v > 0 : _expansion.value > .35);
+        },
+        onVerticalDragCancel: () => _expand(_expansion.value > .35),
+        child: InkWell(
+          key: const ValueKey('dynamic_island_compact'),
+          onTap: () => _expand(!_expanded),
+          onLongPress: () => _expand(true),
+          borderRadius: BorderRadius.circular(32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 9, 4, 9),
+            child: Row(
+              children: [
+                _badge(item, p),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration:
+                        ref.watch(islandPreferencesProvider).animate &&
+                            !MediaQuery.disableAnimationsOf(context)
+                        ? const Duration(milliseconds: 220)
+                        : Duration.zero,
+                    child: Column(
+                      key: ValueKey('island_update_${item.id}'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          density == IslandDensity.minimal
+                              ? item.label
+                              : _headline(item),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: item.id == 'summary'
+                                ? _accent(item, p)
+                                : p.ink,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          density == IslandDensity.minimal
+                              ? (item.metric ?? item.title)
+                              : _subtitle(item),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: p.secondary,
+                            fontSize: 11,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        if (items.length > 1 && !_expanded) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            '${index + 1} / ${items.length} · ${!item.isLive && liveCount > 0 ? '$liveCount in progress' : 'Swipe to browse'}',
+                            key: const ValueKey('island_update_position'),
+                            style: TextStyle(color: p.secondary, fontSize: 10),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-              if (_expanded)
+                if (!_expanded && other != null)
+                  InkWell(
+                    key: const ValueKey('island_secondary_activity'),
+                    onTap: () => _select(other.id),
+                    borderRadius: BorderRadius.circular(22),
+                    child: Tooltip(
+                      message:
+                          'Next update: ${other.title}. ${index + 1} of ${items.length}',
+                      child: SizedBox(
+                        width: 43,
+                        height: 44,
+                        child: _badge(other, p, size: 27),
+                      ),
+                    ),
+                  ),
+                if (_expanded)
+                  IconButton(
+                    tooltip: 'Customize Dynamic Island',
+                    onPressed: () => showIslandCustomization(context),
+                    icon: Icon(
+                      Icons.settings_outlined,
+                      size: 17,
+                      color: p.secondary,
+                    ),
+                  ),
                 IconButton(
-                  tooltip: 'Customize Dynamic Island',
-                  onPressed: () => showIslandCustomization(context),
-                  icon: Icon(
-                    Icons.settings_outlined,
-                    size: 17,
-                    color: p.secondary,
+                  tooltip: _expanded
+                      ? 'Collapse live activities'
+                      : 'Expand live activities',
+                  onPressed: () => _expand(!_expanded),
+                  icon: AnimatedRotation(
+                    turns: _expansion.value * .5,
+                    duration: Duration.zero,
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      size: 19,
+                      color: p.secondary,
+                    ),
                   ),
                 ),
-              IconButton(
-                tooltip: _expanded
-                    ? 'Collapse live activities'
-                    : 'Expand live activities',
-                onPressed: () => _expand(!_expanded),
-                icon: AnimatedRotation(
-                  turns: _expansion.value * .5,
-                  duration: Duration.zero,
-                  child: Icon(
-                    Icons.expand_more_rounded,
-                    size: 19,
-                    color: p.secondary,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

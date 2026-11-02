@@ -1083,29 +1083,10 @@ Future<void> deleteTodayActivity(
 
   // 3. If linked to a task, cascade delete
   if (activity.linkedTaskId != null) {
-    await deleteTaskAndCleanCascade(
-      ref,
-      activity.linkedTaskId!,
-      taskTitle: activity.title,
-    );
+    await ref.read(taskDaoProvider).archiveTask(activity.linkedTaskId!);
+    return;
   }
 
-  // 4. If linked to a session, delete session from database
-  if (activity.linkedSessionId != null) {
-    try {
-      await ref
-          .read(timeSessionDaoProvider)
-          .deleteSession(activity.linkedSessionId!);
-    } catch (_) {}
-  }
+  // Standalone sessions are dismissed from Today, never erased from history.
 
-  // 5. If it's a standalone session
-  if (activity.id.startsWith('session_')) {
-    final sId = int.tryParse(activity.id.replaceFirst('session_', ''));
-    if (sId != null) {
-      try {
-        await ref.read(timeSessionDaoProvider).deleteSession(sId);
-      } catch (_) {}
-    }
-  }
 }

@@ -3,6 +3,888 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $HistoryEventTableTable extends HistoryEventTable
+    with TableInfo<$HistoryEventTableTable, HistoryEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HistoryEventTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moduleMeta = const VerificationMeta('module');
+  @override
+  late final GeneratedColumn<String> module = GeneratedColumn<String>(
+    'module',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _detailMeta = const VerificationMeta('detail');
+  @override
+  late final GeneratedColumn<String> detail = GeneratedColumn<String>(
+    'detail',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _occurredAtMeta = const VerificationMeta(
+    'occurredAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> occurredAt = GeneratedColumn<DateTime>(
+    'occurred_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _privacyThoughtIdMeta = const VerificationMeta(
+    'privacyThoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> privacyThoughtId = GeneratedColumn<int>(
+    'privacy_thought_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isPrivateMeta = const VerificationMeta(
+    'isPrivate',
+  );
+  @override
+  late final GeneratedColumn<bool> isPrivate = GeneratedColumn<bool>(
+    'is_private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_private" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _parentEntityIdMeta = const VerificationMeta(
+    'parentEntityId',
+  );
+  @override
+  late final GeneratedColumn<String> parentEntityId = GeneratedColumn<String>(
+    'parent_entity_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importedMeta = const VerificationMeta(
+    'imported',
+  );
+  @override
+  late final GeneratedColumn<bool> imported = GeneratedColumn<bool>(
+    'imported',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("imported" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    module,
+    entityId,
+    action,
+    title,
+    detail,
+    occurredAt,
+    privacyThoughtId,
+    isPrivate,
+    parentEntityId,
+    imported,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'history_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HistoryEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('module')) {
+      context.handle(
+        _moduleMeta,
+        module.isAcceptableOrUnknown(data['module']!, _moduleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moduleMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('detail')) {
+      context.handle(
+        _detailMeta,
+        detail.isAcceptableOrUnknown(data['detail']!, _detailMeta),
+      );
+    }
+    if (data.containsKey('occurred_at')) {
+      context.handle(
+        _occurredAtMeta,
+        occurredAt.isAcceptableOrUnknown(data['occurred_at']!, _occurredAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_occurredAtMeta);
+    }
+    if (data.containsKey('privacy_thought_id')) {
+      context.handle(
+        _privacyThoughtIdMeta,
+        privacyThoughtId.isAcceptableOrUnknown(
+          data['privacy_thought_id']!,
+          _privacyThoughtIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_private')) {
+      context.handle(
+        _isPrivateMeta,
+        isPrivate.isAcceptableOrUnknown(data['is_private']!, _isPrivateMeta),
+      );
+    }
+    if (data.containsKey('parent_entity_id')) {
+      context.handle(
+        _parentEntityIdMeta,
+        parentEntityId.isAcceptableOrUnknown(
+          data['parent_entity_id']!,
+          _parentEntityIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('imported')) {
+      context.handle(
+        _importedMeta,
+        imported.isAcceptableOrUnknown(data['imported']!, _importedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HistoryEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HistoryEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      module: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}module'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      detail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detail'],
+      )!,
+      occurredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}occurred_at'],
+      )!,
+      privacyThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}privacy_thought_id'],
+      ),
+      isPrivate: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_private'],
+      )!,
+      parentEntityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_entity_id'],
+      ),
+      imported: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}imported'],
+      )!,
+    );
+  }
+
+  @override
+  $HistoryEventTableTable createAlias(String alias) {
+    return $HistoryEventTableTable(attachedDatabase, alias);
+  }
+}
+
+class HistoryEvent extends DataClass implements Insertable<HistoryEvent> {
+  final String id;
+  final String module;
+  final String entityId;
+  final String action;
+  final String title;
+  final String detail;
+  final DateTime occurredAt;
+  final int? privacyThoughtId;
+  final bool isPrivate;
+  final String? parentEntityId;
+  final bool imported;
+  const HistoryEvent({
+    required this.id,
+    required this.module,
+    required this.entityId,
+    required this.action,
+    required this.title,
+    required this.detail,
+    required this.occurredAt,
+    this.privacyThoughtId,
+    required this.isPrivate,
+    this.parentEntityId,
+    required this.imported,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['module'] = Variable<String>(module);
+    map['entity_id'] = Variable<String>(entityId);
+    map['action'] = Variable<String>(action);
+    map['title'] = Variable<String>(title);
+    map['detail'] = Variable<String>(detail);
+    map['occurred_at'] = Variable<DateTime>(occurredAt);
+    if (!nullToAbsent || privacyThoughtId != null) {
+      map['privacy_thought_id'] = Variable<int>(privacyThoughtId);
+    }
+    map['is_private'] = Variable<bool>(isPrivate);
+    if (!nullToAbsent || parentEntityId != null) {
+      map['parent_entity_id'] = Variable<String>(parentEntityId);
+    }
+    map['imported'] = Variable<bool>(imported);
+    return map;
+  }
+
+  HistoryEventTableCompanion toCompanion(bool nullToAbsent) {
+    return HistoryEventTableCompanion(
+      id: Value(id),
+      module: Value(module),
+      entityId: Value(entityId),
+      action: Value(action),
+      title: Value(title),
+      detail: Value(detail),
+      occurredAt: Value(occurredAt),
+      privacyThoughtId: privacyThoughtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(privacyThoughtId),
+      isPrivate: Value(isPrivate),
+      parentEntityId: parentEntityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentEntityId),
+      imported: Value(imported),
+    );
+  }
+
+  factory HistoryEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HistoryEvent(
+      id: serializer.fromJson<String>(json['id']),
+      module: serializer.fromJson<String>(json['module']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      action: serializer.fromJson<String>(json['action']),
+      title: serializer.fromJson<String>(json['title']),
+      detail: serializer.fromJson<String>(json['detail']),
+      occurredAt: serializer.fromJson<DateTime>(json['occurredAt']),
+      privacyThoughtId: serializer.fromJson<int?>(json['privacyThoughtId']),
+      isPrivate: serializer.fromJson<bool>(json['isPrivate']),
+      parentEntityId: serializer.fromJson<String?>(json['parentEntityId']),
+      imported: serializer.fromJson<bool>(json['imported']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'module': serializer.toJson<String>(module),
+      'entityId': serializer.toJson<String>(entityId),
+      'action': serializer.toJson<String>(action),
+      'title': serializer.toJson<String>(title),
+      'detail': serializer.toJson<String>(detail),
+      'occurredAt': serializer.toJson<DateTime>(occurredAt),
+      'privacyThoughtId': serializer.toJson<int?>(privacyThoughtId),
+      'isPrivate': serializer.toJson<bool>(isPrivate),
+      'parentEntityId': serializer.toJson<String?>(parentEntityId),
+      'imported': serializer.toJson<bool>(imported),
+    };
+  }
+
+  HistoryEvent copyWith({
+    String? id,
+    String? module,
+    String? entityId,
+    String? action,
+    String? title,
+    String? detail,
+    DateTime? occurredAt,
+    Value<int?> privacyThoughtId = const Value.absent(),
+    bool? isPrivate,
+    Value<String?> parentEntityId = const Value.absent(),
+    bool? imported,
+  }) => HistoryEvent(
+    id: id ?? this.id,
+    module: module ?? this.module,
+    entityId: entityId ?? this.entityId,
+    action: action ?? this.action,
+    title: title ?? this.title,
+    detail: detail ?? this.detail,
+    occurredAt: occurredAt ?? this.occurredAt,
+    privacyThoughtId: privacyThoughtId.present
+        ? privacyThoughtId.value
+        : this.privacyThoughtId,
+    isPrivate: isPrivate ?? this.isPrivate,
+    parentEntityId: parentEntityId.present
+        ? parentEntityId.value
+        : this.parentEntityId,
+    imported: imported ?? this.imported,
+  );
+  HistoryEvent copyWithCompanion(HistoryEventTableCompanion data) {
+    return HistoryEvent(
+      id: data.id.present ? data.id.value : this.id,
+      module: data.module.present ? data.module.value : this.module,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      action: data.action.present ? data.action.value : this.action,
+      title: data.title.present ? data.title.value : this.title,
+      detail: data.detail.present ? data.detail.value : this.detail,
+      occurredAt: data.occurredAt.present
+          ? data.occurredAt.value
+          : this.occurredAt,
+      privacyThoughtId: data.privacyThoughtId.present
+          ? data.privacyThoughtId.value
+          : this.privacyThoughtId,
+      isPrivate: data.isPrivate.present ? data.isPrivate.value : this.isPrivate,
+      parentEntityId: data.parentEntityId.present
+          ? data.parentEntityId.value
+          : this.parentEntityId,
+      imported: data.imported.present ? data.imported.value : this.imported,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HistoryEvent(')
+          ..write('id: $id, ')
+          ..write('module: $module, ')
+          ..write('entityId: $entityId, ')
+          ..write('action: $action, ')
+          ..write('title: $title, ')
+          ..write('detail: $detail, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('privacyThoughtId: $privacyThoughtId, ')
+          ..write('isPrivate: $isPrivate, ')
+          ..write('parentEntityId: $parentEntityId, ')
+          ..write('imported: $imported')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    module,
+    entityId,
+    action,
+    title,
+    detail,
+    occurredAt,
+    privacyThoughtId,
+    isPrivate,
+    parentEntityId,
+    imported,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HistoryEvent &&
+          other.id == this.id &&
+          other.module == this.module &&
+          other.entityId == this.entityId &&
+          other.action == this.action &&
+          other.title == this.title &&
+          other.detail == this.detail &&
+          other.occurredAt == this.occurredAt &&
+          other.privacyThoughtId == this.privacyThoughtId &&
+          other.isPrivate == this.isPrivate &&
+          other.parentEntityId == this.parentEntityId &&
+          other.imported == this.imported);
+}
+
+class HistoryEventTableCompanion extends UpdateCompanion<HistoryEvent> {
+  final Value<String> id;
+  final Value<String> module;
+  final Value<String> entityId;
+  final Value<String> action;
+  final Value<String> title;
+  final Value<String> detail;
+  final Value<DateTime> occurredAt;
+  final Value<int?> privacyThoughtId;
+  final Value<bool> isPrivate;
+  final Value<String?> parentEntityId;
+  final Value<bool> imported;
+  final Value<int> rowid;
+  const HistoryEventTableCompanion({
+    this.id = const Value.absent(),
+    this.module = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.action = const Value.absent(),
+    this.title = const Value.absent(),
+    this.detail = const Value.absent(),
+    this.occurredAt = const Value.absent(),
+    this.privacyThoughtId = const Value.absent(),
+    this.isPrivate = const Value.absent(),
+    this.parentEntityId = const Value.absent(),
+    this.imported = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HistoryEventTableCompanion.insert({
+    required String id,
+    required String module,
+    required String entityId,
+    required String action,
+    required String title,
+    this.detail = const Value.absent(),
+    required DateTime occurredAt,
+    this.privacyThoughtId = const Value.absent(),
+    this.isPrivate = const Value.absent(),
+    this.parentEntityId = const Value.absent(),
+    this.imported = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       module = Value(module),
+       entityId = Value(entityId),
+       action = Value(action),
+       title = Value(title),
+       occurredAt = Value(occurredAt);
+  static Insertable<HistoryEvent> custom({
+    Expression<String>? id,
+    Expression<String>? module,
+    Expression<String>? entityId,
+    Expression<String>? action,
+    Expression<String>? title,
+    Expression<String>? detail,
+    Expression<DateTime>? occurredAt,
+    Expression<int>? privacyThoughtId,
+    Expression<bool>? isPrivate,
+    Expression<String>? parentEntityId,
+    Expression<bool>? imported,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (module != null) 'module': module,
+      if (entityId != null) 'entity_id': entityId,
+      if (action != null) 'action': action,
+      if (title != null) 'title': title,
+      if (detail != null) 'detail': detail,
+      if (occurredAt != null) 'occurred_at': occurredAt,
+      if (privacyThoughtId != null) 'privacy_thought_id': privacyThoughtId,
+      if (isPrivate != null) 'is_private': isPrivate,
+      if (parentEntityId != null) 'parent_entity_id': parentEntityId,
+      if (imported != null) 'imported': imported,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HistoryEventTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? module,
+    Value<String>? entityId,
+    Value<String>? action,
+    Value<String>? title,
+    Value<String>? detail,
+    Value<DateTime>? occurredAt,
+    Value<int?>? privacyThoughtId,
+    Value<bool>? isPrivate,
+    Value<String?>? parentEntityId,
+    Value<bool>? imported,
+    Value<int>? rowid,
+  }) {
+    return HistoryEventTableCompanion(
+      id: id ?? this.id,
+      module: module ?? this.module,
+      entityId: entityId ?? this.entityId,
+      action: action ?? this.action,
+      title: title ?? this.title,
+      detail: detail ?? this.detail,
+      occurredAt: occurredAt ?? this.occurredAt,
+      privacyThoughtId: privacyThoughtId ?? this.privacyThoughtId,
+      isPrivate: isPrivate ?? this.isPrivate,
+      parentEntityId: parentEntityId ?? this.parentEntityId,
+      imported: imported ?? this.imported,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (module.present) {
+      map['module'] = Variable<String>(module.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (detail.present) {
+      map['detail'] = Variable<String>(detail.value);
+    }
+    if (occurredAt.present) {
+      map['occurred_at'] = Variable<DateTime>(occurredAt.value);
+    }
+    if (privacyThoughtId.present) {
+      map['privacy_thought_id'] = Variable<int>(privacyThoughtId.value);
+    }
+    if (isPrivate.present) {
+      map['is_private'] = Variable<bool>(isPrivate.value);
+    }
+    if (parentEntityId.present) {
+      map['parent_entity_id'] = Variable<String>(parentEntityId.value);
+    }
+    if (imported.present) {
+      map['imported'] = Variable<bool>(imported.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HistoryEventTableCompanion(')
+          ..write('id: $id, ')
+          ..write('module: $module, ')
+          ..write('entityId: $entityId, ')
+          ..write('action: $action, ')
+          ..write('title: $title, ')
+          ..write('detail: $detail, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('privacyThoughtId: $privacyThoughtId, ')
+          ..write('isPrivate: $isPrivate, ')
+          ..write('parentEntityId: $parentEntityId, ')
+          ..write('imported: $imported, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WaterGoalVersionTableTable extends WaterGoalVersionTable
+    with TableInfo<$WaterGoalVersionTableTable, WaterGoalVersion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WaterGoalVersionTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetMlMeta = const VerificationMeta(
+    'targetMl',
+  );
+  @override
+  late final GeneratedColumn<int> targetMl = GeneratedColumn<int>(
+    'target_ml',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [day, targetMl];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'water_goal_versions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WaterGoalVersion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('target_ml')) {
+      context.handle(
+        _targetMlMeta,
+        targetMl.isAcceptableOrUnknown(data['target_ml']!, _targetMlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetMlMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {day};
+  @override
+  WaterGoalVersion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WaterGoalVersion(
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day'],
+      )!,
+      targetMl: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_ml'],
+      )!,
+    );
+  }
+
+  @override
+  $WaterGoalVersionTableTable createAlias(String alias) {
+    return $WaterGoalVersionTableTable(attachedDatabase, alias);
+  }
+}
+
+class WaterGoalVersion extends DataClass
+    implements Insertable<WaterGoalVersion> {
+  final String day;
+  final int targetMl;
+  const WaterGoalVersion({required this.day, required this.targetMl});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['day'] = Variable<String>(day);
+    map['target_ml'] = Variable<int>(targetMl);
+    return map;
+  }
+
+  WaterGoalVersionTableCompanion toCompanion(bool nullToAbsent) {
+    return WaterGoalVersionTableCompanion(
+      day: Value(day),
+      targetMl: Value(targetMl),
+    );
+  }
+
+  factory WaterGoalVersion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WaterGoalVersion(
+      day: serializer.fromJson<String>(json['day']),
+      targetMl: serializer.fromJson<int>(json['targetMl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'day': serializer.toJson<String>(day),
+      'targetMl': serializer.toJson<int>(targetMl),
+    };
+  }
+
+  WaterGoalVersion copyWith({String? day, int? targetMl}) => WaterGoalVersion(
+    day: day ?? this.day,
+    targetMl: targetMl ?? this.targetMl,
+  );
+  WaterGoalVersion copyWithCompanion(WaterGoalVersionTableCompanion data) {
+    return WaterGoalVersion(
+      day: data.day.present ? data.day.value : this.day,
+      targetMl: data.targetMl.present ? data.targetMl.value : this.targetMl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterGoalVersion(')
+          ..write('day: $day, ')
+          ..write('targetMl: $targetMl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(day, targetMl);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WaterGoalVersion &&
+          other.day == this.day &&
+          other.targetMl == this.targetMl);
+}
+
+class WaterGoalVersionTableCompanion extends UpdateCompanion<WaterGoalVersion> {
+  final Value<String> day;
+  final Value<int> targetMl;
+  final Value<int> rowid;
+  const WaterGoalVersionTableCompanion({
+    this.day = const Value.absent(),
+    this.targetMl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WaterGoalVersionTableCompanion.insert({
+    required String day,
+    required int targetMl,
+    this.rowid = const Value.absent(),
+  }) : day = Value(day),
+       targetMl = Value(targetMl);
+  static Insertable<WaterGoalVersion> custom({
+    Expression<String>? day,
+    Expression<int>? targetMl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (day != null) 'day': day,
+      if (targetMl != null) 'target_ml': targetMl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WaterGoalVersionTableCompanion copyWith({
+    Value<String>? day,
+    Value<int>? targetMl,
+    Value<int>? rowid,
+  }) {
+    return WaterGoalVersionTableCompanion(
+      day: day ?? this.day,
+      targetMl: targetMl ?? this.targetMl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (targetMl.present) {
+      map['target_ml'] = Variable<int>(targetMl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterGoalVersionTableCompanion(')
+          ..write('day: $day, ')
+          ..write('targetMl: $targetMl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $UserProfileTableTable extends UserProfileTable
     with TableInfo<$UserProfileTableTable, UserProfile> {
   @override
@@ -3227,6 +4109,21 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -3449,6 +4346,7 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
   List<GeneratedColumn> get $columns => [
     id,
     title,
+    isArchived,
     notes,
     linkedThoughtId,
     learningCourseId,
@@ -3490,6 +4388,12 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -3655,6 +4559,10 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -3739,6 +4647,7 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
 class Task extends DataClass implements Insertable<Task> {
   final int id;
   final String title;
+  final bool isArchived;
 
   /// Optional free-text notes about the task.
   final String? notes;
@@ -3789,6 +4698,7 @@ class Task extends DataClass implements Insertable<Task> {
   const Task({
     required this.id,
     required this.title,
+    required this.isArchived,
     this.notes,
     this.linkedThoughtId,
     this.learningCourseId,
@@ -3813,6 +4723,7 @@ class Task extends DataClass implements Insertable<Task> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['title'] = Variable<String>(title);
+    map['is_archived'] = Variable<bool>(isArchived);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -3866,6 +4777,7 @@ class Task extends DataClass implements Insertable<Task> {
     return TaskTableCompanion(
       id: Value(id),
       title: Value(title),
+      isArchived: Value(isArchived),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -3923,6 +4835,7 @@ class Task extends DataClass implements Insertable<Task> {
     return Task(
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       notes: serializer.fromJson<String?>(json['notes']),
       linkedThoughtId: serializer.fromJson<int?>(json['linkedThoughtId']),
       learningCourseId: serializer.fromJson<String?>(json['learningCourseId']),
@@ -3955,6 +4868,7 @@ class Task extends DataClass implements Insertable<Task> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'notes': serializer.toJson<String?>(notes),
       'linkedThoughtId': serializer.toJson<int?>(linkedThoughtId),
       'learningCourseId': serializer.toJson<String?>(learningCourseId),
@@ -3979,6 +4893,7 @@ class Task extends DataClass implements Insertable<Task> {
   Task copyWith({
     int? id,
     String? title,
+    bool? isArchived,
     Value<String?> notes = const Value.absent(),
     Value<int?> linkedThoughtId = const Value.absent(),
     Value<String?> learningCourseId = const Value.absent(),
@@ -4000,6 +4915,7 @@ class Task extends DataClass implements Insertable<Task> {
   }) => Task(
     id: id ?? this.id,
     title: title ?? this.title,
+    isArchived: isArchived ?? this.isArchived,
     notes: notes.present ? notes.value : this.notes,
     linkedThoughtId: linkedThoughtId.present
         ? linkedThoughtId.value
@@ -4043,6 +4959,9 @@ class Task extends DataClass implements Insertable<Task> {
     return Task(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
       notes: data.notes.present ? data.notes.value : this.notes,
       linkedThoughtId: data.linkedThoughtId.present
           ? data.linkedThoughtId.value
@@ -4095,6 +5014,7 @@ class Task extends DataClass implements Insertable<Task> {
     return (StringBuffer('Task(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('linkedThoughtId: $linkedThoughtId, ')
           ..write('learningCourseId: $learningCourseId, ')
@@ -4118,9 +5038,10 @@ class Task extends DataClass implements Insertable<Task> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     title,
+    isArchived,
     notes,
     linkedThoughtId,
     learningCourseId,
@@ -4139,13 +5060,14 @@ class Task extends DataClass implements Insertable<Task> {
     lastInteractedAt,
     createdAt,
     updatedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Task &&
           other.id == this.id &&
           other.title == this.title &&
+          other.isArchived == this.isArchived &&
           other.notes == this.notes &&
           other.linkedThoughtId == this.linkedThoughtId &&
           other.learningCourseId == this.learningCourseId &&
@@ -4169,6 +5091,7 @@ class Task extends DataClass implements Insertable<Task> {
 class TaskTableCompanion extends UpdateCompanion<Task> {
   final Value<int> id;
   final Value<String> title;
+  final Value<bool> isArchived;
   final Value<String?> notes;
   final Value<int?> linkedThoughtId;
   final Value<String?> learningCourseId;
@@ -4190,6 +5113,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   const TaskTableCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.linkedThoughtId = const Value.absent(),
     this.learningCourseId = const Value.absent(),
@@ -4212,6 +5136,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   TaskTableCompanion.insert({
     this.id = const Value.absent(),
     required String title,
+    this.isArchived = const Value.absent(),
     this.notes = const Value.absent(),
     this.linkedThoughtId = const Value.absent(),
     this.learningCourseId = const Value.absent(),
@@ -4234,6 +5159,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   static Insertable<Task> custom({
     Expression<int>? id,
     Expression<String>? title,
+    Expression<bool>? isArchived,
     Expression<String>? notes,
     Expression<int>? linkedThoughtId,
     Expression<String>? learningCourseId,
@@ -4256,6 +5182,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (isArchived != null) 'is_archived': isArchived,
       if (notes != null) 'notes': notes,
       if (linkedThoughtId != null) 'linked_thought_id': linkedThoughtId,
       if (learningCourseId != null) 'learning_course_id': learningCourseId,
@@ -4282,6 +5209,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   TaskTableCompanion copyWith({
     Value<int>? id,
     Value<String>? title,
+    Value<bool>? isArchived,
     Value<String?>? notes,
     Value<int?>? linkedThoughtId,
     Value<String?>? learningCourseId,
@@ -4304,6 +5232,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     return TaskTableCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      isArchived: isArchived ?? this.isArchived,
       notes: notes ?? this.notes,
       linkedThoughtId: linkedThoughtId ?? this.linkedThoughtId,
       learningCourseId: learningCourseId ?? this.learningCourseId,
@@ -4333,6 +5262,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -4398,6 +5330,7 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     return (StringBuffer('TaskTableCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('isArchived: $isArchived, ')
           ..write('notes: $notes, ')
           ..write('linkedThoughtId: $linkedThoughtId, ')
           ..write('learningCourseId: $learningCourseId, ')
@@ -24245,6 +25178,10 @@ class PlanCollectionItemTableCompanion
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $HistoryEventTableTable historyEventTable =
+      $HistoryEventTableTable(this);
+  late final $WaterGoalVersionTableTable waterGoalVersionTable =
+      $WaterGoalVersionTableTable(this);
   late final $UserProfileTableTable userProfileTable = $UserProfileTableTable(
     this,
   );
@@ -24370,6 +25307,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
+    historyEventTable,
+    waterGoalVersionTable,
     userProfileTable,
     studyPhaseTable,
     seriesTable,
@@ -24524,6 +25463,517 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ]);
 }
 
+typedef $$HistoryEventTableTableCreateCompanionBuilder =
+    HistoryEventTableCompanion Function({
+      required String id,
+      required String module,
+      required String entityId,
+      required String action,
+      required String title,
+      Value<String> detail,
+      required DateTime occurredAt,
+      Value<int?> privacyThoughtId,
+      Value<bool> isPrivate,
+      Value<String?> parentEntityId,
+      Value<bool> imported,
+      Value<int> rowid,
+    });
+typedef $$HistoryEventTableTableUpdateCompanionBuilder =
+    HistoryEventTableCompanion Function({
+      Value<String> id,
+      Value<String> module,
+      Value<String> entityId,
+      Value<String> action,
+      Value<String> title,
+      Value<String> detail,
+      Value<DateTime> occurredAt,
+      Value<int?> privacyThoughtId,
+      Value<bool> isPrivate,
+      Value<String?> parentEntityId,
+      Value<bool> imported,
+      Value<int> rowid,
+    });
+
+class $$HistoryEventTableTableFilterComposer
+    extends Composer<_$AppDatabase, $HistoryEventTableTable> {
+  $$HistoryEventTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get module => $composableBuilder(
+    column: $table.module,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get privacyThoughtId => $composableBuilder(
+    column: $table.privacyThoughtId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPrivate => $composableBuilder(
+    column: $table.isPrivate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentEntityId => $composableBuilder(
+    column: $table.parentEntityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get imported => $composableBuilder(
+    column: $table.imported,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$HistoryEventTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $HistoryEventTableTable> {
+  $$HistoryEventTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get module => $composableBuilder(
+    column: $table.module,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get privacyThoughtId => $composableBuilder(
+    column: $table.privacyThoughtId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPrivate => $composableBuilder(
+    column: $table.isPrivate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentEntityId => $composableBuilder(
+    column: $table.parentEntityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get imported => $composableBuilder(
+    column: $table.imported,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$HistoryEventTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HistoryEventTableTable> {
+  $$HistoryEventTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get module =>
+      $composableBuilder(column: $table.module, builder: (column) => column);
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get detail =>
+      $composableBuilder(column: $table.detail, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get occurredAt => $composableBuilder(
+    column: $table.occurredAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get privacyThoughtId => $composableBuilder(
+    column: $table.privacyThoughtId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPrivate =>
+      $composableBuilder(column: $table.isPrivate, builder: (column) => column);
+
+  GeneratedColumn<String> get parentEntityId => $composableBuilder(
+    column: $table.parentEntityId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get imported =>
+      $composableBuilder(column: $table.imported, builder: (column) => column);
+}
+
+class $$HistoryEventTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $HistoryEventTableTable,
+          HistoryEvent,
+          $$HistoryEventTableTableFilterComposer,
+          $$HistoryEventTableTableOrderingComposer,
+          $$HistoryEventTableTableAnnotationComposer,
+          $$HistoryEventTableTableCreateCompanionBuilder,
+          $$HistoryEventTableTableUpdateCompanionBuilder,
+          (
+            HistoryEvent,
+            BaseReferences<
+              _$AppDatabase,
+              $HistoryEventTableTable,
+              HistoryEvent
+            >,
+          ),
+          HistoryEvent,
+          PrefetchHooks Function()
+        > {
+  $$HistoryEventTableTableTableManager(
+    _$AppDatabase db,
+    $HistoryEventTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HistoryEventTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HistoryEventTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$HistoryEventTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> module = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> detail = const Value.absent(),
+                Value<DateTime> occurredAt = const Value.absent(),
+                Value<int?> privacyThoughtId = const Value.absent(),
+                Value<bool> isPrivate = const Value.absent(),
+                Value<String?> parentEntityId = const Value.absent(),
+                Value<bool> imported = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HistoryEventTableCompanion(
+                id: id,
+                module: module,
+                entityId: entityId,
+                action: action,
+                title: title,
+                detail: detail,
+                occurredAt: occurredAt,
+                privacyThoughtId: privacyThoughtId,
+                isPrivate: isPrivate,
+                parentEntityId: parentEntityId,
+                imported: imported,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String module,
+                required String entityId,
+                required String action,
+                required String title,
+                Value<String> detail = const Value.absent(),
+                required DateTime occurredAt,
+                Value<int?> privacyThoughtId = const Value.absent(),
+                Value<bool> isPrivate = const Value.absent(),
+                Value<String?> parentEntityId = const Value.absent(),
+                Value<bool> imported = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HistoryEventTableCompanion.insert(
+                id: id,
+                module: module,
+                entityId: entityId,
+                action: action,
+                title: title,
+                detail: detail,
+                occurredAt: occurredAt,
+                privacyThoughtId: privacyThoughtId,
+                isPrivate: isPrivate,
+                parentEntityId: parentEntityId,
+                imported: imported,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$HistoryEventTableTable, HistoryEvent>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $HistoryEventTableTable,
+                    HistoryEvent
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$HistoryEventTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $HistoryEventTableTable,
+      HistoryEvent,
+      $$HistoryEventTableTableFilterComposer,
+      $$HistoryEventTableTableOrderingComposer,
+      $$HistoryEventTableTableAnnotationComposer,
+      $$HistoryEventTableTableCreateCompanionBuilder,
+      $$HistoryEventTableTableUpdateCompanionBuilder,
+      (
+        HistoryEvent,
+        BaseReferences<_$AppDatabase, $HistoryEventTableTable, HistoryEvent>,
+      ),
+      HistoryEvent,
+      PrefetchHooks Function()
+    >;
+typedef $$WaterGoalVersionTableTableCreateCompanionBuilder =
+    WaterGoalVersionTableCompanion Function({
+      required String day,
+      required int targetMl,
+      Value<int> rowid,
+    });
+typedef $$WaterGoalVersionTableTableUpdateCompanionBuilder =
+    WaterGoalVersionTableCompanion Function({
+      Value<String> day,
+      Value<int> targetMl,
+      Value<int> rowid,
+    });
+
+class $$WaterGoalVersionTableTableFilterComposer
+    extends Composer<_$AppDatabase, $WaterGoalVersionTableTable> {
+  $$WaterGoalVersionTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetMl => $composableBuilder(
+    column: $table.targetMl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$WaterGoalVersionTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $WaterGoalVersionTableTable> {
+  $$WaterGoalVersionTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetMl => $composableBuilder(
+    column: $table.targetMl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$WaterGoalVersionTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WaterGoalVersionTableTable> {
+  $$WaterGoalVersionTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<int> get targetMl =>
+      $composableBuilder(column: $table.targetMl, builder: (column) => column);
+}
+
+class $$WaterGoalVersionTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WaterGoalVersionTableTable,
+          WaterGoalVersion,
+          $$WaterGoalVersionTableTableFilterComposer,
+          $$WaterGoalVersionTableTableOrderingComposer,
+          $$WaterGoalVersionTableTableAnnotationComposer,
+          $$WaterGoalVersionTableTableCreateCompanionBuilder,
+          $$WaterGoalVersionTableTableUpdateCompanionBuilder,
+          (
+            WaterGoalVersion,
+            BaseReferences<
+              _$AppDatabase,
+              $WaterGoalVersionTableTable,
+              WaterGoalVersion
+            >,
+          ),
+          WaterGoalVersion,
+          PrefetchHooks Function()
+        > {
+  $$WaterGoalVersionTableTableTableManager(
+    _$AppDatabase db,
+    $WaterGoalVersionTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WaterGoalVersionTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$WaterGoalVersionTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$WaterGoalVersionTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> day = const Value.absent(),
+                Value<int> targetMl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WaterGoalVersionTableCompanion(
+                day: day,
+                targetMl: targetMl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String day,
+                required int targetMl,
+                Value<int> rowid = const Value.absent(),
+              }) => WaterGoalVersionTableCompanion.insert(
+                day: day,
+                targetMl: targetMl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$WaterGoalVersionTableTable, WaterGoalVersion>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $WaterGoalVersionTableTable,
+                    WaterGoalVersion
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$WaterGoalVersionTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WaterGoalVersionTableTable,
+      WaterGoalVersion,
+      $$WaterGoalVersionTableTableFilterComposer,
+      $$WaterGoalVersionTableTableOrderingComposer,
+      $$WaterGoalVersionTableTableAnnotationComposer,
+      $$WaterGoalVersionTableTableCreateCompanionBuilder,
+      $$WaterGoalVersionTableTableUpdateCompanionBuilder,
+      (
+        WaterGoalVersion,
+        BaseReferences<
+          _$AppDatabase,
+          $WaterGoalVersionTableTable,
+          WaterGoalVersion
+        >,
+      ),
+      WaterGoalVersion,
+      PrefetchHooks Function()
+    >;
 typedef $$UserProfileTableTableCreateCompanionBuilder =
     UserProfileTableCompanion Function({
       Value<int> id,
@@ -27490,6 +28940,7 @@ typedef $$TaskTableTableCreateCompanionBuilder =
     TaskTableCompanion Function({
       Value<int> id,
       required String title,
+      Value<bool> isArchived,
       Value<String?> notes,
       Value<int?> linkedThoughtId,
       Value<String?> learningCourseId,
@@ -27513,6 +28964,7 @@ typedef $$TaskTableTableUpdateCompanionBuilder =
     TaskTableCompanion Function({
       Value<int> id,
       Value<String> title,
+      Value<bool> isArchived,
       Value<String?> notes,
       Value<int?> linkedThoughtId,
       Value<String?> learningCourseId,
@@ -27767,6 +29219,11 @@ class $$TaskTableTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28121,6 +29578,11 @@ class $$TaskTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -28316,6 +29778,11 @@ class $$TaskTableTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -28686,6 +30153,7 @@ class $$TaskTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> linkedThoughtId = const Value.absent(),
                 Value<String?> learningCourseId = const Value.absent(),
@@ -28707,6 +30175,7 @@ class $$TaskTableTableTableManager
               }) => TaskTableCompanion(
                 id: id,
                 title: title,
+                isArchived: isArchived,
                 notes: notes,
                 linkedThoughtId: linkedThoughtId,
                 learningCourseId: learningCourseId,
@@ -28730,6 +30199,7 @@ class $$TaskTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String title,
+                Value<bool> isArchived = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> linkedThoughtId = const Value.absent(),
                 Value<String?> learningCourseId = const Value.absent(),
@@ -28751,6 +30221,7 @@ class $$TaskTableTableTableManager
               }) => TaskTableCompanion.insert(
                 id: id,
                 title: title,
+                isArchived: isArchived,
                 notes: notes,
                 linkedThoughtId: linkedThoughtId,
                 learningCourseId: learningCourseId,
@@ -43721,6 +45192,10 @@ typedef $$PlanCollectionItemTableTableProcessedTableManager =
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
+  $$HistoryEventTableTableTableManager get historyEventTable =>
+      $$HistoryEventTableTableTableManager(_db, _db.historyEventTable);
+  $$WaterGoalVersionTableTableTableManager get waterGoalVersionTable =>
+      $$WaterGoalVersionTableTableTableManager(_db, _db.waterGoalVersionTable);
   $$UserProfileTableTableTableManager get userProfileTable =>
       $$UserProfileTableTableTableManager(_db, _db.userProfileTable);
   $$StudyPhaseTableTableTableManager get studyPhaseTable =>
