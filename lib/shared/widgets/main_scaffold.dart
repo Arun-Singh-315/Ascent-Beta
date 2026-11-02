@@ -1,3 +1,4 @@
+import '../../features/capture/quick_capture_sheet.dart';
 import 'dart:ui';
 
 import 'package:ascent/app/theme/dimension_tokens.dart';
@@ -136,6 +137,29 @@ class _MainScaffoldState extends State<MainScaffold> {
         drawer: const AscentDrawer(),
         extendBody: true,
         body: widget.shell,
+        floatingActionButton: MediaQuery.viewInsetsOf(context).bottom > 0
+            ? null
+            : Material(
+                color: context.glass.surface,
+                borderRadius: BorderRadius.circular(28),
+                elevation: 3,
+                child: OutlinedButton.icon(
+                  key: const ValueKey('global_quick_capture'),
+                  onPressed: () => showQuickCapture(context),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Capture'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                    foregroundColor: context.glass.primaryButtonBg,
+                    side: BorderSide(
+                      color: context.glass.primaryButtonBg.withValues(
+                        alpha: .6,
+                      ),
+                    ),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+              ),
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
           onTap: (index) {
@@ -220,7 +244,9 @@ class _AscentBottomNav extends StatelessWidget {
                   return Expanded(
                     child: InkWell(
                       onTap: () => onTap(index),
-                      borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
+                      borderRadius: BorderRadius.circular(
+                        AscentDimensions.radiusXxl,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 4,

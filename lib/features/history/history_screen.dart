@@ -1,3 +1,6 @@
+import '../vault/providers/vault_providers.dart';
+import '../promises/providers/promise_providers.dart';
+import '../promises/models/promise_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +26,43 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? _module;
   DateTimeRange? _range;
   int _limit = 60;
+  AppLifecycleListener? _lifecycle;
+  UnlockedPromiseIdsNotifier? _unlocked;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unlocked ??= ref.read(unlockedPromiseIdsProvider.notifier);
+    _lifecycle ??= AppLifecycleListener(onInactive: () => _unlocked?.lockAll());
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    _unlocked?.lockAll();
+    super.dispose();
+  }
+
+  Future<void> _togglePrivacy() async {
+    if (ref.read(unlockedPromiseIdsProvider).isNotEmpty) {
+      _unlocked?.lockAll();
+      return;
+    }
+    final allowed = await ref
+        .read(vaultSecurityServiceProvider)
+        .authenticateBiometrics(reason: 'Unlock private history');
+    if (!allowed || !mounted) return;
+    final rows = await ref
+        .read(databaseProvider)
+        .customSelect(
+          'SELECT DISTINCT privacy_thought_id FROM history_events WHERE is_private=1 AND privacy_thought_id IS NOT NULL',
+        )
+        .get();
+    if (!mounted) return;
+    for (final row in rows) {
+      _unlocked?.unlock(row.read<int>('privacy_thought_id'));
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -135,6 +175,28 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   );
                 },
               ),
+            if (event.module == 'promises' && event.action == 'archived')
+              TextButton.icon(
+                icon: const Icon(Icons.unarchive_outlined),
+                label: const Text('Restore promise'),
+                onPressed: () async {
+                  final id = int.tryParse(event.entityId);
+                  if (id == null) return;
+                  try {
+                    await ref
+                        .read(promiseRepositoryProvider)
+                        .setPromiseStatus(id, PromiseStatus.active);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  } catch (_) {
+                    if (ctx.mounted) {
+                      AscentSnackBar.error(
+                        ctx,
+                        message: 'Could not restore this promise.',
+                      );
+                    }
+                  }
+                },
+              ),
             TextButton.icon(
               icon: const Icon(Icons.timeline_rounded),
               label: const Text('This item’s history'),
@@ -172,6 +234,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       title: widget.entity == null ? 'History' : 'Item history',
       subtitle: 'Your activity, kept in one place',
       actions: [
+        IconButton(
+          tooltip: ref.watch(unlockedPromiseIdsProvider).isEmpty
+              ? 'Unlock private history'
+              : 'Lock private history',
+          icon: Icon(
+            ref.watch(unlockedPromiseIdsProvider).isEmpty
+                ? Icons.lock_outline_rounded
+                : Icons.lock_open_rounded,
+          ),
+          onPressed: _togglePrivacy,
+        ),
+
         if (widget.entity != null)
           IconButton(
             tooltip: 'All history',
@@ -378,7 +452,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 onTap: () => _detail(e),
                                 padding: const EdgeInsets.all(14),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Text(
                                       '${historyAction(e.action)} · ${historyModules[historyModule(e.module)] ?? e.module}',

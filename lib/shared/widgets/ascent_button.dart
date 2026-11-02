@@ -259,7 +259,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
           : baseBg;
       fg = g.tonalFg;
     } else if (isOutlined) {
-      final baseBg = g.surface;
+      const baseBg = Colors.transparent;
       bg = _pressed
           ? Color.alphaBlend(g.ink.withValues(alpha: 0.06), baseBg)
           : baseBg;
@@ -270,7 +270,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       );
     } else if (isGhost) {
       bg = _pressed ? g.ink.withValues(alpha: 0.06) : Colors.transparent;
-      fg = g.actionInk;
+      fg = g.primaryButtonBg;
     } else {
       // isIcon
       bg = _pressed ? g.ink.withValues(alpha: 0.06) : Colors.transparent;
@@ -310,6 +310,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       final textStyle = AscentTextStyles.buttonLabel.copyWith(color: fg);
 
       buttonContent = Container(
+        width: widget.expanded ? double.infinity : null,
         constraints: BoxConstraints(
           minHeight: visualHeight,
           minWidth: widget.compact ? 48.0 : 64.0,

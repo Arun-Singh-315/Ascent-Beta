@@ -51,21 +51,19 @@ class HomeHeader extends ConsumerWidget {
               ),
             ),
             actions: [
-              FilledButton.icon(
+              OutlinedButton.icon(
                 key: const ValueKey('home_assistant_button'),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   AiAssistantScreen.showFromHome(context);
                 },
-                style: FilledButton.styleFrom(
+                style: OutlinedButton.styleFrom(
                   minimumSize: const Size(48, 48),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 10,
                   ),
-                  backgroundColor: context.isDark
-                      ? SharedControlColors.actionBlue.withValues(alpha: 0.14)
-                      : Colors.white,
+                  backgroundColor: Colors.transparent,
                   foregroundColor: context.isDark
                       ? SharedControlColors.actionBlueDark
                       : SharedControlColors.actionBlue,
