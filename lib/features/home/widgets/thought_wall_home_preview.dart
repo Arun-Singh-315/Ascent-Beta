@@ -1251,60 +1251,78 @@ class _ThoughtWallHomePreviewState
                     ],
                   ),
                 ),
-                child: Material(
-                  color: g.ink.withValues(alpha: .045),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(17),
-                    topRight: Radius.circular(17),
-                    bottomRight: Radius.circular(17),
-                    bottomLeft: Radius.circular(5),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(17),
+                      topRight: Radius.circular(17),
+                      bottomRight: Radius.circular(17),
+                      bottomLeft: Radius.circular(5),
+                    ),
+                    border: Border.all(
+                      color: context.isDark
+                          ? const Color(0xFF2C2C2E)
+                          : const Color(0x33000000),
+                      width: 1.0,
+                    ),
                   ),
-                  child: InkWell(
-                    key: const ValueKey('home_latest_thought_bubble'),
-                    borderRadius: BorderRadius.circular(17),
-                    onTap: () =>
-                        context.push('/thought-wall?thought=${latest.id}'),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 13,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (locked)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 7),
-                              child: Icon(
-                                Icons.lock_outline_rounded,
-                                size: 15,
-                                color: g.inkMuted,
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(4),
+                    ),
+                    child: InkWell(
+                      key: const ValueKey('home_latest_thought_bubble'),
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () =>
+                          context.push('/thought-wall?thought=${latest.id}'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (locked)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 7),
+                                child: Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 15,
+                                  color: g.ink,
+                                ),
+                              ),
+                            Flexible(
+                              child: Text(
+                                locked
+                                    ? 'Private thought'
+                                    : ThoughtExcerpt.displayContent(
+                                        latest.content,
+                                      ),
+                                key: const ValueKey('home_latest_thought_text'),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: g.ink,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
-                          Flexible(
-                            child: Text(
-                              locked
-                                  ? 'Private thought'
-                                  : ThoughtExcerpt.displayContent(
-                                      latest.content,
-                                    ),
-                              key: const ValueKey('home_latest_thought_text'),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: g.inkSecondary,
-                                fontSize: 14,
-                                height: 1.4,
-                              ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 17,
+                              color: g.ink,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 17,
-                            color: g.inkMuted,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
