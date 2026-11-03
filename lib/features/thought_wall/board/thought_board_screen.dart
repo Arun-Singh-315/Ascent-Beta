@@ -617,9 +617,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       },
       child: AscentScaffold(
         title: _selecting ? '${_selected.length} selected' : 'Mind Palace',
-        subtitle: _selecting
-            ? 'Tap cards to add or remove'
-            : 'Capture & clarity',
+        subtitle: _selecting ? 'Tap cards to add or remove' : null,
         glow2: g.glow2,
         showFeatureHelp: false,
         leading: _selecting

@@ -1,5 +1,6 @@
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_star_button.dart';
+import '../../../shared/widgets/ascent_switch_row.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../shared/widgets/schedule_picker.dart';
 import '../../../shared/widgets/note_list_button.dart';
@@ -32,6 +33,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   TimeOfDay? _reminder;
   bool _saving = false;
   bool _starred = false;
+  bool _isDailyStanding = false;
   String? _error;
 
   @override
@@ -173,6 +175,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         titles: entries,
         date: date,
         priority: _starred ? 'high' : 'low',
+        isDailyStanding: _isDailyStanding,
         estimatedMinutes: _kind == ActivityKind.duration
             ? _minutes
             : _kind == ActivityKind.flexible
@@ -200,6 +203,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         _reminder = null;
         _minutes = 30;
         _starred = false;
+        _isDailyStanding = false;
       });
       var message = results.length == 1
           ? 'Activity added'
@@ -347,6 +351,17 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     },
                   ),
                 ),
+                AscentSwitchRow(
+                  title: 'Keep on until I turn it off',
+                  helper: _isDailyStanding
+                      ? 'Repeats every day automatically until toggled off'
+                      : 'One-time to-do for today',
+                  value: _isDailyStanding,
+                  onChanged: (val) {
+                    setState(() => _isDailyStanding = val);
+                    refresh(() {});
+                  },
+                ),
               ],
             ),
           );
@@ -363,12 +378,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         _kind != ActivityKind.todo ||
         _date != null ||
         _reminder != null ||
-        _starred;
+        _starred ||
+        _isDailyStanding;
     final summary = [
       if (_kind == ActivityKind.duration) 'Timer · $_minutes min',
       if (_kind == ActivityKind.flexible) 'Flexible timer',
       if (_date != null) DateFormat('d MMM').format(_day),
       if (_reminder != null) _reminder!.format(context),
+      if (_isDailyStanding) 'Daily standing',
       if (_starred) 'Starred',
     ].join(' · ');
     return Column(
@@ -415,6 +432,24 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     focusedBorder: InputBorder.none,
                     disabledBorder: InputBorder.none,
                   ),
+                ),
+              ),
+              IconButton(
+                tooltip: _isDailyStanding
+                    ? 'Daily standing active (repeats every day)'
+                    : 'Keep every day until turned off',
+                onPressed: _saving
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _isDailyStanding = !_isDailyStanding);
+                      },
+                icon: Icon(
+                  Icons.repeat_rounded,
+                  size: 20,
+                  color: _isDailyStanding
+                      ? SharedControlColors.actionBlue
+                      : g.inkMuted.withValues(alpha: 0.6),
                 ),
               ),
               IconButton.filled(

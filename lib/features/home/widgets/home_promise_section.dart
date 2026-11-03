@@ -44,29 +44,16 @@ class HomePromiseSection extends ConsumerWidget {
                 ),
               ),
             ),
-            InkWell(
-              borderRadius: BorderRadius.circular(16),
+            InkResponse(
+              radius: 20,
               onTap: () {
                 HapticFeedback.selectionClick();
                 context.push('/promises');
               },
-              child: Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: g.fill.withValues(alpha: g.isDark ? 0.2 : 0.6),
-                  border: Border.all(
-                    color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
-                    width: 0.8,
-                  ),
-                ),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 15,
-                  color: g.ink,
-                ),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 22,
+                color: g.ink,
               ),
             ),
           ],

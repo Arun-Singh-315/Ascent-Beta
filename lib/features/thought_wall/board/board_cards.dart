@@ -245,9 +245,11 @@ class BoardCard extends StatelessWidget {
           text,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
-          style: AscentTextStyles.sectionHeading.copyWith(
+          style: AscentTextStyles.cardTitle.copyWith(
             color: g.ink,
-            height: 1.3,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
           ),
         );
       case BoardCardKind.list:
@@ -374,8 +376,8 @@ class BoardHeroCard extends StatelessWidget {
     final dark = context.isDark;
     final fill = dark
         ? Color.alphaBlend(g.ink.withValues(alpha: .07), g.bg)
-        : g.ink;
-    final onFill = dark ? g.ink : g.bg;
+        : Color.alphaBlend(Colors.white.withValues(alpha: .88), g.fill);
+    final onFill = g.ink;
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
 
@@ -390,27 +392,22 @@ class BoardHeroCard extends StatelessWidget {
         onDoubleTap: isSelectionMode ? null : onDoubleTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(AppSpace.s24),
+          padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                fill,
-                Color.alphaBlend(Colors.white.withValues(alpha: .07), fill),
-              ],
-            ),
+            color: fill,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: .08),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: Colors.black.withValues(alpha: dark ? .12 : .04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
-            borderRadius: AppGeometry.roundedr24,
+            borderRadius: AppGeometry.roundedr20,
             border: Border.all(
-              color: isSelected ? g.clay : Colors.transparent,
-              width: 2,
+              color: isSelected
+                  ? SharedControlColors.actionBlue
+                  : g.line.withValues(alpha: dark ? 0.35 : 0.25),
+              width: isSelected ? 1.5 : 1.0,
             ),
           ),
           child: Column(
@@ -424,8 +421,9 @@ class BoardHeroCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AscentTextStyles.labelSmall.copyWith(
-                        color: onFill.withValues(alpha: .72),
+                        color: onFill.withValues(alpha: .6),
                         letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -460,7 +458,7 @@ class BoardHeroCard extends StatelessWidget {
                     overflow: TextOverflow.clip,
                     style: AppTypography.thoughtContent(
                       color: onFill,
-                    ).copyWith(fontSize: 17),
+                    ).copyWith(fontSize: 16, fontWeight: FontWeight.w400, height: 1.5),
                   ),
                 ),
                 const SizedBox(height: AppSpace.s8),
@@ -470,18 +468,18 @@ class BoardHeroCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: onFill.withValues(alpha: 0.12),
+                    color: g.clay.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.notes_rounded, size: 13, color: onFill),
+                      Icon(Icons.notes_rounded, size: 13, color: g.clay),
                       const SizedBox(width: 4),
                       Text(
                         'Read full note',
                         style: AscentTextStyles.labelSmall.copyWith(
-                          color: onFill,
+                          color: g.clay,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -489,7 +487,7 @@ class BoardHeroCard extends StatelessWidget {
                       Icon(
                         Icons.arrow_forward_rounded,
                         size: 11,
-                        color: onFill,
+                        color: g.clay,
                       ),
                     ],
                   ),
@@ -500,13 +498,15 @@ class BoardHeroCard extends StatelessWidget {
                   maxLines: short ? 4 : 8,
                   overflow: TextOverflow.ellipsis,
                   style: short
-                      ? AscentTextStyles.pageTitle.copyWith(
+                      ? AscentTextStyles.cardTitle.copyWith(
                           color: onFill,
-                          height: 1.25,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
                         )
                       : AppTypography.thoughtContent(
                           color: onFill,
-                        ).copyWith(fontSize: 17),
+                        ).copyWith(fontSize: 16, fontWeight: FontWeight.w400, height: 1.5),
                 ),
               const SizedBox(height: AppSpace.s12),
               Text(
@@ -517,7 +517,7 @@ class BoardHeroCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AscentTextStyles.labelSmall.copyWith(
-                  color: onFill.withValues(alpha: .72),
+                  color: onFill.withValues(alpha: .6),
                 ),
               ),
             ],
