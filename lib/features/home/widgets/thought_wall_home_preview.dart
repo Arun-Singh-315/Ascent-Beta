@@ -1113,6 +1113,7 @@ class _ThoughtWallHomePreviewState
             ),
           ],
         ),
+        const SizedBox(height: 12),
         if (widget.showComposer)
           Container(
             decoration: BoxDecoration(
@@ -1168,7 +1169,10 @@ class _ThoughtWallHomePreviewState
           ),
         if (latest != null)
           Padding(
-            padding: const EdgeInsets.only(top: 9, right: 26),
+            padding: EdgeInsets.only(
+              top: widget.showComposer ? 12.0 : 0.0,
+              right: 26,
+            ),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Dismissible(
