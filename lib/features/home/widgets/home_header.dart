@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
@@ -222,9 +223,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 greeting,
                 style: AscentTextStyles.homeBody.copyWith(
                   color: g.inkSecondary,
-                  fontSize: 14.5,
+                  fontSize: 14.0,
                   fontWeight: FontWeight.w500,
-                  letterSpacing: 0.1,
+                  letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(width: 8),
@@ -245,7 +246,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     const SizedBox(width: 4),
                     Text(
                       periodSubtitle,
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         color: periodColor,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,
@@ -257,14 +258,14 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
               ),
             ],
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             name,
             style: AscentTextStyles.homeDisplay.copyWith(
               color: g.ink,
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.6,
+              letterSpacing: -0.8,
               height: 1.15,
             ),
           ),

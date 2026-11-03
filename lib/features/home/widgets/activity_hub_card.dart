@@ -89,34 +89,27 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               ),
             ),
             InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               onTap: () {
                 HapticFeedback.selectionClick();
                 context.push('/things');
               },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+              child: Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: g.fill.withValues(alpha: g.isDark ? 0.2 : 0.6),
+                  border: Border.all(
+                    color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+                    width: 0.8,
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'View all',
-                      style: TextStyle(
-                        color: g.inkMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 16,
-                      color: g.inkMuted,
-                    ),
-                  ],
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 15,
+                  color: g.ink,
                 ),
               ),
             ),
