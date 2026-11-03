@@ -277,12 +277,13 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       fg = g.actionInk;
     }
 
-    // Geometry
+    // Geometry. The drawn shape is slim and crisp (40 / 32 px); the invisible
+    // outer wrapper below still guarantees the 48 px accessible tap region.
     final visualHeight = widget.compact
-        ? AscentDimensions.buttonHeightCompact
-        : AscentDimensions.buttonHeightStandard;
+        ? AscentDimensions.buttonVisualHeightCompact
+        : AscentDimensions.buttonVisualHeight;
 
-    final horizontalPadding = widget.compact ? 12.0 : 16.0;
+    final horizontalPadding = widget.compact ? 12.0 : 14.0;
 
     Widget buttonContent;
 
@@ -307,7 +308,10 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       );
     } else {
       // Regular button with text and optional icon / spinner
-      final textStyle = AscentTextStyles.buttonLabel.copyWith(color: fg);
+      final textStyle = AscentTextStyles.buttonLabel.copyWith(
+        color: fg,
+        fontSize: widget.compact ? 13.5 : 14.5,
+      );
 
       buttonContent = Container(
         width: widget.expanded ? double.infinity : null,
@@ -327,8 +331,8 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
           children: [
             if (widget.loading) ...[
               SizedBox(
-                width: 16,
-                height: 16,
+                width: widget.compact ? 14 : 16,
+                height: widget.compact ? 14 : 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(fg),
@@ -336,7 +340,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
               ),
               const SizedBox(width: AscentDimensions.spaceSm),
             ] else if (widget.icon != null) ...[
-              Icon(widget.icon, size: widget.compact ? 16 : 18, color: fg),
+              Icon(widget.icon, size: widget.compact ? 15 : 17, color: fg),
               const SizedBox(width: AscentDimensions.spaceSm),
             ],
             Flexible(
