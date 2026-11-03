@@ -25,6 +25,8 @@ import '../../core/streak/study_streak_provider.dart';
 import '../promises/providers/promise_providers.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
+import 'widgets/daily_welcome_dialog.dart';
+import '../../core/services/daily_welcome_service.dart';
 import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
@@ -113,9 +115,35 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
           (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
           (preferences.getBool('ascent_quick_start_v1') ?? false);
       if (!tutorialDismissed && mounted) {
+        // First login: the one-time guide is today's welcome, so the daily
+        // one waits for tomorrow instead of stacking on top of it.
         preferences.setBool(DayOneTutorialDialog.prefKey, true);
+        await markDailyWelcomeSeen(preferences, DateTime.now());
         await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
+        return;
       }
+
+      // Every other day: one daily welcome on the first open, never again that
+      // day, and never when Home was opened for a specific destination.
+      final uri = widget.notificationUri;
+      final homeOnly = uri == null || uri.path == '/home';
+      final now = DateTime.now();
+      if (!mounted ||
+          !homeOnly ||
+          !shouldShowDailyWelcome(
+            prefs: preferences,
+            now: now,
+            autoOpen: ref.read(dailyBriefingAutoOpenProvider),
+          )) {
+        return;
+      }
+      await markDailyWelcomeSeen(preferences, now);
+      if (!mounted) return;
+      await DailyWelcomeDialog.show(
+        context,
+        day: briefingDay(now),
+        name: profile?.name ?? '',
+      );
     });
   }
 

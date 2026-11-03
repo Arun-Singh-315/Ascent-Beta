@@ -108,6 +108,44 @@ class DailyBriefing {
         '${plannedYesterday > 0 ? ' $finishedPlannedYesterday of $plannedYesterday tasks planned for yesterday were complete by the end of the day.' : ''}';
   }
 
+  static String _plural(int n, String one, [String? many]) =>
+      '$n ${n == 1 ? one : (many ?? '${one}s')}';
+
+  static String _duration(int minutes) {
+    if (minutes < 60) return '$minutes min';
+    final h = minutes ~/ 60, m = minutes % 60;
+    return m == 0 ? '${h}h' : '${h}h ${m}m';
+  }
+
+  /// Yesterday as one calm sentence. Missing logs are never framed as failure.
+  String get yesterdayStory {
+    if (completedYesterday > 0 && trackedMinutesYesterday > 0) {
+      return 'Yesterday you finished ${_plural(completedYesterday, 'task')} '
+          'and spent ${_duration(trackedMinutesYesterday)} in focus.';
+    }
+    if (completedYesterday > 0) {
+      return 'Yesterday you finished ${_plural(completedYesterday, 'task')}.';
+    }
+    if (trackedMinutesYesterday > 0) {
+      return 'Yesterday you put ${_duration(trackedMinutesYesterday)} into focused work.';
+    }
+    return 'Today is a clean page. Start small and let the day build itself.';
+  }
+
+  /// Today in words: what is waiting and where to begin.
+  String get todayStory {
+    final parts = <String>[
+      if (dueToday > 0) '${_plural(dueToday, 'thing')} due today',
+      if (overdue > 0) '${_plural(overdue, 'task')} carried over',
+    ];
+    final start = nextTask == null ? '' : ' A good place to begin: “$nextTask”.';
+    if (parts.isEmpty && nextTask == null) {
+      return 'Your day is wide open. Capture what is on your mind, or pick one small thing to begin.';
+    }
+    if (parts.isEmpty) return 'Nothing is pressing.$start';
+    return 'You have ${parts.join(' and ')}.$start';
+  }
+
   String get encouragement {
     if (overdue > 0) {
       return '$overdue overdue ${overdue == 1 ? 'task needs' : 'tasks need'} a decision. Pick one to do, reschedule, or let go. A smaller, honest plan helps.';
