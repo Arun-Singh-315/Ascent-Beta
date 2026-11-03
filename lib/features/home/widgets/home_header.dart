@@ -6,13 +6,11 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../home_customization_sheet.dart';
 import '../../../core/services/cosmic_profile_service.dart';
-import '../../../shared/widgets/ascent_segmented_control.dart';
 
 /// A quiet greeting, with secondary controls kept out of the content hierarchy.
 class HomeHeader extends ConsumerWidget {
@@ -43,33 +41,65 @@ class HomeHeader extends ConsumerWidget {
               DateFormat('EEE, d MMM').format(DateTime.now()),
               key: const ValueKey('home_date'),
               style: AscentTextStyles.homeCaption.copyWith(
-                color: g.ink,
-                fontWeight: FontWeight.w700,
-                letterSpacing: .3,
+                color: g.inkMuted,
+                fontWeight: FontWeight.w600,
+                letterSpacing: .4,
               ),
             ),
             actions: [
-              // Toggle — width set precisely at the row level in _HomeHeaderRow
-              AscentSegmentedControl<ThemeMode>(
-                key: const ValueKey('home_day_night_toggle'),
-                accented: true,
-                segments: const [
-                  AscentSegment(
-                    value: ThemeMode.light,
-                    label: 'Day',
-                    icon: Icons.wb_sunny_rounded,
+              // Apple-Style Quick Theme Morph Button
+              Material(
+                color: Colors.transparent,
+                child: Tooltip(
+                  message: context.isDark ? 'Switch to Day mode' : 'Switch to Night mode',
+                  child: InkWell(
+                    key: const ValueKey('home_day_night_toggle'),
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      final nextMode = context.isDark ? ThemeMode.light : ThemeMode.dark;
+                      ref.read(themeModeProvider.notifier).setThemeMode(nextMode);
+                    },
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: g.fill.withValues(alpha: context.isDark ? 0.35 : 0.65),
+                        border: Border.all(
+                          color: g.line.withValues(alpha: context.isDark ? 0.5 : 0.3),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder: (child, anim) => RotationTransition(
+                            turns: child.key == const ValueKey('sun_icon')
+                                ? Tween<double>(begin: 0.75, end: 1.0).animate(anim)
+                                : Tween<double>(begin: 0.85, end: 1.0).animate(anim),
+                            child: FadeTransition(opacity: anim, child: child),
+                          ),
+                          child: context.isDark
+                              ? Icon(
+                                  Icons.nights_stay_rounded,
+                                  key: const ValueKey('moon_icon'),
+                                  size: 18,
+                                  color: g.clay,
+                                )
+                              : Icon(
+                                  Icons.wb_sunny_rounded,
+                                  key: const ValueKey('sun_icon'),
+                                  size: 18,
+                                  color: const Color(0xFFD97706),
+                                ),
+                        ),
+                      ),
+                    ),
                   ),
-                  AscentSegment(
-                    value: ThemeMode.dark,
-                    label: 'Night',
-                    icon: Icons.nights_stay_rounded,
-                  ),
-                ],
-                selected: context.isDark ? ThemeMode.dark : ThemeMode.light,
-                onChanged: (mode) =>
-                    ref.read(themeModeProvider.notifier).setThemeMode(mode),
+                ),
               ),
-              // Profile avatar — compact 32dp tap target
+              // Profile avatar & settings signature
               GestureDetector(
                 onTap: () {
                   HapticFeedback.lightImpact();
@@ -77,18 +107,28 @@ class HomeHeader extends ConsumerWidget {
                 },
                 child: Tooltip(
                   message: 'Profile and settings',
-                  child: CircleAvatar(
-                    key: const ValueKey('home_profile_button'),
-                    radius: 16,
-                    backgroundColor: g.claySoft,
-                    foregroundColor: g.ink,
-                    child: Text(
-                      name.isNotEmpty
-                          ? String.fromCharCode(name.runes.first).toUpperCase()
-                          : 'A',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: g.line.withValues(alpha: context.isDark ? 0.4 : 0.25),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      key: const ValueKey('home_profile_button'),
+                      radius: 16,
+                      backgroundColor: g.claySoft,
+                      foregroundColor: g.ink,
+                      child: Text(
+                        name.isNotEmpty
+                            ? String.fromCharCode(name.runes.first).toUpperCase()
+                            : 'A',
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -99,15 +139,22 @@ class HomeHeader extends ConsumerWidget {
           const SizedBox(height: 20),
           Text(
             _greeting(),
-            style: AscentTextStyles.homeBody.copyWith(color: g.inkSecondary),
+            style: AscentTextStyles.homeBody.copyWith(
+              color: g.inkSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.1,
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             name,
             style: AscentTextStyles.homeDisplay.copyWith(
               color: g.ink,
-              fontSize: 28,
-              height: 1.2,
+              fontSize: 30,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.6,
+              height: 1.15,
             ),
           ),
           const SizedBox(height: 6),
@@ -245,28 +292,22 @@ class _HomeHeaderRow extends StatelessWidget {
   final List<Widget> actions;
   @override
   Widget build(BuildContext context) {
-    final s = context.surfaces;
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 320 ||
-            MediaQuery.textScalerOf(context).scale(13) > 17) {
+        if (constraints.maxWidth < 280) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               date,
-              SizedBox(height: s.spacing),
-              Wrap(
+              const SizedBox(height: 8),
+              Row(
                 key: const ValueKey('home_header_actions'),
-                alignment: WrapAlignment.end,
-                spacing: s.spacing,
-                runSpacing: s.spacing,
-                crossAxisAlignment: WrapCrossAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  SizedBox(
-                    width: 140,
-                    child: actions[0],
-                  ),
-                  if (actions.length > 1) actions[1],
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 10),
+                    actions[i],
+                  ],
                 ],
               ),
             ],
@@ -276,17 +317,14 @@ class _HomeHeaderRow extends StatelessWidget {
           key: const ValueKey('home_header_actions'),
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Date label gets remaining space after the actions
+            // Date label expands freely
             Expanded(child: date),
-            const SizedBox(width: 8),
-            // Sized toggle — Day/Night toggle with fixed width
-            SizedBox(
-              width: 140,
-              child: actions[0],
-            ),
-            const SizedBox(width: 8),
-            // Avatar — compact fixed size tap target
-            actions[1],
+            const SizedBox(width: 12),
+            // Minimal action dock: Sun/Moon button + Profile Avatar
+            for (var i = 0; i < actions.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              actions[i],
+            ],
           ],
         );
       },

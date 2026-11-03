@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
@@ -91,80 +90,98 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Things Hub',
-                    style: AscentTextStyles.homeTitle.copyWith(
-                      color: g.ink,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Things Hub',
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
                   ),
-                  if (totalCount > 0 && doneCount > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
+                ),
+                if (totalCount > 0 && doneCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (doneCount == totalCount
+                              ? (g.sageSoft)
+                              : g.claySoft)
+                          .withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (doneCount == totalCount)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 3),
+                            child: Icon(
+                              Icons.check_rounded,
+                              size: 12,
+                              color: g.sage,
+                            ),
+                          ),
                         Text(
-                          '$doneCount of $totalCount done',
+                          '$doneCount/$totalCount',
                           style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: g.inkMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: doneCount == totalCount ? g.sage : g.clay,
                           ),
                         ),
                         if (streak > 0) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 4),
                           Text(
-                            '🔥 $streak',
-                            style: TextStyle(
-                              fontSize: 12,
+                            '🔥$streak',
+                            style: const TextStyle(
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: g.clay,
                             ),
                           ),
                         ],
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: (doneCount / totalCount).clamp(0.0, 1.0),
-                              minHeight: 3,
-                              backgroundColor: g.line,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                SharedControlColors.actionBlue,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
-                  ],
+                  ),
                 ],
-              ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
                 HapticFeedback.selectionClick();
                 context.push('/things');
               },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View',
-                    style: TextStyle(
-                      color: g.clay,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View all',
+                      style: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(Icons.chevron_right_rounded, size: 16, color: g.clay),
-                ],
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: g.inkMuted,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
