@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/streak/study_streak_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -62,7 +61,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final activities = ref.watch(todayActivitiesProvider);
-    final streak = ref.watch(studyStreakProvider).currentStreakDays;
 
     ref.listen(todayActivitiesProvider, (prev, next) {
       next.whenData((items) {
@@ -74,14 +72,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       });
     });
 
-    final (totalCount, doneCount) = activities.maybeWhen(
-      data: (items) => (
-        items.length,
-        items.where((a) => a.status == TodayActivityStatus.done).length,
-      ),
-      orElse: () => (0, 0),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -90,67 +80,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Things Hub',
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (totalCount > 0 && doneCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (doneCount == totalCount
-                              ? (g.sageSoft)
-                              : g.claySoft)
-                          .withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (doneCount == totalCount)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 3),
-                            child: Icon(
-                              Icons.check_rounded,
-                              size: 12,
-                              color: g.sage,
-                            ),
-                          ),
-                        Text(
-                          '$doneCount/$totalCount',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: doneCount == totalCount ? g.sage : g.clay,
-                          ),
-                        ),
-                        if (streak > 0) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            '🔥$streak',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ],
+            Text(
+              'Things Hub',
+              style: AscentTextStyles.homeTitle.copyWith(
+                color: g.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             InkWell(
               borderRadius: BorderRadius.circular(12),

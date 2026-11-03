@@ -221,8 +221,11 @@ class HomeShortcutPanel extends ConsumerWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: g.line, width: 1.0),
-              color: g.fill.withValues(alpha: isDark ? 0.15 : 0.25),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
+                width: 1.2,
+              ),
+              color: Colors.transparent,
             ),
             padding: const EdgeInsets.fromLTRB(
               AscentDimensions.spaceSm,
@@ -367,12 +370,12 @@ class HomeShortcutPanel extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF0F1520)
-                    : const Color(0xFFF7F9FC),
+                    ? const Color(0xFF161618)
+                    : const Color(0xFFF2F2F7),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: g.line.withValues(alpha: 0.6),
-                  width: 0.8,
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
+                  width: 1.0,
                 ),
               ),
               child: Row(
