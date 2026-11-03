@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +12,6 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/history_action.dart';
-import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
 import 'widgets/brew_with_me_view.dart';
@@ -25,7 +23,7 @@ enum ChaiBreakMode {
 }
 
 /// Apple Mindfulness & Zen-inspired Chai & Coffee Screen
-/// Minimalist, serene, tactile, informative with high-volume structured break history.
+/// Minimalist, serene, tactile, informative with a clean single-view chill sanctuary.
 class ChaiBreakScreen extends ConsumerStatefulWidget {
   const ChaiBreakScreen({super.key});
 
@@ -34,36 +32,7 @@ class ChaiBreakScreen extends ConsumerStatefulWidget {
 }
 
 class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
-  int _quoteIndex = 0;
-  Timer? _quoteTimer;
   ChaiBreakMode _selectedMode = ChaiBreakMode.mindfulPause;
-
-  static const _mindfulQuotes = [
-    'Take a slow sip. Let your eyes wander away from the screen.',
-    'Relax your shoulders. Unclench your jaw. Breathe deeply.',
-    'You are doing better than you realize. Enjoy this warm pause.',
-    'Rest is not a reward; it is an essential part of the work.',
-    'One conscious breath in, one slow exhale out.',
-    'Small calm pauses fuel big, sustained breakthroughs.',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _quoteTimer = Timer.periodic(const Duration(seconds: 14), (_) {
-      if (mounted) {
-        setState(() {
-          _quoteIndex = (_quoteIndex + 1) % _mindfulQuotes.length;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _quoteTimer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,13 +112,13 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
               ),
             ),
 
-            // ── Scrollable Body ─────────────────────────────────────────────
+            // ── Chill Sanctuary Body (Single-View Optimized) ────────────────
             Expanded(
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpace.s20,
-                  vertical: AppSpace.s8,
+                  vertical: AppSpace.s4,
                 ),
                 children: [
                   // 1. Canonical Segmented Mode Switcher
@@ -168,7 +137,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     onChanged: (mode) => setState(() => _selectedMode = mode),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     _selectedMode == ChaiBreakMode.brewWithMe
                         ? 'Follow a step-by-step artisanal brewing guide.'
@@ -179,12 +148,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   if (_selectedMode == ChaiBreakMode.brewWithMe) ...[
                     const BrewWithMeView(),
                   ] else ...[
-                    // Duration Preset Pills (Pristine Apple-style buttons)
+                    // Duration Preset Pills
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 10,
@@ -217,9 +186,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 14),
 
-                    // 2. Apple Mindfulness Glowing Circular Countdown Dial
+                    // 2. Serene Mindfulness Glowing Countdown Dial (Compact & Calm)
                     Center(
                       child: _AppleMindfulnessTimerDial(
                         state: state,
@@ -227,7 +196,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
 
                     // Optional Breathing Phase Banner
                     if (state.isBreathingGuideEnabled) ...[
@@ -236,17 +205,17 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         isRunning: state.isRunning,
                         accentColor: g.clay,
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
                     ],
 
-                    // 3. Synchronized Apple-Style Controls
+                    // 3. Synchronized Controls
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // Reset button
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.06)
@@ -258,7 +227,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ),
                           ),
                           child: IconButton(
-                            iconSize: 20,
+                            iconSize: 18,
                             icon: Icon(
                               Icons.replay_rounded,
                               color: g.inkMuted,
@@ -290,8 +259,8 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
 
                         // Finish early button
                         Container(
-                          width: 44,
-                          height: 44,
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.white.withValues(alpha: 0.06)
@@ -303,7 +272,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ),
                           ),
                           child: IconButton(
-                            iconSize: 20,
+                            iconSize: 18,
                             icon: Icon(
                               Icons.check_circle_outline_rounded,
                               color: g.inkMuted,
@@ -319,9 +288,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                  // 4. Ambient Soundscape Bar
+                  // 4. Ambient Soundscape Bar (Compact chill audio dock)
                   AmbientSoundscapeBar(
                     selectedSoundscape: state.selectedSoundscape,
                     isPlaying: state.isRunning,
@@ -335,56 +304,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     onVolumeChanged: notifier.setVolume,
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
-                  // 5. Mindful Quote Card
-                  AscentCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s16,
-                      vertical: AppSpace.s12,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.format_quote_rounded,
-                          color: g.clay,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 500),
-                            child: Text(
-                              _mindfulQuotes[_quoteIndex],
-                              key: ValueKey(_quoteIndex),
-                              style: AscentTextStyles.bodyMedium.copyWith(
-                                color: g.ink,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit_note_rounded,
-                            color: g.inkMuted,
-                            size: 20,
-                          ),
-                          onPressed: () => DropThoughtSheet.show(context),
-                          tooltip: 'Drop a thought into Thought Wall',
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  // 6. Break History & Pauses Today (High-Volume Protected)
+                  // 5. Break History & Pauses Today (Compact with full view link)
                   _TodayBreakHistorySection(
                     todayBreaksAsync: todayBreaksAsync,
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -411,15 +338,15 @@ class _AppleMindfulnessTimerDial extends StatelessWidget {
     final progress = state.progressFraction;
 
     return SizedBox(
-      width: 190,
-      height: 190,
+      width: 154,
+      height: 154,
       child: Stack(
         alignment: Alignment.center,
         children: [
           // Outer subtle glowing boundary
           Container(
-            width: 190,
-            height: 190,
+            width: 154,
+            height: 154,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: isDark
@@ -434,7 +361,7 @@ class _AppleMindfulnessTimerDial extends StatelessWidget {
 
           // Glowing Concentric Progress Ring
           CustomPaint(
-            size: const Size(180, 180),
+            size: const Size(146, 146),
             painter: _MindfulnessRingPainter(
               progress: progress,
               trackColor: isDark
