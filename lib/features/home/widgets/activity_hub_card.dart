@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
@@ -61,6 +62,14 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final activities = ref.watch(todayActivitiesProvider);
+
+    final (totalCount, doneCount) = activities.maybeWhen(
+      data: (items) => (
+        items.length,
+        items.where((a) => a.status == TodayActivityStatus.done).length,
+      ),
+      orElse: () => (0, 0),
+    );
 
     ref.listen(todayActivitiesProvider, (prev, next) {
       next.whenData((items) {
@@ -121,6 +130,36 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   _showAll = false;
                 }),
               ),
+              if (totalCount > 0 && doneCount > 0 && !_showPlans)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+                  child: Row(
+                    children: [
+                      Text(
+                        '$doneCount of $totalCount done',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: g.inkMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: (doneCount / totalCount).clamp(0.0, 1.0),
+                            minHeight: 3,
+                            backgroundColor: g.line,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              SharedControlColors.actionBlue,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
                 switchInCurve: Curves.easeOutCubic,
