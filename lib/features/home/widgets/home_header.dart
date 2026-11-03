@@ -6,14 +6,13 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
-import '../../ai_assistant/ai_assistant_screen.dart';
 import '../home_customization_sheet.dart';
 import '../../../core/services/cosmic_profile_service.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
 
 /// A quiet greeting, with secondary controls kept out of the content hierarchy.
 class HomeHeader extends ConsumerWidget {
@@ -34,7 +33,6 @@ class HomeHeader extends ConsumerWidget {
         ? profile!.name
         : 'Your space';
     final role = profile?.targetRole ?? '';
-    final assistantName = ref.watch(assistantNameProvider);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -51,87 +49,47 @@ class HomeHeader extends ConsumerWidget {
               ),
             ),
             actions: [
-              OutlinedButton.icon(
-                key: const ValueKey('home_assistant_button'),
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  AiAssistantScreen.showFromHome(context);
-                },
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(48, 48),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
+              // Toggle — width set precisely at the row level in _HomeHeaderRow
+              AscentSegmentedControl<ThemeMode>(
+                key: const ValueKey('home_day_night_toggle'),
+                accented: true,
+                segments: const [
+                  AscentSegment(
+                    value: ThemeMode.light,
+                    label: 'Day',
+                    icon: Icons.wb_sunny_rounded,
                   ),
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: context.isDark
-                      ? SharedControlColors.actionBlueDark
-                      : SharedControlColors.actionBlue,
-                  side: BorderSide(
-                    color: SharedControlColors.actionBlue.withValues(
-                      alpha: context.isDark ? 0.6 : 0.45,
-                    ),
-                    width: 1.2,
+                  AscentSegment(
+                    value: ThemeMode.dark,
+                    label: 'Night',
+                    icon: Icons.nights_stay_rounded,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  textStyle: AscentTextStyles.homeSecondary.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                icon: Icon(
-                  Icons.auto_awesome,
-                  size: 16,
-                  color: context.isDark
-                      ? SharedControlColors.actionBlueDark
-                      : SharedControlColors.actionBlue,
-                ),
-                label: Text(
-                  'Ask $assistantName',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                ],
+                selected: context.isDark ? ThemeMode.dark : ThemeMode.light,
+                onChanged: (mode) =>
+                    ref.read(themeModeProvider.notifier).setThemeMode(mode),
               ),
-              IconButton(
-                tooltip: context.isDark
-                    ? 'Switch to Luminous Day Theme'
-                    : 'Switch to Night Glass Theme',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(
-                        context.isDark ? ThemeMode.light : ThemeMode.dark,
-                      );
-                },
-                icon: Icon(
-                  context.isDark
-                      ? Icons.light_mode_outlined
-                      : Icons.dark_mode_outlined,
-                  size: 20,
-                  color: g.inkSecondary,
-                ),
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              ),
-              IconButton(
-                key: const ValueKey('home_profile_button'),
-                tooltip: 'Profile and settings',
-                onPressed: () {
+              // Profile avatar — compact 32dp tap target
+              GestureDetector(
+                onTap: () {
                   HapticFeedback.lightImpact();
                   context.push('/settings');
                 },
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                icon: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: g.claySoft,
-                  foregroundColor: g.ink,
-                  child: Text(
-                    name.isNotEmpty
-                        ? String.fromCharCode(name.runes.first).toUpperCase()
-                        : 'A',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+                child: Tooltip(
+                  message: 'Profile and settings',
+                  child: CircleAvatar(
+                    key: const ValueKey('home_profile_button'),
+                    radius: 16,
+                    backgroundColor: g.claySoft,
+                    foregroundColor: g.ink,
+                    child: Text(
+                      name.isNotEmpty
+                          ? String.fromCharCode(name.runes.first).toUpperCase()
+                          : 'A',
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
@@ -303,29 +261,32 @@ class _HomeHeaderRow extends StatelessWidget {
                 spacing: s.spacing,
                 runSpacing: s.spacing,
                 crossAxisAlignment: WrapCrossAlignment.center,
-                children: actions,
+                children: [
+                  SizedBox(
+                    width: 140,
+                    child: actions[0],
+                  ),
+                  if (actions.length > 1) actions[1],
+                ],
               ),
             ],
           );
         }
         return Row(
+          key: const ValueKey('home_header_actions'),
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(flex: 2, child: date),
-            SizedBox(width: s.spacing),
-            Expanded(
-              flex: 5,
-              child: Row(
-                key: const ValueKey('home_header_actions'),
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  for (var i = 0; i < actions.length; i++) ...[
-                    if (i > 0) SizedBox(width: s.spacing),
-                    if (i == 0) Flexible(child: actions[i]) else actions[i],
-                  ],
-                ],
-              ),
+            // Date label gets remaining space after the actions
+            Expanded(child: date),
+            const SizedBox(width: 8),
+            // Sized toggle — Day/Night toggle with fixed width
+            SizedBox(
+              width: 140,
+              child: actions[0],
             ),
+            const SizedBox(width: 8),
+            // Avatar — compact fixed size tap target
+            actions[1],
           ],
         );
       },

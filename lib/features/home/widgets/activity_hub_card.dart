@@ -86,17 +86,17 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── SECTION HEADING ──────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Things hub',
+                    'Things Hub',
                     style: AscentTextStyles.homeTitle.copyWith(
                       color: g.ink,
                       fontSize: 20,
@@ -169,6 +169,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             ),
           ],
         ),
+        const SizedBox(height: 10),
         GlassSurface(
           key: const ValueKey('home_activity_card'),
           borderRadius: BorderRadius.circular(18),

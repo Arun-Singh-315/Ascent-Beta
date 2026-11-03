@@ -381,12 +381,12 @@ class HomeShortcutPanel extends ConsumerWidget {
                   Icon(Icons.bolt_rounded, size: 11, color: g.clay),
                   const SizedBox(width: 4),
                   Text(
-                    'QUICK ACTIONS',
+                    'Shortcuts',
                     style: TextStyle(
-                      color: g.inkSecondary,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+                      color: g.inkMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],

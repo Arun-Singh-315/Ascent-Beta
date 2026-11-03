@@ -1,21 +1,23 @@
-import '../../features/capture/quick_capture_sheet.dart';
 import 'dart:ui';
 
 import 'package:ascent/app/theme/dimension_tokens.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 
 import 'package:flutter/services.dart';
 
+import '../../features/ai_assistant/ai_assistant_screen.dart';
+import '../../core/providers/settings_provider.dart';
 import 'ascent_drawer.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
 /// [StatefulShellRoute.indexedStack].
-class MainScaffold extends StatefulWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell shell;
 
   const MainScaffold({super.key, required this.shell});
@@ -44,15 +46,17 @@ class MainScaffold extends StatefulWidget {
   ];
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _lastBackPressTime;
 
   @override
   Widget build(BuildContext context) {
+    final assistantName = ref.watch(assistantNameProvider);
+    final assistantLabel = 'Ask $assistantName';
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -142,39 +146,40 @@ class _MainScaffoldState extends State<MainScaffold> {
             : Material(
                 color: context.glass.primaryButtonBg,
                 shape: const StadiumBorder(),
-                elevation: 2,
+                elevation: 4,
                 shadowColor: context.glass.primaryButtonBg.withValues(
-                  alpha: .35,
+                  alpha: .28,
                 ),
                 child: InkWell(
-                  key: const ValueKey('global_quick_capture'),
+                  key: const ValueKey('global_ask_assistant'),
                   customBorder: const StadiumBorder(),
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    showQuickCapture(context);
+                    AiAssistantScreen.showFromHome(context);
                   },
                   child: Semantics(
                     button: true,
-                    label: 'Quick capture',
+                    label: assistantLabel,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: SizedBox(
-                        height: 40,
+                        height: 48,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.add_rounded,
-                              size: 18,
+                              Icons.auto_awesome_rounded,
+                              size: 19,
                               color: context.glass.primaryButtonFg,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 9),
                             Text(
-                              'Capture',
+                              assistantLabel,
                               style: TextStyle(
                                 color: context.glass.primaryButtonFg,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: .1,
                               ),
                             ),
                           ],
@@ -184,6 +189,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                   ),
                 ),
               ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
           onTap: (index) {
