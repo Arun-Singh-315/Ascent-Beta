@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 class MerlotPalette {
   MerlotPalette._();
 
-  // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
+  // ── Light Mode ("Apple Luxury Alabaster & White Surfaces") ─────────────────
 
-  static const canvas = Color(0xFFF2F2F7);
+  static const canvas = Color(0xFFFBFBFD); // Crisp Apple alabaster canvas
 
   static const surface = Color(0xFFFFFFFF);
 
-  static const surfaceBottom = Color(0xFFFAFAFC);
+  static const surfaceBottom = Color(0xFFFFFFFF);
 
-  static const recessedWell = Color(0xFFEFEFF4);
+  static const recessedWell = Color(0xFFF2F2F7);
 
   static const elevated = Color(0xFFFFFFFF);
 
