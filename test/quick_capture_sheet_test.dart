@@ -198,6 +198,35 @@ void main() {
   );
 
   testWidgets(
+    'writing shows what was understood and a one-tap time completes a reminder',
+    (t) async {
+      await t.pumpWidget(app());
+      await settle(t);
+      await t.enterText(
+        find.byKey(const ValueKey('quick_capture_input')),
+        'Reminder: call Sam',
+      );
+      await settle(t);
+      expect(find.text('Found 1 item'), findsOneWidget);
+      expect(find.text('Review 1 item'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('quick_capture_review')));
+      await settle(t);
+      await t.ensureVisible(find.text('Tomorrow 9 am'));
+      await t.tap(find.text('Tomorrow 9 am'));
+      await settle(t);
+      await t.tap(find.byKey(const ValueKey('quick_capture_save')));
+      await settle(t);
+      expect(find.text('All in place'), findsOneWidget);
+      expect(
+        (await t.runAsync(() => db.select(db.reminderTable).get()))!.length,
+        1,
+      );
+      await t.pumpWidget(const SizedBox());
+      await settle(t);
+    },
+  );
+
+  testWidgets(
     'write and review screens stay usable on small phones, with keyboard and large text',
     (t) async {
       t.view.devicePixelRatio = 1;

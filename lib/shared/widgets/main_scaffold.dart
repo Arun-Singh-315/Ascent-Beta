@@ -140,23 +140,47 @@ class _MainScaffoldState extends State<MainScaffold> {
         floatingActionButton: MediaQuery.viewInsetsOf(context).bottom > 0
             ? null
             : Material(
-                color: context.glass.surface,
-                borderRadius: BorderRadius.circular(28),
-                elevation: 3,
-                child: OutlinedButton.icon(
+                color: context.glass.primaryButtonBg,
+                shape: const StadiumBorder(),
+                elevation: 2,
+                shadowColor: context.glass.primaryButtonBg.withValues(
+                  alpha: .35,
+                ),
+                child: InkWell(
                   key: const ValueKey('global_quick_capture'),
-                  onPressed: () => showQuickCapture(context),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Capture'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    foregroundColor: context.glass.primaryButtonBg,
-                    side: BorderSide(
-                      color: context.glass.primaryButtonBg.withValues(
-                        alpha: .6,
+                  customBorder: const StadiumBorder(),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    showQuickCapture(context);
+                  },
+                  child: Semantics(
+                    button: true,
+                    label: 'Quick capture',
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
+                      child: SizedBox(
+                        height: 40,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.add_rounded,
+                              size: 18,
+                              color: context.glass.primaryButtonFg,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Capture',
+                              style: TextStyle(
+                                color: context.glass.primaryButtonFg,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    shape: const StadiumBorder(),
                   ),
                 ),
               ),

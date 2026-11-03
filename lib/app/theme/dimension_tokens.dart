@@ -55,10 +55,20 @@ class AscentDimensions {
   static const double radiusFull = 999.0;
 
   // ── Component Dimensions ───────────────────────────────────────────────────
-  /// 36 px — Compact button visual minimum height.
+  /// 40 px — Visible height of a standard `AscentButton`. The tap region stays
+  /// [minTouchTarget] tall; only the drawn shape is slimmer.
+  static const double buttonVisualHeight = 40.0;
+
+  /// 32 px — Visible height of a compact `AscentButton` (same 48 px tap region).
+  static const double buttonVisualHeightCompact = 32.0;
+
+  /// 36 px — Compact control height (segment rows, snack bars). Not the drawn
+  /// height of `AscentButton`; see [buttonVisualHeightCompact].
   static const double buttonHeightCompact = 36.0;
 
-  /// 48 px — Standard button visual minimum height & regular control minimum hit region.
+  /// 48 px — Standard control height & regular control minimum hit region
+  /// (inputs, segmented control, snack bars). Not the drawn height of
+  /// `AscentButton`; see [buttonVisualHeight].
   static const double buttonHeightStandard = 48.0;
 
   /// 52 px — Hero / primary CTA button minimum height.
