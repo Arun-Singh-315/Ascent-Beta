@@ -19,7 +19,9 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../home/widgets/activity_composer.dart';
 import '../home/widgets/activity_row_item.dart';
 import '../plans/widgets/home_plans_preview.dart';
+import 'models/things_intelligence.dart';
 import 'widgets/things_hero_card.dart';
+import 'widgets/things_interactive_card.dart';
 
 class ThingsHubScreen extends ConsumerStatefulWidget {
   const ThingsHubScreen({
@@ -85,6 +87,33 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
     });
   }
 
+  bool _matchesFilter(TodayActivityItem a, String type) {
+    switch (type) {
+      case 'all':
+        return true;
+      case 'medicine':
+        return a.sourceType == 'medicine';
+      case 'timer':
+        return a.kind != ActivityKind.todo && a.sourceType != 'medicine';
+      case 'task':
+        return a.kind == ActivityKind.todo && a.sourceType != 'medicine';
+      case 'quick_wins':
+        return ThingsEnrichmentEngine.analyze(a).smartLens ==
+            ThingsSmartLens.quickWins;
+      case 'deep_focus':
+        return ThingsEnrichmentEngine.analyze(a).smartLens ==
+            ThingsSmartLens.deepFocus;
+      case 'life_errands':
+        return ThingsEnrichmentEngine.analyze(a).smartLens ==
+            ThingsSmartLens.lifeErrands;
+      case 'wind_down':
+        return ThingsEnrichmentEngine.analyze(a).smartLens ==
+            ThingsSmartLens.windDown;
+      default:
+        return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -137,6 +166,10 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                       children: [
                         for (final (typeKey, label) in [
                           ('all', 'All activities'),
+                          ('quick_wins', '⚡ Quick Wins'),
+                          ('deep_focus', '🎯 Deep Focus'),
+                          ('life_errands', '🏃 Life & Errands'),
+                          ('wind_down', '🌙 Wind-down'),
                           ('task', 'To-dos'),
                           ('timer', 'Timers'),
                           ('medicine', 'Medicines'),
@@ -150,6 +183,49 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                         ],
                       ],
                     ),
+                  ),
+                  ref.watch(todayActivitiesProvider).maybeWhen(
+                    data: (items) {
+                      final total = items.length;
+                      final done = items
+                          .where((a) => a.status == TodayActivityStatus.done)
+                          .length;
+                      if (total == 0 || done == 0) {
+                        return const SizedBox.shrink();
+                      }
+                      final percent = ((done / total) * 100).round();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Text(
+                              '$done of $total finished · $percent%',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: g.inkMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(2),
+                                child: LinearProgressIndicator(
+                                  value: (done / total).clamp(0.0, 1.0),
+                                  minHeight: 3,
+                                  backgroundColor: g.line,
+                                  valueColor:
+                                      const AlwaysStoppedAnimation<Color>(
+                                    SharedControlColors.actionBlue,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    orElse: () => const SizedBox.shrink(),
                   ),
                 ],
               ],
@@ -297,15 +373,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                                 (a) =>
                                     (a.status == TodayActivityStatus.done) ==
                                         (_tab == 'done') &&
-                                    (_type == 'all' ||
-                                        (_type == 'medicine'
-                                            ? a.sourceType == 'medicine'
-                                            : _type == 'timer'
-                                            ? a.kind != ActivityKind.todo &&
-                                                  a.sourceType != 'medicine'
-                                            : a.kind == ActivityKind.todo &&
-                                                  a.sourceType !=
-                                                      'medicine')) &&
+                                    _matchesFilter(a, _type) &&
                                     (_query.isEmpty ||
                                         '${a.title} ${a.notes ?? ''}'
                                             .toLowerCase()
@@ -408,8 +476,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                                     ),
                                   ),
                                   for (final activity in groups[name]!)
-                                    ActivityRowItem(
-                                      key: ValueKey(activity.id),
+                                    ThingsInteractiveCard(
+                                      key: ValueKey('things_interactive_${activity.id}'),
                                       activity: activity,
                                       compact: true,
                                     ),
