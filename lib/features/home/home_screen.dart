@@ -36,6 +36,7 @@ import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
+import 'widgets/smart_catch_up_banner.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
@@ -289,10 +290,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               alignment: Alignment.topCenter,
                               child: AscentDynamicIsland(),
                             ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: AppSpace.s16,
-                                ),
+
+                            // Proactive Catch-Up Pod (Hydration, Medicine, Money)
+                            const SmartCatchUpBanner(),
+
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpace.s16,
+                              ),
                                 child: HomeShortcutPanel(
                                   shortcuts: layout.shortcuts,
                                   activeShortcutId: _activeShortcutId,

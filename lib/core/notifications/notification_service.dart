@@ -609,6 +609,7 @@ class NotificationService {
     Importance importance = Importance.max,
     Priority priority = Priority.max,
     String? groupKey,
+    List<AndroidNotificationAction>? actions,
   }) {
     final androidDetails = AndroidNotificationDetails(
       channelId,
@@ -616,6 +617,7 @@ class NotificationService {
       channelDescription: channelDescription,
       importance: importance,
       priority: priority,
+      actions: actions,
       icon: '@drawable/ic_launcher_foreground',
       color: AscentColors.accentSecondary,
       enableLights: true,
@@ -1504,6 +1506,10 @@ class NotificationService {
       summaryText: 'Tap to log water',
       importance: Importance.high,
       priority: Priority.high,
+      actions: const [
+        AndroidNotificationAction('water_250', '+250ml', showsUserInterface: false),
+        AndroidNotificationAction('water_500', '+500ml', showsUserInterface: false),
+      ],
     );
 
     try {
