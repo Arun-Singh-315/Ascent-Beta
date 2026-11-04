@@ -82,35 +82,73 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
               runSpacing: 6,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                // Smart Category Pill
+                // Smart Category 3D Matte Squircle Badge
                 Container(
                   constraints: const BoxConstraints(maxWidth: 240),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 2.5,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(4, 3, 8, 3),
                   decoration: BoxDecoration(
-                    color: enrichment.categoryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    color: enrichment.categoryColor.withValues(
+                      alpha: g.isDark ? 0.10 : 0.05,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: enrichment.categoryColor.withValues(alpha: 0.28),
+                      color: enrichment.categoryColor.withValues(
+                        alpha: g.isDark ? 0.32 : 0.20,
+                      ),
                       width: 0.8,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        enrichment.categoryIcon,
-                        size: 11,
-                        color: enrichment.categoryColor,
+                      // 3D Matte Squircle Icon Tile
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              enrichment.categoryColor.withValues(
+                                alpha: g.isDark ? 0.38 : 0.28,
+                              ),
+                              enrichment.categoryColor.withValues(
+                                alpha: g.isDark ? 0.18 : 0.10,
+                              ),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: enrichment.categoryColor.withValues(
+                              alpha: g.isDark ? 0.50 : 0.38,
+                            ),
+                            width: 0.75,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: enrichment.categoryColor.withValues(
+                                alpha: g.isDark ? 0.25 : 0.12,
+                              ),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1.5),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            enrichment.categoryIcon,
+                            size: 11,
+                            color: enrichment.categoryColor,
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           enrichment.categoryLabel,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: enrichment.categoryColor,
                           ),
@@ -129,10 +167,22 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                     setState(() => _isExpanded = !_isExpanded);
                   },
                   borderRadius: BorderRadius.circular(8),
-                  child: Padding(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2.5,
+                      horizontal: 8,
+                      vertical: 3.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: enrichment.categoryColor.withValues(
+                        alpha: _isExpanded ? 0.16 : 0.07,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: enrichment.categoryColor.withValues(
+                          alpha: _isExpanded ? 0.38 : 0.20,
+                        ),
+                        width: 0.75,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -166,8 +216,19 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                       AddTransactionSheet.show(context);
                     },
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: enrichment.categoryColor.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: enrichment.categoryColor.withValues(alpha: 0.20),
+                          width: 0.75,
+                        ),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -208,8 +269,19 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                       }
                     },
                     borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: enrichment.categoryColor.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: enrichment.categoryColor.withValues(alpha: 0.20),
+                          width: 0.75,
+                        ),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
