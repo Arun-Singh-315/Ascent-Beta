@@ -375,7 +375,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 8),
-                              if (medicineLogs.hasValue && totalMedDoses > 0)
+                              if (medicineLogs.hasValue)
                                 _NeutralProgressBar(
                                   key: const ValueKey('medicine_progress_bar'),
                                   progress: medProgress,
