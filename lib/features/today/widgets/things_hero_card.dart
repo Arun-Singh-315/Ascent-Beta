@@ -186,7 +186,7 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: enrichment.categoryColor,
+                              color: g.ink,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -262,7 +262,7 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
-                            color: enrichment.categoryColor,
+                            color: g.ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

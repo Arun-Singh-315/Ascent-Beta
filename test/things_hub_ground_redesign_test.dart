@@ -6,7 +6,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/today/models/things_intelligence.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/features/today/widgets/things_interactive_card.dart';
 import 'package:ascent/shared/widgets/glass_chip.dart';
@@ -177,25 +176,25 @@ void main() {
       );
       expect(horizontalScrollFinder, findsNothing);
 
-      // Verify "Less" toggle exists (since lenses start expanded in view)
+      // Verify "More lenses" toggle exists (lenses start collapsed to prevent clutter)
       final toggleFinder = find.byKey(const ValueKey('things_hub_toggle_lenses'));
       expect(toggleFinder, findsOneWidget);
+      expect(find.text('More lenses'), findsOneWidget);
+      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsNothing);
+
+      // Tap "More lenses" to expand cognitive lenses
+      await tester.tap(toggleFinder);
+      await tester.pumpAndSettle();
+
       expect(find.text('Less'), findsOneWidget);
       expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsOneWidget);
 
-      // Tap "Less" to collapse cognitive lenses
+      // Tap "Less" to re-collapse
       await tester.tap(toggleFinder);
       await tester.pumpAndSettle();
 
       expect(find.text('More lenses'), findsOneWidget);
       expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsNothing);
-
-      // Tap "More lenses" to re-expand in-view
-      await tester.tap(toggleFinder);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Less'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsOneWidget);
     });
 
     testWidgets('ThingsHubScreen arranges activities into ground sections with counts and collapse toggles', (

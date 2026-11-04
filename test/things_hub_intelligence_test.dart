@@ -283,6 +283,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Expand lenses if collapsed
+      final toggleLenses = find.byKey(const ValueKey('things_hub_toggle_lenses'));
+      if (find.widgetWithText(GlassChip, '⚡ Quick Wins').evaluate().isEmpty) {
+        await tester.tap(toggleLenses);
+        await tester.pumpAndSettle();
+      }
+
       // All chips rendered
       expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsOneWidget);
       expect(find.widgetWithText(GlassChip, '🎯 Deep Focus'), findsOneWidget);

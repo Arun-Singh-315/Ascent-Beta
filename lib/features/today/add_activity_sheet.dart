@@ -789,11 +789,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
                   const SizedBox(height: 14),
 
-                  // 5. Reminder Toggle
+                  // 5. Scheduling Options: Reminder & Daily Repeat
                   AppCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s12,
-                      vertical: AppSpace.s8,
+                      vertical: AppSpace.s4,
                     ),
                     nightDecoration: BoxDecoration(
                       color: isDark
@@ -831,34 +831,23 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               label: const Text('Change reminder time'),
                             ),
                           ),
+                        Divider(
+                          height: 1,
+                          color: context.divider.withValues(alpha: 0.4),
+                        ),
+                        AscentSwitchRow(
+                          title: 'Repeat daily',
+                          helper: _isDailyStanding
+                              ? 'Appears fresh every day until you turn it off'
+                              : 'Keep this in your to-do list every day',
+                          value: _isDailyStanding,
+                          onChanged: (val) {
+                            setState(() {
+                              _isDailyStanding = val;
+                            });
+                          },
+                        ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Standing Daily To-Do Switch
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppPalette.colorFF1A1A1A
-                          : AppPalette.colorFFF7F6F2,
-                      borderRadius: AppGeometry.roundedr14,
-                      border: Border.all(
-                        color: context.divider.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    child: AscentSwitchRow(
-                      title: 'Repeat daily',
-                      helper: _isDailyStanding
-                          ? 'Appears fresh every day until you turn it off'
-                          : 'Keep this in your to-do list every day',
-                      value: _isDailyStanding,
-                      onChanged: (val) {
-                        setState(() {
-                          _isDailyStanding = val;
-                        });
-                      },
                     ),
                   ),
 

@@ -1129,6 +1129,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           onTap: () => lecture
               ? _openLecture(context, ref)
               : _showActivityDetailDialog(context, ref, activity),
+          onLongPress: () => _showQuickActionsSheet(context, ref),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
@@ -1319,6 +1320,155 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ),
       ),
       child: rowContent,
+    );
+  }
+
+  void _showQuickActionsSheet(BuildContext context, WidgetRef ref) {
+    HapticFeedback.mediumImpact();
+    final g = context.glass;
+    final isDone = activity.status == TodayActivityStatus.done;
+    final isLecture = activity.sourceType == 'lecture';
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: g.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: g.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  activity.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: g.ink,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (!isDone)
+                  ListTile(
+                    leading: const Icon(Icons.check_circle_outline_rounded, color: SharedControlColors.actionBlue),
+                    title: Text('Mark as Done', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      if (activity.linkedTaskId != null) {
+                        final dao = ref.read(taskDaoProvider);
+                        await dao.toggleTaskCompletion(activity.linkedTaskId!, true);
+                      }
+                    },
+                  ),
+                if (activity.linkedTaskId != null && !isDone)
+                  ListTile(
+                    leading: const Icon(Icons.next_plan_outlined, color: SharedControlColors.actionBlue),
+                    title: Text('Move to Tomorrow', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      final tomorrow = DateTime.now().add(const Duration(days: 1));
+                      final dao = ref.read(taskDaoProvider);
+                      await dao.updateTask(
+                        TaskTableCompanion(
+                          id: Value(activity.linkedTaskId!),
+                          plannedDate: Value(tomorrow),
+                        ),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('"${activity.title}" moved to tomorrow')),
+                        );
+                      }
+                    },
+                  ),
+                if (!isLecture)
+                  ListTile(
+                    leading: Icon(Icons.edit_outlined, color: g.ink),
+                    title: Text('Edit Activity', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      Task? task;
+                      if (activity.linkedTaskId != null) {
+                        task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                      }
+                      if (context.mounted) {
+                        AddActivitySheet.show(
+                          context,
+                          existingTask: task,
+                          initialTitle: activity.title,
+                          initialKind: activity.kind,
+                          initialDurationMinutes: activity.targetMinutes,
+                        );
+                      }
+                    },
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: SharedControlColors.dueRed),
+                  title: const Text('Delete from Today', style: TextStyle(color: SharedControlColors.dueRed, fontWeight: FontWeight.w600)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () async {
+                    Navigator.pop(sheetCtx);
+                    final container = ProviderScope.containerOf(context, listen: false);
+                    final messenger = ScaffoldMessenger.of(context);
+                    final removedActivity = activity;
+                    final taskDao = container.read(taskDaoProvider);
+                    final dismissed = container.read(dismissedTodayActivityIdsProvider.notifier);
+                    setState(() => _removed = true);
+                    try {
+                      await deleteTodayActivity(container, removedActivity);
+                      if (!messenger.mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Removed "${removedActivity.title}"'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () async {
+                              try {
+                                if (removedActivity.linkedTaskId != null && removedActivity.sourceType != 'lecture') {
+                                  await taskDao.restoreDeletedTask(removedActivity.linkedTaskId!);
+                                }
+                                await dismissed.unDismissActivityId(removedActivity.id);
+                                if (mounted) setState(() => _removed = false);
+                              } catch (_) {}
+                            },
+                          ),
+                        ),
+                      );
+                    } catch (_) {
+                      await dismissed.unDismissActivityId(removedActivity.id);
+                      if (mounted) setState(() => _removed = false);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

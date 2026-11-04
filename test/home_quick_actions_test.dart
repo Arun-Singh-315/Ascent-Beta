@@ -1,0 +1,154 @@
+import 'dart:async';
+import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/core/database/app_database.dart';
+import 'package:ascent/core/providers/database_provider.dart';
+import 'package:ascent/core/providers/settings_provider.dart';
+import 'package:ascent/core/providers/time_tracking_provider.dart';
+import 'package:ascent/core/streak/study_streak_provider.dart';
+import 'package:ascent/features/home/widgets/activity_hub_card.dart';
+import 'package:ascent/features/home/widgets/activity_row_item.dart';
+import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
+  @override
+  TimeTrackingState build() => const TimeTrackingState();
+}
+
+class _FakeStudyStreakNotifier extends StudyStreakNotifier {
+  @override
+  StudyStreakStatus build() => StudyStreakCalculator().calculate(
+        todaySeconds: 0,
+        yesterdaySeconds: 0,
+        priorStreakDays: 0,
+        historicalLongestStreak: 0,
+        historicalShortestStreak: 1,
+        now: DateTime.now(),
+      );
+}
+
+TodayActivityItem _makeActivity({
+  required String id,
+  required String title,
+  int? linkedTaskId,
+}) =>
+    TodayActivityItem(
+      id: id,
+      title: title,
+      kind: ActivityKind.todo,
+      status: TodayActivityStatus.notStarted,
+      sourceType: 'task',
+      categoryTag: 'Task',
+      elapsedSecondsToday: 0,
+      linkedTaskId: linkedTaskId,
+    );
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  late AppDatabase db;
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    db = AppDatabase.forTesting(NativeDatabase.memory());
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
+  group('Home Quick Actions & ActivityHubCard Enhancements', () {
+    testWidgets('ActivityHubCard displays "+ Med" quick button and centered empty state', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+          todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ActivityHubCard(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify "+ Med" quick action button exists in header
+      expect(find.text('+ Med'), findsOneWidget);
+      expect(find.byIcon(Icons.medication_outlined), findsOneWidget);
+
+      // Verify centered empty state text is rendered
+      expect(find.textContaining('Your space is clear'), findsOneWidget);
+    });
+
+    testWidgets('ActivityRowItem long-press opens quick action sheet with rapid delete and complete', (
+      tester,
+    ) async {
+      final task = _makeActivity(
+        id: 'task_quick_1',
+        title: 'Submit tax documents',
+        linkedTaskId: 101,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Scaffold(
+              body: ActivityRowItem(
+                activity: task,
+                compact: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Long press on the row
+      await tester.longPress(find.text('Submit tax documents'));
+      await tester.pumpAndSettle();
+
+      // Verify quick action sheet options are presented
+      expect(find.text('Mark as Done'), findsOneWidget);
+      expect(find.text('Move to Tomorrow'), findsOneWidget);
+      expect(find.text('Edit Activity'), findsOneWidget);
+      expect(find.text('Delete from Today'), findsOneWidget);
+    });
+  });
+}

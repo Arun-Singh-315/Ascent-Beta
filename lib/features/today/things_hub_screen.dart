@@ -17,7 +17,6 @@ import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../home/widgets/activity_composer.dart';
-import '../home/widgets/activity_row_item.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'models/things_intelligence.dart';
 import 'widgets/things_hero_card.dart';
@@ -44,7 +43,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   String _type = 'all';
   String _tab = 'now';
   bool _wrapupMode = false;
-  bool _showLenses = true;
+  bool _showLenses = false;
   final Set<String> _collapsedSections = <String>{};
   final FocusNode _composerFocusNode = FocusNode();
 
@@ -187,7 +186,10 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                             ? Icons.expand_less_rounded
                             : Icons.tune_rounded,
                         label: _showLenses ? 'Less' : 'More lenses',
-                        selected: false,
+                        selected: _type != 'all' &&
+                            _type != 'task' &&
+                            _type != 'timer' &&
+                            _type != 'medicine',
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _showLenses = !_showLenses);
@@ -450,31 +452,74 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                                 ),
                               if (rows.isEmpty)
                                 Padding(
-                                  padding: const EdgeInsets.all(24),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 48,
+                                    horizontal: 24,
+                                  ),
                                   child: Center(
                                     child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
+                                        Container(
+                                          width: 52,
+                                          height: 52,
+                                          decoration: BoxDecoration(
+                                            color: g.fill,
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: g.line,
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              _query.isNotEmpty
+                                                  ? Icons.search_off_rounded
+                                                  : (_tab == 'done'
+                                                      ? Icons.celebration_outlined
+                                                      : Icons.spa_outlined),
+                                              size: 26,
+                                              color: g.inkMuted,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
                                         Text(
                                           _query.isEmpty
                                               ? (_tab == 'done'
-                                                    ? 'No finished activities yet today.'
-                                                    : 'All clear! Add one small thing to begin.')
-                                              : 'No matching activities.',
+                                                  ? 'No Finished Tasks Yet'
+                                                  : 'Your Space is Clear')
+                                              : 'No Matching Things',
                                           style: TextStyle(
-                                            color: g.inkMuted,
-                                            fontSize: 13,
+                                            color: g.ink,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
-                                        if (_tab == 'now' &&
-                                            _query.isEmpty) ...[
-                                          const SizedBox(height: 8),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _query.isEmpty
+                                              ? (_tab == 'done'
+                                                  ? 'Complete an activity today and review your achievements here.'
+                                                  : 'Nothing pending on your plate. Add one small task below to begin.')
+                                              : 'Try adjusting your search keywords.',
+                                          style: TextStyle(
+                                            color: g.inkMuted,
+                                            fontSize: 13,
+                                            height: 1.4,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                        if (_tab == 'now' && _query.isEmpty) ...[
+                                          const SizedBox(height: 16),
                                           AscentButton.tonal(
                                             compact: true,
                                             label: 'Add one small thing',
                                             icon: Icons.add_rounded,
-                                            onPressed: () => _composerFocusNode
-                                                .requestFocus(),
+                                            onPressed: () =>
+                                                _composerFocusNode.requestFocus(),
                                           ),
                                         ],
                                       ],

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
+import '../../shared/widgets/ascent_atmosphere.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -44,9 +45,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
 
     return Scaffold(
       backgroundColor: g.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
+      body: AscentAtmosphereBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
             // ── Top Navigation Bar ──────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -318,6 +320,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

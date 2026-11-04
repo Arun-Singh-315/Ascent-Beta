@@ -97,17 +97,53 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            InkResponse(
-              radius: 20,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.push('/things');
-              },
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                size: 22,
-                color: g.ink,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/medicine');
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: g.fill,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: g.line, width: 0.8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.medication_outlined, size: 14, color: g.ink),
+                        const SizedBox(width: 4),
+                        Text(
+                          '+ Med',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: g.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkResponse(
+                  radius: 20,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/things');
+                  },
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 22,
+                    color: g.ink,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -282,18 +318,39 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       children: [
                         if (allEntries.isEmpty)
                           Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Text(
-                              _showCompleted
-                                  ? 'No completed activities yet.'
-                                  : (items.any(
-                                          (a) =>
-                                              a.status ==
-                                              TodayActivityStatus.done,
-                                        )
-                                        ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
-                                        : 'Nothing pending. Add something below.'),
-                              style: TextStyle(color: g.inkMuted, fontSize: 13),
+                            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _showCompleted
+                                        ? Icons.check_circle_outline_rounded
+                                        : Icons.spa_outlined,
+                                    size: 32,
+                                    color: g.line.withValues(alpha: 0.6),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _showCompleted
+                                        ? 'No completed activities yet.'
+                                        : (items.any(
+                                                (a) =>
+                                                    a.status ==
+                                                    TodayActivityStatus.done,
+                                              )
+                                              ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
+                                              : 'Your space is clear.\nAdd one small thing below to begin.'),
+                                    style: TextStyle(
+                                      color: g.inkMuted,
+                                      fontSize: 13,
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         if (hasHero && heroActivity != null)

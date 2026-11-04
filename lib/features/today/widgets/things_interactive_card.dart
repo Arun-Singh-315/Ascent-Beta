@@ -150,7 +150,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: enrichment.categoryColor,
+                            color: g.ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -200,7 +200,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: enrichment.categoryColor,
+                            color: g.ink,
                           ),
                         ),
                       ],
@@ -243,7 +243,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: enrichment.categoryColor,
+                              color: g.ink,
                             ),
                           ),
                         ],
@@ -296,7 +296,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: enrichment.categoryColor,
+                              color: g.ink,
                             ),
                           ),
                         ],
@@ -336,7 +336,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: enrichment.categoryColor,
+                          color: g.ink,
                         ),
                       ),
                     ],

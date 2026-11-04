@@ -469,7 +469,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
-                              color: enrichment.categoryColor,
+                              color: g.ink,
                             ),
                           ),
                         ],
