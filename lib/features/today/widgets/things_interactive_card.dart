@@ -6,14 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../../shared/widgets/glass_surface.dart';
 import '../../home/widgets/activity_row_item.dart';
 import '../../money/add_transaction_sheet.dart';
 import '../models/things_intelligence.dart';
 
-/// Intelligent card enclosure in Things Hub that pairs the canonical [ActivityRowItem]
-/// with dynamic domain synthesis: 3 auto-generated micro-steps, smart category pips,
-/// and contextual single-tap execution chips.
+/// Ground-border style interactive story item for Things Hub.
+/// Sits directly on the background canvas with transparent fill and
+/// category-tinted border contour (zero nested card boxes).
+/// Pairs full-width Apple-style typography with dynamic domain synthesis,
+/// interactive micro-steps blueprint, and contextual fast-action triggers.
 class ThingsInteractiveCard extends ConsumerStatefulWidget {
   const ThingsInteractiveCard({
     super.key,
@@ -38,50 +39,62 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
     final activity = widget.activity;
     final g = context.glass;
     final enrichment = ThingsEnrichmentEngine.analyze(activity);
+    final isDone = activity.status == TodayActivityStatus.done;
+
+    final borderColor = isDone
+        ? g.line.withValues(alpha: 0.3)
+        : (_isExpanded
+            ? enrichment.categoryColor.withValues(alpha: 0.60)
+            : enrichment.categoryColor.withValues(alpha: 0.25));
+
+    final surfaceColor = isDone
+        ? (g.isDark ? g.fill.withValues(alpha: 0.04) : Colors.transparent)
+        : (g.isDark
+            ? g.fill.withValues(alpha: _isExpanded ? 0.12 : 0.06)
+            : g.fill.withValues(alpha: _isExpanded ? 0.08 : 0.03));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: g.fill.withValues(alpha: 0.15),
+        color: surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isExpanded
-              ? enrichment.categoryColor.withValues(alpha: 0.4)
-              : g.line.withValues(alpha: 0.5),
-          width: 0.8,
+          color: borderColor,
+          width: _isExpanded ? 1.2 : 0.9,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 1. The Canonical Activity Item
+          // 1. Canonical Activity Row in Ground Style (NO NESTED CARDS!)
           ActivityRowItem(
             key: ValueKey(activity.id),
             activity: activity,
             compact: widget.compact,
+            ground: true,
           ),
 
-          // 2. Intelligent Sub-Bar (Category Badge + Unpack Trigger)
+          // 2. Intelligent Ground Sub-Bar (Category Badge + Blueprint Trigger + Fast Actions)
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
             child: Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 6,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 // Smart Category Pill
                 Container(
                   constraints: const BoxConstraints(maxWidth: 240),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: 7,
+                    vertical: 2.5,
                   ),
                   decoration: BoxDecoration(
                     color: enrichment.categoryColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: enrichment.categoryColor.withValues(alpha: 0.25),
-                      width: 0.6,
+                      color: enrichment.categoryColor.withValues(alpha: 0.28),
+                      width: 0.8,
                     ),
                   ),
                   child: Row(
@@ -89,7 +102,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                     children: [
                       Icon(
                         enrichment.categoryIcon,
-                        size: 10,
+                        size: 11,
                         color: enrichment.categoryColor,
                       ),
                       const SizedBox(width: 4),
@@ -97,7 +110,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                         child: Text(
                           enrichment.categoryLabel,
                           style: TextStyle(
-                            fontSize: 9.5,
+                            fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: enrichment.categoryColor,
                           ),
@@ -115,11 +128,11 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                     HapticFeedback.selectionClick();
                     setState(() => _isExpanded = !_isExpanded);
                   },
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
-                      vertical: 2,
+                      vertical: 2.5,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -128,14 +141,14 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                           _isExpanded
                               ? Icons.keyboard_arrow_up_rounded
                               : Icons.auto_awesome_rounded,
-                          size: 12,
+                          size: 13,
                           color: enrichment.categoryColor,
                         ),
-                        const SizedBox(width: 3),
+                        const SizedBox(width: 4),
                         Text(
                           _isExpanded ? 'Hide' : 'Blueprint',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: enrichment.categoryColor,
                           ),
@@ -145,25 +158,29 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                   ),
                 ),
 
-                // Fast Action Chips
+                // Fast Action: Log Money
                 if (enrichment.actionChips.any((c) => c.type == ThingsActionType.moneyLog))
                   InkWell(
                     onTap: () {
                       HapticFeedback.lightImpact();
                       AddTransactionSheet.show(context);
                     },
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.payments_outlined, size: 12, color: enrichment.categoryColor),
-                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.payments_outlined,
+                            size: 13,
+                            color: enrichment.categoryColor,
+                          ),
+                          const SizedBox(width: 4),
                           Text(
                             'Log Money',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                               color: enrichment.categoryColor,
                             ),
@@ -173,6 +190,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                     ),
                   ),
 
+                // Fast Action: Focus Timer
                 if (enrichment.actionChips.any((c) => c.type == ThingsActionType.focusTimer) &&
                     activity.status != TodayActivityStatus.done)
                   InkWell(
@@ -189,18 +207,22 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                         context.push('/focus');
                       }
                     },
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_circle_outline_rounded, size: 12, color: enrichment.categoryColor),
-                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.play_circle_outline_rounded,
+                            size: 13,
+                            color: enrichment.categoryColor,
+                          ),
+                          const SizedBox(width: 4),
                           Text(
                             'Focus',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w600,
                               color: enrichment.categoryColor,
                             ),
@@ -213,24 +235,43 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
             ),
           ),
 
-          // 3. Expanded Blueprint Panel
+          // 3. Full-Width Expanded Blueprint Story Panel
           if (_isExpanded)
             Container(
               margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: enrichment.categoryColor.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: enrichment.categoryColor.withValues(alpha: 0.15),
-                  width: 0.6,
+                  color: enrichment.categoryColor.withValues(alpha: 0.20),
+                  width: 0.8,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.checklist_rounded,
+                        size: 14,
+                        color: enrichment.categoryColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Story Micro-Steps · ${_checkedSteps.length}/${enrichment.microSteps.length}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: enrichment.categoryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   for (var i = 0; i < enrichment.microSteps.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 5),
+                    if (i > 0) const SizedBox(height: 6),
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.selectionClick();
@@ -250,18 +291,18 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                             _checkedSteps.contains(i)
                                 ? Icons.check_box_rounded
                                 : Icons.check_box_outline_blank_rounded,
-                            size: 14,
+                            size: 16,
                             color: _checkedSteps.contains(i)
                                 ? enrichment.categoryColor
                                 : g.inkMuted,
                           ),
-                          const SizedBox(width: 7),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               enrichment.microSteps[i],
                               style: TextStyle(
-                                fontSize: 11,
-                                height: 1.25,
+                                fontSize: 12,
+                                height: 1.3,
                                 color: _checkedSteps.contains(i)
                                     ? g.inkMuted
                                     : g.ink,
@@ -273,6 +314,31 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                           ),
                         ],
                       ),
+                    ),
+                  ],
+                  if (activity.notes != null &&
+                      activity.notes!.trim().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 13,
+                          color: g.inkMuted,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            activity.notes!.trim(),
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: g.inkMuted,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],

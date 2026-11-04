@@ -44,6 +44,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   String _type = 'all';
   String _tab = 'now';
   bool _wrapupMode = false;
+  bool _showLenses = true;
+  final Set<String> _collapsedSections = <String>{};
   final FocusNode _composerFocusNode = FocusNode();
 
   @override
@@ -160,29 +162,54 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                 ),
                 if (_tab != 'plans') ...[
                   const SizedBox(height: 8),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final (typeKey, label) in [
+                        ('all', 'All activities'),
+                        ('task', 'To-dos'),
+                        ('timer', 'Timers'),
+                        ('medicine', 'Medicines'),
+                      ])
+                        GlassChip(
+                          label: label,
+                          selected: _type == typeKey,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _type = typeKey);
+                          },
+                        ),
+                      GlassChip(
+                        key: const ValueKey('things_hub_toggle_lenses'),
+                        icon: _showLenses
+                            ? Icons.expand_less_rounded
+                            : Icons.tune_rounded,
+                        label: _showLenses ? 'Less' : 'More lenses',
+                        selected: false,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _showLenses = !_showLenses);
+                        },
+                      ),
+                      if (_showLenses) ...[
                         for (final (typeKey, label) in [
-                          ('all', 'All activities'),
                           ('quick_wins', '⚡ Quick Wins'),
                           ('deep_focus', '🎯 Deep Focus'),
                           ('life_errands', '🏃 Life & Errands'),
                           ('wind_down', '🌙 Wind-down'),
-                          ('task', 'To-dos'),
-                          ('timer', 'Timers'),
-                          ('medicine', 'Medicines'),
-                        ]) ...[
+                        ])
                           GlassChip(
                             label: label,
                             selected: _type == typeKey,
-                            onTap: () => setState(() => _type = typeKey),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _type = typeKey);
+                            },
                           ),
-                          const SizedBox(width: 8),
-                        ],
                       ],
-                    ),
+                    ],
                   ),
                   ref.watch(todayActivitiesProvider).maybeWhen(
                     data: (items) {
@@ -381,15 +408,16 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                               )
                               .toList();
 
-                          // Identify hero item for "Now" tab
+                          // For single item on "Now" tab, render focused hero compass;
+                          // for multiple items, arrange cleanly into ground sections.
                           TodayActivityItem? heroItem;
                           List<TodayActivityItem> nonHeroRows = rows;
                           if (_tab == 'now' &&
                               _query.isEmpty &&
                               _type == 'all' &&
-                              rows.isNotEmpty) {
+                              rows.length == 1) {
                             heroItem = rows.first;
-                            nonHeroRows = rows.skip(1).toList();
+                            nonHeroRows = const [];
                           }
 
                           final groups = <String, List<TodayActivityItem>>{};
@@ -453,34 +481,65 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                                     ),
                                   ),
                                 ),
-                              for (final name in [
-                                'In progress',
-                                'Needs attention',
-                                'Next',
-                                'Finished today',
+                              for (final (name, icon, color) in [
+                                ('In progress', Icons.play_circle_outline_rounded, SharedControlColors.actionBlue),
+                                ('Needs attention', Icons.error_outline_rounded, SharedControlColors.dueRed),
+                                ('Next', Icons.playlist_play_rounded, g.ink),
+                                ('Finished today', Icons.check_circle_outline_rounded, SharedControlColors.actionBlue),
                               ])
                                 if (groups.containsKey(name)) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      4,
-                                      14,
-                                      4,
-                                      8,
-                                    ),
-                                    child: Text(
-                                      '$name · ${groups[name]!.length}',
-                                      style: TextStyle(
-                                        color: g.ink,
-                                        fontWeight: FontWeight.w600,
+                                  InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      setState(() {
+                                        if (_collapsedSections.contains(name)) {
+                                          _collapsedSections.remove(name);
+                                        } else {
+                                          _collapsedSections.add(name);
+                                        }
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        4,
+                                        16,
+                                        4,
+                                        8,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(icon, size: 16, color: color),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$name · ${groups[name]!.length}',
+                                            style: TextStyle(
+                                              color: g.ink,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Icon(
+                                            _collapsedSections.contains(name)
+                                                ? Icons.keyboard_arrow_down_rounded
+                                                : Icons.keyboard_arrow_up_rounded,
+                                            size: 18,
+                                            color: g.inkMuted,
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                  for (final activity in groups[name]!)
-                                    ThingsInteractiveCard(
-                                      key: ValueKey('things_interactive_${activity.id}'),
-                                      activity: activity,
-                                      compact: true,
-                                    ),
+                                  if (!_collapsedSections.contains(name))
+                                    for (final activity in groups[name]!)
+                                      ThingsInteractiveCard(
+                                        key: ValueKey(
+                                          'things_interactive_${activity.id}',
+                                        ),
+                                        activity: activity,
+                                        compact: true,
+                                      ),
                                 ],
                               if (_tab == 'done')
                                 Padding(

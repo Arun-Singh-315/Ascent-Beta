@@ -39,11 +39,13 @@ class ActivityRowItem extends ConsumerStatefulWidget {
 
   final bool compact;
   final VoidCallback? onViewCompleted;
+  final bool ground;
   const ActivityRowItem({
     super.key,
     required this.activity,
     this.compact = false,
     this.onViewCompleted,
+    this.ground = false,
   });
 
   @override
@@ -1102,19 +1104,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         : null;
 
     final isStarred = activity.priority == 'high' && !done;
-    final softBorderColor = isStarred
-        ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
-        : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25);
-    final cardColor = isStarred
-        ? (context.isDark
-            ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
-            : SharedControlColors.actionBlue.withValues(alpha: 0.035))
-        : (context.isDark
-            ? g.fill.withValues(alpha: 0.18)
-            : Theme.of(context).colorScheme.surface);
+    final softBorderColor = widget.ground
+        ? Colors.transparent
+        : (isStarred
+            ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
+            : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25));
+    final cardColor = widget.ground
+        ? Colors.transparent
+        : (isStarred
+            ? (context.isDark
+                ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
+                : SharedControlColors.actionBlue.withValues(alpha: 0.035))
+            : (context.isDark
+                ? g.fill.withValues(alpha: 0.18)
+                : Theme.of(context).colorScheme.surface));
 
     final rowContent = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      padding: EdgeInsets.symmetric(vertical: widget.ground ? 0 : 2.5),
       child: Material(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
@@ -1126,12 +1132,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: softBorderColor,
-                width: 0.65,
-              ),
+              border: widget.ground
+                  ? null
+                  : Border.all(
+                      color: softBorderColor,
+                      width: 0.65,
+                    ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.ground ? 4 : 12,
+              vertical: widget.ground ? 6 : 8.5,
+            ),
             child: Row(
               children: [
                 buildLeadingTarget(),
@@ -1146,8 +1157,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: done ? g.inkMuted : g.ink,
-                          fontSize: 15,
-                          height: 1.3,
+                          fontSize: widget.ground ? 16 : 15,
+                          fontWeight: widget.ground
+                              ? (done ? FontWeight.w500 : FontWeight.w600)
+                              : FontWeight.normal,
+                          height: 1.35,
                           decoration: done ? TextDecoration.lineThrough : null,
                         ),
                       ),
