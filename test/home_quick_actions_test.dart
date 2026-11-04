@@ -149,6 +149,67 @@ void main() {
       expect(find.text('Move to Tomorrow'), findsOneWidget);
       expect(find.text('Edit Activity'), findsOneWidget);
       expect(find.text('Delete from Today'), findsOneWidget);
+
+      // Tap Delete from Today -> verify confirmation dialog appears
+      await tester.tap(find.text('Delete from Today'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete from Today?'), findsOneWidget);
+      expect(find.text('Keep'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
+
+      // Tap Keep -> cancels deletion safely
+      await tester.tap(find.text('Keep'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Submit tax documents'), findsOneWidget);
+    });
+
+    testWidgets('ActivityRowItem has in-front more actions button and applause on completion', (
+      tester,
+    ) async {
+      final task = _makeActivity(
+        id: 'task_applause_1',
+        title: 'Morning Meditation 10m',
+        linkedTaskId: 102,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Scaffold(
+              body: ActivityRowItem(
+                activity: task,
+                compact: true,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // In-front ⋯ button exists
+      final moreButton = find.byIcon(Icons.more_horiz_rounded);
+      expect(moreButton, findsOneWidget);
+
+      // Tap ⋯ button -> opens actions sheet directly in front
+      await tester.tap(moreButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mark as Done'), findsOneWidget);
+      expect(find.text('Delete from Today'), findsOneWidget);
     });
   });
 }

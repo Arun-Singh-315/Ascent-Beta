@@ -26,6 +26,7 @@ import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
 import '../../plans/widgets/plan_protection_dialog.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
@@ -98,6 +99,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             }
             return false;
           }
+        }
+        if (context.mounted) {
+          final confirmed = await AscentDialog.confirm(
+            context: context,
+            title: 'Delete from Today?',
+            content: 'Are you sure you want to remove "${activity.title}" from today?',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Keep',
+            isDestructive: true,
+            icon: Icons.delete_outline_rounded,
+          );
+          return confirmed == true;
         }
         return true;
       },
@@ -824,21 +837,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       }
       if (activity.linkedTaskId == null) return;
       HapticFeedback.mediumImpact();
-      final messenger = ScaffoldMessenger.of(context);
-      final completedFeedback = AscentSnackBar.build(
-        context,
-        content: Text(
-          activity.isDailyStanding
-              ? 'Completed for today • Resets tomorrow'
-              : 'Task completed',
-        ),
-        action: widget.onViewCompleted == null
-            ? null
-            : SnackBarAction(
-                label: 'View completed',
-                onPressed: widget.onViewCompleted!,
-              ),
-      );
       try {
         final dao = ref.read(taskDaoProvider);
         await dao.toggleTaskCompletion(
@@ -848,9 +846,22 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final task = await dao.getTaskById(
           activity.linkedTaskId!,
         );
-        if (task?.actualCompletedDate != null && messenger.mounted) {
-          messenger.removeCurrentSnackBar();
-          messenger.showSnackBar(completedFeedback);
+        if (task?.actualCompletedDate != null && context.mounted) {
+          AscentSnackBar.applaud(
+            context,
+            message: activity.isDailyStanding
+                ? 'Bravo! Completed for today 👏'
+                : 'Bravo! Task completed! 👏',
+            subtitle: activity.isDailyStanding
+                ? 'Resets tomorrow to keep your daily rhythm'
+                : 'One step closer to your goals ✨',
+            onUndo: () async {
+              if (activity.linkedTaskId != null) {
+                final d = ref.read(taskDaoProvider);
+                await d.toggleTaskCompletion(activity.linkedTaskId!, false);
+              }
+            },
+          );
         } else if (context.mounted && task?.actualCompletedDate == null) {
           AscentSnackBar.show(
             context,
@@ -1201,6 +1212,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     tooltip: 'Completed',
                   ),
                 ],
+                InkResponse(
+                  radius: 16,
+                  onTap: () => _showQuickActionsSheet(context, ref),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: g.inkMuted,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1224,6 +1247,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             }
             return false;
           }
+        }
+        if (context.mounted) {
+          final confirmed = await AscentDialog.confirm(
+            context: context,
+            title: 'Delete from Today?',
+            content: 'Are you sure you want to remove "${activity.title}" from today?',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Keep',
+            isDestructive: true,
+            icon: Icons.delete_outline_rounded,
+          );
+          return confirmed == true;
         }
         return true;
       },
@@ -1434,6 +1469,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     Navigator.pop(sheetCtx);
                     final container = ProviderScope.containerOf(context, listen: false);
                     final messenger = ScaffoldMessenger.of(context);
+                    final confirmed = await AscentDialog.confirm(
+                      context: context,
+                      title: 'Delete from Today?',
+                      content:
+                          'Are you sure you want to remove "${activity.title}" from today?',
+                      confirmLabel: 'Delete',
+                      cancelLabel: 'Keep',
+                      isDestructive: true,
+                      icon: Icons.delete_outline_rounded,
+                    );
+                    if (confirmed != true) return;
                     final removedActivity = activity;
                     final taskDao = container.read(taskDaoProvider);
                     final dismissed = container.read(dismissedTodayActivityIdsProvider.notifier);

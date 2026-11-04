@@ -24,6 +24,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import 'add_lecture_activity_sheet.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/services/plan_child_protection.dart';
 import '../plans/widgets/plan_protection_dialog.dart';
@@ -941,31 +942,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             nav.pop();
                             return;
                           }
-                          final confirm = await showDialog<bool>(
+                          final confirm = await AscentDialog.confirm(
                             context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Archive Activity?'),
-                              content: Text(
-                                'Are you sure you want to delete "${widget.existingTask!.title}"? Your history is kept and linked reminders will stop.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Cancel'),
-                                ),
-                                FilledButton(
-                                  style: context.surfaces.buttonStyle(
-                                    FilledButton.styleFrom(
-                                      backgroundColor: context.stateDanger,
-                                    ),
-                                    filled: true,
-                                    icon: false,
-                                  ),
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Archive'),
-                                ),
-                              ],
-                            ),
+                            title: 'Delete Activity?',
+                            content:
+                                'Are you sure you want to delete "${widget.existingTask!.title}"? Your history is preserved and linked reminders will stop.',
+                            confirmLabel: 'Delete',
+                            cancelLabel: 'Keep',
+                            isDestructive: true,
+                            icon: Icons.delete_outline_rounded,
                           );
                           if (confirm == true && mounted) {
                             final taskBackup = widget.existingTask!;

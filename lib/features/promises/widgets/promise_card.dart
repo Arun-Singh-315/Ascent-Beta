@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../models/promise_model.dart';
@@ -177,27 +179,24 @@ class PromiseCard extends ConsumerWidget {
                             : PromiseStatus.paused;
                         await repo.setPromiseStatus(promise.id, newStatus);
                       } else if (val == 'delete') {
-                        final confirmed = await showDialog<bool>(
+                        final confirmed = await AscentDialog.confirm(
                           context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete this promise?'),
-                            content: const Text(
-                              'Its progress history will also be removed.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx, true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
+                          title: 'Delete this promise?',
+                          content:
+                              'Are you sure you want to delete "${promise.title}"? Its progress history will also be archived.',
+                          confirmLabel: 'Delete',
+                          cancelLabel: 'Keep',
+                          isDestructive: true,
+                          icon: Icons.delete_outline_rounded,
                         );
                         if (confirmed == true) {
                           await repo.deletePromise(promise.id);
+                          if (context.mounted) {
+                            AscentSnackBar.show(
+                              context,
+                              message: 'Promise deleted',
+                            );
+                          }
                         }
                       }
                     } catch (_) {

@@ -173,4 +173,72 @@ class AscentSnackBar {
     actionLabel: 'Undo',
     onAction: onUndo,
   );
+
+  /// Celebrates completed commitments or achievements with tactile haptics & joyful applause.
+  static void applaud(
+    BuildContext context, {
+    required String message,
+    String? subtitle,
+    VoidCallback? onUndo,
+    Duration duration = const Duration(milliseconds: 2800),
+  }) {
+    HapticFeedback.mediumImpact();
+    Future<void>.delayed(const Duration(milliseconds: 140), () {
+      HapticFeedback.lightImpact();
+    });
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger.hideCurrentSnackBar();
+
+    final g = context.glass;
+
+    messenger.showSnackBar(
+      build(
+        context,
+        duration: duration,
+        content: Row(
+          children: [
+            const Text('👏', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message,
+                    style: AscentTextStyles.body.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        action: onUndo != null
+            ? SnackBarAction(
+                label: 'Undo',
+                textColor: g.actionInk,
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  onUndo();
+                },
+              )
+            : null,
+      ),
+    );
+  }
 }
