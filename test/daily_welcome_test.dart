@@ -142,6 +142,7 @@ void main() {
     expect(find.text('Capture something'), findsOneWidget);
 
     await t.tap(find.byTooltip('Dismiss daily briefing'));
+    await t.pump();
     await t.pump(const Duration(milliseconds: 500));
     expect(find.byType(DailyWelcomeDialog), findsNothing);
   });

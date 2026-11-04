@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/app_surfaces.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
@@ -11,19 +12,23 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 
-/// Opens the modernized, zero-scroll smart medicine editor sheet.
-/// Uses [useRootNavigator: true] to ensure the sheet elevates completely above
-/// the bottom navigation bar and floating assistant button.
+/// Opens the modernized, zero-scroll smart medicine editor dialog.
+/// Centered on screen with a frosted background freeze blur so user can comfortably
+/// see and action it without bottom-screen button cramping.
 Future<void> showMedicineEditor(BuildContext context, {Medicine? medicine}) =>
-    showModalBottomSheet<void>(
+    showAscentFrostedDialog<void>(
       context: context,
       useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => MedicineEditorSheet(medicine: medicine),
+      barrierDismissible: true,
+      builder: (_) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: MedicineEditorSheet(medicine: medicine, isDialog: true),
+          ),
+        ),
+      ),
     );
 
 enum MedicineCategory {
@@ -34,8 +39,9 @@ enum MedicineCategory {
 }
 
 class MedicineEditorSheet extends ConsumerStatefulWidget {
-  const MedicineEditorSheet({super.key, this.medicine});
+  const MedicineEditorSheet({super.key, this.medicine, this.isDialog = true});
   final Medicine? medicine;
+  final bool isDialog;
 
   @override
   ConsumerState<MedicineEditorSheet> createState() => _MedicineEditorSheetState();
@@ -221,25 +227,43 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     final g = context.glass;
     final config = _presets[_category]!;
 
+    final shapeBorderRadius = widget.isDialog
+        ? BorderRadius.circular(24)
+        : const BorderRadius.vertical(top: AscentRadii.xxl);
+    final border = widget.isDialog
+        ? Border.all(color: g.line.withValues(alpha: 0.8), width: 1.0)
+        : Border(top: BorderSide(color: g.line, width: 1.0));
+
     return PopScope(
       canPop: !_saving,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: AscentRadii.xxl),
-          border: Border(
-            top: BorderSide(color: g.line, width: 1.0),
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: shapeBorderRadius,
+            border: border,
+            boxShadow: widget.isDialog
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                    ),
+                  ]
+                : null,
           ),
-        ),
-        padding: EdgeInsets.only(
-          left: 18,
-          right: 18,
-          top: 16,
-          bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-        ),
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: Column(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 18,
+            bottom: widget.isDialog
+                ? 20
+                : MediaQuery.viewInsetsOf(context).bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -578,7 +602,8 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
