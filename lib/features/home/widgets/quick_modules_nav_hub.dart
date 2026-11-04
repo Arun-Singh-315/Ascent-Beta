@@ -13,6 +13,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../challenge/challenge_providers.dart';
 import '../../challenge/domain/challenge_pace_engine.dart';
+import '../../medicine/medicine_editor_sheet.dart';
 
 /// Level 2 · Secondary: Life & Health Hub
 /// Clean, balanced layout:
@@ -301,11 +302,52 @@ class QuickModulesNavHub extends ConsumerWidget {
                                       .copyWith(color: g.inkMuted),
                                 )
                               else if (totalMedDoses == 0)
-                                Text(
-                                  'No doses scheduled',
-                                  key: const ValueKey('medicine_empty_summary'),
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(color: g.inkMuted, height: 1.4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'No doses',
+                                        key: const ValueKey('medicine_empty_summary'),
+                                        style: AscentTextStyles.homeSecondary
+                                            .copyWith(color: g.inkMuted, height: 1.4),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpace.s6),
+                                    Material(
+                                      color: AppPalette.transparent,
+                                      child: AppTapArea(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          showMedicineEditor(context);
+                                        },
+                                        borderRadius: AppGeometry.roundedr8,
+                                        child: AppTag(
+                                          key: const ValueKey('medicine_add_button'),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpace.s7,
+                                            vertical: AppSpace.s3,
+                                          ),
+                                          nightDecoration: BoxDecoration(
+                                            color: g.claySoft,
+                                            borderRadius: AppGeometry.roundedr8,
+                                            border: Border.all(
+                                              color: g.clay.withValues(alpha: 0.2),
+                                              width: AppBorderScale.w1point0,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '+ Add',
+                                            style: TextStyle(
+                                              color: g.clay,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 )
                               else
                                 RichText(

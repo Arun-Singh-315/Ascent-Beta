@@ -97,53 +97,17 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/medicine');
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: g.line, width: 0.8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.medication_outlined, size: 14, color: g.ink),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+ Med',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: g.ink,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkResponse(
-                  radius: 20,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/things');
-                  },
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 22,
-                    color: g.ink,
-                  ),
-                ),
-              ],
+            InkResponse(
+              radius: 20,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/things');
+              },
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 22,
+                color: g.ink,
+              ),
             ),
           ],
         ),
