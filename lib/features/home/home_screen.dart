@@ -592,19 +592,16 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       }
     }
 
-    // 4. Promises (hidden when empty)
+    // 4. Promises (displays priority card or quiet sanctuary empty state)
     if (layout.visible.contains('promises')) {
-      final promises = ref.watch(activePromisesStreamProvider).value ?? [];
-      if (promises.isNotEmpty) {
-        widgets.add(
-          deferredModule(
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpace.s24),
-              child: HomePromiseSection(),
-            ),
+      widgets.add(
+        deferredModule(
+          const Padding(
+            padding: EdgeInsets.only(bottom: AppSpace.s24),
+            child: HomePromiseSection(),
           ),
-        );
-      }
+        ),
+      );
     }
 
     // 5. Evening: Daily Check-In higher up (hidden when empty)

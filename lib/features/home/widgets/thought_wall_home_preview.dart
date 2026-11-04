@@ -462,7 +462,54 @@ class _ThoughtWallHomePreviewState
                   ),
                 );
               }
-              return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _buildSparkChip(
+                      icon: Icons.lightbulb_outline_rounded,
+                      label: 'Spark an idea',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = '💡 ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                    _buildSparkChip(
+                      icon: Icons.emoji_events_outlined,
+                      label: 'Log a win',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = '🎯 Win: ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                    _buildSparkChip(
+                      icon: Icons.edit_note_rounded,
+                      label: 'Reflect',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = 'Reflecting on: ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                  ],
+                ),
+              );
             }
 
             final previewThoughts = _preview(thoughts);
@@ -1338,8 +1385,95 @@ class _ThoughtWallHomePreviewState
                 ),
               ),
             ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                _buildSparkChip(
+                  icon: Icons.lightbulb_outline_rounded,
+                  label: 'Spark an idea',
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _controller.text = '💡 ';
+                    _controller.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _controller.text.length),
+                    );
+                    _focusNode.requestFocus();
+                  },
+                  g: g,
+                ),
+                _buildSparkChip(
+                  icon: Icons.emoji_events_outlined,
+                  label: 'Log a win',
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _controller.text = '🎯 Win: ';
+                    _controller.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _controller.text.length),
+                    );
+                    _focusNode.requestFocus();
+                  },
+                  g: g,
+                ),
+                _buildSparkChip(
+                  icon: Icons.edit_note_rounded,
+                  label: 'Reflect',
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    _controller.text = 'Reflecting on: ';
+                    _controller.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _controller.text.length),
+                    );
+                    _focusNode.requestFocus();
+                  },
+                  g: g,
+                ),
+              ],
+            ),
           ),
       ],
+    );
+  }
+
+  Widget _buildSparkChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required AscentGlass g,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: g.fill,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: g.line, width: 0.8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: g.clay),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: g.ink,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
