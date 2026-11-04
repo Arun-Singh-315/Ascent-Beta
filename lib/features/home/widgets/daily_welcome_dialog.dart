@@ -5,15 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/dimension_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../core/providers/daily_briefing_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../capture/quick_capture_sheet.dart';
 
 /// The once-a-day welcome: a centred card with three swipeable pages.
 ///
-/// 1. Greeting and yesterday in one sentence.
+/// 1. Greeting and yesterday in one sentence, with morning pulse matrix and quick start.
 /// 2. Today in words, with the next thing to start.
 /// 3. Three short actions.
 class DailyWelcomeDialog extends ConsumerStatefulWidget {
@@ -36,27 +39,14 @@ class DailyWelcomeDialog extends ConsumerStatefulWidget {
     required String name,
   }) {
     HapticFeedback.lightImpact();
-    return showGeneralDialog<void>(
+    return showAscentFrostedDialog<void>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: true,
       barrierLabel: 'Dismiss daily briefing',
       barrierColor: Colors.black.withValues(alpha: 0.45),
       transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (_, _, _) =>
-          DailyWelcomeDialog(day: day, name: name, host: context),
-      transitionBuilder: (context, anim, _, child) {
-        final curved = CurvedAnimation(
-          parent: anim,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
-            child: child,
-          ),
-        );
-      },
+      builder: (_) => DailyWelcomeDialog(day: day, name: name, host: context),
     );
   }
 
@@ -130,13 +120,106 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _eyebrow(DateFormat('EEEE, d MMMM').format(widget.day)),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Text(
           name.isEmpty ? '${_greeting()}.' : '${_greeting()},\n$name.',
-          style: _display(g.ink, 38),
+          style: _display(g.ink, 34),
         ),
-        const SizedBox(height: 18),
-        Text(b.yesterdayStory, style: _body(g.inkSecondary, size: 17)),
+        const SizedBox(height: 12),
+        Text(b.yesterdayStory, style: _body(g.inkSecondary, size: 15.5)),
+        const SizedBox(height: 16),
+        // Morning Pulse Matrix
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: g.fill,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: g.line, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.checklist_rounded,
+                  label: 'Due Today',
+                  value: b.dueToday > 0 ? '${b.dueToday}' : '0',
+                  subtext: b.dueToday > 0 ? 'waiting' : 'Clean slate',
+                  color: SharedControlColors.actionBlue,
+                ),
+              ),
+              Container(width: 1, height: 36, color: g.line),
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Focus',
+                  value: b.trackedMinutesYesterday > 0
+                      ? '${b.trackedMinutesYesterday}m'
+                      : '0m',
+                  subtext: 'yesterday',
+                  color: g.clay,
+                ),
+              ),
+              Container(width: 1, height: 36, color: g.line),
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.track_changes_rounded,
+                  label: 'Carryover',
+                  value: '${b.overdue}',
+                  subtext: b.overdue > 0 ? 'overdue' : 'On track',
+                  color: b.overdue > 0 ? SharedControlColors.dueRed : g.actionInk,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        AscentButton.primary(
+          label: 'Start today',
+          icon: Icons.arrow_forward_rounded,
+          compact: true,
+          expanded: true,
+          onPressed: () => _then(() => widget.host.push('/today')),
+        ),
+      ],
+    );
+  }
+
+  Widget _pulseItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String subtext,
+    required Color color,
+  }) {
+    final g = context.glass;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: color),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              color: g.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            subtext,
+            style: GoogleFonts.dmSans(
+              color: g.inkMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -193,7 +276,7 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
     final g = context.glass;
     final briefing = ref.watch(dailyBriefingProvider(widget.day));
     final size = MediaQuery.sizeOf(context);
-    final bodyHeight = math.min(420.0, size.height * 0.62);
+    final bodyHeight = math.min(450.0, size.height * 0.65);
 
     final Widget body = briefing.when(
       data: (b) => PageView(
