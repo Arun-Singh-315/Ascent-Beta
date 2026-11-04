@@ -26,44 +26,145 @@ class HomePromiseSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final priorityPromise = ref.watch(priorityPromiseProvider);
+    final allActive = ref.watch(activePromisesStreamProvider).value ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header adhering strictly to Rule 18
+        // Section Header adhering strictly to Rule 18 & Rule 13
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                'Promises',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Promises',
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (allActive.length > 1) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: g.line, width: 0.8),
+                      ),
+                      child: Text(
+                        '${allActive.length}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            InkResponse(
-              radius: 20,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.push('/promises');
-              },
-              child: Icon(
-                Icons.arrow_forward_rounded,
-                size: 22,
-                color: g.ink,
-              ),
+            const SizedBox(width: 6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    PromiseChatComposer.show(context);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: g.fill,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: g.line, width: 0.8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 12,
+                          color: g.clay,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '+ Promise',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: g.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                InkResponse(
+                  radius: 18,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/promises');
+                  },
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 20,
+                    color: g.ink,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 12),
 
         // Priority card or quiet empty state
-        if (priorityPromise != null)
-          _buildPriorityCard(context, ref, priorityPromise, g)
-        else
+        if (priorityPromise != null) ...[
+          _buildPriorityCard(context, ref, priorityPromise, g),
+          if (allActive.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/promises');
+                  },
+                  icon: Icon(Icons.commit_rounded, size: 15, color: g.clay),
+                  label: Text(
+                    '+${allActive.length - 1} more commitments',
+                    style: TextStyle(
+                      color: g.clay,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ] else
           _buildQuietEmptyState(context, g),
       ],
     );

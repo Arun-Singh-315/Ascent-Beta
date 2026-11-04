@@ -149,4 +149,59 @@ void main() {
       expect(find.byKey(const ValueKey('home_promise_card')), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'HomePromiseSection displays count badge and +N more footer when multiple commitments exist',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final p1 = (await tester.runAsync(
+        () => repository.createPromise(
+          title: 'Morning Yoga',
+          intention: 'Physical alignment',
+          category: 'health',
+          trackingType: PromiseTrackingType.completion,
+        ),
+      ))!;
+      final p2 = (await tester.runAsync(
+        () => repository.createPromise(
+          title: 'Read 20 pages',
+          intention: 'Continuous learning',
+          category: 'study',
+          trackingType: PromiseTrackingType.completion,
+        ),
+      ))!;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            promiseRepositoryProvider.overrideWithValue(repository),
+            activePromisesStreamProvider.overrideWith(
+              (ref) => Stream.value([p1, p2]),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: SingleChildScrollView(child: HomePromiseSection()),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify count badge shows 2
+      expect(find.text('2'), findsOneWidget);
+
+      // Verify +1 more commitments footer is rendered
+      expect(find.text('+1 more commitments'), findsOneWidget);
+
+      // Verify quick + Promise button exists in header
+      expect(find.text('+ Promise'), findsOneWidget);
+    },
+  );
 }

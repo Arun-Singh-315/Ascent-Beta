@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import '../../shared/widgets/ascent_atmosphere.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'models/promise_model.dart';
 import 'providers/promise_providers.dart';
@@ -64,8 +65,9 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
 
     return Scaffold(
       backgroundColor: g.bg,
-      body: SafeArea(
-        child: NestedScrollView(
+      body: AscentAtmosphereBackground(
+        child: SafeArea(
+          child: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverToBoxAdapter(
@@ -264,6 +266,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
           ),
         ),
       ),
+    ),
     );
   }
 
