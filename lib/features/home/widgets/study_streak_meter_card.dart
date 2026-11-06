@@ -156,9 +156,7 @@ class StudyStreakMeterCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final streakTitle = status.displayStreakDays == 0
-        ? (status.phase == StudyStreakPhase.broken
-              ? 'A fresh start'
-              : 'Start your first day')
+        ? 'Start a streak today'
         : '${status.displayStreakDays} Day Streak';
 
     return AppGestureTap(
@@ -275,13 +273,15 @@ class StudyStreakMeterCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '•  Longest: ${status.longestStreakDays}d',
-                  style: AppTypography.plusJakartaSans12W50020(
-                    color: g.inkMuted,
+                if (status.longestStreakDays > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '•  Longest: ${status.longestStreakDays}d',
+                    style: AppTypography.plusJakartaSans12W50020(
+                      color: g.inkMuted,
+                    ),
                   ),
-                ),
+                ],
                 const Spacer(),
                 GestureDetector(
                   onTap: () => _showExplanation(context),

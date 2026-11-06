@@ -141,8 +141,8 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
                 child: _pulseItem(
                   icon: Icons.checklist_rounded,
                   label: 'Due Today',
-                  value: b.dueToday > 0 ? '${b.dueToday}' : '0',
-                  subtext: b.dueToday > 0 ? 'waiting' : 'Clean slate',
+                  value: b.dueToday > 0 ? '${b.dueToday}' : 'Clear',
+                  subtext: b.dueToday > 0 ? 'waiting' : 'All clear',
                   color: SharedControlColors.actionBlue,
                 ),
               ),
@@ -153,8 +153,8 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
                   label: 'Focus',
                   value: b.trackedMinutesYesterday > 0
                       ? '${b.trackedMinutesYesterday}m'
-                      : '0m',
-                  subtext: 'yesterday',
+                      : 'Rest',
+                  subtext: b.trackedMinutesYesterday > 0 ? 'yesterday' : 'Recharged',
                   color: g.clay,
                 ),
               ),
@@ -163,8 +163,8 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
                 child: _pulseItem(
                   icon: Icons.track_changes_rounded,
                   label: 'Carryover',
-                  value: '${b.overdue}',
-                  subtext: b.overdue > 0 ? 'overdue' : 'On track',
+                  value: b.overdue > 0 ? '${b.overdue}' : 'On track',
+                  subtext: b.overdue > 0 ? 'overdue' : 'All good',
                   color: b.overdue > 0 ? SharedControlColors.dueRed : g.actionInk,
                 ),
               ),
@@ -356,19 +356,72 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
                         ),
                       const Spacer(),
                       if (_page < _pages - 1)
-                        Text(
-                          'Swipe',
-                          style: GoogleFonts.dmSans(
-                            color: g.inkMuted,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
+                        TextButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _controller.nextPage(
+                              duration: const Duration(milliseconds: 280),
+                              curve: Curves.easeOutCubic,
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: g.primaryButtonBg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            minimumSize: const Size(48, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                        ),
-                      if (_page < _pages - 1)
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
-                          color: g.inkMuted,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Next',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                                color: g.primaryButtonBg,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        TextButton(
+                          onPressed: _close,
+                          style: TextButton.styleFrom(
+                            foregroundColor: g.primaryButtonBg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            minimumSize: const Size(48, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Done',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.check_rounded,
+                                size: 16,
+                                color: g.primaryButtonBg,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

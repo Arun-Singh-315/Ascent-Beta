@@ -186,7 +186,7 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                       AddActivitySheet.show(context);
                     },
                     child: const Text(
-                      'Add First Activity 🚀',
+                      'Add First Activity',
                       style: AppTypeRoles.typeRole38,
                     ),
                   ),
@@ -211,7 +211,7 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                   ),
                   onPressed: _dismissTutorial,
                   child: const Text(
-                    'Got it! 👍',
+                    'Got it',
                     style: AppTypeRoles.typeRole42,
                   ),
                 ),
@@ -476,7 +476,7 @@ class DayOneTutorialDialog extends ConsumerWidget {
                             AddActivitySheet.show(context);
                           },
                           child: const Text(
-                            'Add First Activity 🚀',
+                            'Add First Activity',
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
@@ -501,7 +501,7 @@ class DayOneTutorialDialog extends ConsumerWidget {
                         ),
                         onPressed: () => _dismissTutorial(context, ref),
                         child: const Text(
-                          'Got it! 👍',
+                          'Got it',
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),

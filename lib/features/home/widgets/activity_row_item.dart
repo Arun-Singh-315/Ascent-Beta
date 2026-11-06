@@ -181,13 +181,59 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         }
       },
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: AppSpace.s16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: SharedControlColors.actionBlue,
+              size: 22,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Complete',
+              style: TextStyle(
+                color: SharedControlColors.actionBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpace.s16),
-        decoration:BoxDecoration(color:Color.alphaBlend(g.primaryButtonBg.withValues(alpha:0.12),g.surface),borderRadius:BorderRadius.circular(14)),
-        child: Icon(
-          Icons.archive_outlined,
-          color: g.primaryButtonBg,
-          size: 22,
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            g.primaryButtonBg.withValues(alpha: 0.12),
+            g.surface,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Archive',
+              style: TextStyle(
+                color: g.primaryButtonBg,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.archive_outlined,
+              color: g.primaryButtonBg,
+              size: 20,
+            ),
+          ],
         ),
       ),
       child: AnimatedContainer(
@@ -1327,6 +1373,33 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         }
       },
       background: Container(
+        alignment: Alignment.centerLeft,
+        margin: const EdgeInsets.symmetric(vertical: 2.5),
+        padding: const EdgeInsets.only(left: 16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: SharedControlColors.actionBlue,
+              size: 20,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Complete',
+              style: TextStyle(
+                color: SharedControlColors.actionBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         margin: const EdgeInsets.symmetric(vertical: 2.5),
         padding: const EdgeInsets.only(right: 16),
