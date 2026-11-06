@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ascent/shared/widgets/ascent_switch_row.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
@@ -112,9 +113,11 @@ void main() {
           find.byKey(const ValueKey('promise_planned_time')),
           findsOneWidget,
         );
+        await t.tap(find.text('Options'));
+        await t.pumpAndSettle();
         expect(
           t
-              .widget<SwitchListTile>(
+              .widget<AscentSwitchRow>(
                 find.byKey(const ValueKey('promise_reminder_toggle')),
               )
               .value,
@@ -178,6 +181,8 @@ void main() {
     await t.enterText(find.byType(TextField), 'Read for 20 minutes every day');
     await t.pump();
     await t.tap(find.byKey(const ValueKey('message_composer_send')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Options'));
     await t.pumpAndSettle();
     await t.ensureVisible(find.text('Tracking options'));
     await t.tap(find.text('Tracking options'));

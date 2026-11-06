@@ -47,8 +47,11 @@ void main() {
 
       expect(find.text('Promises'), findsOneWidget);
       expect(find.text('No active promises'), findsOneWidget);
-      expect(find.text('Make a realistic commitment to yourself'), findsOneWidget);
-      expect(find.text('+ Promise'), findsOneWidget);
+      expect(
+        find.text('Make a realistic commitment to yourself'),
+        findsOneWidget,
+      );
+      expect(find.text('+ Promise'), findsNothing);
     },
   );
 
@@ -59,9 +62,7 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            planCollectionsProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
+            planCollectionsProvider.overrideWith((ref) => Stream.value([])),
           ],
           child: MaterialApp(
             theme: AscentTheme.light(),
@@ -94,9 +95,7 @@ void main() {
             recentThoughtsStreamProvider.overrideWith(
               (ref) => Stream.value([]),
             ),
-            latestHomeThoughtProvider.overrideWith(
-              (ref) => Stream.value(null),
-            ),
+            latestHomeThoughtProvider.overrideWith((ref) => Stream.value(null)),
           ],
           child: MaterialApp(
             theme: AscentTheme.light(),
@@ -135,15 +134,11 @@ void main() {
             activePromisesStreamProvider.overrideWith(
               (ref) => Stream.value([]),
             ),
-            planCollectionsProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
+            planCollectionsProvider.overrideWith((ref) => Stream.value([])),
             recentThoughtsStreamProvider.overrideWith(
               (ref) => Stream.value([]),
             ),
-            latestHomeThoughtProvider.overrideWith(
-              (ref) => Stream.value(null),
-            ),
+            latestHomeThoughtProvider.overrideWith((ref) => Stream.value(null)),
           ],
           child: MediaQuery(
             data: const MediaQueryData(

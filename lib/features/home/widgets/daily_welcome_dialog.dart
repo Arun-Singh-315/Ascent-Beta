@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/dimension_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
@@ -44,7 +43,7 @@ class DailyWelcomeDialog extends ConsumerStatefulWidget {
       useRootNavigator: true,
       barrierDismissible: true,
       barrierLabel: 'Dismiss daily briefing',
-      barrierColor: Colors.black.withValues(alpha: 0.45),
+      barrierColor: Colors.black.withValues(alpha: 0.18),
       transitionDuration: const Duration(milliseconds: 320),
       builder: (_) => DailyWelcomeDialog(day: day, name: name, host: context),
     );
@@ -173,11 +172,11 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
           ),
         ),
         const SizedBox(height: 16),
-        AscentButton.primary(
+        AscentButton.tonal(
           label: 'Start today',
           icon: Icons.arrow_forward_rounded,
           compact: true,
-          expanded: true,
+          expanded: false,
           onPressed: () => _then(() => widget.host.push('/today')),
         ),
       ],
@@ -248,7 +247,7 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
         const SizedBox(height: 14),
         Text('Where to first?', style: _display(g.ink, 30)),
         const SizedBox(height: 20),
-        AscentButton.primary(
+        AscentButton.tonal(
           label: b.nextTask == null ? 'Open today' : 'Start with today’s list',
           icon: Icons.arrow_forward_rounded,
           onPressed: () => _then(() => widget.host.push('/today')),
@@ -257,14 +256,14 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
         AscentButton.tonal(
           label: 'Capture something',
           icon: Icons.bolt_rounded,
-          expanded: true,
+          expanded: false,
           onPressed: () => _then(() => showQuickCapture(widget.host)),
         ),
         const SizedBox(height: 4),
         AscentButton.ghost(
           label: 'Plan my day',
           icon: Icons.auto_awesome_rounded,
-          expanded: true,
+          expanded: false,
           onPressed: () => _then(() => widget.host.push('/ai-assistant')),
         ),
       ],

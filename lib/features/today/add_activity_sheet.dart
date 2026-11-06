@@ -38,6 +38,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
   final int? initialDurationMinutes;
   final int? parentTaskId;
   final int? prefilledApplicationId;
+  final bool isDialog;
 
   const AddActivitySheet({
     super.key,
@@ -47,6 +48,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     this.initialDurationMinutes,
     this.parentTaskId,
     this.prefilledApplicationId,
+    this.isDialog = false,
   });
 
   static Future<void> show(
@@ -58,11 +60,9 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     int? parentTaskId,
     int? prefilledApplicationId,
   }) {
-    return showModalBottomSheet(
+    return showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
+      maxWidth: 560,
       builder: (ctx) => AddActivitySheet(
         existingTask: existingTask,
         initialTitle: initialTitle,
@@ -70,6 +70,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
         initialDurationMinutes: initialDurationMinutes,
         parentTaskId: parentTaskId,
         prefilledApplicationId: prefilledApplicationId,
+        isDialog: true,
       ),
     );
   }
@@ -322,7 +323,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
@@ -331,7 +331,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       ),
       nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
+        borderRadius: widget.isDialog
+            ? BorderRadius.circular(28)
+            : const BorderRadius.vertical(top: AppGeometry.radiusr24),
         border: Border.all(
           color: context.divider.withValues(alpha: 0.6),
           width: AppBorderScale.w1,
@@ -346,26 +348,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               AppSpace.s20,
               AppSpace.s16,
               AppSpace.s20,
-              bottomInset + AppSpace.s16,
+              AppSpace.s16,
             ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top drag handle
-                  Center(
-                    child: Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.divider,
-                        borderRadius: AppGeometry.roundedr2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
                   // Sheet Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -914,15 +903,19 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   const SizedBox(height: 16),
 
                   // Save button
-                  AscentButton.primary(
-                    label: widget.existingTask != null
-                        ? 'Save Changes'
-                        : 'Create Activity',
-                    icon: widget.existingTask != null
-                        ? Icons.check_rounded
-                        : Icons.add_rounded,
-                    loading: _saving,
-                    onPressed: _saving || _loadingReminder ? null : _save,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AscentButton.tonal(
+                      compact: true,
+                      label: widget.existingTask != null
+                          ? 'Save Changes'
+                          : 'Create Activity',
+                      icon: widget.existingTask != null
+                          ? Icons.check_rounded
+                          : Icons.add_rounded,
+                      loading: _saving,
+                      onPressed: _saving || _loadingReminder ? null : _save,
+                    ),
                   ),
 
                   if (widget.existingTask != null) ...[

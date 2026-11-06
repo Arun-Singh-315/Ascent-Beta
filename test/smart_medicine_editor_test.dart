@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/medicine/medicine_service.dart';
@@ -12,122 +13,151 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
-
   late AppDatabase db;
   late SharedPreferences prefs;
-
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
   });
+  tearDown(() async => db.close());
 
-  tearDown(() async {
-    await db.close();
-  });
-
-  Widget buildSheet({Medicine? medicine}) {
-    return ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
-      child: MaterialApp(
-        theme: AscentTheme.light(),
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: MedicineEditorSheet(medicine: medicine),
+  Future<void> mount(
+    WidgetTester t, {
+    Medicine? medicine,
+    bool dark = false,
+    double scale = 1,
+  }) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.resetPhysicalSize);
+    addTearDown(t.view.resetDevicePixelRatio);
+    await t.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          medicineServiceProvider.overrideWithValue(
+            MedicineService(db, syncAlerts: false),
+          ),
+        ],
+        child: MaterialApp(
+          theme: dark ? AscentTheme.dark() : AscentTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () =>
+                      showMedicineEditor(context, medicine: medicine),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
+    await t.tap(find.text('Open'));
+    await t.pumpAndSettle();
+  }
+
+  Future<void> flush(WidgetTester t) async {
+    for (var i = 0; i < 12; i++) {
+      await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await t.pump(const Duration(milliseconds: 50));
+    }
   }
 
   testWidgets(
-    'MedicineEditorSheet displays 4 categories and smart defaults',
-    (tester) async {
-      await tester.pumpWidget(buildSheet());
-      await tester.pumpAndSettle();
-
-      // Verify category tabs exist
-      expect(find.text('General'), findsOneWidget);
-      expect(find.text('Homeo'), findsOneWidget);
-      expect(find.text('Ayurveda'), findsOneWidget);
-      expect(find.text('Supplement'), findsOneWidget);
-
-      // Default is General
-      expect(find.text('Paracetamol'), findsOneWidget);
-
-      // Switch to Homeopathy
-      await tester.tap(find.text('Homeo'));
-      await tester.pumpAndSettle();
-
-      // Homeopathy suggestions and defaults appear
-      expect(find.text('Arnica 30C'), findsOneWidget);
-      expect(find.text('4 sugar pills'), findsOneWidget);
-      expect(find.text('15m before/after food'), findsOneWidget);
-
-      // Switch to Ayurveda
-      await tester.tap(find.text('Ayurveda'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Ashwagandha'), findsOneWidget);
-      expect(find.text('With warm water'), findsOneWidget);
-    },
-  );
-
-  testWidgets(
-    'Tapping a remedy suggestion fills the name and saves cleanly',
-    (tester) async {
-      await tester.pumpWidget(buildSheet());
-      await tester.pumpAndSettle();
-
-      // Switch to Homeo
-      await tester.tap(find.text('Homeo'));
-      await tester.pumpAndSettle();
-
-      // Tap 'Arnica 30C'
-      await tester.tap(find.text('Arnica 30C'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Arnica 30C'), findsWidgets);
-
-      // Tap Save
-      await tester.tap(find.text('Add to Schedule'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Verify saved in database
-      final meds = await db.select(db.medicineTable).get();
-      expect(meds.length, 1);
-      expect(meds.first.name, 'Arnica 30C');
-      expect(meds.first.dosage, '4 sugar pills');
-    },
-  );
-
-  testWidgets(
-    'MedicineEditorSheet passes Rule 13 overflow immunity at 320px with 2.0x text scale',
-    (tester) async {
-      tester.view.physicalSize = const Size(320 * 3.0, 800 * 3.0);
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(320, 800),
-            textScaler: TextScaler.linear(2.0),
-          ),
-          child: buildSheet(),
-        ),
+    'custom medicine, dose and instructions save without preset restrictions',
+    (t) async {
+      await mount(t);
+      final rect = t.getRect(find.byType(MedicineEditorSheet));
+      expect(rect.width, lessThan(390));
+      expect(rect.height, lessThan(650));
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      expect(find.textContaining('Enter a medicine'), findsOneWidget);
+      await t.enterText(
+        find.byKey(const ValueKey('medicine_name')),
+        'QA custom remedy',
       );
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-      expect(find.text('General'), findsOneWidget);
-      expect(find.text('Homeo'), findsOneWidget);
+      await t.enterText(
+        find.byKey(const ValueKey('medicine_dosage')),
+        '3 prescribed drops',
+      );
+      await t.enterText(
+        find.byKey(const ValueKey('medicine_instructions')),
+        'Custom note',
+      );
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      await t.enterText(find.byKey(const ValueKey('medicine_duration')), '12');
+      await t.tap(find.text('Save medicine'));
+      await flush(t);
+      final meds = await db.select(db.medicineTable).get();
+      expect(meds.single.name, 'QA custom remedy');
+      expect(meds.single.dosage, '3 prescribed drops');
+      expect(meds.single.instructions, 'Custom note');
+      expect(meds.single.durationDays, 12);
     },
   );
+  testWidgets(
+    'editing preserves exact existing schedule, start, duration and type',
+    (t) async {
+      final start = DateTime(2026, 11, 1);
+      final id = await MedicineService(db, syncAlerts: false).addMedicine(
+        name: 'QA existing',
+        dosage: 'Recorded dose',
+        scheduledTimes: ['07:15', '12:45', '18:10', '23:05'],
+        durationDays: 42,
+        startDate: start,
+        instructions: 'Recorded instructions',
+        type: 'drops',
+      );
+      final med = (await db.medicineDao.getMedicineById(id))!;
+      await mount(t, medicine: med);
+      await t.enterText(
+        find.byKey(const ValueKey('medicine_name')),
+        'QA renamed',
+      );
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      for (final time in ['07:15', '12:45', '18:10', '23:05']) {
+        expect(find.text(time), findsOneWidget);
+      }
+      await t.tap(find.text('Save medicine'));
+      await flush(t);
+      final updated = (await db.medicineDao.getMedicineById(id))!;
+      expect(jsonDecode(updated.scheduledTimes), [
+        '07:15',
+        '12:45',
+        '18:10',
+        '23:05',
+      ]);
+      expect(updated.durationDays, 42);
+      expect(updated.startDate, start);
+      expect(updated.type, 'drops');
+    },
+  );
+  for (final dark in [false, true]) {
+    testWidgets('large text and keyboard remain accessible dark=$dark', (
+      t,
+    ) async {
+      await mount(t, dark: dark, scale: 2);
+      t.view.viewInsets = const FakeViewPadding(bottom: 280);
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Continue'));
+      expect(t.takeException(), isNull);
+    });
+  }
 }

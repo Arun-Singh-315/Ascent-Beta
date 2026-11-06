@@ -22,7 +22,6 @@ import '../money/add_transaction_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import '../promises/providers/promise_providers.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/daily_welcome_dialog.dart';
@@ -79,6 +78,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   Timer? _dayTimer;
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
+  bool _entryDialogsReady = false;
   String? _activeShortcutId;
 
   @override
@@ -95,56 +95,67 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       if (mounted) setState(() => _heavierModulesReady = true);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 350));
-      if (!mounted) return;
-      final preferences = ref.read(sharedPreferencesProvider);
-      final notice = preferences.getString('ascent_restore_notice_v1');
-      if (notice != null) {
-        preferences.remove('ascent_restore_notice_v1');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
+      try {
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (!mounted) return;
+        final preferences = ref.read(sharedPreferencesProvider);
+        final notice = preferences.getString('ascent_restore_notice_v1');
+        if (notice != null) {
+          preferences.remove('ascent_restore_notice_v1');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(notice),
+              duration: const Duration(seconds: 8),
+            ),
+          );
+        }
+
+        if (!mounted) return;
+        final profile = await ref
+            .read(userProfileStreamProvider.future)
+            .onError((_, _) => null);
+        if (!mounted || !canEnterWorkspace(profile, preferences)) return;
+
+        final tutorialDismissed =
+            (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
+            (preferences.getBool('ascent_quick_start_v1') ?? false);
+        if (!tutorialDismissed && mounted) {
+          // First login: the one-time guide is today's welcome, so the daily
+          // one waits for tomorrow instead of stacking on top of it.
+          preferences.setBool(DayOneTutorialDialog.prefKey, true);
+          await markDailyWelcomeSeen(preferences, DateTime.now());
+          if (!mounted) return;
+          await DayOneTutorialDialog.show(
+            context,
+            userName: profile?.name ?? '',
+          );
+          return;
+        }
+
+        // Every other day: one daily welcome on the first open, never again that
+        // day, and never when Home was opened for a specific destination.
+        final uri = widget.notificationUri;
+        final homeOnly = uri == null || uri.path == '/home';
+        final now = DateTime.now();
+        if (!mounted ||
+            !homeOnly ||
+            !shouldShowDailyWelcome(
+              prefs: preferences,
+              now: now,
+              autoOpen: ref.read(dailyBriefingAutoOpenProvider),
+            )) {
+          return;
+        }
+        await markDailyWelcomeSeen(preferences, now);
+        if (!mounted) return;
+        await DailyWelcomeDialog.show(
+          context,
+          day: briefingDay(now),
+          name: profile?.name ?? '',
         );
+      } finally {
+        if (mounted) setState(() => _entryDialogsReady = true);
       }
-
-      if (!mounted) return;
-      final profile = await ref
-          .read(userProfileStreamProvider.future)
-          .onError((_, _) => null);
-      if (!mounted || !canEnterWorkspace(profile, preferences)) return;
-
-      final tutorialDismissed =
-          (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
-          (preferences.getBool('ascent_quick_start_v1') ?? false);
-      if (!tutorialDismissed && mounted) {
-        // First login: the one-time guide is today's welcome, so the daily
-        // one waits for tomorrow instead of stacking on top of it.
-        preferences.setBool(DayOneTutorialDialog.prefKey, true);
-        await markDailyWelcomeSeen(preferences, DateTime.now());
-        await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
-        return;
-      }
-
-      // Every other day: one daily welcome on the first open, never again that
-      // day, and never when Home was opened for a specific destination.
-      final uri = widget.notificationUri;
-      final homeOnly = uri == null || uri.path == '/home';
-      final now = DateTime.now();
-      if (!mounted ||
-          !homeOnly ||
-          !shouldShowDailyWelcome(
-            prefs: preferences,
-            now: now,
-            autoOpen: ref.read(dailyBriefingAutoOpenProvider),
-          )) {
-        return;
-      }
-      await markDailyWelcomeSeen(preferences, now);
-      if (!mounted) return;
-      await DailyWelcomeDialog.show(
-        context,
-        day: briefingDay(now),
-        name: profile?.name ?? '',
-      );
     });
   }
 
@@ -229,7 +240,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         subtitle:
                             'Something went wrong while loading. Please try again.',
                         actionLabel: 'Try again',
-                        onAction: () => ref.invalidate(userProfileStreamProvider),
+                        onAction: () =>
+                            ref.invalidate(userProfileStreamProvider),
                       );
                     },
                     data: (profile) {
@@ -292,19 +304,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             ),
 
                             // Proactive Catch-Up Pod (Hydration, Medicine, Money)
-                            const SmartCatchUpBanner(),
+                            if (_entryDialogsReady) const SmartCatchUpBanner(),
 
                             Padding(
                               padding: const EdgeInsets.only(
                                 bottom: AppSpace.s16,
                               ),
-                                child: HomeShortcutPanel(
-                                  shortcuts: layout.shortcuts,
-                                  activeShortcutId: _activeShortcutId,
-                                  onSelectShortcut: (id) =>
-                                      setState(() => _activeShortcutId = id),
-                                ),
+                              child: HomeShortcutPanel(
+                                shortcuts: layout.shortcuts,
+                                activeShortcutId: _activeShortcutId,
+                                onSelectShortcut: (id) =>
+                                    setState(() => _activeShortcutId = id),
                               ),
+                            ),
 
                             // ── SHORTCUT DRILLDOWN / FULL HOME FEED ──
                             if (_activeShortcutId != null) ...[

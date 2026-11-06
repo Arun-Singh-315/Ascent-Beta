@@ -11,8 +11,8 @@ import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../promises/widgets/promise_action_button.dart';
-import '../../promises/widgets/promise_chat_composer.dart';
 import '../../promises/widgets/promise_detail_sheet.dart';
+import '../../promises/widgets/promise_chat_composer.dart';
 
 /// Compact, highly focused Promise section on the Ascent Home screen.
 /// Answers three questions immediately:
@@ -80,60 +80,13 @@ class HomePromiseSection extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    PromiseChatComposer.show(context);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: g.line, width: 0.8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 12,
-                          color: g.clay,
-                        ),
-                        const SizedBox(width: 3),
-                        Text(
-                          '+ Promise',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: g.ink,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                InkResponse(
-                  radius: 18,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/promises');
-                  },
-                  child: Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 20,
-                    color: g.ink,
-                  ),
-                ),
-              ],
+            InkResponse(
+              radius: 18,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/promises');
+              },
+              child: Icon(Icons.arrow_forward_rounded, size: 20, color: g.ink),
             ),
           ],
         ),

@@ -22,8 +22,8 @@ Future<T?> showAscentFrostedDialog<T>({
 }) {
   HapticFeedback.lightImpact();
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  final effectiveBarrierColor = barrierColor ??
-      Color.fromRGBO(0, 0, 0, isDark ? 0.54 : 0.40);
+  final effectiveBarrierColor =
+      barrierColor ?? Color.fromRGBO(0, 0, 0, isDark ? 0.40 : 0.18);
 
   return showGeneralDialog<T>(
     context: context,
@@ -56,6 +56,41 @@ Future<T?> showAscentFrostedDialog<T>({
     },
   );
 }
+
+/// Presents a form in a centered, keyboard-aware viewport over the shared
+/// frozen backdrop. The form widget owns its surface and scroll behavior.
+Future<T?> showAscentCenteredForm<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  double maxWidth = 440,
+  bool barrierDismissible = true,
+}) => showAscentFrostedDialog<T>(
+  context: context,
+  barrierDismissible: barrierDismissible,
+  builder: (dialogContext) {
+    final media = MediaQuery.of(dialogContext);
+    final keyboard = media.viewInsets.bottom;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.fromLTRB(24, 20, 24, keyboard + 20),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: maxWidth,
+              maxHeight: (media.size.height - keyboard - 40).clamp(
+                220,
+                double.infinity,
+              ),
+            ),
+            child: builder(dialogContext),
+          ),
+        ),
+      ),
+    );
+  },
+);
 
 /// Standardized modal dialog utility for Ascent.
 ///
@@ -118,7 +153,7 @@ class AscentDialog extends StatelessWidget {
                   Navigator.pop(ctx, true);
                 },
               )
-            : AscentButton.primary(
+            : AscentButton.tonal(
                 label: confirmLabel,
                 compact: true,
                 expanded: isLargeText,
@@ -140,12 +175,10 @@ class AscentDialog extends StatelessWidget {
               const SizedBox(height: AscentDimensions.spaceSm),
               cancelBtn,
             ] else
-              Row(
-                children: [
-                  Expanded(child: cancelBtn),
-                  const SizedBox(width: AscentDimensions.spaceSm),
-                  Expanded(child: confirmBtn),
-                ],
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: AscentDimensions.spaceSm,
+                children: [cancelBtn, confirmBtn],
               ),
           ],
         );
@@ -175,11 +208,13 @@ class AscentDialog extends StatelessWidget {
         contentWidget: contentWidget,
         icon: icon,
         actions: [
-          AscentButton.primary(
-            label: buttonLabel,
-            compact: true,
-            expanded: true,
-            onPressed: () => Navigator.pop(ctx),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AscentButton.tonal(
+              label: buttonLabel,
+              compact: true,
+              onPressed: () => Navigator.pop(ctx),
+            ),
           ),
         ],
       ),

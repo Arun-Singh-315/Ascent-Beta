@@ -200,8 +200,8 @@ void main() {
       // Verify +1 more commitments footer is rendered
       expect(find.text('+1 more commitments'), findsOneWidget);
 
-      // Verify quick + Promise button exists in header
-      expect(find.text('+ Promise'), findsOneWidget);
+      // The header keeps its single navigation arrow clear of creation chips.
+      expect(find.text('+ Promise'), findsNothing);
     },
   );
 }

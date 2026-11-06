@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
-import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/message_composer.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
@@ -15,13 +16,13 @@ import 'promise_schedule_editor.dart';
 /// Write first. Confirm a small plan. Save without a questionnaire.
 class PromiseChatComposer extends ConsumerStatefulWidget {
   const PromiseChatComposer({super.key});
-  static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const PromiseChatComposer(),
-  );
+  static Future<void> show(BuildContext context) =>
+      showAscentCenteredForm<void>(
+        context: context,
+        maxWidth: 420,
+        barrierDismissible: false,
+        builder: (_) => const PromiseChatComposer(),
+      );
   @override
   ConsumerState<PromiseChatComposer> createState() =>
       _PromiseChatComposerState();
@@ -32,6 +33,7 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   PromiseProposal? _proposal;
+  int _reviewPage = 0;
   bool _saving = false;
   String? _error;
   Future<void> _draftWrites = Future.value();
@@ -106,6 +108,7 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
     FocusScope.of(context).unfocus();
     setState(() {
       _proposal = PromiseIntentParser.parse(text);
+      _reviewPage = 0;
       _error = null;
     });
     _persist();
@@ -164,27 +167,18 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final media = MediaQuery.of(context);
-    final available = math.max(
-      180.0,
-      media.size.height - media.viewInsets.bottom - media.padding.top - 24,
-    );
     return PopScope(
       canPop: !_saving,
       child: Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-        child: GlassSurface(
-          radius: 28,
-          minimumOpacity: .86,
-          padding: EdgeInsets.zero,
-          child: SizedBox(
-            height: math.min(
-              _proposal == null
-                  ? (media.textScaler.scale(14) > 20 ? available : 360.0)
-                  : 620.0,
-              available,
-            ),
+        padding: EdgeInsets.zero,
+        child: Material(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: EdgeInsets.zero,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
@@ -216,7 +210,8 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                     ],
                   ),
                 ),
-                Expanded(
+                Flexible(
+                  fit: FlexFit.loose,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                     child: AbsorbPointer(
@@ -296,7 +291,21 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                                   ),
                                   label: const Text('Edit my words'),
                                 ),
+                                AscentSegmentedControl<int>(
+                                  selected: _reviewPage,
+                                  accented: true,
+                                  segments: const [
+                                    AscentSegment(value: 0, label: 'Plan'),
+                                    AscentSegment(value: 1, label: 'Options'),
+                                  ],
+                                  onChanged: (value) =>
+                                      setState(() => _reviewPage = value),
+                                ),
+                                const SizedBox(height: 12),
                                 PromiseScheduleEditor(
+                                  section: _reviewPage == 0
+                                      ? PromiseEditorSection.schedule
+                                      : PromiseEditorSection.options,
                                   proposal: _proposal!,
                                   onChanged: (p) {
                                     setState(() => _proposal = p);
@@ -324,28 +333,24 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                     child: _proposal == null
                         ? MessageComposer(
-                            autofocus: true,
+                            autofocus: false,
+                            quiet: true,
+                            maxLines: 4,
                             controller: _controller,
                             focusNode: _focus,
                             hint: 'I promise myself…',
                             onSend: _continue,
                             busy: _saving,
                           )
-                        : SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
+                        : Align(
+                            alignment: Alignment.centerRight,
+                            child: AscentButton.tonal(
                               key: const ValueKey('promise_save'),
+                              label: 'Save promise',
+                              compact: true,
+                              loading: _saving,
+                              icon: Icons.check_rounded,
                               onPressed: _saving ? null : _save,
-                              icon: _saving
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.check_rounded),
-                              label: Text(_saving ? 'Saving…' : 'Save promise'),
                             ),
                           ),
                   ),
