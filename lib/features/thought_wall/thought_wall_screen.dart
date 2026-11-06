@@ -2413,12 +2413,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                   thought.isPinned ? 'Unpin' : 'Pin to top',
                                 ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: Text(
                                   'Delete thought',
                                   style: TextStyle(
-                                    color: Color(0xFFEF4444),
+                                    color: SharedControlColors.dueRed,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

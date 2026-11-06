@@ -248,7 +248,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                   Icons.wb_sunny_rounded,
                                   key: const ValueKey('sun_icon'),
                                   size: 18,
-                                  color: const Color(0xFFD97706),
+                                  color: g.amber,
                                 ),
                         ),
                       ),

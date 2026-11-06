@@ -334,7 +334,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              '$percent%',
+                              currentMl == 0 ? 'First sip' : '$percent%',
                               style: AscentTextStyles.cardTitle.copyWith(
                                 color: context.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -408,8 +408,10 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           isGoalMet
-                              ? '🎉 Daily Goal Achieved'
-                              : '$remainingMl mL to daily goal',
+                              ? 'Daily Goal Achieved'
+                              : (currentMl == 0
+                                  ? 'Record your first sip below'
+                                  : '$remainingMl mL to daily goal'),
                           style: AscentTextStyles.captionMedium.copyWith(
                             color: isGoalMet
                                 ? AppPalette.colorFF10B981
