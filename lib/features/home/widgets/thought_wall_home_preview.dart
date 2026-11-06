@@ -1141,11 +1141,10 @@ class _ThoughtWallHomePreviewState
             Expanded(
               child: Text(
                 'Mind palace',
-                style: TextStyle(
+                style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -.4,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
