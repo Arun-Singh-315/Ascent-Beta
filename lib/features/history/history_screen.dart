@@ -227,6 +227,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
+  IconData _moduleIcon(String module) => switch (historyModule(module)) {
+        'tasks' => Icons.check_circle_outline_rounded,
+        'focus' => Icons.timer_outlined,
+        'thoughts' => Icons.bubble_chart_outlined,
+        'promises' => Icons.handshake_outlined,
+        'medicines' => Icons.medication_outlined,
+        'hydration' => Icons.water_drop_outlined,
+        'walks' => Icons.directions_walk_rounded,
+        'routines' => Icons.repeat_rounded,
+        'money' => Icons.account_balance_wallet_outlined,
+        'learning' => Icons.menu_book_rounded,
+        'breaks' => Icons.coffee_outlined,
+        _ => Icons.history_rounded,
+      };
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -405,86 +420,186 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       );
                     }
                     final visible = matches.take(_limit).toList();
+                    final dayGroups = <String, List<HistoryEvent>>{};
+                    final now = DateTime.now();
+                    for (final e in visible) {
+                      final isToday = e.occurredAt.year == now.year &&
+                          e.occurredAt.month == now.month &&
+                          e.occurredAt.day == now.day;
+                      final yesterday = now.subtract(const Duration(days: 1));
+                      final isYesterday = e.occurredAt.year == yesterday.year &&
+                          e.occurredAt.month == yesterday.month &&
+                          e.occurredAt.day == yesterday.day;
+                      final label = isToday
+                          ? 'Today'
+                          : (isYesterday
+                              ? 'Yesterday'
+                              : DateFormat.yMMMMd().format(e.occurredAt));
+                      dayGroups.putIfAbsent(label, () => []).add(e);
+                    }
+                    final groupEntries = dayGroups.entries.toList();
+
                     return ListView.builder(
                       key: const ValueKey('history_timeline'),
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                       itemCount:
-                          visible.length + (_limit < matches.length ? 1 : 0),
+                          groupEntries.length + (_limit < matches.length ? 1 : 0),
                       itemBuilder: (ctx, i) {
-                        if (i == visible.length) {
-                          return TextButton(
-                            onPressed: () => setState(() => _limit += 60),
-                            child: Text(
-                              'Show more · ${matches.length - _limit} remaining',
+                        if (i == groupEntries.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: TextButton.icon(
+                                onPressed: () => setState(() => _limit += 60),
+                                icon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                                label: Text(
+                                  'Show more · ${matches.length - _limit} remaining',
+                                ),
+                              ),
                             ),
                           );
                         }
-                        final e = visible[i];
-                        final day = DateFormat.yMMMMd().format(e.occurredAt);
-                        final showDay =
-                            i == 0 ||
-                            DateFormat.yMMMMd().format(
-                                  visible[i - 1].occurredAt,
-                                ) !=
-                                day;
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (showDay)
+                        final group = groupEntries[i];
+                        final dayLabel = group.key;
+                        final events = group.value;
+                        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  4,
-                                  18,
-                                  4,
-                                  10,
-                                ),
-                                child: Text(
-                                  day,
-                                  style: TextStyle(
-                                    color: g.inkMuted,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: AscentCard(
-                                onTap: () => _detail(e),
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
+                                child: Row(
                                   children: [
                                     Text(
-                                      '${historyAction(e.action)} · ${historyModules[historyModule(e.module)] ?? e.module}',
-                                      style: TextStyle(
-                                        color: g.inkMuted,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      e.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                      dayLabel,
                                       style: TextStyle(
                                         color: g.ink,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
                                       ),
                                     ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '${DateFormat.jm().format(e.occurredAt)}${e.imported ? ' · Imported record' : ''}',
-                                      style: TextStyle(
-                                        color: g.inkMuted,
-                                        fontSize: 12,
+                                    const Spacer(),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: g.clay.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: g.line.withValues(alpha: 0.25),
+                                          width: 0.5,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${events.length} ${events.length == 1 ? "event" : "events"}',
+                                        style: TextStyle(
+                                          color: g.inkMuted,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? g.elevated
+                                      : Theme.of(ctx).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: g.line.withValues(alpha: 0.35),
+                                    width: 0.75,
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: Column(
+                                  children: [
+                                    for (var j = 0; j < events.length; j++) ...[
+                                      if (j > 0)
+                                        Divider(
+                                          height: 1,
+                                          thickness: 0.5,
+                                          color: g.line.withValues(alpha: 0.25),
+                                          indent: 52,
+                                        ),
+                                      InkWell(
+                                        onTap: () => _detail(events[j]),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 12,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 32,
+                                                height: 32,
+                                                decoration: BoxDecoration(
+                                                  color: g.clay.withValues(
+                                                    alpha: 0.12,
+                                                  ),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Icon(
+                                                  _moduleIcon(events[j].module),
+                                                  size: 16,
+                                                  color: g.clay,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      events[j].title,
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        color: g.ink,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 14.5,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      '${historyAction(events[j].action)} · ${DateFormat.jm().format(events[j].occurredAt)}${events[j].imported ? ' · Imported record' : ''}',
+                                                      style: TextStyle(
+                                                        color: g.inkMuted,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Icon(
+                                                Icons.chevron_right_rounded,
+                                                size: 16,
+                                                color: g.inkMuted.withValues(
+                                                  alpha: 0.6,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     );

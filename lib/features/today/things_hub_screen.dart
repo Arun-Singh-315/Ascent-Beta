@@ -556,15 +556,18 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
                                         children: [
                                           Icon(icon, size: 16, color: color),
                                           const SizedBox(width: 6),
-                                          Text(
-                                            '$name · ${groups[name]!.length}',
-                                            style: TextStyle(
-                                              color: g.ink,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 15,
+                                          Expanded(
+                                            child: Text(
+                                              '$name · ${groups[name]!.length}',
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: g.ink,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                              ),
                                             ),
                                           ),
-                                          const Spacer(),
+                                          const SizedBox(width: 8),
                                           Icon(
                                             _collapsedSections.contains(name)
                                                 ? Icons.keyboard_arrow_down_rounded

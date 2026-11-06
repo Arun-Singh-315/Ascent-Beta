@@ -132,7 +132,6 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                   ),
                   alignment: Alignment.centerLeft,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
                       if (segment.icon != null) ...[
                         Icon(
@@ -144,15 +143,21 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                       ],
-                      Text(
-                        segment.label,
-                        style: AscentTextStyles.segmentLabel.copyWith(
-                          color: isSelected
-                              ? selectedTextColor
-                              : unselectedTextColor,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            segment.label,
+                            style: AscentTextStyles.segmentLabel.copyWith(
+                              color: isSelected
+                                  ? selectedTextColor
+                                  : unselectedTextColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                     ],

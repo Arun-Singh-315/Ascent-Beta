@@ -343,6 +343,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                 key: ValueKey(entry.activity.id),
                                 activity: entry.activity,
                                 compact: true,
+                                ground: true,
                                 onViewCompleted: () {
                                   if (!mounted) return;
                                   setState(() {
@@ -603,6 +604,7 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
                           key: ValueKey(rows[index].id),
                           activity: rows[index],
                           compact: true,
+                          ground: true,
                         ),
                       );
                     },
