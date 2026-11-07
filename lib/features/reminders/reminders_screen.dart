@@ -1313,6 +1313,32 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                 color: g.coral,
                               ),
                             ),
+                          if (reminder.isActive && reminder.scheduledAt.isAfter(DateTime.now()))
+                            InkWell(
+                              onTap: () => _finishReminder(reminder),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: g.fill.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: g.line.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                                child: Text(
+                                  'At ${DateFormat('h:mm a').format(reminder.scheduledAt)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ],

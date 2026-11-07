@@ -156,7 +156,9 @@ class StudyStreakMeterCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final streakTitle = status.displayStreakDays == 0
-        ? 'Start a streak today'
+        ? (status.phase == StudyStreakPhase.broken
+              ? 'A fresh start'
+              : 'Start a streak today')
         : '${status.displayStreakDays} Day Streak';
 
     return AppGestureTap(

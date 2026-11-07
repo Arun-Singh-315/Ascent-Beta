@@ -38,27 +38,12 @@ class _HomeCustomizationSheetState
             (id) => id == 'streak' && !ref.read(homeStreakVisibleProvider),
           ),
       );
-  @override
-  void initState() {
-    super.initState();
-    _draft = _draft.copyWith(
-      order: ['mind', ..._draft.order.where((id) => id != 'mind')],
-    );
-  }
-
   bool _saving = false;
   String? _error;
   void _toggle(String id) {
     final visible = {..._draft.visible};
     if (!visible.remove(id)) visible.add(id);
     setState(() => _draft = _draft.copyWith(visible: visible));
-  }
-
-  void _move(int index, int delta) {
-    final order = [..._draft.order];
-    final item = order.removeAt(index);
-    order.insert(index + delta, item);
-    setState(() => _draft = _draft.copyWith(order: order));
   }
 
   @override
@@ -100,25 +85,18 @@ class _HomeCustomizationSheetState
                 child: ListView(
                   children: [
                     Text(
-                      'Preview order',
+                      'Home sections',
                       style: AscentTextStyles.labelMedium.copyWith(
                         color: g.ink,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _draft.order
-                          .where(_draft.visible.contains)
-                          .map(
-                            (id) =>
-                                AppTag.label(label: Text(homeSections[id]!)),
-                          )
-                          .toList(),
+                    Text(
+                      'Things Hub leads your day. Supporting cards appear when relevant; hidden tools remain available from More.',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
                     ),
-                    if (_draft.visible.isEmpty)
-                      const Text('Hidden tools remain available from More.'),
                     const SizedBox(height: 12),
                     for (var i = 0; i < _draft.order.length; i++)
                       Container(
@@ -155,27 +133,6 @@ class _HomeCustomizationSheetState
                                     ),
                                   ),
                                 ),
-                                IconButton(
-                                  tooltip:
-                                      'Move ${homeSections[_draft.order[i]]} up',
-                                  onPressed: _saving || i <= 1
-                                      ? null
-                                      : () => _move(i, -1),
-                                  icon: const Icon(Icons.arrow_upward_rounded),
-                                ),
-                                IconButton(
-                                  tooltip:
-                                      'Move ${homeSections[_draft.order[i]]} down',
-                                  onPressed:
-                                      _saving ||
-                                          i == 0 ||
-                                          i == _draft.order.length - 1
-                                      ? null
-                                      : () => _move(i, 1),
-                                  icon: const Icon(
-                                    Icons.arrow_downward_rounded,
-                                  ),
-                                ),
                               ],
                             ),
                             if (_draft.order[i] == 'mind')
@@ -185,7 +142,7 @@ class _HomeCustomizationSheetState
                                   bottom: AppSpace.s6,
                                 ),
                                 child: Text(
-                                  'Shown below your name. Opens with your most recent thought.',
+                                  'A writing space with your most recent thought.',
                                   style: AscentTextStyles.captionMedium
                                       .copyWith(color: g.inkMuted),
                                 ),

@@ -383,6 +383,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        if (find.text('Delete').evaluate().isNotEmpty) {
+          await tester.tap(find.text('Delete'));
+          await tester.pumpAndSettle();
+        }
+
         // Verify SnackBar text says "Removed from today's activities" (never "deleted")
         expect(find.text('Removed from today\'s activities'), findsOneWidget);
         expect(find.textContaining('deleted'), findsNothing);

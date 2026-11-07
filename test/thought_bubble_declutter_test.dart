@@ -64,5 +64,8 @@ void main() {
 
     // Verify inline clutter chips (Plan, Todo, Reminder, Both) are NOT cluttering inside the thought bubble
     expect(find.byKey(const ValueKey('home_thought_quick_1')), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
   });
 }

@@ -289,6 +289,10 @@ void main() {
 
         // Box shadow aura must be present for depth
         expect(decoration.boxShadow, isNotEmpty);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 2));
       },
     );
   });
