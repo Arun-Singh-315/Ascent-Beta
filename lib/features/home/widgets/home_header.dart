@@ -49,34 +49,49 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     super.dispose();
   }
 
-  (String, IconData, Color, String) _getDayPeriodInfo(int hour) {
+  (String, IconData, Color, String, List<Color>) _getDayPeriodInfo(
+    int hour,
+    bool isDark,
+  ) {
     if (hour >= 5 && hour < 12) {
       return (
         'Good morning,',
         Icons.wb_twilight_rounded,
         const Color(0xFFE59834),
         'Morning focus',
+        isDark
+            ? const [Color(0xFFFBBF24), Color(0xFFF59E0B)]
+            : const [Color(0xFFD97706), Color(0xFFB45309)],
       );
     } else if (hour >= 12 && hour < 17) {
       return (
         'Good afternoon,',
         Icons.wb_sunny_rounded,
-        const Color(0xFFD97706),
+        const Color(0xFF0284C7),
         'Peak hours',
+        isDark
+            ? const [Color(0xFF38BDF8), Color(0xFF0284C7)]
+            : const [Color(0xFF0284C7), Color(0xFF0369A1)],
       );
     } else if (hour >= 17 && hour < 21) {
       return (
         'Good evening,',
         Icons.wb_twilight_rounded,
-        const Color(0xFFC05621),
+        const Color(0xFFEA580C),
         'Golden hour',
+        isDark
+            ? const [Color(0xFFFB923C), Color(0xFFEA580C)]
+            : const [Color(0xFFEA580C), Color(0xFFC2410C)],
       );
     } else {
       return (
         'Good night,',
         Icons.nights_stay_rounded,
-        const Color(0xFF6366F1),
+        const Color(0xFF818CF8),
         'Quiet hours',
+        isDark
+            ? const [Color(0xFFA5B4FC), Color(0xFF818CF8)]
+            : const [Color(0xFF6366F1), Color(0xFF4F46E5)],
       );
     }
   }
@@ -90,8 +105,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         : 'Your space';
     final role = profile?.targetRole ?? '';
     final now = DateTime.now();
-    final (greeting, periodIcon, periodColor, periodSubtitle) =
-        _getDayPeriodInfo(now.hour);
+    final (
+      greeting,
+      periodIcon,
+      periodColor,
+      periodSubtitle,
+      periodGradient,
+    ) = _getDayPeriodInfo(now.hour, context.isDark);
     final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
@@ -147,6 +167,29 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     final isStreakCardVisible =
                         ref.watch(homeStreakVisibleProvider);
                     if (streak <= 0) return const SizedBox.shrink();
+
+                    final (
+                      IconData flameIcon,
+                      Color flameColor,
+                      String streakLabel,
+                    ) = switch (streak) {
+                      >= 30 => (
+                        Icons.whatshot_rounded,
+                        const Color(0xFFE11D48),
+                        '$streak · Fire',
+                      ),
+                      >= 7 => (
+                        Icons.local_fire_department_rounded,
+                        const Color(0xFFEA580C),
+                        '$streak · Blaze',
+                      ),
+                      _ => (
+                        Icons.local_fire_department_rounded,
+                        const Color(0xFFD97706),
+                        '$streak',
+                      ),
+                    };
+
                     return GestureDetector(
                       onTap: () async {
                         HapticFeedback.lightImpact();
@@ -165,34 +208,34 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       child: Container(
                         margin: const EdgeInsets.only(left: 8),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 2.5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE28B57).withValues(
+                          color: flameColor.withValues(
                             alpha: context.isDark ? 0.22 : 0.14,
                           ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFFE28B57).withValues(alpha: 0.5),
+                            color: flameColor.withValues(alpha: 0.5),
                             width: 0.8,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.local_fire_department_rounded,
-                              size: 12,
-                              color: Color(0xFFE28B57),
+                            Icon(
+                              flameIcon,
+                              size: 12.5,
+                              color: flameColor,
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: 3.5),
                             Text(
-                              '$streak',
+                              streakLabel,
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFFE28B57),
+                                color: flameColor,
                               ),
                             ),
                           ],
@@ -329,39 +372,40 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
           ),
           const SizedBox(height: 18),
           // Dynamic greeting with ambient time-of-day badge
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               Text(
                 greeting,
                 style: AscentTextStyles.homeBody.copyWith(
                   color: g.inkSecondary,
-                  fontSize: 14.0,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 0.2,
                 ),
               ),
-              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: periodColor.withValues(alpha: context.isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: periodColor.withValues(alpha: context.isDark ? 0.35 : 0.25),
+                    color: periodColor.withValues(alpha: context.isDark ? 0.4 : 0.25),
                     width: 0.8,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(periodIcon, size: 11, color: periodColor),
+                    Icon(periodIcon, size: 11.5, color: periodColor),
                     const SizedBox(width: 4),
                     Text(
                       periodSubtitle,
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.plusJakartaSans(
                         color: periodColor,
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
                       ),
@@ -372,14 +416,27 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            name,
-            style: AscentTextStyles.homeDisplay.copyWith(
-              color: g.ink,
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.8,
-              height: 1.15,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: periodGradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              blendMode: BlendMode.srcIn,
+              child: Text(
+                name,
+                key: const ValueKey('home_user_name'),
+                style: AscentTextStyles.homeDisplay.copyWith(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.8,
+                  height: 1.15,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 6),

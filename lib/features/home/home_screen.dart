@@ -28,6 +28,7 @@ import 'widgets/daily_welcome_dialog.dart';
 import '../../core/services/daily_welcome_service.dart';
 import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
+import 'widgets/home_day_glance_card.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
 import 'widgets/ascent_dynamic_island.dart';
@@ -305,6 +306,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                             // Proactive Catch-Up Pod (Hydration, Medicine, Money)
                             if (_entryDialogsReady) const SmartCatchUpBanner(),
+
+                            // Apple-grade Concentric Momentum Glance
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: AppSpace.s16),
+                              child: HomeDayGlanceCard(),
+                            ),
 
                             Padding(
                               padding: const EdgeInsets.only(
