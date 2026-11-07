@@ -42,15 +42,25 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Reminders',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AscentTextStyles.homeTitle.copyWith(
-            color: g.ink,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Reminders',
+                style: AscentTextStyles.homeTitle.copyWith(
+                  color: g.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (onViewAll != null)
+              IconButton(
+                tooltip: 'All reminders',
+                onPressed: onViewAll,
+                icon: Icon(Icons.arrow_forward_rounded, size: 20, color: g.ink),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         _buildReminder(context, reminder),

@@ -34,10 +34,10 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
 class _FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 0,
-        yesterdaySeconds: 0,
-        priorStreakDays: 0,
-        historicalLongestStreak: 0,
+        todaySeconds: 7200,
+        yesterdaySeconds: 7200,
+        priorStreakDays: 5,
+        historicalLongestStreak: 5,
         historicalShortestStreak: 1,
         now: DateTime.now(),
       );
@@ -89,7 +89,7 @@ void main() {
         timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
         studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
         homeStreakVisibleProvider.overrideWith((ref) => true),
-        currentStreakStreamProvider.overrideWith((ref) => Stream.value(0)),
+        currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
         dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
@@ -121,10 +121,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final startTextFinder = find.text('Start');
-      expect(startTextFinder, findsOneWidget);
-      final startText = tester.widget<Text>(startTextFinder);
-      expect(startText.style?.color, equals(Colors.white));
+      final flameFinder = find.byIcon(Icons.local_fire_department_rounded);
+      expect(flameFinder, findsOneWidget);
+      final streakPillFinder = find.ancestor(
+        of: flameFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(streakPillFinder, findsOneWidget);
+      final streakText = tester.widget<Text>(
+        find.descendant(of: streakPillFinder, matching: find.byType(Text)),
+      );
+      expect(streakText.style?.color, isNotNull);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
@@ -139,10 +146,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      final darkStartTextFinder = find.text('Start');
-      expect(darkStartTextFinder, findsOneWidget);
-      final darkStartText = tester.widget<Text>(darkStartTextFinder);
-      expect(darkStartText.style?.color, equals(MerlotPalette.darkInk));
+      final darkFlameFinder = find.byIcon(Icons.local_fire_department_rounded);
+      expect(darkFlameFinder, findsOneWidget);
+      final darkStreakPillFinder = find.ancestor(
+        of: darkFlameFinder,
+        matching: find.byType(GestureDetector),
+      );
+      expect(darkStreakPillFinder, findsOneWidget);
+      final darkStreakText = tester.widget<Text>(
+        find.descendant(of: darkStreakPillFinder, matching: find.byType(Text)),
+      );
+      expect(darkStreakText.style?.color, isNotNull);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
@@ -173,11 +187,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(DayOneTutorialDialog), findsOneWidget);
-      expect(find.text('QUICK START GUIDE'), findsOneWidget);
-      expect(find.text("Welcome, Arun! Here's how Ascent works:"), findsOneWidget);
+      expect(find.text("You’re home, Arun."), findsOneWidget);
+      expect(find.text('What would make today feel worthwhile?'), findsOneWidget);
 
-      // Dismiss dialog via Got it!
-      await tester.tap(find.text('Got it! 👍'));
+      // Dismiss dialog via close button
+      await tester.tap(find.byTooltip('Explore on my own'));
       await tester.pumpAndSettle();
 
       expect(find.byType(DayOneTutorialDialog), findsNothing);

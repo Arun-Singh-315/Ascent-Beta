@@ -153,7 +153,7 @@ void main() {
               find.byKey(ValueKey('home_thought_${thoughts[2].id}')),
               findsNothing,
             );
-            expect(find.text('View all'), findsOneWidget);
+            expect(find.text('View ›'), findsWidgets);
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox());
             await tester.pumpAndSettle();

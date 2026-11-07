@@ -31,7 +31,9 @@ Future<T?> showAscentFrostedDialog<T>({
     barrierDismissible: barrierDismissible,
     barrierLabel: barrierLabel,
     barrierColor: effectiveBarrierColor,
-    transitionDuration: transitionDuration,
+    transitionDuration: MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : transitionDuration,
     pageBuilder: (dialogContext, animation, secondaryAnimation) =>
         builder(dialogContext),
     transitionBuilder: (dialogContext, anim, secondaryAnim, child) {

@@ -1,3 +1,4 @@
+import 'ascent_button.dart';
 import 'dart:ui';
 
 import 'package:ascent/app/theme/dimension_tokens.dart';
@@ -141,55 +142,19 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         drawer: const AscentDrawer(),
         extendBody: true,
         body: widget.shell,
-        floatingActionButton: MediaQuery.viewInsetsOf(context).bottom > 0
+        floatingActionButton:
+            MediaQuery.viewInsetsOf(context).bottom > 0 ||
+                widget.shell.currentIndex == 0
             ? null
-            : Material(
-                color: context.glass.primaryButtonBg,
-                shape: const StadiumBorder(),
-                elevation: 4,
-                shadowColor: context.glass.primaryButtonBg.withValues(
-                  alpha: .28,
-                ),
-                child: InkWell(
-                  key: const ValueKey('global_ask_assistant'),
-                  customBorder: const StadiumBorder(),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    AiAssistantScreen.showFromHome(context);
-                  },
-                  child: Semantics(
-                    button: true,
-                    label: assistantLabel,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: SizedBox(
-                        height: 48,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 19,
-                              color: context.glass.primaryButtonFg,
-                            ),
-                            const SizedBox(width: 9),
-                            Text(
-                              assistantLabel,
-                              style: TextStyle(
-                                color: context.glass.primaryButtonFg,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: .1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            : AscentButton.primary(
+                key: const ValueKey('global_ask_assistant'),
+                label: assistantLabel,
+                icon: Icons.auto_awesome_rounded,
+                compact: true,
+                expanded: false,
+                onPressed: () => AiAssistantScreen.showFromHome(context),
               ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
           onTap: (index) {

@@ -19,8 +19,9 @@ import '../../today/models/things_intelligence.dart';
 
 /// Type first. Optional controls keep the normal path to a single send.
 class ActivityComposer extends ConsumerStatefulWidget {
-  const ActivityComposer({super.key, this.focusNode});
+  const ActivityComposer({super.key, this.focusNode, this.initialTitle});
   final FocusNode? focusNode;
+  final String? initialTitle;
   @override
   ConsumerState<ActivityComposer> createState() => _ActivityComposerState();
 }
@@ -28,7 +29,8 @@ class ActivityComposer extends ConsumerStatefulWidget {
 class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   final _text = TextEditingController();
   FocusNode? _internalFocus;
-  FocusNode get _effectiveFocus => widget.focusNode ?? (_internalFocus ??= FocusNode());
+  FocusNode get _effectiveFocus =>
+      widget.focusNode ?? (_internalFocus ??= FocusNode());
   ActivityKind _kind = ActivityKind.todo;
   int _minutes = 30;
   DateTime? _date;
@@ -41,6 +43,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void initState() {
     super.initState();
+    _text.text = widget.initialTitle ?? '';
     _text.addListener(_changed);
     _effectiveFocus.addListener(_changed);
   }
@@ -398,7 +401,12 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             builder: (context) {
               final enrichment = ThingsEnrichmentEngine.analyzeText(_text.text);
               return Padding(
-                padding: const EdgeInsets.only(top: 6, bottom: 4, left: 6, right: 6),
+                padding: const EdgeInsets.only(
+                  top: 6,
+                  bottom: 4,
+                  left: 6,
+                  right: 6,
+                ),
                 child: Wrap(
                   spacing: 6,
                   runSpacing: 4,

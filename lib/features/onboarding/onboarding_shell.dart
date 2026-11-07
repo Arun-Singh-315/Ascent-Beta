@@ -1,24 +1,20 @@
+import '../../app/theme/app_theme.dart';
+import '../../app/theme/shared_control_tokens.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:intl/intl.dart';
 
-import '../../app/theme/color_tokens.dart';
-import '../../app/theme/glass_theme.dart';
-import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
-import '../../shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_button.dart';
-import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_logo.dart';
-import '../../core/services/cosmic_profile_service.dart';
 
 // ---------------------------------------------------------------------------
 // Onboarding State Model & Provider
@@ -216,1470 +212,412 @@ final onboardingProvider =
       OnboardingNotifier.new,
     );
 
-// ---------------------------------------------------------------------------
-// Main Onboarding Shell Widget
-// ---------------------------------------------------------------------------
-
-class OnboardingShell extends ConsumerStatefulWidget {
+/// A two-step welcome with one persistent primary action. Setup is optional.
+class OnboardingShell extends StatelessWidget {
   const OnboardingShell({super.key});
-
   @override
-  ConsumerState<OnboardingShell> createState() => _OnboardingShellState();
+  Widget build(BuildContext context) => Theme(
+    data: AscentTheme.light(preset: DayThemePreset.nordicSky),
+    child: const _WelcomeFlow(),
+  );
 }
 
-class _OnboardingShellState extends ConsumerState<OnboardingShell> {
-  final _pageController = PageController();
-  final _nameController = TextEditingController();
-  final _roleController = TextEditingController();
+class _WelcomeFlow extends ConsumerStatefulWidget {
+  const _WelcomeFlow();
+  @override
+  ConsumerState<_WelcomeFlow> createState() => _WelcomeFlowState();
+}
 
-  static const _totalSteps = 3;
+class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
+  final _name = TextEditingController();
+  String? _error;
+  static const ink = Color(0xFF202D3F);
+  static const muted = Color(0xFF607087);
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _nameController.dispose();
-    _roleController.dispose();
+    _name.dispose();
     super.dispose();
   }
 
-  void _goToStep(int step) {
-    ref.read(onboardingProvider.notifier).setStep(step);
-    _pageController.animateToPage(
-      step,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _nextStep() {
-    final current = ref.read(onboardingProvider).stepIndex;
-    if (current < _totalSteps - 1) {
-      _goToStep(current + 1);
-    } else {
-      _finishOnboarding();
+  Future<void> _continue() async {
+    final notifier = ref.read(onboardingProvider.notifier);
+    if (ref.read(onboardingProvider).stepIndex == 0) {
+      HapticFeedback.selectionClick();
+      notifier.setStep(1);
+      return;
     }
-  }
-
-  void _prevStep() {
-    final current = ref.read(onboardingProvider).stepIndex;
-    if (current > 0) {
-      _goToStep(current - 1);
+    FocusScope.of(context).unfocus();
+    final name = _name.text.trim();
+    if (name.isNotEmpty && name.runes.length < 2) {
+      setState(
+        () => _error = 'Use at least two characters, or leave this blank.',
+      );
+      return;
     }
-  }
-
-  Future<void> _finishOnboarding() async {
-    HapticFeedback.mediumImpact();
-    final saved = await ref
-        .read(onboardingProvider.notifier)
-        .submitAndSeedPlan(context, ref);
+    notifier.updateNameRole(name, 'Mindful Growth');
+    final saved = name.isEmpty
+        ? await notifier.startWithoutSetup()
+        : await notifier.submitAndSeedPlan(context, ref);
     if (!mounted) return;
     if (saved) {
       context.go(NotificationService.consumePendingDestination() ?? '/home');
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save your setup. Please try again.'),
-        ),
-      );
+      setState(() => _error = 'Could not save your choice. Please try again.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final currentStep = state.stepIndex;
-
+    final first = state.stepIndex == 0;
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return PopScope(
-      canPop: currentStep == 0,
+      canPop: first,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && currentStep > 0) {
-          _prevStep();
+        if (!didPop && !state.isSubmitting) {
+          ref.read(onboardingProvider.notifier).setStep(0);
         }
       },
       child: Scaffold(
-        backgroundColor: context.bgBase,
-        appBar: AppBar(
-          backgroundColor: context.bgBase,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: currentStep > 0
-              ? Padding(
-                  padding: const EdgeInsets.all(AppSpace.s8),
-                  child: AscentButton.icon(
-                    icon: Icons.arrow_back_rounded,
-                    compact: true,
-                    onPressed: _prevStep,
-                  ),
-                )
-              : null,
-          title: _ProgressDots(total: _totalSteps, current: currentStep),
-          centerTitle: true,
-          actions: [
-            TextButton(
-              onPressed: state.isSubmitting
-                  ? null
-                  : () async {
-                      final saved = await ref
-                          .read(onboardingProvider.notifier)
-                          .startWithoutSetup();
-                      if (!context.mounted) return;
-                      if (saved) {
-                        context.go(
-                          NotificationService.consumePendingDestination() ??
-                              '/home',
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Could not save your choice. Please try again.',
-                            ),
-                          ),
-                        );
-                      }
-                    },
-              child: const Text('Start now'),
-            ),
-          ],
-        ),
+        backgroundColor: const Color(0xFFF6F8FC),
         body: SafeArea(
-          child: PageView(
-            controller: _pageController,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _StepVision(onContinue: _nextStep),
-              _StepSanctuarySetup(
-                nameController: _nameController,
-                roleController: _roleController,
-                onContinue: _nextStep,
-              ),
-              _StepSanctuarySealed(onFinish: _finishOnboarding),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Animated Progress Dots Indicator
-// ---------------------------------------------------------------------------
-
-class _ProgressDots extends StatelessWidget {
-  final int total;
-  final int current;
-
-  const _ProgressDots({required this.total, required this.current});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(total, (index) {
-        final isCurrent = index == current;
-        final isCompleted = index < current;
-
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
-          height: 6,
-          width: isCurrent ? 28 : 8,
-          decoration: BoxDecoration(
-            borderRadius: AppGeometry.roundedr3,
-            color: isCurrent
-                ? context.accentPrimary
-                : isCompleted
-                ? context.accentPrimary.withValues(alpha: 0.45)
-                : context.divider,
-          ),
-        );
-      }),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Screen 1: The Ascent Odyssey (Creative Vision & Pillars)
-// ---------------------------------------------------------------------------
-
-class _StepVision extends StatefulWidget {
-  final VoidCallback onContinue;
-
-  const _StepVision({required this.onContinue});
-
-  @override
-  State<_StepVision> createState() => _StepVisionState();
-}
-
-class _StepVisionState extends State<_StepVision>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _haloController;
-
-  @override
-  void initState() {
-    super.initState();
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
-    _haloController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    );
-    if (!isTest) {
-      _haloController.repeat(reverse: true);
-    } else {
-      _haloController.value = 0.5;
-    }
-  }
-
-  @override
-  void dispose() {
-    _haloController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-    final g = context.glass;
-
-    return _ScrollableSetup(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s20,
-          vertical: AppSpace.s12,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 12),
-
-            // Animated breathing emblem with halo
-            AnimatedBuilder(
-              animation: _haloController,
-              builder: (context, child) {
-                final pulse = _haloController.value;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 90 + (pulse * 16),
-                      height: 90 + (pulse * 16),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            context.accentPrimary.withValues(
-                              alpha: 0.24 + (pulse * 0.16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Row(
+                      children: [
+                        if (!first)
+                          IconButton(
+                            tooltip: 'Back',
+                            onPressed: state.isSubmitting
+                                ? null
+                                : () => ref
+                                      .read(onboardingProvider.notifier)
+                                      .setStep(0),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              size: 20,
+                              color: ink,
                             ),
-                            Colors.transparent,
-                          ],
+                          )
+                        else
+                          const AscentLogo(size: 32),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Ascent',
+                          style: AscentTextStyles.homeTitle.copyWith(
+                            fontSize: 18,
+                            color: ink,
+                          ),
                         ),
+                        const Spacer(),
+                        Text(
+                          first ? '01 / 02' : '02 / 02',
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            color: muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: Duration(milliseconds: reducedMotion ? 0 : 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, .025),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        key: ValueKey(first),
+                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+                        child: first ? _intro() : _personalize(state),
                       ),
                     ),
-                    const AscentLogo(size: 68),
-                  ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            // Privacy tag badge
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s10,
-                vertical: AppSpace.s4,
-              ),
-              decoration: BoxDecoration(
-                color: g.fill,
-                borderRadius: AppGeometry.roundedr16,
-                border: Border.all(
-                  color: g.line,
-                  width: AppBorderScale.w0point8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.shield_outlined,
-                    size: 13,
-                    color: context.accentPrimary,
                   ),
-                  const SizedBox(width: 5),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '100% ON-DEVICE • PRIVATE LIFE OS',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: textMuted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.6,
+                  // The next step never lives inside the scrollable content.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(
+                                color: SharedControlColors.dueRed,
+                              ),
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                first
+                                    ? 'Less setup. More living.'
+                                    : 'Everything else can wait.',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: muted,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            AscentButton.primary(
+                              key: const ValueKey('onboarding_next'),
+                              label: first ? 'Continue' : 'Open Ascent',
+                              icon: Icons.arrow_forward_rounded,
+                              loading: state.isSubmitting,
+                              expanded: false,
+                              compact: true,
+                              onPressed: state.isSubmitting ? null : _continue,
+                            ),
+                          ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 16),
-
-            // Headline
-            Text(
-              'Where clarity meets quiet discipline.',
-              style: AscentTextStyles.displayLarge.copyWith(
-                color: textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-
-            // Subtitle
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 340),
-              child: Text(
-                'Ascent is your private space to declutter your mind, honor your word, and move through every day with intention.',
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: textMuted,
-                  height: 1.45,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 4 Pillars of Ascent
-            _PillarCard(
-              icon: Icons.psychology_outlined,
-              iconTint: g.coral,
-              tag: 'CLARITY',
-              title: 'Mind Palace',
-              subtitle:
-                  'Unfiltered self-talk, sparks & voice reflections. Zero cloud tracking, strictly on-device.',
-            ),
-            const SizedBox(height: 10),
-
-            _PillarCard(
-              icon: Icons.lock_clock_outlined,
-              iconTint: g.amber,
-              tag: 'INTEGRITY',
-              title: 'Sacred Promises',
-              subtitle:
-                  'Honor commitments made to yourself and others with quiet, unwavering discipline.',
-            ),
-            const SizedBox(height: 10),
-
-            _PillarCard(
-              icon: Icons.spa_outlined,
-              iconTint: g.sage,
-              tag: 'VITALITY',
-              title: 'Daily Rhythms',
-              subtitle:
-                  'Mindful chai breaks, medicine schedules, hydration & deep focus hours.',
-            ),
-            const SizedBox(height: 10),
-
-            _PillarCard(
-              icon: Icons.stars_rounded,
-              iconTint: context.accentPrimary,
-              tag: 'PRESENCE',
-              title: 'AI Companion (Aria / Riya)',
-              subtitle:
-                  'A private confidant that listens, structures thoughts, and anchors your focus.',
-            ),
-
-            const SizedBox(height: 28),
-
-            // CTA
-            AscentButton.primary(
-              label: 'Begin Your Ascent →',
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                widget.onContinue();
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );
   }
-}
 
-class _PillarCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconTint;
-  final String tag;
-  final String title;
-  final String subtitle;
-
-  const _PillarCard({
-    required this.icon,
-    required this.iconTint,
-    required this.tag,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-    final g = context.glass;
-
-    return AscentCard.glass(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s14,
-        vertical: AppSpace.s12,
+  Widget _intro() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'A LITTLE ROOM FOR YOU',
+        style: AscentTextStyles.labelSmall.copyWith(
+          color: muted,
+          letterSpacing: 1.4,
+          fontSize: 10.5,
+        ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconTint.withValues(alpha: 0.14),
-              borderRadius: AppGeometry.roundedr10,
-              border: Border.all(
-                color: iconTint.withValues(alpha: 0.3),
-                width: AppBorderScale.w0point8,
-              ),
-            ),
-            child: Icon(icon, size: 20, color: iconTint),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s6,
-                          vertical: AppSpace.s2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: g.fill,
-                          borderRadius: AppGeometry.roundedr3,
-                          border: Border.all(
-                            color: g.line,
-                            width: AppBorderScale.w0point8,
-                          ),
-                        ),
-                        child: Text(
-                          tag,
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: iconTint,
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: textMuted,
-                    fontSize: 12,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      const SizedBox(height: 12),
+      Text(
+        'Small steps.\nClearer days.',
+        style: AscentTextStyles.homeTitle.copyWith(
+          color: ink,
+          fontSize: 34,
+          height: 1.12,
+          letterSpacing: -1.2,
+        ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Screen 2: Shape Your Sanctuary (No Useless Questions!)
-// ---------------------------------------------------------------------------
-
-class _StepSanctuarySetup extends ConsumerStatefulWidget {
-  final TextEditingController nameController;
-  final TextEditingController roleController;
-  final VoidCallback onContinue;
-
-  const _StepSanctuarySetup({
-    required this.nameController,
-    required this.roleController,
-    required this.onContinue,
-  });
-
-  @override
-  ConsumerState<_StepSanctuarySetup> createState() =>
-      _StepSanctuarySetupState();
-}
-
-class _StepSanctuarySetupState extends ConsumerState<_StepSanctuarySetup> {
-  static const _intentions = [
-    'Inner Peace',
-    'Deep Focus',
-    'Self-Mastery',
-    'Creative Flow',
-    'Healthy Habits',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    widget.nameController.addListener(_rebuild);
-    widget.roleController.addListener(_rebuild);
-  }
-
-  @override
-  void dispose() {
-    widget.nameController.removeListener(_rebuild);
-    widget.roleController.removeListener(_rebuild);
-    super.dispose();
-  }
-
-  void _rebuild() {
-    if (mounted) setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-    final g = context.glass;
-    final state = ref.watch(onboardingProvider);
-    final notifier = ref.read(onboardingProvider.notifier);
-
-    final name = widget.nameController.text.trim();
-    final isNameValid = name.length >= 2;
-
-    return _ScrollableSetup(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s20,
-          vertical: AppSpace.s12,
+      const SizedBox(height: 12),
+      Text(
+        'A place for what you want to do, what’s on your mind, and the little routines that matter.',
+        style: AscentTextStyles.body.copyWith(color: muted, height: 1.5),
+      ),
+      const SizedBox(height: 24),
+      Container(
+        key: const ValueKey('onboarding_preview'),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFE9F0FD), Color(0xFFF0F5F2), Color(0xFFFBF0E8)],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 8),
-
-            // Header
-            Text(
-              'Shape your sanctuary.',
-              style: AscentTextStyles.displayLarge.copyWith(
-                color: textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-              ),
+            Row(
+              children: [
+                const Icon(
+                  Icons.wb_twilight_outlined,
+                  size: 20,
+                  color: SharedControlColors.actionBlue,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'A day with a little more space',
+                    style: AscentTextStyles.labelMedium.copyWith(color: ink),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 18),
+            _previewRow(
+              Icons.radio_button_unchecked,
+              'One thing worth doing',
+              'Things Hub',
+              const Color(0xFFFFFFFF),
+            ),
+            const SizedBox(height: 10),
+            _previewRow(
+              Icons.edit_note_rounded,
+              'An idea worth keeping',
+              'Thought Wall',
+              const Color(0xFFFFFAF6),
+            ),
+            const SizedBox(height: 16),
             Text(
-              'No corporate quizzes or endless forms. Just your private space, tailored to your flow.',
-              style: AscentTextStyles.bodyMedium.copyWith(
-                color: textMuted,
+              'Your own plans and thoughts will live here.',
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: muted,
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // 1. Name Input
-            Row(
-              children: [
-                Text(
-                  'Your Name',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '*',
-                  style: TextStyle(
-                    color: context.stateDanger,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Unified single-enclosure glass input (Rule 19 compliant)
-            TextField(
-              controller: widget.nameController,
-              textCapitalization: TextCapitalization.words,
-              style: AscentTextStyles.bodyMedium.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: InputDecoration(
-                hintText: 'e.g. Alex, Arun',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                  color: textMuted.withValues(alpha: 0.6),
-                ),
-                filled: true,
-                fillColor: g.fill,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s14,
-                  vertical: AppSpace.s12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                  borderSide: BorderSide(
-                    color: g.line,
-                    width: AppBorderScale.w0point8,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                  borderSide: BorderSide(
-                    color: g.line,
-                    width: AppBorderScale.w0point8,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                  borderSide: BorderSide(
-                    color: context.accentPrimary,
-                    width: AppBorderScale.w1point2,
-                  ),
-                ),
-              ),
-              onChanged: (val) {
-                notifier.updateNameRole(val, widget.roleController.text);
-              },
-            ),
-
-            const SizedBox(height: 18),
-
-            // Date of Birth (Optional)
-            Wrap(
-              spacing: 6,
-              runSpacing: 2,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  'Date of Birth',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '(Optional · for daily personal sparks)',
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            InkWell(
-              key: const ValueKey('onboarding_dob_picker'),
-              onTap: () async {
-                HapticFeedback.lightImpact();
-                final now = DateTime.now();
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: state.dateOfBirth ?? DateTime(2000, 1, 1),
-                  firstDate: DateTime(1900),
-                  lastDate: now,
-                  builder: (ctx, child) {
-                    return Theme(
-                      data: Theme.of(context).copyWith(
-                        colorScheme: Theme.of(context).colorScheme.copyWith(
-                          primary: context.accentPrimary,
-                          onPrimary: Colors.white,
-                          surface: g.fill,
-                          onSurface: textPrimary,
-                        ),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (picked != null) {
-                  notifier.setDateOfBirth(picked);
-                }
-              },
-              borderRadius: AppGeometry.roundedr12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s14,
-                  vertical: AppSpace.s12,
-                ),
-                decoration: BoxDecoration(
-                  color: g.fill,
-                  borderRadius: AppGeometry.roundedr12,
-                  border: Border.all(
-                    color: g.line,
-                    width: AppBorderScale.w0point8,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.cake_outlined,
-                      size: 18,
-                      color: state.dateOfBirth != null
-                          ? context.accentPrimary
-                          : textMuted,
-                    ),
-                    const SizedBox(width: AppSpace.s10),
-                    Expanded(
-                      child: Text(
-                        state.dateOfBirth != null
-                            ? DateFormat('d MMMM yyyy').format(state.dateOfBirth!)
-                            : 'Set birth date for daily cosmic energy',
-                        style: AscentTextStyles.bodyMedium.copyWith(
-                          color: state.dateOfBirth != null
-                              ? textPrimary
-                              : textMuted.withValues(alpha: 0.6),
-                        ),
-                      ),
-                    ),
-                    if (state.dateOfBirth != null)
-                      IconButton(
-                        tooltip: 'Clear birth date',
-                        icon: Icon(Icons.close_rounded, size: 16, color: textMuted),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          notifier.setDateOfBirth(null);
-                        },
-                      )
-                    else
-                      Icon(Icons.calendar_today_outlined, size: 16, color: textMuted),
-                  ],
-                ),
-              ),
-            ),
-            if (state.dateOfBirth != null) ...[
-              const SizedBox(height: 8),
-              Builder(
-                builder: (context) {
-                  const service = CosmicProfileService();
-                  final sign = service.getZodiac(state.dateOfBirth!);
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: context.accentPrimary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          '(${sign.element.icon} ${sign.element.label})',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-
-            const SizedBox(height: 22),
-
-            // 2. AI Companion Identity Choice
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'AI Companion Identity',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Switch anytime in Settings',
-                        style: AscentTextStyles.bodySmall.copyWith(
-                          color: textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 280;
-                return isNarrow
-                    ? Column(
-                        children: [
-                          _CompanionChoiceCard(
-                            title: '✦ Aria',
-                            description: 'Poetic, thoughtful & reflective',
-                            accent: g.coral,
-                            isSelected: state.companionName == 'Aria',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              notifier.setCompanion('Aria');
-                            },
-                          ),
-                          const SizedBox(height: 8),
-                          _CompanionChoiceCard(
-                            title: '✦ Riya',
-                            description: 'Sharp, focused & proactive',
-                            accent: g.amber,
-                            isSelected: state.companionName == 'Riya',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              notifier.setCompanion('Riya');
-                            },
-                          ),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: _CompanionChoiceCard(
-                              title: '✦ Aria',
-                              description: 'Poetic & reflective',
-                              accent: g.coral,
-                              isSelected: state.companionName == 'Aria',
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                notifier.setCompanion('Aria');
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _CompanionChoiceCard(
-                              title: '✦ Riya',
-                              description: 'Sharp & proactive',
-                              accent: g.amber,
-                              isSelected: state.companionName == 'Riya',
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                notifier.setCompanion('Riya');
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-              },
-            ),
-
-            const SizedBox(height: 22),
-
-            // 3. Visual Atmosphere (Live Theme Switcher)
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Visual Atmosphere',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Tap to preview live theme atmosphere',
-                        style: AscentTextStyles.bodySmall.copyWith(
-                          color: textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Expanded(
-                  child: _AtmosphereCard(
-                    title: 'Merlot',
-                    subtitle: 'Wine & Linen',
-                    color: const Color(0xFF9E2A42),
-                    isSelected: state.themePreset == DayThemePreset.merlotLinen,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      notifier.setThemePreset(DayThemePreset.merlotLinen);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _AtmosphereCard(
-                    title: 'Nordic',
-                    subtitle: 'Clear Sky',
-                    color: const Color(0xFF2E6B9E),
-                    isSelected: state.themePreset == DayThemePreset.nordicSky,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      notifier.setThemePreset(DayThemePreset.nordicSky);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _AtmosphereCard(
-                    title: 'Obsidian',
-                    subtitle: 'Dark Clay',
-                    color: const Color(0xFF38433B),
-                    isSelected: state.themePreset == DayThemePreset.classicClay,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      notifier.setThemePreset(DayThemePreset.classicClay);
-                    },
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 22),
-
-            // 4. Primary Intention (Optional)
-            Text(
-              'Primary Focus (optional)',
-              style: AscentTextStyles.labelSmall.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: _intentions.map((intention) {
-                final isSelected = state.focusArea == intention;
-                return AppPill.filter(
-                  label: Text(intention),
-                  selected: isSelected,
-                  selectedColor: context.accentPrimary.withValues(alpha: 0.16),
-                  checkmarkColor: context.accentPrimary,
-                  backgroundColor: isSelected
-                      ? context.accentPrimary.withValues(alpha: 0.12)
-                      : g.fill,
-                  side: BorderSide(
-                    color: isSelected ? context.accentPrimary : g.line,
-                    width: AppBorderScale.w0point8,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppGeometry.roundedr8,
-                  ),
-                  labelStyle: AscentTextStyles.bodySmall.copyWith(
-                    color: isSelected ? context.accentPrimary : textPrimary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  onSelected: (_) {
-                    HapticFeedback.selectionClick();
-                    notifier.setFocusArea(intention);
-                    widget.roleController.text = intention;
-                  },
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Continue Button
-            AscentButton.primary(
-              label: isNameValid ? 'Establish Sanctuary →' : 'Enter your name',
-              onPressed: isNameValid
-                  ? () {
-                      HapticFeedback.lightImpact();
-                      notifier.updateNameRole(name, widget.roleController.text);
-                      widget.onContinue();
-                    }
-                  : null,
-            ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
-    );
-  }
-}
+    ],
+  );
 
-class _CompanionChoiceCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final Color accent;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CompanionChoiceCard({
-    required this.title,
-    required this.description,
-    required this.accent,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-    final g = context.glass;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s12,
-          vertical: AppSpace.s12,
-        ),
+  Widget _previewRow(IconData icon, String title, String label, Color fill) =>
+      Container(
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? accent.withValues(alpha: 0.12) : g.fill,
-          borderRadius: AppGeometry.roundedr12,
-          border: Border.all(
-            color: isSelected ? accent : g.line,
-            width: isSelected
-                ? AppBorderScale.w1point2
-                : AppBorderScale.w0point8,
+          color: fill,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: SharedControlColors.actionBlue, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AscentTextStyles.labelSmall.copyWith(color: muted),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: AscentTextStyles.labelMedium.copyWith(color: ink),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _personalize(OnboardingDraftState state) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'YOUR SPACE, YOUR PACE',
+        style: AscentTextStyles.labelSmall.copyWith(
+          color: muted,
+          letterSpacing: 1.4,
+          fontSize: 10.5,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'Make yourself\nat home.',
+        style: AscentTextStyles.homeTitle.copyWith(
+          color: ink,
+          fontSize: 32,
+          height: 1.15,
+          letterSpacing: -1,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        'A name is a nice place to start. Leave it blank if you’d rather settle in first.',
+        style: AscentTextStyles.body.copyWith(color: muted, height: 1.45),
+      ),
+      const SizedBox(height: 24),
+      TextField(
+        key: const ValueKey('onboarding_name'),
+        controller: _name,
+        enabled: !state.isSubmitting,
+        textCapitalization: TextCapitalization.words,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _continue(),
+        onChanged: (_) => setState(() => _error = null),
+        decoration: InputDecoration(
+          labelText: 'Your name · optional',
+          hintText: 'What should we call you?',
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: const BorderSide(color: Color(0xFFE0E7F0)),
           ),
         ),
-        child: Column(
+      ),
+      const SizedBox(height: 24),
+      Text(
+        'Your companion',
+        style: AscentTextStyles.labelMedium.copyWith(color: ink),
+      ),
+      const SizedBox(height: 8),
+      AscentSegmentedControl<String>(
+        segments: const [
+          AscentSegment(value: 'Aria', label: 'Aria'),
+          AscentSegment(value: 'Riya', label: 'Riya'),
+        ],
+        selected: state.companionName,
+        enabled: !state.isSubmitting,
+        onChanged: (value) =>
+            ref.read(onboardingProvider.notifier).setCompanion(value),
+      ),
+      const SizedBox(height: 20),
+      Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDF3F0),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: isSelected ? accent : textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+            const Icon(Icons.spa_outlined, color: Color(0xFF4F7563), size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Start with something small.',
+                    style: AscentTextStyles.cardTitle.copyWith(
+                      color: ink,
+                      fontSize: 17,
                     ),
                   ),
-                ),
-                if (isSelected)
-                  Icon(Icons.check_circle_rounded, size: 16, color: accent),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: AscentTextStyles.bodySmall.copyWith(
-                color: textMuted,
-                fontSize: 11,
-                height: 1.3,
+                  const SizedBox(height: 6),
+                  Text(
+                    'Begin with one thing, and let your day take shape. Your first step is yours to choose.',
+                    style: AscentTextStyles.bodySmall.copyWith(
+                      color: muted,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AtmosphereCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _AtmosphereCard({
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-    final g = context.glass;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s8,
-          vertical: AppSpace.s10,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : g.fill,
-          borderRadius: AppGeometry.roundedr12,
-          border: Border.all(
-            color: isSelected ? color : g.line,
-            width: isSelected
-                ? AppBorderScale.w1point2
-                : AppBorderScale.w0point8,
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check, size: 12, color: Colors.white)
-                  : null,
-            ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                title,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: isSelected ? color : textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                subtitle,
-                style: AscentTextStyles.bodySmall.copyWith(
-                  color: textMuted,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Screen 3: Sanctuary Sealed (Celebration & Entry)
-// ---------------------------------------------------------------------------
-
-class _StepSanctuarySealed extends StatefulWidget {
-  final VoidCallback onFinish;
-
-  const _StepSanctuarySealed({required this.onFinish});
-
-  @override
-  State<_StepSanctuarySealed> createState() => _StepSanctuarySealedState();
-}
-
-class _StepSanctuarySealedState extends State<_StepSanctuarySealed>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
-    if (!isTest) {
-      _pulseController.repeat(reverse: true);
-    } else {
-      _pulseController.value = 0.5;
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  String _presetTitle(DayThemePreset preset) {
-    switch (preset) {
-      case DayThemePreset.merlotLinen:
-        return 'Vintage Merlot';
-      case DayThemePreset.nordicSky:
-        return 'Clear Sky';
-      case DayThemePreset.classicClay:
-        return 'Classic Obsidian';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        final state = ref.watch(onboardingProvider);
-        final textPrimary = context.textPrimary;
-        final textMuted = context.textMuted;
-        final g = context.glass;
-        final displayName = state.name.trim().isNotEmpty
-            ? state.name.trim()
-            : 'Traveler';
-
-        return _ScrollableSetup(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s20,
-              vertical: AppSpace.s16,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 18),
-
-                // Animated Concentric Pulse Ring with Shield
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    final pulse = _pulseController.value;
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 88 + (pulse * 14),
-                          height: 88 + (pulse * 14),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: context.accentPrimary.withValues(
-                              alpha: 0.12 + (pulse * 0.08),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: g.fill,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: context.accentPrimary,
-                              width: AppBorderScale.w1point2,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.shield_rounded,
-                            color: context.accentPrimary,
-                            size: 34,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'Sanctuary Sealed.',
-                  style: AscentTextStyles.displayLarge.copyWith(
-                    color: textPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  child: Text(
-                    'Welcome home, $displayName. Your thoughts, promises, and rhythms are encrypted locally on this device.',
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: textMuted,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Sanctuary Overview Card
-                AscentCard.glass(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s16,
-                    vertical: AppSpace.s14,
-                  ),
-                  child: Column(
-                    children: [
-                      _SanctuaryRecapRow(
-                        icon: Icons.stars_rounded,
-                        label: 'AI Companion',
-                        value: '✦ ${state.companionName}',
-                        accent: context.accentPrimary,
-                      ),
-                      AppDivider(color: g.line, height: 16),
-                      _SanctuaryRecapRow(
-                        icon: Icons.palette_outlined,
-                        label: 'Atmosphere',
-                        value: _presetTitle(state.themePreset),
-                        accent: g.amber,
-                      ),
-                      AppDivider(color: g.line, height: 16),
-                      _SanctuaryRecapRow(
-                        icon: Icons.lock_outline_rounded,
-                        label: 'Security',
-                        value: 'Hardware-backed SQLite',
-                        accent: g.sage,
-                      ),
-                      AppDivider(color: g.line, height: 16),
-                      _SanctuaryRecapRow(
-                        icon: Icons.center_focus_strong_rounded,
-                        label: 'Primary Focus',
-                        value: state.focusArea.isNotEmpty
-                            ? state.focusArea
-                            : 'Mindful Growth',
-                        accent: g.coral,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Enter Ascent CTA
-                AscentButton.primary(
-                  label: 'Enter Ascent →',
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    widget.onFinish();
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SanctuaryRecapRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color accent;
-
-  const _SanctuaryRecapRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final textPrimary = context.textPrimary;
-    final textMuted = context.textMuted;
-
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: accent),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            label,
-            style: AscentTextStyles.bodyMedium.copyWith(
-              color: textMuted,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: AscentTextStyles.labelSmall.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Scrollable Defensive Viewport Wrapper (Rule 13 Safeguard)
-// ---------------------------------------------------------------------------
-
-class _ScrollableSetup extends StatelessWidget {
-  const _ScrollableSetup({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) => SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-        child: child,
-      ),
-    ),
+    ],
   );
 }

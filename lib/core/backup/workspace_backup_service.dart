@@ -321,6 +321,13 @@ class WorkspaceBackupService {
       payload['historyBackfillRequired'] = true;
       payload['schema'] = 22;
     }
+    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
+        payload['schema'] == 22 && db.schemaVersion >= 23 && payload['tables'] is Map) {
+      for (final row in (payload['tables']['tasks'] as List? ?? [])) {
+        (row as Map).putIfAbsent('is_daily_standing', () => 0);
+      }
+      payload['schema'] = 23;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {

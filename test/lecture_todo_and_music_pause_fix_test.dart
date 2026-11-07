@@ -107,7 +107,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Algorithms: Graphs BFS'), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
         expect(find.textContaining('/ 15m'), findsNothing);
         expect(find.textContaining('tracked'), findsNothing);
         expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);

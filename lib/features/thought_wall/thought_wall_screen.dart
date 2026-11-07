@@ -671,7 +671,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   void _selectFilter(String key) {
     setState(() {
       _categoryFilter = key;
-      if (_categories.containsKey(key)) _viewToggle = 'all';
+      if (key == 'archived' || _categories.containsKey(key)) _viewToggle = 'all';
       _archiveFilter = key == 'archived' ? 'archived' : 'active';
       _openedThoughtId = null;
       _selectedIds.clear();
@@ -1786,13 +1786,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 offset: const Offset(0, 2),
               ),
             ]
-          : isBubble
+          : isBubble && widget.appearance.bubbleFilled
           ? [
               BoxShadow(
                 color: moodAccent.withValues(
-                  alpha: widget.appearance.bubbleFilled
-                      ? (isDark ? 0.10 : 0.05)
-                      : (isDark ? 0.04 : 0.02),
+                  alpha: isDark ? 0.10 : 0.05,
                 ),
                 blurRadius: 8,
                 spreadRadius: 0,

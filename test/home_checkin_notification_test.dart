@@ -49,7 +49,10 @@ void main() {
         expect(await scheduleReminderOnDevice(db, plan.reminder), isTrue);
         expect(await scheduleReminderOnDevice(db, plan.checkIn!), isTrue);
         expect(requests, hasLength(2));
-        expect(requests.first['payload'], '/home');
+        expect(
+          requests.first['payload'],
+          '/today?task=${plan.reminder.linkedTaskId}',
+        );
         final check = requests.last;
         expect(
           check['payload'],

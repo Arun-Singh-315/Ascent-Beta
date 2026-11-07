@@ -125,6 +125,13 @@ class NotificationService {
       return '/home';
     }
 
+    if (uri.queryParameters.containsKey('checkin')) {
+      final checkinVal = uri.queryParameters['checkin'];
+      if (checkinVal == null || int.tryParse(checkinVal) == null) {
+        return '/home';
+      }
+    }
+
     final path = uri.path;
 
     const baseDestinations = {

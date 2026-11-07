@@ -86,7 +86,10 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Start now'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('onboarding_next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('onboarding_next')));
     await tester.pumpAndSettle();
     expect(find.text('Daily tools ready'), findsOneWidget);
     expect(canEnterWorkspace(null, prefs), isTrue);

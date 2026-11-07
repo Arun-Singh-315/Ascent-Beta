@@ -987,7 +987,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       );
     }
 
-    final Widget? timedAction = timed
+    final Widget? timedAction = (timed && !done)
         ? (activity.isScheduledInFuture
             ? Semantics(
                 button: true,
@@ -1250,7 +1250,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   const SizedBox(width: 6),
                   scheduledBadge,
                 ],
-                if (!timed && done) ...[
+                if (done) ...[
                   const SizedBox(width: 6),
                   const GlassChip(
                     label: 'Done',

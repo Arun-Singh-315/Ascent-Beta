@@ -114,7 +114,14 @@ void main() {
       expect(text.maxLines, 2);
       expect(text.overflow, TextOverflow.ellipsis);
       expect(tester.getSize(bubble).height, lessThan(80));
-      expect(tester.getTopLeft(bubble).dx, 20);
+      expect(
+        tester.getTopLeft(bubble).dx,
+        greaterThan(
+          tester
+              .getTopLeft(find.byKey(const ValueKey('home_thought_studio')))
+              .dx,
+        ),
+      );
       expect(tester.takeException(), isNull);
       await tester.runAsync(() async {
         final rendered =
@@ -220,4 +227,44 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('Compact Home capture saves a note without creating a task', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: MaterialApp(
+          theme: AscentTheme.light(),
+          home: const Scaffold(
+            body: SingleChildScrollView(
+              child: ThoughtWallHomePreview(compact: true),
+            ),
+          ),
+        ),
+      ),
+    );
+    await settle(tester);
+    await tester.enterText(find.byType(TextField), 'An idea worth keeping.');
+    await tester.pump();
+    await tester.tap(find.byTooltip('Send capture'));
+    await settle(tester);
+    await tester.runAsync(() async {
+      final thoughts = await db.thoughtDao.watchAllThoughts().first;
+      expect(thoughts.map((thought) => thought.content), [
+        'An idea worth keeping.',
+      ]);
+      expect(await db.select(db.taskTable).get(), isEmpty);
+    });
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      isEmpty,
+    );
+    expect(find.text('An idea worth keeping.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
 }

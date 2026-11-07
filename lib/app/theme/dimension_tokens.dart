@@ -57,7 +57,7 @@ class AscentDimensions {
   // ── Component Dimensions ───────────────────────────────────────────────────
   /// 40 px — Visible height of a standard `AscentButton`. The tap region stays
   /// [minTouchTarget] tall; only the drawn shape is slimmer.
-  static const double buttonVisualHeight = 40.0;
+  static const double buttonVisualHeight = 36.0;
 
   /// 32 px — Visible height of a compact `AscentButton` (same 48 px tap region).
   static const double buttonVisualHeightCompact = 32.0;

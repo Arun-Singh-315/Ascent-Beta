@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -11,6 +12,8 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
+import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
+import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/shared/widgets/animated_water_card.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +22,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeThoughtWallAppearanceNotifier extends ThoughtWallAppearanceNotifier {
+  @override
+  ThoughtWallAppearance build() => const ThoughtWallAppearance(
+    style: ThoughtCardStyle.bubble,
+    bubbleFilled: false,
+  );
+}
 
 double contrast(Color a, Color b) {
   final x = a.computeLuminance();
@@ -38,7 +49,13 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
         addTearDown(tester.view.resetDevicePixelRatio);
-        SharedPreferences.setMockInitialValues({});
+        SharedPreferences.setMockInitialValues({
+          thoughtWallAppearanceKey: jsonEncode({
+            'version': 1,
+            'style': 'bubble',
+            'bubbleFilled': false,
+          }),
+        });
         final prefs = await SharedPreferences.getInstance();
         final db = AppDatabase.forTesting(NativeDatabase.memory());
         addTearDown(db.close);
@@ -59,11 +76,20 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
+              thoughtWallAppearanceProvider.overrideWith(
+                () => _FakeThoughtWallAppearanceNotifier(),
+              ),
               recentThoughtsStreamProvider.overrideWith(
                 (ref) => Stream.value([thought]),
               ),
               thoughtCategoriesStreamProvider.overrideWith(
                 (ref) => Stream.value(ThoughtDao.builtInCategories),
+              ),
+              latestHomeThoughtProvider.overrideWith(
+                (ref) => Stream.value(thought),
+              ),
+              allPromisesStreamProvider.overrideWith(
+                (ref) => Stream.value([]),
               ),
             ],
             child: MaterialApp(
@@ -82,8 +108,19 @@ void main() {
                             thought: thought,
                             index: 0,
                             compact: true,
+                            appearance: const ThoughtWallAppearance(
+                              style: ThoughtCardStyle.bubble,
+                              bubbleFilled: false,
+                            ),
                           ),
-                          ThoughtCardBubble(thought: thought, index: 1),
+                          ThoughtCardBubble(
+                            thought: thought,
+                            index: 1,
+                            appearance: const ThoughtWallAppearance(
+                              style: ThoughtCardStyle.bubble,
+                              bubbleFilled: false,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -155,6 +192,7 @@ void main() {
           });
         }
         await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(seconds: 2));
       });
 
       testWidgets('Thought Wall uses its themed canvas: $name', (tester) async {
@@ -197,6 +235,7 @@ void main() {
         }
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(seconds: 2));
         await tester.pump();
       });
 
@@ -260,6 +299,7 @@ void main() {
             });
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(seconds: 2));
           }
         },
       );

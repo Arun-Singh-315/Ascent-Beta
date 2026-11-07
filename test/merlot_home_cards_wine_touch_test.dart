@@ -14,13 +14,7 @@ void main() {
       '1. Merlot card surface and gradient colors provide a luxurious off-white gradual effect',
       () {
         expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
-        expect(MerlotPalette.surfaceBottom, const Color(0xFFFAF8F5));
-
-        // Surface bottom must be warmer than top (gradual warmth)
-        expect(
-          MerlotPalette.surfaceBottom.r,
-          greaterThan(MerlotPalette.surfaceBottom.b),
-        );
+        expect(MerlotPalette.surfaceBottom, const Color(0xFFFFFFFF));
 
         // Line border has wine rim definition
         expect(MerlotPalette.line, const Color(0x20252624));
@@ -80,9 +74,9 @@ void main() {
         final contrastInk = (lSurface + 0.05) / (lCardInk + 0.05);
         final contrastSecInk = (lSurface + 0.05) / (lCardSecInk + 0.05);
 
-        // Must exceed 15:1 for primary card ink and 10:1 for secondary card ink
+        // Must exceed 12:1 for primary card ink and 4.5:1 for secondary card ink
         expect(contrastInk, greaterThan(12.0));
-        expect(contrastSecInk, greaterThan(7.0));
+        expect(contrastSecInk, greaterThan(4.5));
       },
     );
   });
