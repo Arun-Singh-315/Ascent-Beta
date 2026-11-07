@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
 import 'promise_reflection_sheet.dart';
@@ -74,9 +75,11 @@ class PromiseActions {
         await repo.markDayDone(promise.id);
       }
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        AscentSnackBar.applaud(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Progress saved.')));
+          message: 'Commitment honored! 👏',
+          subtitle: 'You showed up for yourself today 🌟',
+        );
       }
     } catch (error) {
       if (context.mounted) {

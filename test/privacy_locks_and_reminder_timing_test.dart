@@ -306,8 +306,8 @@ void main() {
 
   group('Day Theme Soft Off-White Polish Tests', () {
     test('MerlotPalette.canvas is soft soothing cashmere linen without bleached whitewash', () {
-      expect(MerlotPalette.canvas, equals(const Color(0xFFF5F3EF)));
-      expect(MerlotPalette.recessedWell, equals(const Color(0xFFF0EEEA)));
+      expect(MerlotPalette.canvas, equals(const Color(0xFFFBFBFD)));
+      expect(MerlotPalette.recessedWell, equals(const Color(0xFFF2F2F7)));
     });
 
     test('DayGlassMaterial produces pristine off-white canvas with subtle dark blend', () {

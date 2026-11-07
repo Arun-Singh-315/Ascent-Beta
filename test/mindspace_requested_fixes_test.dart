@@ -22,6 +22,12 @@ class DelayedDeleteDao extends TaskDao {
   DelayedDeleteDao(super.db);
   final gate = Completer<void>();
   @override
+  Future<void> archiveTask(int id) async {
+    await gate.future;
+    return super.archiveTask(id);
+  }
+
+  @override
   Future<int> deleteTask(int id, {bool bypassProtection = false}) async {
     await gate.future;
     return super.deleteTask(id, bypassProtection: bypassProtection);
@@ -98,6 +104,12 @@ void main() {
             linkedThoughtId: d.Value(id),
           ),
         );
+        final triggers = await db.customSelect(
+          "SELECT name FROM sqlite_master WHERE type='trigger'",
+        ).get();
+        for (final row in triggers) {
+          await db.customStatement('DROP TRIGGER IF EXISTS ${row.read<String>('name')}');
+        }
         await db.customStatement('ALTER TABLE thoughts DROP COLUMN category');
         await db.customStatement('PRAGMA user_version = 18');
         await db.close();
@@ -225,6 +237,11 @@ void main() {
 
           await settleDb(tester);
 
+          if (find.text('Delete').evaluate().isNotEmpty) {
+            await tester.tap(find.text('Delete'));
+            await settleDb(tester);
+          }
+
           expect(find.byKey(ValueKey('task_$id')), findsNothing);
           expect(tester.takeException(), isNull);
           if (fail) {
@@ -241,18 +258,19 @@ void main() {
               isNotNull,
             );
           } else {
-            expect(
-              await tester.runAsync(() => db.taskDao.getTaskById(id)),
-              isNull,
+            final archived = await tester.runAsync(
+              () => db.taskDao.getTaskById(id),
             );
+            expect(archived?.isArchived, true);
 
             await tester.tap(find.text('Undo'));
             await settleDb(tester);
 
-            expect(
-              await tester.runAsync(() => db.taskDao.getTaskById(id)),
-              isNotNull,
+            final restored = await tester.runAsync(
+              () => db.taskDao.getTaskById(id),
             );
+            expect(restored, isNotNull);
+            expect(restored?.isArchived, false);
             expect(
               await tester.runAsync(() => db.taskDao.getTaskById(child)),
               isNotNull,
@@ -324,7 +342,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.textContaining('Second reflection'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Category'));
+        await tester.tap(find.byTooltip('Move to category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Life Goals').last);
         await settleDb(tester);

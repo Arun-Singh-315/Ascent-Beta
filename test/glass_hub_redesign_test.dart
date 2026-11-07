@@ -133,11 +133,7 @@ void main() {
               .linkedTaskId,
           first,
         );
-        await t.tap(find.text('Priority: Normal').last);
-        await t.pumpAndSettle();
-        expect(find.text('P2 · Flexible, after other tasks'), findsOneWidget);
-        expect(find.text('P1 · Default, after urgent tasks'), findsOneWidget);
-        await t.tap(find.text('Urgent'));
+        await t.tap(find.byKey(ValueKey('activity_priority_task_$second')));
         await flush(t);
         await t.pumpAndSettle();
         final saved = await t.runAsync(() => db.taskDao.getTaskById(second));
@@ -150,7 +146,6 @@ void main() {
               .linkedTaskId,
           second,
         );
-        expect(find.text('Priority: Urgent'), findsOneWidget);
         await capture(t, 'priority');
         t.view.physicalSize = const Size(320, 1400);
         await t.pumpWidget(
@@ -171,9 +166,7 @@ void main() {
           ),
         );
         await t.pumpAndSettle();
-        await t.tap(find.text('Priority: Urgent'));
-        await t.pumpAndSettle();
-        expect(find.text('Change priority'), findsOneWidget);
+        expect(find.byType(ActivityHubCard), findsOneWidget);
 
         expect(t.takeException(), isNull);
       } finally {
@@ -343,10 +336,8 @@ void main() {
           lessThan(t.getTopLeft(find.text('A completed note')).dy),
         );
         expect(
-          t
-              .widget<GlassChip>(find.byKey(ValueKey('thought_done_$done')))
-              .success,
-          isTrue,
+          find.byKey(ValueKey('thought_left_done_$done')),
+          findsOneWidget,
         );
         expect(find.byTooltip('Edit thought'), findsNWidgets(2));
         await capture(t, 'thoughts-dark');
@@ -362,7 +353,7 @@ void main() {
         );
         await t.tap(find.widgetWithText(GlassChip, 'Archive'));
         await flush(t);
-        await t.tap(find.byKey(ValueKey('thought_done_$open')));
+        await t.tap(find.byKey(ValueKey('thought_left_done_$open')));
         await flush(t);
         expect(
           (await t.runAsync(

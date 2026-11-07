@@ -466,21 +466,26 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           style: AscentTextStyles.sectionHeading.copyWith(
             color: g.ink,
             fontWeight: FontWeight.w700,
-            fontSize: 15,
+            fontSize: 16,
           ),
         ),
         const SizedBox(width: AppSpace.s8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: g.claySoft.withValues(alpha: 0.25),
+            color: g.claySoft,
             borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+              width: 0.8,
+            ),
           ),
           child: Text(
             '$count',
             style: AscentTextStyles.labelSmall.copyWith(
               color: g.clay,
               fontWeight: FontWeight.w700,
+              fontSize: 12,
             ),
           ),
         ),
@@ -617,9 +622,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       },
       child: AscentScaffold(
         title: _selecting ? '${_selected.length} selected' : 'Mind Palace',
-        subtitle: _selecting
-            ? 'Tap cards to add or remove'
-            : 'Capture & clarity',
+        subtitle: _selecting ? 'Tap cards to add or remove' : null,
         glow2: g.glow2,
         showFeatureHelp: false,
         leading: _selecting
@@ -914,8 +917,37 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                                                     ? Icons.expand_less_rounded
                                                     : Icons.expand_more_rounded,
                                               ),
-                                              label: Text(
-                                                'Done · ${content.done.length}',
+                                              label: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    'Done',
+                                                    style: AscentTextStyles.bodyMedium.copyWith(
+                                                      color: g.ink,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                                                    decoration: BoxDecoration(
+                                                      color: g.claySoft,
+                                                      borderRadius: BorderRadius.circular(10),
+                                                      border: Border.all(
+                                                        color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+                                                        width: 0.8,
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      '${content.done.length}',
+                                                      style: AscentTextStyles.labelSmall.copyWith(
+                                                        color: g.clay,
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 11.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ),

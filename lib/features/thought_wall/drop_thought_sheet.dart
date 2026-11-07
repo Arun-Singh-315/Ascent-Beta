@@ -17,6 +17,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 /// Interactive modal for dropping or editing a thought, idea, or me-to-me self reflection.
 ///
@@ -37,11 +38,10 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
 
   /// Guided entry sheet, one promise at a time.
   static Future<void> showPromise(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
+      maxWidth: 420,
+      barrierDismissible: false,
       builder: (_) => const PromiseComposerDialog(),
     );
   }

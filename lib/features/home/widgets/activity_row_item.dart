@@ -26,6 +26,7 @@ import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
 import '../../plans/widgets/plan_protection_dialog.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
@@ -39,11 +40,13 @@ class ActivityRowItem extends ConsumerStatefulWidget {
 
   final bool compact;
   final VoidCallback? onViewCompleted;
+  final bool ground;
   const ActivityRowItem({
     super.key,
     required this.activity,
     this.compact = false,
     this.onViewCompleted,
+    this.ground = false,
   });
 
   @override
@@ -96,6 +99,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             }
             return false;
           }
+        }
+        if (context.mounted) {
+          final confirmed = await AscentDialog.confirm(
+            context: context,
+            title: 'Delete from Today?',
+            content: 'Are you sure you want to remove "${activity.title}" from today?',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Keep',
+            isDestructive: true,
+            icon: Icons.delete_outline_rounded,
+          );
+          return confirmed == true;
         }
         return true;
       },
@@ -166,13 +181,59 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         }
       },
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: AppSpace.s16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: SharedControlColors.actionBlue,
+              size: 22,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Complete',
+              style: TextStyle(
+                color: SharedControlColors.actionBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpace.s16),
-        decoration:BoxDecoration(color:Color.alphaBlend(g.primaryButtonBg.withValues(alpha:0.12),g.surface),borderRadius:BorderRadius.circular(14)),
-        child: Icon(
-          Icons.archive_outlined,
-          color: g.primaryButtonBg,
-          size: 22,
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(
+            g.primaryButtonBg.withValues(alpha: 0.12),
+            g.surface,
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Archive',
+              style: TextStyle(
+                color: g.primaryButtonBg,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.archive_outlined,
+              color: g.primaryButtonBg,
+              size: 20,
+            ),
+          ],
         ),
       ),
       child: AnimatedContainer(
@@ -822,21 +883,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       }
       if (activity.linkedTaskId == null) return;
       HapticFeedback.mediumImpact();
-      final messenger = ScaffoldMessenger.of(context);
-      final completedFeedback = AscentSnackBar.build(
-        context,
-        content: Text(
-          activity.isDailyStanding
-              ? 'Completed for today • Resets tomorrow'
-              : 'Task completed',
-        ),
-        action: widget.onViewCompleted == null
-            ? null
-            : SnackBarAction(
-                label: 'View completed',
-                onPressed: widget.onViewCompleted!,
-              ),
-      );
       try {
         final dao = ref.read(taskDaoProvider);
         await dao.toggleTaskCompletion(
@@ -846,9 +892,22 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final task = await dao.getTaskById(
           activity.linkedTaskId!,
         );
-        if (task?.actualCompletedDate != null && messenger.mounted) {
-          messenger.removeCurrentSnackBar();
-          messenger.showSnackBar(completedFeedback);
+        if (task?.actualCompletedDate != null && context.mounted) {
+          AscentSnackBar.applaud(
+            context,
+            message: activity.isDailyStanding
+                ? 'Bravo! Completed for today 👏'
+                : 'Bravo! Task completed! 👏',
+            subtitle: activity.isDailyStanding
+                ? 'Resets tomorrow to keep your daily rhythm'
+                : 'One step closer to your goals ✨',
+            onUndo: () async {
+              if (activity.linkedTaskId != null) {
+                final d = ref.read(taskDaoProvider);
+                await d.toggleTaskCompletion(activity.linkedTaskId!, false);
+              }
+            },
+          );
         } else if (context.mounted && task?.actualCompletedDate == null) {
           AscentSnackBar.show(
             context,
@@ -928,7 +987,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       );
     }
 
-    final Widget? timedAction = timed
+    final Widget? timedAction = (timed && !done)
         ? (activity.isScheduledInFuture
             ? Semantics(
                 button: true,
@@ -1102,19 +1161,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         : null;
 
     final isStarred = activity.priority == 'high' && !done;
-    final softBorderColor = isStarred
-        ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
-        : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25);
-    final cardColor = isStarred
-        ? (context.isDark
-            ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
-            : SharedControlColors.actionBlue.withValues(alpha: 0.035))
-        : (context.isDark
-            ? g.fill.withValues(alpha: 0.18)
-            : Theme.of(context).colorScheme.surface);
+    final softBorderColor = widget.ground
+        ? Colors.transparent
+        : (isStarred
+            ? SharedControlColors.actionBlue.withValues(alpha: context.isDark ? 0.38 : 0.28)
+            : g.line.withValues(alpha: context.isDark ? 0.20 : 0.25));
+    final cardColor = widget.ground
+        ? Colors.transparent
+        : (isStarred
+            ? (context.isDark
+                ? SharedControlColors.actionBlue.withValues(alpha: 0.08)
+                : SharedControlColors.actionBlue.withValues(alpha: 0.035))
+            : (context.isDark
+                ? g.fill.withValues(alpha: 0.18)
+                : Theme.of(context).colorScheme.surface));
 
     final rowContent = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.5),
+      padding: EdgeInsets.symmetric(vertical: widget.ground ? 0 : 2.5),
       child: Material(
         color: cardColor,
         borderRadius: BorderRadius.circular(14),
@@ -1123,15 +1186,21 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           onTap: () => lecture
               ? _openLecture(context, ref)
               : _showActivityDetailDialog(context, ref, activity),
+          onLongPress: () => _showQuickActionsSheet(context, ref),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: softBorderColor,
-                width: 0.65,
-              ),
+              border: widget.ground
+                  ? null
+                  : Border.all(
+                      color: softBorderColor,
+                      width: 0.65,
+                    ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8.5),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.ground ? 4 : 12,
+              vertical: widget.ground ? 6 : 8.5,
+            ),
             child: Row(
               children: [
                 buildLeadingTarget(),
@@ -1146,8 +1215,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: done ? g.inkMuted : g.ink,
-                          fontSize: 15,
-                          height: 1.3,
+                          fontSize: widget.ground ? 16 : 15,
+                          fontWeight: widget.ground
+                              ? (done ? FontWeight.w500 : FontWeight.w600)
+                              : FontWeight.normal,
+                          height: 1.35,
                           decoration: done ? TextDecoration.lineThrough : null,
                         ),
                       ),
@@ -1163,11 +1235,13 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   ),
                 ),
                 if (activity.linkedTaskId != null && !done)
-                  AscentStarButton(
-                    key: ValueKey('activity_priority_${activity.id}'),
-                    selected: activity.priority == 'high',
-                    onChanged: _setStar,
-                  ),
+                  // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
+                  if (timedAction == null || activity.priority == 'high')
+                    AscentStarButton(
+                      key: ValueKey('activity_priority_${activity.id}'),
+                      selected: activity.priority == 'high',
+                      onChanged: _setStar,
+                    ),
                 if (timedAction != null) ...[
                   const SizedBox(width: 6),
                   timedAction,
@@ -1176,7 +1250,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   const SizedBox(width: 6),
                   scheduledBadge,
                 ],
-                if (!timed && done) ...[
+                if (done) ...[
                   const SizedBox(width: 6),
                   const GlassChip(
                     label: 'Done',
@@ -1186,6 +1260,19 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     tooltip: 'Completed',
                   ),
                 ],
+                if (timedAction == null || done)
+                  InkResponse(
+                    radius: 16,
+                    onTap: () => _showQuickActionsSheet(context, ref),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.more_horiz_rounded,
+                        size: 18,
+                        color: g.inkMuted,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1209,6 +1296,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             }
             return false;
           }
+        }
+        if (context.mounted) {
+          final confirmed = await AscentDialog.confirm(
+            context: context,
+            title: 'Delete from Today?',
+            content: 'Are you sure you want to remove "${activity.title}" from today?',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Keep',
+            isDestructive: true,
+            icon: Icons.delete_outline_rounded,
+          );
+          return confirmed == true;
         }
         return true;
       },
@@ -1277,6 +1376,33 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         }
       },
       background: Container(
+        alignment: Alignment.centerLeft,
+        margin: const EdgeInsets.symmetric(vertical: 2.5),
+        padding: const EdgeInsets.only(left: 16),
+        decoration: BoxDecoration(
+          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              color: SharedControlColors.actionBlue,
+              size: 20,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Complete',
+              style: TextStyle(
+                color: SharedControlColors.actionBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         margin: const EdgeInsets.symmetric(vertical: 2.5),
         padding: const EdgeInsets.only(right: 16),
@@ -1305,6 +1431,166 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ),
       ),
       child: rowContent,
+    );
+  }
+
+  void _showQuickActionsSheet(BuildContext context, WidgetRef ref) {
+    HapticFeedback.mediumImpact();
+    final g = context.glass;
+    final isDone = activity.status == TodayActivityStatus.done;
+    final isLecture = activity.sourceType == 'lecture';
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: g.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: g.line,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  activity.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: g.ink,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (!isDone)
+                  ListTile(
+                    leading: const Icon(Icons.check_circle_outline_rounded, color: SharedControlColors.actionBlue),
+                    title: Text('Mark as Done', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      if (activity.linkedTaskId != null) {
+                        final dao = ref.read(taskDaoProvider);
+                        await dao.toggleTaskCompletion(activity.linkedTaskId!, true);
+                      }
+                    },
+                  ),
+                if (activity.linkedTaskId != null && !isDone)
+                  ListTile(
+                    leading: const Icon(Icons.next_plan_outlined, color: SharedControlColors.actionBlue),
+                    title: Text('Move to Tomorrow', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      final tomorrow = DateTime.now().add(const Duration(days: 1));
+                      final dao = ref.read(taskDaoProvider);
+                      await dao.updateTask(
+                        TaskTableCompanion(
+                          id: Value(activity.linkedTaskId!),
+                          plannedDate: Value(tomorrow),
+                        ),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('"${activity.title}" moved to tomorrow')),
+                        );
+                      }
+                    },
+                  ),
+                if (!isLecture)
+                  ListTile(
+                    leading: Icon(Icons.edit_outlined, color: g.ink),
+                    title: Text('Edit Activity', style: TextStyle(color: g.ink, fontWeight: FontWeight.w600)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      Task? task;
+                      if (activity.linkedTaskId != null) {
+                        task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                      }
+                      if (context.mounted) {
+                        AddActivitySheet.show(
+                          context,
+                          existingTask: task,
+                          initialTitle: activity.title,
+                          initialKind: activity.kind,
+                          initialDurationMinutes: activity.targetMinutes,
+                        );
+                      }
+                    },
+                  ),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: SharedControlColors.dueRed),
+                  title: const Text('Delete from Today', style: TextStyle(color: SharedControlColors.dueRed, fontWeight: FontWeight.w600)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () async {
+                    Navigator.pop(sheetCtx);
+                    final container = ProviderScope.containerOf(context, listen: false);
+                    final messenger = ScaffoldMessenger.of(context);
+                    final confirmed = await AscentDialog.confirm(
+                      context: context,
+                      title: 'Delete from Today?',
+                      content:
+                          'Are you sure you want to remove "${activity.title}" from today?',
+                      confirmLabel: 'Delete',
+                      cancelLabel: 'Keep',
+                      isDestructive: true,
+                      icon: Icons.delete_outline_rounded,
+                    );
+                    if (confirmed != true) return;
+                    final removedActivity = activity;
+                    final taskDao = container.read(taskDaoProvider);
+                    final dismissed = container.read(dismissedTodayActivityIdsProvider.notifier);
+                    setState(() => _removed = true);
+                    try {
+                      await deleteTodayActivity(container, removedActivity);
+                      if (!messenger.mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text('Removed "${removedActivity.title}"'),
+                          action: SnackBarAction(
+                            label: 'Undo',
+                            onPressed: () async {
+                              try {
+                                if (removedActivity.linkedTaskId != null && removedActivity.sourceType != 'lecture') {
+                                  await taskDao.restoreDeletedTask(removedActivity.linkedTaskId!);
+                                }
+                                await dismissed.unDismissActivityId(removedActivity.id);
+                                if (mounted) setState(() => _removed = false);
+                              } catch (_) {}
+                            },
+                          ),
+                        ),
+                      );
+                    } catch (_) {
+                      await dismissed.unDismissActivityId(removedActivity.id);
+                      if (mounted) setState(() => _removed = false);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../app/theme/text_styles.dart';
 
 /// The core button variants in the Ascent design system.
@@ -26,7 +27,7 @@ class AscentButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.loading = false,
-    this.expanded = true,
+    this.expanded = false,
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
@@ -40,7 +41,7 @@ class AscentButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.loading = false,
-    this.expanded = true,
+    this.expanded = false,
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
@@ -52,7 +53,7 @@ class AscentButton extends StatelessWidget {
     this.icon,
     this.onPressed,
     this.loading = false,
-    this.expanded = true,
+    this.expanded = false,
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
@@ -247,8 +248,15 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
             )
           : null;
     } else if (isPrimary) {
-      bg = _pressed ? g.primaryButtonPressed : g.primaryButtonBg;
-      fg = g.primaryButtonFg;
+      final blue = Theme.of(context).brightness == Brightness.dark
+          ? SharedControlColors.actionBlueDark
+          : SharedControlColors.actionBlue;
+      bg = Color.alphaBlend(
+        blue.withValues(alpha: _pressed ? .18 : .10),
+        Theme.of(context).colorScheme.surface,
+      );
+      fg = blue;
+      border = Border.all(color: blue.withValues(alpha: .18), width: .8);
     } else if (isDestructive) {
       bg = _pressed ? g.destructivePressed : g.destructiveBg;
       fg = g.destructiveFg;
@@ -277,7 +285,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       fg = g.actionInk;
     }
 
-    // Geometry. The drawn shape is slim and crisp (40 / 32 px); the invisible
+    // Geometry. The drawn shape is slim and crisp (36 / 32 px); the invisible
     // outer wrapper below still guarantees the 48 px accessible tap region.
     final visualHeight = widget.compact
         ? AscentDimensions.buttonVisualHeightCompact
@@ -324,7 +332,10 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
           borderRadius: BorderRadius.circular(AscentDimensions.radiusMd),
           border: border,
         ),
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 5,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -348,7 +359,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
                 widget.label ?? '',
                 textAlign: TextAlign.center,
                 style: textStyle,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -391,6 +402,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       child: Semantics(
+        excludeSemantics: true,
         button: true,
         enabled: _isEnabled,
         label: widget.loading

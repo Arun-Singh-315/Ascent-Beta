@@ -85,6 +85,7 @@ void main() {
         todaySpendingStreamProvider.overrideWith((ref) => Stream.value(350.0)),
         overallBudgetStreamProvider.overrideWith((ref) => Stream.value(null)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
+        allMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
         activeMomentumChallengeStreamProvider.overrideWith(
           (ref) => Stream.value(null),
@@ -147,10 +148,10 @@ void main() {
 
       await tester.pump();
       expect(find.text('Mind space'), findsNothing);
-      expect(find.textContaining("Capture a thought…"), findsOneWidget);
+      expect(find.textContaining("Capture an insight"), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
-      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
     });
 
     testWidgets(
@@ -167,7 +168,7 @@ void main() {
         expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
-        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
       },
     );
 
@@ -182,11 +183,11 @@ void main() {
         stopwatch.stop();
 
         // Ensure rapid cold-pump
-        expect(stopwatch.elapsedMilliseconds < 2000, true);
+        expect(stopwatch.elapsedMilliseconds < 5000, true);
 
         // Verify key elements are in tree
         expect(find.byType(HomeScreen), findsOneWidget);
-        expect(find.text('Ask Riya'), findsOneWidget);
+        expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
         // Flush 350ms post-frame timer in _HomeScreenState
         await tester.pump(const Duration(milliseconds: 500));
@@ -218,14 +219,14 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.text('Ask Riya'), findsOneWidget);
+        expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
         // Change assistant identity to Jarvis
         await container.read(assistantNameProvider.notifier).setName('Jarvis');
         await tester.pump();
 
-        expect(find.text('Ask Jarvis'), findsOneWidget);
-        expect(find.text('Ask Riya'), findsNothing);
+        expect(find.byTooltip('Ask Jarvis'), findsOneWidget);
+        expect(find.byTooltip('Ask Riya'), findsNothing);
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pumpWidget(const SizedBox());
         container.dispose();

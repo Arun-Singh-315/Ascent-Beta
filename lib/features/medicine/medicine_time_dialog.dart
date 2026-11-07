@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../shared/widgets/ascent_button.dart';
 
 /// A scrollable time form that fits above the keyboard on compact screens.
 /// The framework input time picker imposes a fixed minimum height of 216px.
@@ -84,7 +85,7 @@ class _MedicineTimeDialogState extends State<MedicineTimeDialog> {
         onPressed: () => Navigator.pop(context),
         child: const Text('Cancel'),
       ),
-      FilledButton(onPressed: _save, child: const Text('Save time')),
+      AscentButton.tonal(label: 'Save time', compact: true, onPressed: _save),
     ],
   );
 }

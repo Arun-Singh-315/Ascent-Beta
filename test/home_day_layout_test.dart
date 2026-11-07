@@ -11,6 +11,7 @@ import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
+import 'package:ascent/features/home/widgets/home_life_shelf.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -194,7 +195,7 @@ void main() {
           expect(find.text('Read a chapter'), findsOneWidget);
           await snapshot('mind');
           await tester.scrollUntilVisible(
-            find.text('250'),
+            find.byType(HomeLifeShelf),
             240,
             scrollable: find.byType(Scrollable).first,
           );

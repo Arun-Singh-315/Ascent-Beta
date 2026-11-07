@@ -8,6 +8,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/daily_briefing_card.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_switch_row.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -152,6 +154,9 @@ void main() {
     testWidgets(
       'homepage no longer shows inline daily check-in button; sheet can be opened on demand',
       (tester) async {
+        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        await prefs.setString('ascent_money_checked_date', todayStr);
+        await db.waterDao.addWater(3000);
         await prefs.setBool('ascent_quick_start_v1', true);
         await prefs.setBool(dailyBriefingAutoOpenKey, false);
         await tester.pumpWidget(
@@ -179,7 +184,7 @@ void main() {
         expect(find.text('Open daily check-in'), findsNothing);
         await tester.tap(find.byType(FloatingActionButton));
         await tester.pumpAndSettle();
-        final toggle = find.byType(SwitchListTile);
+        final toggle = find.byType(AscentSwitchRow);
         await tester.ensureVisible(toggle);
         await tester.tap(toggle);
         await tester.pumpAndSettle();

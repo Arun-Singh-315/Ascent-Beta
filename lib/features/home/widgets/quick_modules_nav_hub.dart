@@ -1,10 +1,12 @@
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/day_glass_material.dart';
@@ -13,6 +15,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../challenge/challenge_providers.dart';
 import '../../challenge/domain/challenge_pace_engine.dart';
+import '../../medicine/medicine_editor_sheet.dart';
 
 /// Level 2 · Secondary: Life & Health Hub
 /// Clean, balanced layout:
@@ -42,6 +45,16 @@ class QuickModulesNavHub extends ConsumerWidget {
     final medProgress = totalMedDoses > 0
         ? (takenMedDoses / totalMedDoses).clamp(0.0, 1.0)
         : 0.0;
+    final allMeds = ref.watch(allMedicinesStreamProvider).value ?? [];
+    final nextDose = todayMedicineLogs.where((l) => !l.isTaken).firstOrNull;
+    final nextMedName = nextDose != null
+        ? allMeds.where((m) => m.id == nextDose.medicineId).firstOrNull?.name
+        : null;
+    final medBriefDescription = nextDose != null && nextMedName != null
+        ? 'Next: $nextMedName (${nextDose.timeSlot})'
+        : (totalMedDoses > 0 && takenMedDoses >= totalMedDoses
+            ? 'All prescribed doses completed for today · Schedule intact'
+            : (totalMedDoses > 0 ? '$takenMedDoses of $totalMedDoses doses taken' : 'No prescriptions due today'));
 
     // Hydration stream watchers
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
@@ -49,6 +62,10 @@ class QuickModulesNavHub extends ConsumerWidget {
     final waterProgress = waterGoal > 0
         ? (waterMl / waterGoal).clamp(0.0, 1.0)
         : 0.0;
+    final remainingWater = math.max(0, waterGoal - waterMl);
+    final waterBriefDescription = remainingWater > 0
+        ? '$remainingWater mL remaining today · Drink water regularly'
+        : 'Daily hydration target accomplished!';
 
     // Challenge watchers
     final challengeAsync = ref.watch(activeChallengeProvider);
@@ -249,7 +266,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final stacked =
-                        constraints.maxWidth < 320 ||
+                        constraints.maxWidth < 600 ||
                         MediaQuery.textScalerOf(context).scale(14) > 18;
 
                     final medicineCell = _LifeGridCell(
@@ -301,20 +318,63 @@ class QuickModulesNavHub extends ConsumerWidget {
                                       .copyWith(color: g.inkMuted),
                                 )
                               else if (totalMedDoses == 0)
-                                Text(
-                                  'No doses scheduled',
-                                  key: const ValueKey('medicine_empty_summary'),
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(color: g.inkMuted, height: 1.4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'No doses',
+                                        key: const ValueKey('medicine_empty_summary'),
+                                        style: AscentTextStyles.homeSecondary
+                                            .copyWith(color: g.inkMuted, height: 1.4),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpace.s6),
+                                    Material(
+                                      color: AppPalette.transparent,
+                                      child: AppTapArea(
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          showMedicineEditor(context);
+                                        },
+                                        borderRadius: AppGeometry.roundedr8,
+                                        child: AppTag(
+                                          key: const ValueKey('medicine_add_button'),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpace.s7,
+                                            vertical: AppSpace.s3,
+                                          ),
+                                          nightDecoration: BoxDecoration(
+                                            color: g.claySoft,
+                                            borderRadius: AppGeometry.roundedr8,
+                                            border: Border.all(
+                                              color: g.clay.withValues(alpha: 0.2),
+                                              width: AppBorderScale.w1point0,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '+ Add',
+                                            style: TextStyle(
+                                              color: g.clay,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 )
                               else
                                 RichText(
                                   textScaler: MediaQuery.textScalerOf(context),
                                   text: TextSpan(
-                                    style:
-                                        AppTypography.bricolageGrotesque17W600107(
-                                          color: g.ink,
-                                        ).copyWith(fontSize: 22),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: g.ink,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                    ),
                                     children: [
                                       TextSpan(text: '$takenMedDoses'),
                                       TextSpan(
@@ -326,6 +386,20 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
+                              if (totalMedDoses > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    medBriefDescription,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: g.inkMuted,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                           Column(
@@ -333,12 +407,13 @@ class QuickModulesNavHub extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 8),
-                              if (medicineLogs.hasValue && totalMedDoses > 0)
-                                _NeutralProgressBar(
-                                  key: const ValueKey('medicine_progress_bar'),
-                                  progress: medProgress,
-                                  fillColor: g.clay,
-                                ),
+                              _NeutralProgressBar(
+                                key: const ValueKey('medicine_progress_bar'),
+                                progress: medProgress,
+                                fillColor: medProgress >= 1.0
+                                    ? const Color(0xFF10B981)
+                                    : g.clay,
+                              ),
                             ],
                           ),
                         ],
@@ -393,10 +468,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                                         context,
                                       ),
                                       text: TextSpan(
-                                        style:
-                                            AppTypography.bricolageGrotesque17W600107(
-                                              color: g.ink,
-                                            ).copyWith(fontSize: 22),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: g.ink,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.3,
+                                        ),
                                         children: [
                                           TextSpan(text: '$waterMl'),
                                           TextSpan(
@@ -465,11 +542,25 @@ class QuickModulesNavHub extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, bottom: 6),
+                                child: Text(
+                                  waterBriefDescription,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ),
                               _NeutralProgressBar(
                                 key: const ValueKey('hydration_progress_bar'),
                                 progress: waterProgress,
-                                fillColor: g.clay,
+                                fillColor: waterProgress >= 1.0
+                                    ? const Color(0xFF10B981)
+                                    : g.clay,
                               ),
                             ],
                           ),

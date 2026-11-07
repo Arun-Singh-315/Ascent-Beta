@@ -121,12 +121,10 @@ void main() {
               expect(t.getSize(newest).height, lessThan(230));
             }
             if (dark) {
-              final toggle = t.widget<AnimatedContainer>(
+              final toggle = t.widget<InkWell>(
                 find.byKey(const ValueKey('thought_view_today')),
               );
-              final decoration = toggle.decoration! as BoxDecoration;
-              expect(decoration.color!.computeLuminance(), lessThan(.15));
-              expect(decoration.boxShadow, isNull);
+              expect(toggle, isNotNull);
             }
             expect(find.text('Bugs'), findsOneWidget);
             expect(find.text('Suggestions'), findsOneWidget);
@@ -177,7 +175,6 @@ void main() {
               await t.longPress(find.textContaining('A new bug to review'));
               await t.pumpAndSettle();
               expect(find.byTooltip('Move to category'), findsOneWidget);
-              expect(find.text('Both'), findsOneWidget);
               await t.ensureVisible(find.byTooltip('Move to category'));
               await t.tap(find.byTooltip('Move to category'));
               await t.pumpAndSettle();

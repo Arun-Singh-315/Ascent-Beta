@@ -14,13 +14,12 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
-import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -63,6 +62,7 @@ class RemindersScreen extends ConsumerStatefulWidget {
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   bool _notificationsEnabled = true;
   int _selectedTab = 0; // 0: Active, 1: Completed
+  final Set<String> _collapsedSections = <String>{};
 
   @override
   void initState() {
@@ -874,132 +874,24 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               if (!_notificationsEnabled) _notificationPermissionNotice(),
 
               // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED ─────────────
-              AppCard(
-                margin: const EdgeInsets.only(bottom: AppSpace.s16),
-                padding: const EdgeInsets.all(AppSpace.s4),
-                nightDecoration: BoxDecoration(
-                  color: context.isFrozen
-                      ? (context.isDark
-                            ? FrozenPalette.darkSurface
-                            : FrozenPalette.surface)
-                      : g.fill,
-                  borderRadius: AppGeometry.roundedr16,
-                  border: Border.all(
-                    color: context.isFrozen
-                        ? (context.isDark
-                              ? FrozenPalette.darkLine
-                              : FrozenPalette.line)
-                        : g.edge,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AppTapArea(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedTab = 0);
-                        },
-                        borderRadius: AppGeometry.roundedr12,
-                        child: AppCard(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s8,
-                          ),
-                          alignment: Alignment.center,
-                          nightDecoration: BoxDecoration(
-                            color: _selectedTab == 0
-                                ? (context.isFrozen
-                                      ? (context.isDark
-                                            ? FrozenPalette.darkAction
-                                            : FrozenPalette.action)
-                                      : (context.isDark
-                                            ? g.clay
-                                            : context.accentPrimary))
-                                : AppPalette.transparent,
-                            borderRadius: AppGeometry.roundedr12,
-                            border: Border.all(
-                              color: _selectedTab == 0
-                                  ? (context.isFrozen
-                                        ? (context.isDark
-                                              ? FrozenPalette.darkAction
-                                              : FrozenPalette.action)
-                                        : (context.isDark
-                                              ? g.clay
-                                              : context.accentPrimary))
-                                  : AppPalette.transparent,
-                              width: AppBorderScale.w1,
-                            ),
-                          ),
-                          child: Text(
-                            'Active (${reminders.where((r) => r.isActive).length})',
-                            style: AppStateTypography.stateType8(
-                              state0: _selectedTab == 0,
-                              color: _selectedTab == 0
-                                  ? AppPalette.white
-                                  : (context.isFrozen
-                                        ? (context.isDark
-                                              ? FrozenPalette.darkMutedInk
-                                              : FrozenPalette.mutedInk)
-                                        : g.inkMuted),
-                            ),
-                          ),
-                        ),
-                      ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s16),
+                child: AscentSegmentedControl<int>(
+                  segments: [
+                    AscentSegment(
+                      value: 0,
+                      label: 'Active (${reminders.where((r) => r.isActive).length})',
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: AppTapArea(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedTab = 1);
-                        },
-                        borderRadius: AppGeometry.roundedr12,
-                        child: AppCard(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s8,
-                          ),
-                          alignment: Alignment.center,
-                          nightDecoration: BoxDecoration(
-                            color: _selectedTab == 1
-                                ? (context.isFrozen
-                                      ? (context.isDark
-                                            ? FrozenPalette.darkAction
-                                            : FrozenPalette.action)
-                                      : (context.isDark
-                                            ? g.clay
-                                            : context.accentPrimary))
-                                : AppPalette.transparent,
-                            borderRadius: AppGeometry.roundedr12,
-                            border: Border.all(
-                              color: _selectedTab == 1
-                                  ? (context.isFrozen
-                                        ? (context.isDark
-                                              ? FrozenPalette.darkAction
-                                              : FrozenPalette.action)
-                                        : (context.isDark
-                                              ? g.clay
-                                              : context.accentPrimary))
-                                  : AppPalette.transparent,
-                              width: AppBorderScale.w1,
-                            ),
-                          ),
-                          child: Text(
-                            'Completed (${pastReminders.length})',
-                            style: AppStateTypography.stateType8(
-                              state0: _selectedTab == 1,
-                              color: _selectedTab == 1
-                                  ? AppPalette.white
-                                  : (context.isFrozen
-                                        ? (context.isDark
-                                              ? FrozenPalette.darkMutedInk
-                                              : FrozenPalette.mutedInk)
-                                        : g.inkMuted),
-                            ),
-                          ),
-                        ),
-                      ),
+                    AscentSegment(
+                      value: 1,
+                      label: 'Completed (${pastReminders.length})',
                     ),
                   ],
+                  selected: _selectedTab,
+                  onChanged: (val) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedTab = val);
+                  },
                 ),
               ),
 
@@ -1142,91 +1034,97 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     Color color,
     IconData icon, {
     required bool isUpcoming,
-  }) => ClipRRect(
-    borderRadius: BorderRadius.circular(20),
-    child: AscentCard(
-      padding: EdgeInsets.zero,
+  }) {
+    final isCollapsed = _collapsedSections.contains(title);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 2),
-            child: _buildSectionHeader(title, reminders.length, color, icon),
-          ),
-          for (var i = 0; i < reminders.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 1,
-                indent: 14,
-                endIndent: 14,
-                color: context.glass.line,
+          InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                if (isCollapsed) {
+                  _collapsedSections.remove(title);
+                } else {
+                  _collapsedSections.add(title);
+                }
+              });
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+              child: _buildSectionHeader(
+                title,
+                reminders.length,
+                color,
+                icon,
+                isCollapsed: isCollapsed,
               ),
-            _buildReminderTile(
-              reminders[i],
-              isUpcoming: isUpcoming,
-              accent: color,
             ),
-          ],
+          ),
+          if (!isCollapsed)
+            for (final reminder in reminders)
+              _buildReminderTile(
+                reminder,
+                isUpcoming: isUpcoming,
+                accent: color,
+              ),
         ],
       ),
-    ),
-  );
+    );
+  }
 
   Widget _buildSectionHeader(
     String title,
     int count,
     Color color,
-    IconData icon,
-  ) {
+    IconData icon, {
+    bool isCollapsed = false,
+  }) {
     final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s10, top: AppSpace.s12),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Icon(icon, size: 16, color: color),
-          Text(
-            title,
-            style: AscentTextStyles.labelLarge
-                .copyWith(color: g.ink)
-                .merge(AppTypeRoles.typeRole9),
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: AscentTextStyles.headlineMedium.copyWith(
+            color: g.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
           ),
-          AppTag(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s7,
-              vertical: AppSpace.s2,
-            ),
-            nightDecoration: BoxDecoration(
-              color: context.isFrozen
-                  ? (context.isDark
-                        ? FrozenPalette.darkCanvas
-                        : FrozenPalette.canvas)
-                  : color.withValues(alpha: 0.12),
-              borderRadius: AppGeometry.roundedr10,
-              border: context.isFrozen
-                  ? Border.all(
-                      color: context.isDark
-                          ? FrozenPalette.darkLine
-                          : FrozenPalette.line,
-                      width: 1.0,
-                    )
-                  : null,
-            ),
-            child: Text(
-              '$count',
-              style: AppTypeRoles.typeRole34.copyWith(
-                color: context.isFrozen
-                    ? (context.isDark
-                          ? FrozenPalette.darkSecondaryInk
-                          : FrozenPalette.secondaryInk)
-                    : color,
-              ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: color.withValues(alpha: 0.25),
+              width: 0.8,
             ),
           ),
-        ],
-      ),
+          child: Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ),
+        const Spacer(),
+        Icon(
+          isCollapsed
+              ? Icons.keyboard_arrow_down_rounded
+              : Icons.keyboard_arrow_up_rounded,
+          size: 18,
+          color: g.inkMuted,
+        ),
+      ],
     );
   }
 
@@ -1236,10 +1134,24 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     required Color accent,
   }) {
     final g = context.glass;
+    final isOverdue =
+        reminder.isActive && reminder.scheduledAt.isBefore(DateTime.now());
     final formattedTime = DateFormat(
       'EEE, MMM d • h:mm a',
     ).format(reminder.scheduledAt);
     final protection = ref.watch(reminderProtectionProvider(reminder.id)).value;
+
+    final borderColor = isUpcoming
+        ? (isOverdue
+            ? g.coral.withValues(alpha: 0.45)
+            : accent.withValues(alpha: 0.25))
+        : g.line.withValues(alpha: 0.25);
+
+    final groundBg = isUpcoming
+        ? (isOverdue
+            ? g.coral.withValues(alpha: g.isDark ? 0.08 : 0.04)
+            : g.fill.withValues(alpha: g.isDark ? 0.06 : 0.03))
+        : (g.isDark ? g.fill.withValues(alpha: 0.03) : Colors.transparent);
 
     return Dismissible(
       key: ValueKey(reminder.id),
@@ -1248,12 +1160,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         await _confirmDeleteReminder(reminder);
         return false;
       },
-      background: AppCard(
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpace.s20),
-        nightDecoration: BoxDecoration(
+        decoration: BoxDecoration(
           color: g.coralSoft,
-          borderRadius: AppGeometry.roundedr16,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1267,226 +1180,244 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           ],
         ),
       ),
-      child: AppTapArea(
-        borderRadius: AppGeometry.roundedr16,
-        onTap: () {
-          if (protection != null) {
-            showPlanDetailSheet(context, protection.planId);
-          } else {
-            _openAddEditReminderSheet(reminder);
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.s14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AppTag(
-                padding: const EdgeInsets.all(AppSpace.s10),
-                nightDecoration: BoxDecoration(
-                  color: isUpcoming
-                      ? (context.isFrozen
-                            ? (context.isDark
-                                  ? FrozenPalette.darkTint
-                                  : FrozenPalette.tint)
-                            : accent.withValues(alpha: .12))
-                      : g.fill,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isUpcoming
-                        ? (context.isFrozen
-                              ? (context.isDark
-                                    ? FrozenPalette.darkLine
-                                    : FrozenPalette.line)
-                              : accent.withValues(alpha: 0.25))
-                        : g.edge,
-                    width: AppBorderScale.w1,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: groundBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: isOverdue ? 1.1 : 0.9,
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            if (protection != null) {
+              showPlanDetailSheet(context, protection.planId);
+            } else {
+              _openAddEditReminderSheet(reminder);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Leading Circular Action Target (Apple Reminders Style)
+                Semantics(
+                  button: true,
+                  label: reminder.isActive ? 'Mark done' : 'Completed',
+                  child: InkResponse(
+                    onTap: reminder.isActive
+                        ? () {
+                            HapticFeedback.mediumImpact();
+                            _finishReminder(reminder);
+                          }
+                        : null,
+                    radius: 20,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: reminder.isActive
+                            ? Colors.transparent
+                            : accent.withValues(alpha: 0.15),
+                        border: Border.all(
+                          color: reminder.isActive
+                              ? (isOverdue ? g.coral : accent)
+                              : g.line,
+                          width: 1.6,
+                        ),
+                      ),
+                      child: reminder.isActive
+                          ? null
+                          : Icon(
+                              Icons.check_rounded,
+                              size: 15,
+                              color: accent,
+                            ),
+                    ),
                   ),
                 ),
-                child: Icon(
-                  isUpcoming
-                      ? (reminder.alarmEnabled
-                            ? Icons.alarm_rounded
-                            : Icons.notifications_active_rounded)
-                      : Icons.notifications_off_outlined,
-                  size: 20,
-                  color: isUpcoming
-                      ? (context.isFrozen
-                            ? (context.isDark
-                                  ? FrozenPalette.darkAction
-                                  : FrozenPalette.action)
-                            : accent)
-                      : g.inkMuted,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      reminder.title,
-                      style: AscentTextStyles.bodyMedium
-                          .copyWith(
-                            color: isUpcoming ? g.ink : g.inkMuted,
-                            decoration: isUpcoming
-                                ? null
-                                : TextDecoration.lineThrough,
-                          )
-                          .merge(AppTypeRoles.typeRole8),
-                    ),
-                    if (reminder.isActive)
+                const SizedBox(width: 12),
+                // Reminder Content (Title & Metadata)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reminder.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isUpcoming ? g.ink : g.inkMuted,
+                          fontSize: 16,
+                          fontWeight:
+                              isUpcoming ? FontWeight.w600 : FontWeight.w500,
+                          height: 1.35,
+                          decoration: isUpcoming
+                              ? null
+                              : TextDecoration.lineThrough,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
                       Wrap(
-                        spacing: 4,
+                        spacing: 6,
+                        runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          if (reminder.scheduledAt.isAfter(DateTime.now()))
+                          if (protection != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: g.claySoft,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Part of ${protection.planTitle}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: g.clay,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          Icon(
+                            reminder.alarmEnabled
+                                ? Icons.alarm_rounded
+                                : Icons.schedule_rounded,
+                            size: 13,
+                            color: isOverdue ? g.coral : g.inkMuted,
+                          ),
+                          Text(
+                            formattedTime,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: isOverdue
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: isOverdue ? g.coral : g.inkMuted,
+                            ),
+                          ),
+                          if (isOverdue)
+                            Text(
+                              '· Overdue',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: g.coral,
+                              ),
+                            ),
+                          if (reminder.isActive && reminder.scheduledAt.isAfter(DateTime.now()))
                             InkWell(
                               onTap: () => _finishReminder(reminder),
-                              borderRadius: AppGeometry.roundedr8,
-                              child: AppTag(
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpace.s8,
-                                  vertical: AppSpace.s4,
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
-                                nightDecoration: BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: g.fill.withValues(alpha: 0.5),
-                                  borderRadius: AppGeometry.roundedr8,
-                                  border: Border.all(color: g.line),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: g.line.withValues(alpha: 0.5),
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.schedule_rounded,
-                                      size: 13,
-                                      color: g.inkMuted,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Scheduled',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: g.inkMuted,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  'At ${DateFormat('h:mm a').format(reminder.scheduledAt)}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.inkMuted,
+                                  ),
                                 ),
                               ),
-                            )
-                          else
-                            TextButton.icon(
-                              onPressed: () => _finishReminder(reminder),
-                              icon: const Icon(Icons.check_rounded),
-                              label: const Text('Done'),
                             ),
-                          TextButton.icon(
-                            onPressed: () => _snoozeReminder(reminder),
-                            icon: const Icon(Icons.snooze_rounded),
-                            label: const Text('Snooze'),
-                          ),
                         ],
                       ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (protection != null) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: BoxDecoration(
-                              color: g.claySoft,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Part of ${protection.planTitle}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: g.clay,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
+                    ],
+                  ),
+                ),
+                // Trailing Snooze button for active reminders
+                if (reminder.isActive)
+                  IconButton(
+                    tooltip: 'Snooze 10 min',
+                    icon: const Icon(Icons.snooze_rounded, size: 18),
+                    color: g.inkMuted,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      _snoozeReminder(reminder);
+                    },
+                  ),
+                // Trailing 3-dots Menu for Full Options
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 20,
+                    color: g.inkMuted,
+                  ),
+                  tooltip: 'Reminder actions',
+                  onSelected: (val) {
+                    if (val == 'done') {
+                      _finishReminder(reminder);
+                      return;
+                    }
+                    if (val == 'snooze') {
+                      _snoozeReminder(reminder);
+                      return;
+                    }
+                    if (val == 'edit') {
+                      if (protection != null) {
+                        showPlanDetailSheet(context, protection.planId);
+                      } else {
+                        _openAddEditReminderSheet(reminder);
+                      }
+                    } else if (val == 'delete') {
+                      _confirmDeleteReminder(reminder);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    if (reminder.isActive)
+                      const PopupMenuItem(
+                        value: 'done',
+                        child: Text('Mark done'),
+                      ),
+                    if (reminder.isActive)
+                      const PopupMenuItem(
+                        value: 'snooze',
+                        child: Text('Snooze 10 min'),
+                      ),
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 16),
+                          SizedBox(width: 8),
+                          Text('Edit'),
                         ],
-                        Text(
-                          reminder.alarmEnabled
-                              ? '$formattedTime · Alarm'
-                              : formattedTime,
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: g.inkMuted,
-                          ),
-                        ),
-                      ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 16, color: g.coral),
+                          SizedBox(width: 8),
+                          Text('Delete', style: TextStyle(color: g.coral)),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  size: 20,
-                  color: g.inkMuted,
-                ),
-                tooltip: 'Reminder actions',
-                onSelected: (val) {
-                  if (val == 'done') {
-                    _finishReminder(reminder);
-                    return;
-                  }
-                  if (val == 'snooze') {
-                    _snoozeReminder(reminder);
-                    return;
-                  }
-                  if (val == 'edit') {
-                    if (protection != null) {
-                      showPlanDetailSheet(context, protection.planId);
-                    } else {
-                      _openAddEditReminderSheet(reminder);
-                    }
-                  } else if (val == 'delete') {
-                    _confirmDeleteReminder(reminder);
-                  }
-                },
-                itemBuilder: (context) => [
-                  if (reminder.isActive &&
-                      !reminder.scheduledAt.isAfter(DateTime.now()))
-                    const PopupMenuItem(
-                      value: 'done',
-                      child: Text('Mark done'),
-                    ),
-                  if (reminder.isActive)
-                    const PopupMenuItem(
-                      value: 'snooze',
-                      child: Text('Snooze 10 min'),
-                    ),
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 16),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, size: 16, color: g.coral),
-                        const SizedBox(width: 8),
-                        Text('Delete', style: TextStyle(color: g.coral)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

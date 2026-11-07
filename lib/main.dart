@@ -177,6 +177,25 @@ Future<void> main() async {
       );
       return;
     }
+    if (actionId == 'water_250') {
+      final db = container.read(databaseProvider);
+      unawaited(db.waterDao.addWater(250));
+      return;
+    }
+    if (actionId == 'water_500') {
+      final db = container.read(databaseProvider);
+      unawaited(db.waterDao.addWater(500));
+      return;
+    }
+    if (actionId == 'medicine_taken' && effectivePayload != null) {
+      final uri = Uri.tryParse(effectivePayload);
+      final logId = int.tryParse(uri?.queryParameters['logId'] ?? '');
+      if (logId != null) {
+        final db = container.read(databaseProvider);
+        unawaited(db.medicineDao.setDoseTaken(logId, true));
+      }
+      return;
+    }
     if (effectivePayload == '/walk') {
       final walkNotifier = container.read(walkTrackingProvider.notifier);
       if (actionId == NotificationService.actionPause) {

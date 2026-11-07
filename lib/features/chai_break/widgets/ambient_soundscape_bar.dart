@@ -1,12 +1,12 @@
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/shared_control_tokens.dart';
+import '../../../app/theme/surface_tokens.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../../shared/widgets/ascent_card.dart';
 import '../chai_break_provider.dart';
 
 class AmbientSoundscapeBar extends StatefulWidget {
@@ -79,9 +79,11 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
   void _showSoundscapeSelector(BuildContext context) {
     HapticFeedback.lightImpact();
     final g = context.glass;
+    final dark = g.isDark;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: context.bgSurfaceElevated,
+      backgroundColor: g.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
@@ -101,59 +103,44 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Choose Break Audio & Music',
-                      style: AppTypography.plusJakartaSans17W70076(
-                        color: context.textPrimary,
+                      'Break Audio & Soundscapes',
+                      style: AscentTextStyles.cardTitle.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close_rounded, color: context.textMuted),
+                      icon: Icon(Icons.close_rounded, color: g.inkMuted),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
-                  'Select an offline atmospheric soundscape or open any song from your system',
-                  style: AppTypography.plusJakartaSans12Regular57(
-                    color: context.textMuted,
+                  'Select an atmospheric soundscape or play any song from your device',
+                  style: AscentTextStyles.captionMedium.copyWith(
+                    color: g.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // ── PLAY FROM SYSTEM CARD ────────────────────────
-                AppCard(
+                AscentCard(
                   padding: const EdgeInsets.all(AppSpace.s14),
-                  nightDecoration: BoxDecoration(
-                    color: AppPalette.colorFF10B981.withValues(alpha: 0.12),
-                    borderRadius: AppGeometry.roundedr16,
-                    border: Border.all(
-                      color: AppPalette.colorFF10B981.withValues(
-                        alpha:
-                            widget.selectedSoundscape ==
-                                SoundscapePreset.customSystemAudio
-                            ? 0.7
-                            : 0.3,
-                      ),
-                      width: AppBorderScale.w1point2,
-                    ),
-                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          AppTag(
+                          Container(
                             padding: const EdgeInsets.all(AppSpace.s8),
-                            nightDecoration: BoxDecoration(
-                              color: AppPalette.colorFF10B981.withValues(
-                                alpha: 0.22,
-                              ),
+                            decoration: BoxDecoration(
+                              color: g.claySoft,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.folder_open_rounded,
-                              color: AppPalette.colorFF10B981,
+                              color: g.clay,
                               size: 20,
                             ),
                           ),
@@ -164,20 +151,23 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                               children: [
                                 Text(
                                   'Play from System / Device',
-                                  style: AppTypography.plusJakartaSans14W7007(
-                                    color: context.textPrimary,
+                                  style: AscentTextStyles.bodyMedium.copyWith(
+                                    color: g.ink,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   widget.customAudioName != null
                                       ? 'Loaded: ${widget.customAudioName}'
-                                      : 'Open MP3, WAV, M4A, FLAC from your files',
-                                  style: AppStateTypography.stateType23(
-                                    state0: widget.customAudioName != null,
+                                      : 'Open MP3, WAV, M4A from your storage',
+                                  style: AscentTextStyles.captionMedium.copyWith(
                                     color: widget.customAudioName != null
-                                        ? AppPalette.colorFF34D399
-                                        : context.textMuted,
+                                        ? g.clay
+                                        : g.inkMuted,
+                                    fontWeight: widget.customAudioName != null
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -191,63 +181,50 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                       Row(
                         children: [
                           Expanded(
-                            child: ElevatedButton.icon(
+                            child: OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.of(ctx).pop();
                                 widget.onPickCustomAudio?.call();
                               },
-                              style: context.surfaces.buttonStyle(
-                                ElevatedButton.styleFrom(
-                                  backgroundColor: AppPalette.colorFF10B981,
-                                  foregroundColor: AppPalette.black,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpace.s10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: AppGeometry.roundedr10,
-                                  ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                  color: g.line.withValues(alpha: dark ? 0.35 : 0.25),
                                 ),
-                                filled: true,
-                                icon: false,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.audio_file_rounded,
                                 size: 16,
+                                color: g.clay,
                               ),
                               label: Text(
                                 widget.customAudioName != null
                                     ? 'Change Song File'
-                                    : 'Pick Song from System',
-                                style: AppTypography.plusJakartaSans125W70078(),
+                                    : 'Choose Audio File',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.ink,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                           if (widget.customAudioName != null) ...[
                             const SizedBox(width: 8),
-                            OutlinedButton(
+                            TextButton(
                               onPressed: () {
                                 widget.onClearCustomAudio?.call();
-                                Navigator.of(ctx).pop();
                               },
-                              style: context.surfaces.buttonStyle(
-                                OutlinedButton.styleFrom(
-                                  foregroundColor: context.textMuted,
-                                  side: BorderSide(color: context.divider),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpace.s12,
-                                    vertical: AppSpace.s10,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: AppGeometry.roundedr10,
-                                  ),
-                                ),
-                                filled: false,
-                                icon: false,
-                              ),
-                              child: const Text(
+                              child: Text(
                                 'Clear',
-                                style: AppTypeRoles.typeRole27,
+                                style: TextStyle(
+                                  color: SharedControlColors.dueRed,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -259,9 +236,11 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
 
                 const SizedBox(height: 18),
                 Text(
-                  'AMBIENT SOUNDSCAPES (OFFLINE READY)',
-                  style: AppTypography.jetBrainsMono10W70079(
-                    color: context.textMuted,
+                  'ATMOSPHERIC SOUNDSCAPES (OFFLINE)',
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: g.inkMuted,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -270,91 +249,91 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                 ...SoundscapePreset.values
                     .where((p) => p != SoundscapePreset.customSystemAudio)
                     .map((preset) {
-                      final isSelected =
-                          preset == widget.selectedSoundscape &&
-                          widget.customAudioName == null;
-                      final accent = Color(preset.accentColorHex);
+                  final isSelected =
+                      preset == widget.selectedSoundscape &&
+                      widget.customAudioName == null;
+                  final accent = Color(preset.accentColorHex);
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpace.s8),
-                        child: Material(
-                          color: AppPalette.transparent,
-                          child: AppTapArea(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              widget.onSoundscapeChanged(preset);
-                              Navigator.of(ctx).pop();
-                            },
-                            borderRadius: AppGeometry.roundedr14,
-                            child: AppCard(
-                              selected: isSelected,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpace.s14,
-                                vertical: AppSpace.s12,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        widget.onSoundscapeChanged(preset);
+                        Navigator.of(ctx).pop();
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s14,
+                          vertical: AppSpace.s12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? g.claySoft
+                              : (dark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.black.withValues(alpha: 0.03)),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? g.clay
+                                : g.line.withValues(alpha: dark ? 0.35 : 0.2),
+                            width: isSelected ? 1.4 : 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(AppSpace.s8),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.16),
+                                shape: BoxShape.circle,
                               ),
-                              nightDecoration: BoxDecoration(
-                                color: isSelected
-                                    ? accent.withValues(alpha: 0.16)
-                                    : context.bgSurface,
-                                borderRadius: AppGeometry.roundedr14,
-                                border: Border.all(
-                                  color: isSelected ? accent : g.edge,
-                                  width: AppBorderScale.w1,
-                                ),
+                              child: Icon(
+                                preset == SoundscapePreset.silentZen
+                                    ? Icons.volume_off_rounded
+                                    : Icons.music_note_rounded,
+                                color: accent,
+                                size: 18,
                               ),
-                              child: Row(
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  AppTag(
-                                    padding: const EdgeInsets.all(AppSpace.s8),
-                                    nightDecoration: BoxDecoration(
-                                      color: accent.withValues(alpha: 0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      preset == SoundscapePreset.silentZen
-                                          ? Icons.volume_off_rounded
-                                          : Icons.music_note_rounded,
-                                      color: accent,
-                                      size: 18,
+                                  Text(
+                                    preset.title,
+                                    style: AscentTextStyles.bodyMedium.copyWith(
+                                      color: isSelected ? g.clay : g.ink,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          preset.title,
-                                          style:
-                                              AppTypography.plusJakartaSans14W60080(
-                                                color: context.surfaces.contentForeground(isSelected, context.textPrimary),
-                                              ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          preset.description,
-                                          style:
-                                              AppTypography.plusJakartaSans115Regular81(
-                                                color: context.surfaces.contentForeground(isSelected, context.textMuted),
-                                              ),
-                                        ),
-                                      ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    preset.description,
+                                    style: AscentTextStyles.captionMedium.copyWith(
+                                      color: g.inkMuted,
                                     ),
                                   ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      color: accent,
-                                      size: 20,
-                                    ),
                                 ],
                               ),
                             ),
-                          ),
+                            if (isSelected)
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: g.clay,
+                                size: 20,
+                              ),
+                          ],
                         ),
-                      );
-                    }),
+                      ),
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -365,11 +344,12 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final isCustom =
         widget.selectedSoundscape == SoundscapePreset.customSystemAudio &&
         widget.customAudioName != null;
     final accent = isCustom
-        ? AppPalette.colorFF10B981
+        ? g.clay
         : Color(widget.selectedSoundscape.accentColorHex);
 
     final title = isCustom
@@ -379,139 +359,129 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
         ? 'Playing from device storage'
         : widget.selectedSoundscape.description;
 
-    return Material(
-      color: AppPalette.transparent,
-      child: AppTapArea(
-        onTap: () => _showSoundscapeSelector(context),
-        borderRadius: AppGeometry.roundedr16,
-        child: AppCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s16,
-            vertical: AppSpace.s12,
-          ),
-          nightDecoration: BoxDecoration(
-            color: context.glass.fill,
-            borderRadius: AppGeometry.roundedr16,
-            border: Border.all(
-              color: accent.withValues(alpha: 0.45),
-              width: AppBorderScale.w1,
+    return GestureDetector(
+      onTap: () => _showSoundscapeSelector(context),
+      child: AscentCard(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16,
+          vertical: AppSpace.s12,
+        ),
+        child: Row(
+          children: [
+            // Sound icon
+            Container(
+              padding: const EdgeInsets.all(AppSpace.s7),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isCustom
+                    ? Icons.folder_open_rounded
+                    : (widget.selectedSoundscape == SoundscapePreset.silentZen
+                        ? Icons.volume_off_rounded
+                        : Icons.music_note_rounded),
+                color: accent,
+                size: 16,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              // Sound icon
-              AppTag(
-                padding: const EdgeInsets.all(AppSpace.s7),
-                nightDecoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isCustom
-                      ? Icons.folder_open_rounded
-                      : (widget.selectedSoundscape == SoundscapePreset.silentZen
-                            ? Icons.volume_off_rounded
-                            : Icons.music_note_rounded),
-                  color: accent,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Track Name
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          isCustom ? 'MY SONG: ' : 'AMBIENCE: ',
-                          style: AppTypography.jetBrainsMono10W70082(
-                            color: accent,
-                          ),
+            const SizedBox(width: 12),
+            // Track Name
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        isCustom ? 'MY SONG: ' : 'AMBIENCE: ',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
                         ),
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: AppTypography.plusJakartaSans13W70044(
-                              color: context.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      subtitle,
-                      style: AppTypography.plusJakartaSans11Regular58(
-                        color: context.textMuted,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: g.ink,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: AscentTextStyles.captionMedium.copyWith(
+                      color: g.inkMuted,
                     ),
-                  ],
-                ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              // Equalizer Waveform Bars
-              if (widget.selectedSoundscape != SoundscapePreset.silentZen &&
-                  !widget.isMuted)
-                AnimatedBuilder(
-                  animation: _animController,
-                  builder: (context, _) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(4, (index) {
-                        final phase =
-                            (_animController.value + (index * 0.25)) % 1.0;
-                        final height = widget.isPlaying
-                            ? 6.0 + math.sin(phase * math.pi) * 14.0
-                            : 4.0;
-                        return Container(
-                          width: 3.2,
-                          height: height,
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s1point5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.9),
-                            borderRadius: AppGeometry.roundedr2,
-                          ),
-                        );
-                      }),
-                    );
-                  },
-                ),
-              if (widget.onToggleMute != null) ...[
-                const SizedBox(width: 8),
-                AppTapArea(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    widget.onToggleMute?.call();
-                  },
-                  borderRadius: AppGeometry.roundedr16,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpace.s4),
-                    child: Icon(
-                      widget.isMuted
-                          ? Icons.volume_off_rounded
-                          : Icons.volume_up_rounded,
-                      color: widget.isMuted ? context.textMuted : accent,
-                      size: 19,
-                    ),
+            ),
+            const SizedBox(width: 10),
+            // Equalizer Waveform Bars
+            if (widget.selectedSoundscape != SoundscapePreset.silentZen &&
+                !widget.isMuted)
+              AnimatedBuilder(
+                animation: _animController,
+                builder: (context, _) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(4, (index) {
+                      final phase =
+                          (_animController.value + (index * 0.25)) % 1.0;
+                      final height = widget.isPlaying
+                          ? 6.0 + math.sin(phase * math.pi) * 14.0
+                          : 4.0;
+                      return Container(
+                        width: 3.2,
+                        height: height,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s1point5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      );
+                    }),
+                  );
+                },
+              ),
+            if (widget.onToggleMute != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  widget.onToggleMute?.call();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpace.s4),
+                  child: Icon(
+                    widget.isMuted
+                        ? Icons.volume_off_rounded
+                        : Icons.volume_up_rounded,
+                    color: widget.isMuted ? g.inkMuted : g.clay,
+                    size: 19,
                   ),
                 ),
-              ],
-              const SizedBox(width: 4),
-              Icon(
-                Icons.arrow_drop_down_rounded,
-                color: context.textMuted,
-                size: 22,
               ),
             ],
-          ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down_rounded,
+              color: g.inkMuted,
+              size: 22,
+            ),
+          ],
         ),
       ),
     );

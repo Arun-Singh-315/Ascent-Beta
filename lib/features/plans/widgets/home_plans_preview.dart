@@ -1,3 +1,4 @@
+import '../../../shared/widgets/ascent_button.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,21 +34,63 @@ class HomePlansPreview extends ConsumerWidget {
             final plans = all.where((p) => p.status == 'active').toList();
             if (plans.isEmpty) {
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Nothing planned yet.',
-                      style: TextStyle(color: g.inkSecondary),
-                    ),
-                    const SizedBox(height: AppSpace.s8),
-                    FilledButton.icon(
-                      onPressed: () => showPlanCollectionEditor(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text('New plan'),
-                    ),
-                  ],
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSpace.s32,
+                  horizontal: AppSpace.s16,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: g.fill,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: g.line,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.calendar_month_outlined,
+                            size: 26,
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.s16),
+                      Text(
+                        'No Recurring Plans Yet',
+                        style: TextStyle(
+                          color: g.ink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpace.s6),
+                      Text(
+                        'Design routines, weekly rhythms, and habits that organize your days automatically.',
+                        style: TextStyle(
+                          color: g.inkMuted,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpace.s16),
+                      AscentButton.tonal(
+                        compact: true,
+                        label: 'Create a plan',
+                        icon: Icons.add_rounded,
+                        onPressed: () => showPlanCollectionEditor(context),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }

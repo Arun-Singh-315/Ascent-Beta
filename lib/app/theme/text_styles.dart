@@ -236,20 +236,20 @@ class AscentTextStyles {
 
   // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
 
-  /// Display 34 / 40 · 600 (Plus Jakarta Sans)
+  /// Display 32 / 38 · 700 (Plus Jakarta Sans) — Dynamic luxury personal signature
   static TextStyle get homeDisplay => GoogleFonts.plusJakartaSans(
-    fontSize: 34,
-    fontWeight: FontWeight.w600,
-    height: 40 / 34,
-    letterSpacing: -0.5,
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    height: 38 / 32,
+    letterSpacing: -0.8,
   );
 
-  /// Title 22 / 28 · 600 (Plus Jakarta Sans)
+  /// Title 21 / 27 · 700 (Plus Jakarta Sans) — Crisp geometric section heading
   static TextStyle get homeTitle => GoogleFonts.plusJakartaSans(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    height: 28 / 22,
-    letterSpacing: -0.3,
+    fontSize: 21,
+    fontWeight: FontWeight.w700,
+    height: 27 / 21,
+    letterSpacing: -0.4,
   );
 
   /// Headline 17 / 24 · 600 (DM Sans)
@@ -259,12 +259,12 @@ class AscentTextStyles {
     height: 24 / 17,
   );
 
-  /// Body 15 / 22 · 400 (DM Sans) · ls −0.12
+  /// Body 14 / 20 · 400 (DM Sans) · ls 0.1 — Crisp modern metadata and greeting
   static TextStyle get homeBody => GoogleFonts.dmSans(
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: FontWeight.w400,
-    height: 1.45,
-    letterSpacing: -0.12,
+    height: 20 / 14,
+    letterSpacing: 0.1,
   );
 
   /// Secondary 13 / 18 · 400 (DM Sans) · ls −0.08

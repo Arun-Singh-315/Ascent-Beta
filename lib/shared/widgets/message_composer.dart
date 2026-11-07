@@ -17,6 +17,7 @@ class MessageComposer extends StatefulWidget {
     this.focusNode,
     this.autofocus = false,
     this.quiet = false,
+    this.maxLines = 5,
   });
   final TextEditingController controller;
   final String hint;
@@ -24,6 +25,7 @@ class MessageComposer extends StatefulWidget {
   final bool busy;
   final bool autofocus;
   final bool quiet;
+  final int maxLines;
   final FocusNode? focusNode;
   @override
   State<MessageComposer> createState() => _MessageComposerState();
@@ -137,7 +139,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       controller: widget.controller,
                       focusNode: _focus,
                       minLines: 1,
-                      maxLines: 5,
+                      maxLines: widget.maxLines,
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.newline,
                       textCapitalization: TextCapitalization.sentences,
@@ -174,9 +176,11 @@ class _MessageComposerState extends State<MessageComposer> {
                     tooltip: 'Send message',
                     onPressed: canSend ? _send : null,
                     style: IconButton.styleFrom(
-                      backgroundColor: canSend ? g.clay : Colors.transparent,
+                      backgroundColor: canSend
+                          ? (widget.quiet ? g.tonalBg : g.clay)
+                          : Colors.transparent,
                       foregroundColor: canSend
-                          ? AppPalette.white
+                          ? (widget.quiet ? g.tonalFg : AppPalette.white)
                           : Colors.transparent,
                       shape: const CircleBorder(),
                       padding: EdgeInsets.zero,
@@ -192,11 +196,13 @@ class _MessageComposerState extends State<MessageComposer> {
                             transitionBuilder: (child, anim) =>
                                 ScaleTransition(scale: anim, child: child),
                             child: canSend
-                                ? const Icon(
+                                ? Icon(
                                     Icons.arrow_upward_rounded,
                                     key: ValueKey('send_icon'),
                                     size: 20,
-                                    color: AppPalette.white,
+                                    color: widget.quiet
+                                        ? g.tonalFg
+                                        : AppPalette.white,
                                   )
                                 : const SizedBox.shrink(
                                     key: ValueKey('blank_icon'),

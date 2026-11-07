@@ -14,6 +14,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -173,120 +174,116 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     final targetController = TextEditingController();
     final savedController = TextEditingController();
 
-    showModalBottomSheet(
+    showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          left: AppSpace.s20,
-          right: AppSpace.s20,
-          top: AppSpace.s20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpace.s24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'New Savings Goal',
-                  style: AscentTextStyles.displaySmall
-                      .copyWith(color: context.textPrimary)
-                      .merge(AppTypeRoles.typeRole1),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Goal Title',
-                hintText: 'e.g. Emergency Fund, Laptop, Course',
-                filled: true,
-                fillColor: context.bgBase,
-                border: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: targetController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Target Amount (₹)',
-                prefixText: '₹ ',
-                filled: true,
-                fillColor: context.bgBase,
-                border: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: savedController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Currently Saved (₹, optional)',
-                prefixText: '₹ ',
-                filled: true,
-                fillColor: context.bgBase,
-                border: OutlineInputBorder(
-                  borderRadius: AppGeometry.roundedr12,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: AscentButton.outlined(
-                    label: 'Cancel',
-                    compact: true,
+      maxWidth: 420,
+      builder: (ctx) => Material(
+        color: ctx.bgSurface,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'New Savings Goal',
+                    style: AscentTextStyles.displaySmall
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.pop(ctx),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AscentButton.primary(
-                    label: 'Create Goal',
-                    compact: true,
-                    onPressed: () async {
-                      final title = titleController.text.trim();
-                      final target = double.tryParse(
-                        targetController.text.trim(),
-                      );
-                      final saved =
-                          double.tryParse(savedController.text.trim()) ?? 0.0;
-                      if (title.isNotEmpty && target != null && target > 0) {
-                        await ref
-                            .read(financeDaoProvider)
-                            .insertSavingsGoal(
-                              SavingsGoalTableCompanion.insert(
-                                title: title,
-                                targetAmount: target,
-                                savedAmount: drift.Value(saved),
-                              ),
-                            );
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      }
-                    },
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Goal Title',
+                  hintText: 'e.g. Emergency Fund, Laptop, Course',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: targetController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Target Amount (₹)',
+                  prefixText: '₹ ',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: savedController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Currently Saved (₹, optional)',
+                  prefixText: '₹ ',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: AscentButton.outlined(
+                      label: 'Cancel',
+                      compact: true,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AscentButton.tonal(
+                      label: 'Create Goal',
+                      compact: true,
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        final target = double.tryParse(
+                          targetController.text.trim(),
+                        );
+                        final saved =
+                            double.tryParse(savedController.text.trim()) ?? 0.0;
+                        if (title.isNotEmpty && target != null && target > 0) {
+                          await ref
+                              .read(financeDaoProvider)
+                              .insertSavingsGoal(
+                                SavingsGoalTableCompanion.insert(
+                                  title: title,
+                                  targetAmount: target,
+                                  savedAmount: drift.Value(saved),
+                                ),
+                              );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -320,7 +317,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
       subtitle: 'Personal ledger & savings goals',
       glow2: g.amberSoft,
       actions: [
-        const HistoryAction(module:'money'),
+        const HistoryAction(module: 'money'),
         IconButton(
           icon: Icon(Icons.tune_outlined, color: g.ink),
           tooltip: 'Budget Limits',
@@ -541,7 +538,8 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   }
 
                   final allDayEntries = days.entries.toList();
-                  final hasHighVolume = allDayEntries.length > 2 || transactions.length > 6;
+                  final hasHighVolume =
+                      allDayEntries.length > 2 || transactions.length > 6;
                   final visibleEntries = _showAllTransactions
                       ? allDayEntries
                       : allDayEntries.take(2).toList();
@@ -581,7 +579,10 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         InkWell(
                           onTap: () {
                             HapticFeedback.selectionClick();
-                            setState(() => _showAllTransactions = !_showAllTransactions);
+                            setState(
+                              () =>
+                                  _showAllTransactions = !_showAllTransactions,
+                            );
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(

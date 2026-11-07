@@ -158,7 +158,7 @@ class StudyStreakMeterCard extends StatelessWidget {
     final streakTitle = status.displayStreakDays == 0
         ? (status.phase == StudyStreakPhase.broken
               ? 'A fresh start'
-              : 'Start your first day')
+              : 'Start a streak today')
         : '${status.displayStreakDays} Day Streak';
 
     return AppGestureTap(
@@ -247,9 +247,7 @@ class StudyStreakMeterCard extends StatelessWidget {
             // Top Row: Streak Flame + Today study stats + Info action
             Row(
               children: [
-                Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 18,
+                _BreathingFlameIcon(
                   color: g.frozen
                       ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
                       : (status.isTodaySecured
@@ -257,6 +255,9 @@ class StudyStreakMeterCard extends StatelessWidget {
                             : (status.isRescueMode
                                   ? AppPalette.amber
                                   : g.clay)),
+                  isAlive: status.displayStreakDays > 0 ||
+                      status.isTodaySecured ||
+                      status.isRescueMode,
                 ),
                 const SizedBox(width: 6),
                 Flexible(
@@ -274,13 +275,15 @@ class StudyStreakMeterCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '•  Longest: ${status.longestStreakDays}d',
-                  style: AppTypography.plusJakartaSans12W50020(
-                    color: g.inkMuted,
+                if (status.longestStreakDays > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '•  Longest: ${status.longestStreakDays}d',
+                    style: AppTypography.plusJakartaSans12W50020(
+                      color: g.inkMuted,
+                    ),
                   ),
-                ),
+                ],
                 const Spacer(),
                 GestureDetector(
                   onTap: () => _showExplanation(context),
@@ -394,6 +397,90 @@ class StudyStreakMeterCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A subtle, classy breathing flame icon for live active streaks.
+class _BreathingFlameIcon extends StatefulWidget {
+  final Color color;
+  final bool isAlive;
+
+  const _BreathingFlameIcon({required this.color, required this.isAlive});
+
+  @override
+  State<_BreathingFlameIcon> createState() => _BreathingFlameIconState();
+}
+
+class _BreathingFlameIconState extends State<_BreathingFlameIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    final inTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (widget.isAlive && !inTest) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BreathingFlameIcon oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final inTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (widget.isAlive && !inTest && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isAlive && _controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isAlive) {
+      return Icon(
+        Icons.local_fire_department_rounded,
+        size: 18,
+        color: widget.color,
+      );
+    }
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final scale = 0.95 + (_controller.value * 0.12);
+        final glowAlpha = 0.25 + (_controller.value * 0.35);
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: glowAlpha),
+                  blurRadius: 6 * scale,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.local_fire_department_rounded,
+              size: 18,
+              color: widget.color,
+            ),
+          ),
+        );
+      },
     );
   }
 }

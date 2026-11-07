@@ -7,6 +7,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 class BudgetSettingsSheet extends ConsumerStatefulWidget {
   final FinanceBudget? currentBudget;
@@ -17,14 +18,15 @@ class BudgetSettingsSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     FinanceBudget? currentBudget,
   }) {
-    return showModalBottomSheet(
+    return showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
+      maxWidth: 520,
+      builder: (ctx) => Material(
+        color: ctx.bgSurface,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: BudgetSettingsSheet(currentBudget: currentBudget),
       ),
-      builder: (ctx) => BudgetSettingsSheet(currentBudget: currentBudget),
     );
   }
 
@@ -90,15 +92,8 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: AppSpace.s20,
-        right: AppSpace.s20,
-        top: AppSpace.s20,
-        bottom: bottomInset + AppSpace.s24,
-      ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpace.s20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +182,7 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: AscentButton.primary(
+                child: AscentButton.tonal(
                   label: 'Save Limits',
                   compact: true,
                   onPressed: _saveBudget,

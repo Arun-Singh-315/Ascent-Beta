@@ -7,7 +7,6 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/streak/study_streak_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -53,6 +52,93 @@ class ActivityHubCard extends ConsumerStatefulWidget {
 }
 
 class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
+  final _composerFocus = FocusNode();
+  String? _starterTitle;
+
+  @override
+  void dispose() {
+    _composerFocus.dispose();
+    super.dispose();
+  }
+
+  void _tryStarter(String title) {
+    setState(() => _starterTitle = title);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _composerFocus.requestFocus();
+    });
+  }
+
+  Widget _starterCard(BuildContext context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: SharedControlColors.actionBlue.withValues(alpha: .07),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.wb_twilight_outlined,
+                  size: 24,
+                  color: SharedControlColors.actionBlue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Start with something small.',
+                      style: AscentTextStyles.cardTitle.copyWith(
+                        color: g.ink,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Choose an idea to make your own, or write one below.',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final idea in ['Read a few pages', 'Make time for a walk'])
+                ActionChip(
+                  label: Text(idea),
+                  onPressed: () => _tryStarter(idea),
+                  labelStyle: AscentTextStyles.labelSmall.copyWith(
+                    color: SharedControlColors.actionBlue,
+                  ),
+                  backgroundColor: SharedControlColors.actionBlue.withValues(
+                    alpha: .06,
+                  ),
+                  side: BorderSide.none,
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _showAll = false;
   bool _showCompleted = false;
   bool _showPlans = false;
@@ -63,7 +149,14 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final activities = ref.watch(todayActivitiesProvider);
-    final streak = ref.watch(studyStreakProvider).currentStreakDays;
+
+    final (totalCount, doneCount) = activities.maybeWhen(
+      data: (items) => (
+        items.length,
+        items.where((a) => a.status == TodayActivityStatus.done).length,
+      ),
+      orElse: () => (0, 0),
+    );
 
     ref.listen(todayActivitiesProvider, (prev, next) {
       next.whenData((items) {
@@ -75,111 +168,46 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       });
     });
 
-    final (totalCount, doneCount) = activities.maybeWhen(
-      data: (items) => (
-        items.length,
-        items.where((a) => a.status == TodayActivityStatus.done).length,
-      ),
-      orElse: () => (0, 0),
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── SECTION HEADING ──────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Things hub',
-                    style: AscentTextStyles.homeTitle.copyWith(
-                      color: g.ink,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if (totalCount > 0 && doneCount > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          '$doneCount of $totalCount done',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: g.inkMuted,
-                          ),
-                        ),
-                        if (streak > 0) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            '🔥 $streak',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: g.clay,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: (doneCount / totalCount).clamp(0.0, 1.0),
-                              minHeight: 3,
-                              backgroundColor: g.line,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                SharedControlColors.actionBlue,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
+              child: Text(
+                'Things Hub',
+                style: AscentTextStyles.homeTitle.copyWith(
+                  color: g.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-            TextButton(
+            IconButton(
+              tooltip: 'Open Things Hub',
               onPressed: () {
                 HapticFeedback.selectionClick();
                 context.push('/things');
               },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View',
-                    style: TextStyle(
-                      color: g.clay,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(Icons.chevron_right_rounded, size: 16, color: g.clay),
-                ],
-              ),
+              icon: Icon(Icons.arrow_forward_rounded, size: 22, color: g.ink),
             ),
           ],
         ),
+        const SizedBox(height: 10),
         GlassSurface(
           key: const ValueKey('home_activity_card'),
-          borderRadius: BorderRadius.circular(18),
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          borderRadius: BorderRadius.circular(26),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
           enableBlur: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _HubTabs(
                 key: const ValueKey('activity_hub_tabs'),
-                labels: const ['Active', 'Finished today', 'Plans'],
+                labels: const ['Active', 'Done', 'Plans'],
                 selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
                 onSelected: (i) => setState(() {
                   _showCompleted = i == 1;
@@ -187,6 +215,36 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   _showAll = false;
                 }),
               ),
+              if (totalCount > 0 && doneCount > 0 && !_showPlans)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+                  child: Row(
+                    children: [
+                      Text(
+                        '$doneCount of $totalCount done',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: g.inkMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: (doneCount / totalCount).clamp(0.0, 1.0),
+                            minHeight: 3,
+                            backgroundColor: g.line,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              SharedControlColors.actionBlue,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
                 switchInCurve: Curves.easeOutCubic,
@@ -227,9 +285,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                   compact: true,
                                   label: 'Retry',
                                   icon: Icons.refresh_rounded,
-                                  onPressed: () => ref.invalidate(
-                                    todayActivitiesProvider,
-                                  ),
+                                  onPressed: () =>
+                                      ref.invalidate(todayActivitiesProvider),
                                 ),
                               ],
                             ),
@@ -288,127 +345,182 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             }
                           }
 
-                          final hasHero = widget.showHero &&
+                          final hasHero =
+                              widget.showHero &&
                               !_showCompleted &&
                               standardRows.isNotEmpty;
-                          final heroActivity =
-                              hasHero ? standardRows.first : null;
-                          final displayStandardRows =
-                              hasHero ? standardRows.skip(1).toList() : standardRows;
+                          final heroActivity = hasHero
+                              ? standardRows.first
+                              : null;
+                          final displayStandardRows = hasHero
+                              ? standardRows.skip(1).toList()
+                              : standardRows;
 
                           final allEntries = <_HubEntry>[
-                            ...displayStandardRows.map((r) => _ActivityRowEntry(r)),
+                            ...displayStandardRows.map(
+                              (r) => _ActivityRowEntry(r),
+                            ),
                             ...medGroupEntries,
                           ];
 
-                    final limit = _showAll
-                        ? 20
-                        : widget.previewLimit.clamp(1, 4);
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (allEntries.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Text(
-                              _showCompleted
-                                  ? 'No completed activities yet.'
-                                  : (items.any(
-                                          (a) =>
-                                              a.status ==
-                                              TodayActivityStatus.done,
-                                        )
-                                        ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
-                                        : 'Nothing pending. Add something below.'),
-                              style: TextStyle(color: g.inkMuted, fontSize: 13),
-                            ),
-                          ),
-                        if (hasHero && heroActivity != null)
-                          ThingsHeroCard(
-                            activity: heroActivity,
-                            onTap: () => context.push(
-                              '/things?focus=${heroActivity.id}',
-                            ),
-                          ),
-                        for (final entry in allEntries.take(limit)) ...[
-                          if (entry is _MedicineGroupEntry)
-                            MedicineActivityGroupCard(
-                              key: ValueKey('med_group_${entry.medicineName}'),
-                              medicineName: entry.medicineName,
-                              dosage: entry.dosage,
-                              activities: entry.activities,
-                              compact: true,
-                            )
-                          else if (entry is _ActivityRowEntry)
-                            _ActivityEntrance(
-                              key: ValueKey('entrance_${entry.activity.id}'),
-                              animate:
-                                  _listLoadedOnce &&
-                                  !_seenActivityIds.contains(entry.activity.id),
-                              child: ActivityRowItem(
-                                key: ValueKey(entry.activity.id),
-                                activity: entry.activity,
-                                compact: true,
-                                onViewCompleted: () {
-                                  if (!mounted) return;
-                                  setState(() {
-                                    _showCompleted = true;
-                                    _showPlans = false;
-                                    _showAll = false;
-                                  });
-                                },
-                              ),
-                            ),
-                        ],
-                        if (allEntries.length > widget.previewLimit &&
-                            !_showAll)
-                          TextButton(
-                            key: const ValueKey('hub_show_more'),
-                            onPressed: () => setState(() => _showAll = true),
-                            child: Text(
-                              '+${allEntries.length - widget.previewLimit} more',
-                              style: TextStyle(
-                                color: g.clay,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        if (_showAll && allEntries.length > 20)
-                          TextButton(
-                            key: const ValueKey('hub_full_list'),
-                            onPressed: () => showModalBottomSheet<void>(
-                              context: context,
-                              isScrollControlled: true,
-                              useSafeArea: true,
-                              builder: (_) => _FullActivityList(
-                                completed: _showCompleted,
-                                filter: 'all',
-                                excludedTaskIds: widget.excludedTaskIds,
-                              ),
-                            ),
-                            child: Text(
-                              'Browse all ${allEntries.length} activities',
-                            ),
-                          ),
-                        if (_showCompleted)
-                          TextButton.icon(
-                            onPressed: () => context.push('/history'),
-                            icon: const Icon(Icons.history_rounded, size: 18),
-                            label: const Text('Browse all history'),
-                          ),
-                        if (_showAll)
-                          TextButton(
-                            onPressed: () => setState(() => _showAll = false),
-                            child: const Text('Show less'),
-                          ),
-                      ],
-                    );
-                  },
-                ),
+                          final limit = _showAll
+                              ? 20
+                              : widget.previewLimit.clamp(1, 4);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (allEntries.isEmpty &&
+                                  !hasHero &&
+                                  items.isEmpty &&
+                                  !_showCompleted)
+                                _starterCard(context),
+                              if (allEntries.isEmpty &&
+                                  !hasHero &&
+                                  (items.isNotEmpty || _showCompleted))
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                    horizontal: 16,
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _showCompleted
+                                              ? Icons
+                                                    .check_circle_outline_rounded
+                                              : Icons.spa_outlined,
+                                          size: 32,
+                                          color: g.inkSecondary,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          _showCompleted
+                                              ? 'No completed activities yet.'
+                                              : (items.any(
+                                                      (a) =>
+                                                          a.status ==
+                                                          TodayActivityStatus
+                                                              .done,
+                                                    )
+                                                    ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
+                                                    : 'A little space to begin.\nAdd one thing you want to do today.'),
+                                          style: TextStyle(
+                                            color: g.inkMuted,
+                                            fontSize: 13,
+                                            height: 1.4,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              if (hasHero && heroActivity != null)
+                                ThingsHeroCard(
+                                  activity: heroActivity,
+                                  onTap: () => context.push(
+                                    '/things?focus=${heroActivity.id}',
+                                  ),
+                                ),
+                              for (final entry in allEntries.take(limit)) ...[
+                                if (entry is _MedicineGroupEntry)
+                                  MedicineActivityGroupCard(
+                                    key: ValueKey(
+                                      'med_group_${entry.medicineName}',
+                                    ),
+                                    medicineName: entry.medicineName,
+                                    dosage: entry.dosage,
+                                    activities: entry.activities,
+                                    compact: true,
+                                  )
+                                else if (entry is _ActivityRowEntry)
+                                  _ActivityEntrance(
+                                    key: ValueKey(
+                                      'entrance_${entry.activity.id}',
+                                    ),
+                                    animate:
+                                        _listLoadedOnce &&
+                                        !_seenActivityIds.contains(
+                                          entry.activity.id,
+                                        ),
+                                    child: ActivityRowItem(
+                                      key: ValueKey(entry.activity.id),
+                                      activity: entry.activity,
+                                      compact: true,
+                                      ground: true,
+                                      onViewCompleted: () {
+                                        if (!mounted) return;
+                                        setState(() {
+                                          _showCompleted = true;
+                                          _showPlans = false;
+                                          _showAll = false;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                              ],
+                              if (allEntries.length > widget.previewLimit &&
+                                  !_showAll)
+                                TextButton(
+                                  key: const ValueKey('hub_show_more'),
+                                  onPressed: () =>
+                                      setState(() => _showAll = true),
+                                  child: Text(
+                                    '+${allEntries.length - widget.previewLimit} more',
+                                    style: TextStyle(
+                                      color: g.clay,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              if (_showAll && allEntries.length > 20)
+                                TextButton(
+                                  key: const ValueKey('hub_full_list'),
+                                  onPressed: () => showModalBottomSheet<void>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    builder: (_) => _FullActivityList(
+                                      completed: _showCompleted,
+                                      filter: 'all',
+                                      excludedTaskIds: widget.excludedTaskIds,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Browse all ${allEntries.length} activities',
+                                  ),
+                                ),
+                              if (_showCompleted)
+                                TextButton.icon(
+                                  onPressed: () => context.push('/history'),
+                                  icon: const Icon(
+                                    Icons.history_rounded,
+                                    size: 18,
+                                  ),
+                                  label: const Text('Browse all history'),
+                                ),
+                              if (_showAll)
+                                TextButton(
+                                  onPressed: () =>
+                                      setState(() => _showAll = false),
+                                  child: const Text('Show less'),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
               ),
               if (!_showPlans && !_showCompleted) ...[
                 const SizedBox(height: 10),
-                const ActivityComposer(),
+                ActivityComposer(
+                  key: ValueKey('home_composer_$_starterTitle'),
+                  initialTitle: _starterTitle,
+                  focusNode: _composerFocus,
+                ),
               ],
             ],
           ),
@@ -609,6 +721,7 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
                           key: ValueKey(rows[index].id),
                           activity: rows[index],
                           compact: true,
+                          ground: true,
                         ),
                       );
                     },
@@ -665,23 +778,23 @@ class _ActivityEntranceState extends State<_ActivityEntrance>
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-        animation: _controller,
-        child: widget.child,
-        builder: (context, child) {
-          final fade = Curves.easeOutCubic.transform(_controller.value);
-          final slide = Curves.easeOutCubic.transform(_controller.value);
-          final scale = Curves.easeOutBack.transform(_controller.value);
-          return Opacity(
-            opacity: fade.clamp(0.0, 1.0),
-            child: Transform.translate(
-              offset: Offset(0, -18 * (1 - slide)),
-              child: Transform.scale(
-                scale: 0.96 + 0.04 * scale,
-                alignment: Alignment.topCenter,
-                child: child,
-              ),
-            ),
-          );
-        },
+    animation: _controller,
+    child: widget.child,
+    builder: (context, child) {
+      final fade = Curves.easeOutCubic.transform(_controller.value);
+      final slide = Curves.easeOutCubic.transform(_controller.value);
+      final scale = Curves.easeOutBack.transform(_controller.value);
+      return Opacity(
+        opacity: fade.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, -18 * (1 - slide)),
+          child: Transform.scale(
+            scale: 0.96 + 0.04 * scale,
+            alignment: Alignment.topCenter,
+            child: child,
+          ),
+        ),
       );
+    },
+  );
 }

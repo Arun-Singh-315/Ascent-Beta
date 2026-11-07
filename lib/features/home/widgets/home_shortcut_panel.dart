@@ -206,11 +206,48 @@ class HomeShortcutPanel extends ConsumerWidget {
     }
   }
 
+  static Color _getMineralColor(String id, bool isDark) {
+    switch (id) {
+      case 'thought-wall':
+      case 'mind':
+        return isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1); // Twilight Indigo
+      case 'hydration':
+      case 'health':
+        return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7); // Glacial Sky
+      case 'momentum':
+      case 'challenge':
+        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706); // Solar Amber
+      case 'promises':
+        return isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48); // Champagne Rose
+      case 'today':
+        return isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C); // Warm Tangerine
+      case 'chai-break':
+        return isDark ? const Color(0xFFF59E0B) : const Color(0xFFB45309); // Honeyed Cinnamon
+      case 'medicine':
+        return isDark ? const Color(0xFF34D399) : const Color(0xFF059669); // Glacial Eucalyptus
+      case 'money':
+        return isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04); // Matte Brass
+      case 'focus':
+        return isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED); // Muted Lavender
+      case 'learning':
+        return isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB); // Deep Iris
+      case 'reminders':
+        return isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626); // Sunset Coral
+      case 'vault':
+      default:
+        return isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B); // Titanium Slate
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final items = _resolveItems();
+
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       key: const ValueKey('home_shortcut_panel'),
@@ -221,8 +258,11 @@ class HomeShortcutPanel extends ConsumerWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: g.line, width: 1.0),
-              color: g.fill.withValues(alpha: isDark ? 0.15 : 0.25),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
+                width: 1.2,
+              ),
+              color: Colors.transparent,
             ),
             padding: const EdgeInsets.fromLTRB(
               AscentDimensions.spaceSm,
@@ -232,121 +272,140 @@ class HomeShortcutPanel extends ConsumerWidget {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.isEmpty
-                  ? [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => showHomeShortcutEditor(context),
-                          child: const Text('Add your shortcuts'),
-                        ),
-                      ),
-                    ]
-                  : items.map((item) {
-          final count = _resolveBadgeCount(ref, item.id);
-          final isSelected = activeShortcutId == item.id;
-          return Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                key: ValueKey('shortcut_${item.id}'),
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  if (onSelectShortcut != null) {
-                    onSelectShortcut!(isSelected ? null : item.id);
-                  } else {
-                    context.push(item.route);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: isSelected
-                      ? BoxDecoration(
-                                      color: g.clay.withValues(
-                                        alpha: isDark ? 0.22 : 0.12,
-                                      ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: g.clay.withValues(alpha: 0.5),
-                            width: 1.0,
-                          ),
-                        )
-                      : null,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          Icon(
-                            item.icon,
-                            size: 22,
-                            color: isSelected ? g.clay : g.ink,
-                          ),
-                          if (count > 0)
-                            Positioned(
-                              top: -7,
-                              right: -12,
-                              child: Container(
-                                            key: ValueKey(
-                                              'shortcut_badge_${item.id}',
-                                            ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1.5,
+              children: items.map((item) {
+                final count = _resolveBadgeCount(ref, item.id);
+                final isSelected = activeShortcutId == item.id;
+                final mineral = _getMineralColor(item.id, isDark);
+                return Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      key: ValueKey('shortcut_${item.id}'),
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (onSelectShortcut != null) {
+                          onSelectShortcut!(isSelected ? null : item.id);
+                        } else {
+                          context.push(item.route);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: isSelected
+                            ? BoxDecoration(
+                                color: mineral.withValues(
+                                  alpha: isDark ? 0.20 : 0.12,
                                 ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 16,
-                                            ),
-                                decoration: BoxDecoration(
-                                  color: g.clay.withValues(
-                                    alpha: isDark ? 0.35 : 0.22,
-                                  ),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: g.line,
-                                    width: 1.0,
-                                  ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: mineral.withValues(alpha: 0.5),
+                                  width: 1.0,
                                 ),
-                                child: Center(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      count > 99 ? '99+' : '$count',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: g.ink,
-                                        height: 1.1,
-                                      ),
+                              )
+                            : null,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isSelected
+                                        ? mineral.withValues(
+                                            alpha: isDark ? 0.25 : 0.16,
+                                          )
+                                        : mineral.withValues(
+                                            alpha: isDark ? 0.10 : 0.07,
+                                          ),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? mineral.withValues(alpha: 0.7)
+                                          : mineral.withValues(
+                                              alpha: isDark ? 0.22 : 0.15,
+                                            ),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Icon(
+                                      item.icon,
+                                      size: 19,
+                                      color: isSelected
+                                          ? mineral
+                                          : (isDark
+                                              ? mineral.withValues(alpha: 0.95)
+                                              : mineral),
                                     ),
                                   ),
                                 ),
-                              ),
+                                if (count > 0)
+                                  Positioned(
+                                    top: -5,
+                                    right: -8,
+                                    child: Container(
+                                      key: ValueKey(
+                                        'shortcut_badge_${item.id}',
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 1.5,
+                                      ),
+                                      constraints: const BoxConstraints(
+                                        minWidth: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: mineral.withValues(
+                                          alpha: isDark ? 0.35 : 0.22,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: mineral.withValues(alpha: 0.45),
+                                          width: 1.0,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            count > 99 ? '99+' : '$count',
+                                            style: TextStyle(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: g.ink,
+                                              height: 1.1,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          color: g.inkSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.1,
+                            const SizedBox(height: 6),
+                            Text(
+                              item.label,
+                              style: TextStyle(
+                                color: g.inkSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.1,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+                );
+              }).toList(),
             ),
           ),
           Positioned(
@@ -367,12 +426,12 @@ class HomeShortcutPanel extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF0F1520)
-                    : const Color(0xFFF7F9FC),
+                    ? const Color(0xFF161618)
+                    : const Color(0xFFF2F2F7),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: g.line.withValues(alpha: 0.6),
-                  width: 0.8,
+                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
+                  width: 1.0,
                 ),
               ),
               child: Row(
@@ -383,10 +442,10 @@ class HomeShortcutPanel extends ConsumerWidget {
                   Text(
                     'QUICK ACTIONS',
                     style: TextStyle(
-                      color: g.inkSecondary,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
+                      color: g.inkMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],

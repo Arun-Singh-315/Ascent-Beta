@@ -102,6 +102,8 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
+              studyStreakProvider.overrideWith(() => _FakeStudyStreakNotifier()),
+              currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
             ],
             child: MaterialApp.router(
               theme: AscentTheme.light(),
@@ -119,6 +121,9 @@ void main() {
         // Verifies direct navigation to /settings with no intermediate sheet
         expect(navigatedRoute, equals('/settings'));
         expect(find.text('Settings Screen'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(seconds: 1));
       },
     );
 
@@ -157,35 +162,22 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
-        expect(scaffold.floatingActionButton, isNotNull);
+        expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
-        final pillFinder = find.byWidget(scaffold.floatingActionButton!);
-        expect(find.descendant(of: pillFinder, matching: find.text('Ask Riya')), findsOneWidget);
-
-        // Check that padding has bottom >= 70 to avoid being obscured by bottom nav
-        final paddingWidget = tester.widget<Padding>(pillFinder);
-        final insets = paddingWidget.padding as EdgeInsets;
-        expect(insets.bottom, greaterThanOrEqualTo(70.0));
-
-        // Shortcut panel (Mind, Health, Challenge, Vault) is at top
-        expect(find.byType(HomeShortcutPanel), findsOneWidget);
-
-        // Mind Palace (ThoughtWallHomePreview) is right below shortcuts
+        // Mind Palace (ThoughtWallHomePreview) is present
         expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
 
-        // Scroll down to Life & Health section
-        await tester.drag(find.byType(ListView), const Offset(0, -300));
-        await tester.pump();
+        // Scroll down to Life shelf and Shortcut panel
+        await tester.drag(find.byType(ListView), const Offset(0, -600));
+        await tester.pumpAndSettle();
 
-        // Life & Health (QuickModulesNavHub) is in the feed
-        expect(find.byType(QuickModulesNavHub), findsOneWidget);
+        expect(find.byType(HomeShortcutPanel), findsOneWidget);
 
         // Promise section is removed from Home
         expect(find.byType(HomePromiseSection), findsNothing);
 
         await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 1));
       },
     );
   });

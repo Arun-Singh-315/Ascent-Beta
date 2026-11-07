@@ -129,24 +129,27 @@ void main() {
 
   group('Mind Palace Position & Home Order Verification', () {
     testWidgets(
-      'Mind Palace (ThoughtWallHomePreview) is positioned at top of Home feed above ActivityHubCard',
+      'ActivityHubCard leads the day followed by ThoughtWallHomePreview',
       (tester) async {
         await tester.pumpWidget(buildApp(home: const HomeScreen()));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Both Mind Palace preview and Activity Hub are rendered on Home
-        expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
         expect(find.byType(ActivityHubCard), findsOneWidget);
+        await tester.scrollUntilVisible(
+          find.byType(ThoughtWallHomePreview),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
 
-        // Verify vertical order: ThoughtWallHomePreview is above ActivityHubCard
-        final mindPalaceTop = tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy;
         final activityHubTop = tester.getTopLeft(find.byType(ActivityHubCard)).dy;
+        final mindPalaceTop = tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy;
 
         expect(
-          mindPalaceTop,
-          lessThan(activityHubTop),
-          reason: 'Mind Palace must be positioned at the top of the Home feed above Activity Hub',
+          activityHubTop,
+          lessThan(mindPalaceTop),
+          reason: 'Things Hub leads the day with Mind Palace as supporting reflection space',
         );
 
         await tester.pumpWidget(const SizedBox());

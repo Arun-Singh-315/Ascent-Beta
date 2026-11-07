@@ -1,10 +1,13 @@
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/shared_control_tokens.dart';
+import '../../../app/theme/surface_tokens.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_card.dart';
 import '../models/brewing_recipe.dart';
 
 class BrewWithMeView extends StatefulWidget {
@@ -175,9 +178,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
 
         const SizedBox(height: 16),
 
-        // Horizontal recipe selector cards
+        // Horizontal recipe selector cards (spacious to prevent text clipping)
         SizedBox(
-          height: 94,
+          height: 104,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -208,21 +211,17 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
   }
 
   Widget _buildRecipeOverviewCard() {
-    return AppCard(
+    final g = context.glass;
+    final dark = g.isDark;
+
+    return AscentCard(
       padding: const EdgeInsets.all(AppSpace.s18),
-      nightDecoration: BoxDecoration(
-        color: AppPalette.colorFF26201A,
-        borderRadius: AppGeometry.roundedr20,
-        border: Border.all(
-          color: AppPalette.colorFFE28B57.withValues(alpha: 0.25),
-          width: AppBorderScale.w1point2,
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -230,33 +229,40 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                   children: [
                     Text(
                       _selectedRecipe.title,
-                      style: AppTypography.plusJakartaSans18W70045(
-                        color: AppPalette.white,
+                      style: AscentTextStyles.cardTitle.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _selectedRecipe.subtitle,
-                      style: AppTypography.plusJakartaSans12Regular57(
-                        color: AppPalette.white60,
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
                       ),
                     ),
                   ],
                 ),
               ),
-              AppTag(
+              const SizedBox(width: 8),
+              Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpace.s10,
                   vertical: AppSpace.s6,
                 ),
-                nightDecoration: BoxDecoration(
-                  color: AppPalette.colorFFE28B57.withValues(alpha: 0.15),
-                  borderRadius: AppGeometry.roundedr10,
+                decoration: BoxDecoration(
+                  color: g.claySoft,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: g.clay.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
                 ),
                 child: Text(
                   '${_selectedRecipe.totalDurationSeconds ~/ 60}m brew',
-                  style: AppTypography.jetBrainsMono12W70063(
-                    color: AppPalette.colorFFE28B57,
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: g.clay,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -270,8 +276,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             children: [
               Text(
                 'How many cups?',
-                style: AppTypography.plusJakartaSans13W60083(
-                  color: AppPalette.white70,
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: g.ink,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
@@ -280,31 +287,35 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                   final isSelected = cups == _selectedCups;
                   return Padding(
                     padding: const EdgeInsets.only(left: AppSpace.s6),
-                    child: AppTapArea(
+                    child: GestureDetector(
                       onTap: () => _onCupsChanged(cups),
-                      borderRadius: AppGeometry.roundedr8,
-                      child: AppPill(
-                        selected: isSelected,
-                        width: 34,
-                        height: 34,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        width: 36,
+                        height: 36,
                         alignment: Alignment.center,
-                        nightDecoration: BoxDecoration(
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? AppPalette.colorFFE28B57
-                              : AppPalette.white.withValues(alpha: 0.06),
-                          borderRadius: AppGeometry.roundedr8,
+                              ? g.clay
+                              : (dark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.04)),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: isSelected
-                                ? AppPalette.colorFFE28B57
-                                : AppPalette.white.withValues(alpha: 0.1),
+                                ? g.clay
+                                : g.line.withValues(alpha: dark ? 0.35 : 0.2),
+                            width: isSelected ? 1.4 : 0.8,
                           ),
                         ),
                         child: Text(
                           '$cups',
-                          style: AppTypography.jetBrainsMono13W70084(
-                            color: context.surfaces.contentForeground(isSelected, isSelected
-                                ? AppPalette.black
-                                : AppPalette.white),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : g.ink,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            fontSize: 14,
                           ),
                         ),
                       ),
@@ -315,15 +326,20 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             ],
           ),
 
-          const SizedBox(height: 18),
-          const AppDivider(color: AppPalette.white12, height: 1),
+          const SizedBox(height: 16),
+          Divider(
+            color: g.line.withValues(alpha: dark ? 0.35 : 0.2),
+            height: 1,
+          ),
           const SizedBox(height: 16),
 
           // Ingredients list scaled
           Text(
             'PROPORTIONAL INGREDIENTS ($_selectedCups ${_selectedCups == 1 ? 'CUP' : 'CUPS'})',
-            style: AppTypography.jetBrainsMono11W70085(
-              color: AppPalette.colorFFE28B57,
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: g.clay,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
             ),
           ),
           const SizedBox(height: 10),
@@ -339,24 +355,27 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppPalette.colorFFE28B57,
+                        decoration: BoxDecoration(
+                          color: g.clay,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         ing.name,
-                        style: AppTypography.plusJakartaSans13Regular18(
-                          color: AppPalette.white,
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: g.ink,
+                          fontSize: 13.5,
                         ),
                       ),
                     ],
                   ),
                   Text(
                     ing.scaledFormatted(_selectedCups),
-                    style: AppTypography.jetBrainsMono13W60026(
-                      color: AppPalette.white70,
+                    style: AscentTextStyles.bodyMedium.copyWith(
+                      color: g.inkSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
                     ),
                   ),
                 ],
@@ -369,26 +388,10 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           // Start Button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: AscentButton.primary(
+              label: 'Start Guided Brew (${_selectedRecipe.steps.length} Steps)',
+              icon: Icons.soup_kitchen_rounded,
               onPressed: _startBrewing,
-              icon: const Icon(Icons.soup_kitchen_rounded, size: 20),
-              label: Text(
-                'Start Guided Brew (${_selectedRecipe.steps.length} Steps)',
-                style: AppTypography.plusJakartaSans14W70086(),
-              ),
-              style: context.surfaces.buttonStyle(
-                ElevatedButton.styleFrom(
-                  backgroundColor: AppPalette.colorFFE28B57,
-                  foregroundColor: AppPalette.black,
-                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: AppGeometry.roundedr14,
-                  ),
-                  elevation: 0,
-                ),
-                filled: true,
-                icon: false,
-              ),
             ),
           ),
         ],
@@ -397,21 +400,15 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
   }
 
   Widget _buildActiveStepCard() {
+    final g = context.glass;
+    final dark = g.isDark;
     final currentStep = _selectedRecipe.steps[_currentStepIndex];
     final totalSteps = _selectedRecipe.steps.length;
     final isLastStep = _currentStepIndex == totalSteps - 1;
     final isCompleted = isLastStep && _stepSecondsRemaining == 0;
 
-    return AppCard(
+    return AscentCard(
       padding: const EdgeInsets.all(AppSpace.s20),
-      nightDecoration: BoxDecoration(
-        color: AppPalette.colorFF1E1914,
-        borderRadius: AppGeometry.roundedr22,
-        border: Border.all(
-          color: AppPalette.colorFFE28B57.withValues(alpha: 0.4),
-          width: AppBorderScale.w1point5,
-        ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -420,14 +417,16 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             children: [
               Text(
                 'STEP ${_currentStepIndex + 1} OF $totalSteps',
-                style: AppTypography.jetBrainsMono11W70087(
-                  color: AppPalette.colorFFE28B57,
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: g.clay,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
                 ),
               ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
-                  color: AppPalette.white54,
+                  color: g.inkMuted,
                   size: 20,
                 ),
                 onPressed: _resetBrewing,
@@ -441,8 +440,10 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           Text(
             currentStep.title,
             textAlign: TextAlign.center,
-            style: AppTypography.plusJakartaSans20W70088(
-              color: AppPalette.white,
+            style: AscentTextStyles.cardTitle.copyWith(
+              color: g.ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 19,
             ),
           ),
 
@@ -451,30 +452,37 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           Text(
             currentStep.instruction,
             textAlign: TextAlign.center,
-            style: AppTypography.plusJakartaSans14Regular89(
-              color: AppPalette.white70,
+            style: AscentTextStyles.bodyMedium.copyWith(
+              color: g.inkSecondary,
+              height: 1.4,
             ),
           ),
 
           const SizedBox(height: 20),
 
           // Countdown display
-          AppCard(
+          Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s24,
               vertical: AppSpace.s12,
             ),
-            nightDecoration: BoxDecoration(
-              color: AppPalette.black.withValues(alpha: 0.3),
-              borderRadius: AppGeometry.roundedr16,
-              border: Border.all(color: AppPalette.white10),
+            decoration: BoxDecoration(
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: g.line.withValues(alpha: dark ? 0.35 : 0.2),
+                width: 1,
+              ),
             ),
             child: Text(
               _formatSeconds(_stepSecondsRemaining),
-              style: AppTypography.jetBrainsMono42W70090(
-                color: isCompleted
-                    ? AppPalette.colorFF10B981
-                    : AppPalette.white,
+              style: TextStyle(
+                color: isCompleted ? SharedControlColors.actionBlue : g.ink,
+                fontSize: 38,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
               ),
             ),
           ),
@@ -486,9 +494,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.skip_previous_rounded,
-                  color: AppPalette.white60,
+                  color: _currentStepIndex > 0 ? g.ink : g.inkMuted,
                 ),
                 onPressed: _currentStepIndex > 0
                     ? () => _goToStep(_currentStepIndex - 1)
@@ -496,39 +504,19 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                 tooltip: 'Previous step',
               ),
               const SizedBox(width: 12),
-              ElevatedButton.icon(
+              AscentButton.primary(
+                label: _isStepTimerRunning ? 'Pause' : 'Resume',
+                icon: _isStepTimerRunning
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                expanded: false,
                 onPressed: _toggleStepTimer,
-                icon: Icon(
-                  _isStepTimerRunning
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  size: 20,
-                ),
-                label: Text(
-                  _isStepTimerRunning ? 'Pause' : 'Resume',
-                  style: AppTypography.plusJakartaSansInheritedW70091(),
-                ),
-                style: context.surfaces.buttonStyle(
-                  ElevatedButton.styleFrom(
-                    backgroundColor: AppPalette.colorFFE28B57,
-                    foregroundColor: AppPalette.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppGeometry.roundedr20,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s20,
-                      vertical: AppSpace.s10,
-                    ),
-                  ),
-                  filled: true,
-                  icon: false,
-                ),
               ),
               const SizedBox(width: 12),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.skip_next_rounded,
-                  color: AppPalette.white60,
+                  color: _currentStepIndex < totalSteps - 1 ? g.ink : g.inkMuted,
                 ),
                 onPressed: _currentStepIndex < totalSteps - 1
                     ? () => _goToStep(_currentStepIndex + 1)
@@ -542,8 +530,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             const SizedBox(height: 14),
             Text(
               '🎉 Brewing finished! Take a mindful sip and relax.',
-              style: AppTypography.plusJakartaSans13W60083(
-                color: AppPalette.colorFF10B981,
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: g.clay,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -568,25 +557,30 @@ class _CategoryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppTapArea(
+    final g = context.glass;
+    final dark = g.isDark;
+
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: AppGeometry.roundedr14,
-      child: AppCard(
-        selected: isSelected,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(
           vertical: AppSpace.s12,
           horizontal: AppSpace.s14,
         ),
-        nightDecoration: BoxDecoration(
+        decoration: BoxDecoration(
           color: isSelected
-              ? AppPalette.colorFFE28B57.withValues(alpha: 0.22)
-              : AppPalette.colorFF26201A,
-          borderRadius: AppGeometry.roundedr14,
+              ? g.claySoft
+              : (dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03)),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppPalette.colorFFE28B57
-                : AppPalette.white.withValues(alpha: 0.08),
-            width: AppBorderScale.w1point2,
+                ? g.clay
+                : g.line.withValues(alpha: dark ? 0.35 : 0.2),
+            width: isSelected ? 1.4 : 0.8,
           ),
         ),
         child: Row(
@@ -595,14 +589,14 @@ class _CategoryButton extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? AppPalette.colorFFE28B57 : AppPalette.white60,
+              color: isSelected ? g.clay : g.inkMuted,
             ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: AppStateTypography.stateType24(
-                state0: isSelected,
-                color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : AppPalette.white70),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: isSelected ? g.clay : g.ink,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],
@@ -625,23 +619,27 @@ class _RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppTapArea(
+    final g = context.glass;
+    final dark = g.isDark;
+
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: AppGeometry.roundedr14,
-      child: AppCard(
-        selected: isSelected,
-        width: 140,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 160,
         padding: const EdgeInsets.all(AppSpace.s12),
-        nightDecoration: BoxDecoration(
+        decoration: BoxDecoration(
           color: isSelected
-              ? AppPalette.colorFFE28B57.withValues(alpha: 0.18)
-              : AppPalette.colorFF221D18,
-          borderRadius: AppGeometry.roundedr14,
+              ? g.claySoft
+              : (dark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.03)),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppPalette.colorFFE28B57
-                : AppPalette.white.withValues(alpha: 0.08),
-            width: isSelected ? 1.4 : 1,
+                ? g.clay
+                : g.line.withValues(alpha: dark ? 0.35 : 0.2),
+            width: isSelected ? 1.5 : 0.8,
           ),
         ),
         child: Column(
@@ -652,15 +650,18 @@ class _RecipeCard extends StatelessWidget {
               recipe.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.plusJakartaSans125W70093(
-                color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.colorFFE28B57 : AppPalette.white),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: isSelected ? g.clay : g.ink,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 13.5,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              '${recipe.steps.length} steps • ${recipe.totalDurationSeconds ~/ 60}m',
-              style: AppTypography.jetBrainsMono10Regular8(
-                color: context.surfaces.contentForeground(isSelected, AppPalette.white54),
+              '${recipe.steps.length} steps · ${recipe.totalDurationSeconds ~/ 60}m',
+              style: AscentTextStyles.captionMedium.copyWith(
+                color: g.inkMuted,
+                fontSize: 11.5,
               ),
             ),
           ],

@@ -9,14 +9,18 @@ class AscentSwitch extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
 
   @override
-  Widget build(BuildContext context) => CupertinoSwitch(
-    value: value,
-    applyTheme: false,
-    activeTrackColor: SharedControlColors.actionBlue,
-    inactiveTrackColor: CupertinoTheme.brightnessOf(context) == Brightness.dark
-        ? SharedControlColors.switchTrackOffDark
-        : SharedControlColors.switchTrackOffLight,
-    thumbColor: SharedControlColors.switchThumb,
-    onChanged: onChanged,
+  Widget build(BuildContext context) => Transform.scale(
+    scale: 0.86,
+    alignment: Alignment.centerRight,
+    child: CupertinoSwitch(
+      value: value,
+      applyTheme: false,
+      activeTrackColor: SharedControlColors.actionBlue,
+      inactiveTrackColor: CupertinoTheme.brightnessOf(context) == Brightness.dark
+          ? SharedControlColors.switchTrackOffDark
+          : SharedControlColors.switchTrackOffLight,
+      thumbColor: SharedControlColors.switchThumb,
+      onChanged: onChanged,
+    ),
   );
 }

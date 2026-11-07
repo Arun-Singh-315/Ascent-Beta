@@ -105,9 +105,41 @@ class SpacesShelf extends ConsumerWidget {
               spacing: 12,
               runSpacing: 8,
               children: [
-                Text(
-                  'Spaces · ${spaces.length}',
-                  style: AscentTextStyles.sectionHeading.copyWith(color: g.ink),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Spaces',
+                      style: AscentTextStyles.sectionHeading.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.claySoft,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '${spaces.length}',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 _CompactNewSpaceButton(onTap: onNew),
               ],
@@ -303,19 +335,23 @@ class _CompactSpacePill extends StatelessWidget {
                 const SizedBox(width: 5),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1,
+                    horizontal: 6,
+                    vertical: 1.5,
                   ),
                   decoration: BoxDecoration(
-                    color: g.primaryButtonBg.withValues(alpha: 0.08),
+                    color: g.primaryButtonBg.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: g.primaryButtonBg.withValues(alpha: 0.25),
+                      width: 0.6,
+                    ),
                   ),
                   child: Text(
                     '$count',
                     style: AscentTextStyles.labelSmall.copyWith(
                       color: g.primaryButtonBg,
                       fontWeight: FontWeight.w700,
-                      fontSize: 9.5,
+                      fontSize: 11,
                     ),
                   ),
                 ),

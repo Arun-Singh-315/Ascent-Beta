@@ -7,13 +7,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/dimension_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../core/providers/daily_briefing_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../capture/quick_capture_sheet.dart';
 
 /// The once-a-day welcome: a centred card with three swipeable pages.
 ///
-/// 1. Greeting and yesterday in one sentence.
+/// 1. Greeting and yesterday in one sentence, with morning pulse matrix and quick start.
 /// 2. Today in words, with the next thing to start.
 /// 3. Three short actions.
 class DailyWelcomeDialog extends ConsumerStatefulWidget {
@@ -36,27 +38,14 @@ class DailyWelcomeDialog extends ConsumerStatefulWidget {
     required String name,
   }) {
     HapticFeedback.lightImpact();
-    return showGeneralDialog<void>(
+    return showAscentFrostedDialog<void>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: true,
       barrierLabel: 'Dismiss daily briefing',
-      barrierColor: Colors.black.withValues(alpha: 0.45),
+      barrierColor: Colors.black.withValues(alpha: 0.18),
       transitionDuration: const Duration(milliseconds: 320),
-      pageBuilder: (_, _, _) =>
-          DailyWelcomeDialog(day: day, name: name, host: context),
-      transitionBuilder: (context, anim, _, child) {
-        final curved = CurvedAnimation(
-          parent: anim,
-          curve: Curves.easeOutCubic,
-        );
-        return FadeTransition(
-          opacity: curved,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
-            child: child,
-          ),
-        );
-      },
+      builder: (_) => DailyWelcomeDialog(day: day, name: name, host: context),
     );
   }
 
@@ -130,13 +119,106 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _eyebrow(DateFormat('EEEE, d MMMM').format(widget.day)),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         Text(
           name.isEmpty ? '${_greeting()}.' : '${_greeting()},\n$name.',
-          style: _display(g.ink, 38),
+          style: _display(g.ink, 34),
         ),
-        const SizedBox(height: 18),
-        Text(b.yesterdayStory, style: _body(g.inkSecondary, size: 17)),
+        const SizedBox(height: 12),
+        Text(b.yesterdayStory, style: _body(g.inkSecondary, size: 15.5)),
+        const SizedBox(height: 16),
+        // Morning Pulse Matrix
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: g.fill,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: g.line, width: 0.8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.checklist_rounded,
+                  label: 'Due Today',
+                  value: b.dueToday > 0 ? '${b.dueToday}' : 'Clear',
+                  subtext: b.dueToday > 0 ? 'waiting' : 'All clear',
+                  color: SharedControlColors.actionBlue,
+                ),
+              ),
+              Container(width: 1, height: 36, color: g.line),
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.timer_outlined,
+                  label: 'Focus',
+                  value: b.trackedMinutesYesterday > 0
+                      ? '${b.trackedMinutesYesterday}m'
+                      : 'Rest',
+                  subtext: b.trackedMinutesYesterday > 0 ? 'yesterday' : 'Recharged',
+                  color: g.clay,
+                ),
+              ),
+              Container(width: 1, height: 36, color: g.line),
+              Expanded(
+                child: _pulseItem(
+                  icon: Icons.track_changes_rounded,
+                  label: 'Carryover',
+                  value: b.overdue > 0 ? '${b.overdue}' : 'On track',
+                  subtext: b.overdue > 0 ? 'overdue' : 'All good',
+                  color: b.overdue > 0 ? SharedControlColors.dueRed : g.actionInk,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        AscentButton.tonal(
+          label: 'Start today',
+          icon: Icons.arrow_forward_rounded,
+          compact: true,
+          expanded: false,
+          onPressed: () => _then(() => widget.host.push('/today')),
+        ),
+      ],
+    );
+  }
+
+  Widget _pulseItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String subtext,
+    required Color color,
+  }) {
+    final g = context.glass;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 17, color: color),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: GoogleFonts.bricolageGrotesque(
+              color: g.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            subtext,
+            style: GoogleFonts.dmSans(
+              color: g.inkMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -165,7 +247,7 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
         const SizedBox(height: 14),
         Text('Where to first?', style: _display(g.ink, 30)),
         const SizedBox(height: 20),
-        AscentButton.primary(
+        AscentButton.tonal(
           label: b.nextTask == null ? 'Open today' : 'Start with today’s list',
           icon: Icons.arrow_forward_rounded,
           onPressed: () => _then(() => widget.host.push('/today')),
@@ -174,14 +256,14 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
         AscentButton.tonal(
           label: 'Capture something',
           icon: Icons.bolt_rounded,
-          expanded: true,
+          expanded: false,
           onPressed: () => _then(() => showQuickCapture(widget.host)),
         ),
         const SizedBox(height: 4),
         AscentButton.ghost(
           label: 'Plan my day',
           icon: Icons.auto_awesome_rounded,
-          expanded: true,
+          expanded: false,
           onPressed: () => _then(() => widget.host.push('/ai-assistant')),
         ),
       ],
@@ -193,7 +275,7 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
     final g = context.glass;
     final briefing = ref.watch(dailyBriefingProvider(widget.day));
     final size = MediaQuery.sizeOf(context);
-    final bodyHeight = math.min(420.0, size.height * 0.62);
+    final bodyHeight = math.min(450.0, size.height * 0.65);
 
     final Widget body = briefing.when(
       data: (b) => PageView(
@@ -274,19 +356,72 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
                         ),
                       const Spacer(),
                       if (_page < _pages - 1)
-                        Text(
-                          'Swipe',
-                          style: GoogleFonts.dmSans(
-                            color: g.inkMuted,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
+                        TextButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            _controller.nextPage(
+                              duration: const Duration(milliseconds: 280),
+                              curve: Curves.easeOutCubic,
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: g.primaryButtonBg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            minimumSize: const Size(48, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                        ),
-                      if (_page < _pages - 1)
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
-                          color: g.inkMuted,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Next',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 16,
+                                color: g.primaryButtonBg,
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        TextButton(
+                          onPressed: _close,
+                          style: TextButton.styleFrom(
+                            foregroundColor: g.primaryButtonBg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            minimumSize: const Size(48, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Done',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.check_rounded,
+                                size: 16,
+                                color: g.primaryButtonBg,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

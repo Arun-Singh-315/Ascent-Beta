@@ -7,10 +7,16 @@ import '../../app/theme/text_styles.dart';
 import '../../app/theme/shared_control_tokens.dart';
 
 class AscentSegment<T> {
-  const AscentSegment({required this.value, required this.label, this.key});
+  const AscentSegment({
+    required this.value,
+    required this.label,
+    this.icon,
+    this.key,
+  });
   final Key? key;
   final T value;
   final String label;
+  final IconData? icon;
 }
 
 /// Generic single-selection segmented control as specified in Section 5 (C04).
@@ -29,12 +35,14 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.enabled = true,
+    this.accented = false,
   });
 
   final List<AscentSegment<T>> segments;
   final T selected;
   final ValueChanged<T> onChanged;
   final bool enabled;
+  final bool accented;
 
   void _handleSelect(T value) {
     if (!enabled) return;
@@ -52,13 +60,27 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
 
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final containerBg = dark
-        ? SharedControlColors.neutralFillDark
-        : const Color(0xFFE9E9EE);
-    final selectedSurface = dark ? const Color(0xFF636366) : Colors.white;
-    final selectedTextColor = dark
-        ? SharedControlColors.labelDark
-        : SharedControlColors.labelLight;
+    final accentColor = dark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
+    final containerBg = accented
+        ? (dark
+              ? g.elevated.withValues(alpha: .72)
+              : g.fill.withValues(alpha: .82))
+        : (dark
+              ? SharedControlColors.neutralFillDark
+              : const Color(0xFFE9E9EE));
+    final selectedSurface = accented
+        ? accentColor.withValues(alpha: dark ? .20 : .12)
+        : (dark ? const Color(0xFF636366) : Colors.white);
+    final selectedTextColor = accented
+        ? accentColor
+        : (dark
+              ? SharedControlColors.labelDark
+              : SharedControlColors.labelLight);
+    final selectedBorderColor = accented
+        ? accentColor.withValues(alpha: dark ? .48 : .32)
+        : g.line;
     final unselectedTextColor = dark
         ? const Color(0xFFCCCCD2)
         : const Color(0xFF636366);
@@ -99,7 +121,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                     ),
                     border: isSelected
                         ? Border.all(
-                            color: g.line,
+                            color: selectedBorderColor,
                             width: AscentDimensions.contentOutlineWidth,
                           )
                         : null,
@@ -109,16 +131,36 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                     vertical: AscentDimensions.spaceSm,
                   ),
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    segment.label,
-                    style: AscentTextStyles.segmentLabel.copyWith(
-                      color: isSelected
-                          ? selectedTextColor
-                          : unselectedTextColor,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    ),
+                  child: Row(
+                    children: [
+                      if (segment.icon != null) ...[
+                        Icon(
+                          segment.icon,
+                          size: 17,
+                          color: isSelected
+                              ? selectedTextColor
+                              : unselectedTextColor,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            segment.label,
+                            style: AscentTextStyles.segmentLabel.copyWith(
+                              color: isSelected
+                                  ? selectedTextColor
+                                  : unselectedTextColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -149,8 +191,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
 
           final selectedIndex = segments.indexWhere((s) => s.value == selected);
           final activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
-          final segmentWidth =
-              constraints.maxWidth / count;
+          final segmentWidth = constraints.maxWidth / count;
 
           return Stack(
             children: [
@@ -169,7 +210,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                     color: selectedSurface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: g.line,
+                      color: selectedBorderColor,
                       width: AscentDimensions.contentOutlineWidth,
                     ),
                   ),
@@ -196,19 +237,37 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                           ),
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AscentDimensions.spaceMd,
+                            horizontal: AscentDimensions.spaceSm,
                             vertical: AscentDimensions.spaceSm,
                           ),
-                          child: Text(
-                            segment.label,
-                            textAlign: TextAlign.center,
-                            style: AscentTextStyles.segmentLabel.copyWith(
-                              color: isSelected
-                                  ? selectedTextColor
-                                  : unselectedTextColor,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (segment.icon != null) ...[
+                                  Icon(
+                                    segment.icon,
+                                    size: 15,
+                                    color: isSelected
+                                        ? selectedTextColor
+                                        : unselectedTextColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                ],
+                                Text(
+                                  segment.label,
+                                  textAlign: TextAlign.center,
+                                  style: AscentTextStyles.segmentLabel.copyWith(
+                                    color: isSelected
+                                        ? selectedTextColor
+                                        : unselectedTextColor,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

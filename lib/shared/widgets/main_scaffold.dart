@@ -1,21 +1,24 @@
-import '../../features/capture/quick_capture_sheet.dart';
+import 'ascent_button.dart';
 import 'dart:ui';
 
 import 'package:ascent/app/theme/dimension_tokens.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 
 import 'package:flutter/services.dart';
 
+import '../../features/ai_assistant/ai_assistant_screen.dart';
+import '../../core/providers/settings_provider.dart';
 import 'ascent_drawer.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
 /// [StatefulShellRoute.indexedStack].
-class MainScaffold extends StatefulWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell shell;
 
   const MainScaffold({super.key, required this.shell});
@@ -44,15 +47,17 @@ class MainScaffold extends StatefulWidget {
   ];
 
   @override
-  State<MainScaffold> createState() => _MainScaffoldState();
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
-class _MainScaffoldState extends State<MainScaffold> {
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   DateTime? _lastBackPressTime;
 
   @override
   Widget build(BuildContext context) {
+    final assistantName = ref.watch(assistantNameProvider);
+    final assistantLabel = 'Ask $assistantName';
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -137,53 +142,19 @@ class _MainScaffoldState extends State<MainScaffold> {
         drawer: const AscentDrawer(),
         extendBody: true,
         body: widget.shell,
-        floatingActionButton: MediaQuery.viewInsetsOf(context).bottom > 0
+        floatingActionButton:
+            MediaQuery.viewInsetsOf(context).bottom > 0 ||
+                widget.shell.currentIndex == 0
             ? null
-            : Material(
-                color: context.glass.primaryButtonBg,
-                shape: const StadiumBorder(),
-                elevation: 2,
-                shadowColor: context.glass.primaryButtonBg.withValues(
-                  alpha: .35,
-                ),
-                child: InkWell(
-                  key: const ValueKey('global_quick_capture'),
-                  customBorder: const StadiumBorder(),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    showQuickCapture(context);
-                  },
-                  child: Semantics(
-                    button: true,
-                    label: 'Quick capture',
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
-                      child: SizedBox(
-                        height: 40,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.add_rounded,
-                              size: 18,
-                              color: context.glass.primaryButtonFg,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Capture',
-                              style: TextStyle(
-                                color: context.glass.primaryButtonFg,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            : AscentButton.primary(
+                key: const ValueKey('global_ask_assistant'),
+                label: assistantLabel,
+                icon: Icons.auto_awesome_rounded,
+                compact: true,
+                expanded: false,
+                onPressed: () => AiAssistantScreen.showFromHome(context),
               ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
           onTap: (index) {

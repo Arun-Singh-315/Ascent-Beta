@@ -24,6 +24,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import 'add_lecture_activity_sheet.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/services/plan_child_protection.dart';
 import '../plans/widgets/plan_protection_dialog.dart';
@@ -37,6 +38,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
   final int? initialDurationMinutes;
   final int? parentTaskId;
   final int? prefilledApplicationId;
+  final bool isDialog;
 
   const AddActivitySheet({
     super.key,
@@ -46,6 +48,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     this.initialDurationMinutes,
     this.parentTaskId,
     this.prefilledApplicationId,
+    this.isDialog = false,
   });
 
   static Future<void> show(
@@ -57,11 +60,9 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     int? parentTaskId,
     int? prefilledApplicationId,
   }) {
-    return showModalBottomSheet(
+    return showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
+      maxWidth: 560,
       builder: (ctx) => AddActivitySheet(
         existingTask: existingTask,
         initialTitle: initialTitle,
@@ -69,6 +70,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
         initialDurationMinutes: initialDurationMinutes,
         parentTaskId: parentTaskId,
         prefilledApplicationId: prefilledApplicationId,
+        isDialog: true,
       ),
     );
   }
@@ -321,7 +323,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
@@ -330,7 +331,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       ),
       nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
+        borderRadius: widget.isDialog
+            ? BorderRadius.circular(28)
+            : const BorderRadius.vertical(top: AppGeometry.radiusr24),
         border: Border.all(
           color: context.divider.withValues(alpha: 0.6),
           width: AppBorderScale.w1,
@@ -345,26 +348,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               AppSpace.s20,
               AppSpace.s16,
               AppSpace.s20,
-              bottomInset + AppSpace.s16,
+              AppSpace.s16,
             ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top drag handle
-                  Center(
-                    child: Container(
-                      width: 38,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: context.divider,
-                        borderRadius: AppGeometry.roundedr2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
                   // Sheet Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -789,11 +779,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
                   const SizedBox(height: 14),
 
-                  // 5. Reminder Toggle
+                  // 5. Scheduling Options: Reminder & Daily Repeat
                   AppCard(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s12,
-                      vertical: AppSpace.s8,
+                      vertical: AppSpace.s4,
                     ),
                     nightDecoration: BoxDecoration(
                       color: isDark
@@ -831,34 +821,23 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               label: const Text('Change reminder time'),
                             ),
                           ),
+                        Divider(
+                          height: 1,
+                          color: context.divider.withValues(alpha: 0.4),
+                        ),
+                        AscentSwitchRow(
+                          title: 'Repeat daily',
+                          helper: _isDailyStanding
+                              ? 'Appears fresh every day until you turn it off'
+                              : 'Keep this in your to-do list every day',
+                          value: _isDailyStanding,
+                          onChanged: (val) {
+                            setState(() {
+                              _isDailyStanding = val;
+                            });
+                          },
+                        ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Standing Daily To-Do Switch
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppPalette.colorFF1A1A1A
-                          : AppPalette.colorFFF7F6F2,
-                      borderRadius: AppGeometry.roundedr14,
-                      border: Border.all(
-                        color: context.divider.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    child: AscentSwitchRow(
-                      title: 'Repeat daily',
-                      helper: _isDailyStanding
-                          ? 'Appears fresh every day until you turn it off'
-                          : 'Keep this in your to-do list every day',
-                      value: _isDailyStanding,
-                      onChanged: (val) {
-                        setState(() {
-                          _isDailyStanding = val;
-                        });
-                      },
                     ),
                   ),
 
@@ -924,15 +903,19 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   const SizedBox(height: 16),
 
                   // Save button
-                  AscentButton.primary(
-                    label: widget.existingTask != null
-                        ? 'Save Changes'
-                        : 'Create Activity',
-                    icon: widget.existingTask != null
-                        ? Icons.check_rounded
-                        : Icons.add_rounded,
-                    loading: _saving,
-                    onPressed: _saving || _loadingReminder ? null : _save,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AscentButton.tonal(
+                      compact: true,
+                      label: widget.existingTask != null
+                          ? 'Save Changes'
+                          : 'Create Activity',
+                      icon: widget.existingTask != null
+                          ? Icons.check_rounded
+                          : Icons.add_rounded,
+                      loading: _saving,
+                      onPressed: _saving || _loadingReminder ? null : _save,
+                    ),
                   ),
 
                   if (widget.existingTask != null) ...[
@@ -952,31 +935,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             nav.pop();
                             return;
                           }
-                          final confirm = await showDialog<bool>(
+                          final confirm = await AscentDialog.confirm(
                             context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Archive Activity?'),
-                              content: Text(
-                                'Are you sure you want to delete "${widget.existingTask!.title}"? Your history is kept and linked reminders will stop.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(ctx).pop(false),
-                                  child: const Text('Cancel'),
-                                ),
-                                FilledButton(
-                                  style: context.surfaces.buttonStyle(
-                                    FilledButton.styleFrom(
-                                      backgroundColor: context.stateDanger,
-                                    ),
-                                    filled: true,
-                                    icon: false,
-                                  ),
-                                  onPressed: () => Navigator.of(ctx).pop(true),
-                                  child: const Text('Archive'),
-                                ),
-                              ],
-                            ),
+                            title: 'Delete Activity?',
+                            content:
+                                'Are you sure you want to delete "${widget.existingTask!.title}"? Your history is preserved and linked reminders will stop.',
+                            confirmLabel: 'Delete',
+                            cancelLabel: 'Keep',
+                            isDestructive: true,
+                            icon: Icons.delete_outline_rounded,
                           );
                           if (confirm == true && mounted) {
                             final taskBackup = widget.existingTask!;

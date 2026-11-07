@@ -1,6 +1,3 @@
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +10,7 @@ import '../../core/actions/expense_actions.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -25,17 +23,16 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
     Map<String, dynamic>? initialData,
     Future<void> Function(int)? onSaved,
   }) {
-    return showModalBottomSheet(
+    return showAscentCenteredForm<void>(
       context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
+      barrierDismissible: false,
+      maxWidth: 420,
+      builder: (ctx) => Material(
+        color: ctx.bgSurface,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: AddTransactionSheet(initialData: initialData, onSaved: onSaved),
       ),
-      builder: (ctx) =>
-          AddTransactionSheet(initialData: initialData, onSaved: onSaved),
     );
   }
 
@@ -49,6 +46,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
 
+  int _page = 0;
   String _type = 'expense';
   String _category = 'Food & Groceries';
   String _account = 'UPI';
@@ -276,51 +274,64 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
+    InputDecoration field(String label, {String? hint}) => InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: context.bgBase,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.divider),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: context.divider),
+      ),
+    );
     return PopScope(
       canPop: !_saving,
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: AppSpace.s20,
-          right: AppSpace.s20,
-          top: AppSpace.s20,
-          bottom: bottomInset + AppSpace.s24,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.divider,
-                    borderRadius: AppGeometry.roundedr2,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Record transaction',
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Record Transaction',
-                    style: AscentTextStyles.displaySmall
-                        .copyWith(color: context.textPrimary)
-                        .merge(AppTypeRoles.typeRole1),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: _saving ? null : () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Expense / Income Pill Switcher
+                IconButton(
+                  tooltip: 'Close',
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: _saving ? null : () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            AscentSegmentedControl<int>(
+              segments: const [
+                AscentSegment(value: 0, label: 'Amount & note'),
+                AscentSegment(value: 1, label: 'Details'),
+              ],
+              selected: _page,
+              enabled: !_saving,
+              accented: true,
+              onChanged: (value) {
+                FocusManager.instance.primaryFocus?.unfocus();
+                setState(() => _page = value);
+              },
+            ),
+            const SizedBox(height: 14),
+            if (_page == 0) ...[
               AscentSegmentedControl<String>(
                 segments: const [
                   AscentSegment(value: 'expense', label: 'Expense'),
@@ -328,206 +339,106 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ],
                 selected: _type,
                 enabled: !_saving,
-                onChanged: (val) => setState(() => _type = val),
+                accented: true,
+                onChanged: (value) => setState(() => _type = value),
               ),
-              const SizedBox(height: 16),
-
-              // Amount Input
+              const SizedBox(height: 14),
               TextField(
-                enabled: !_saving,
                 controller: _amountController,
+                enabled: !_saving,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                style: AscentTextStyles.displaySmall
-                    .copyWith(color: context.textPrimary)
-                    .merge(AppTypeRoles.typeRole48),
-                autofocus: widget.initialData == null,
-                decoration: InputDecoration(
-                  prefixText: '₹ ',
-                  prefixStyle: AscentTextStyles.displaySmall
-                      .copyWith(
-                        color: _type == 'expense'
-                            ? context.accentSecondary
-                            : context.accentPrimary,
-                      )
-                      .merge(AppTypeRoles.typeRole48),
-                  hintText: '0.00',
-                  labelText: 'Amount',
-                  filled: true,
-                  fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: context.divider),
-                  ),
-                ),
+                decoration: field('Amount (₹)', hint: '0.00'),
               ),
-              const SizedBox(height: 14),
-
-              // Description / Title
+              const SizedBox(height: 12),
               TextField(
-                enabled: !_saving,
                 controller: _titleController,
+                enabled: !_saving,
                 onChanged: _onTitleChanged,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: context.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  labelText: 'Description / Payee',
-                  hintText: 'e.g. Swiggy lunch, Metro recharge, Books',
-                  filled: true,
-                  fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(color: context.divider),
-                  ),
+                decoration: field(
+                  'Description / Payee',
+                  hint: 'What was it for?',
                 ),
               ),
-              const SizedBox(height: 14),
-
-              // Category Chips
+              const SizedBox(height: 10),
               Text(
-                'Category',
-                style: AscentTextStyles.labelSmall
-                    .copyWith(color: context.textMuted)
-                    .merge(AppTypeRoles.typeRole8),
+                '$_category · $_account · ${DateFormat('MMM d').format(_date)}',
+                style: TextStyle(color: context.textMuted, fontSize: 12),
               ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _categories.map((c) {
-                  final isSelected = c == _category;
-                  return AppPill.choice(
-                    label: Text(c),
-                    selected: isSelected,
-                    selectedColor: context.accentPrimary,
-                    backgroundColor: context.bgBase,
-                    labelStyle:
-                        AppStateTypography.stateType19(
-                          state0: isSelected,
-                        ).copyWith(
-                          color: isSelected
-                              ? AppPalette.white
-                              : context.textPrimary,
-                        ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: AppGeometry.roundedr8,
-                      side: BorderSide(
-                        color: isSelected
-                            ? context.accentPrimary
-                            : context.divider,
-                      ),
-                    ),
-                    onSelected: (sel) {
-                      if (sel) setState(() => _category = c);
-                    },
-                  );
-                }).toList(),
+            ] else ...[
+              DropdownButtonFormField<String>(
+                initialValue: _category,
+                isExpanded: true,
+                decoration: field('Category'),
+                items: _categories
+                    .map(
+                      (value) =>
+                          DropdownMenuItem(value: value, child: Text(value)),
+                    )
+                    .toList(),
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _category = value ?? _category),
               ),
-              const SizedBox(height: 14),
-
-              // Account & Date Row
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _account,
-                      dropdownColor: context.bgSurface,
-                      style: AscentTextStyles.bodyMedium.copyWith(
-                        color: context.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Account',
-                        filled: true,
-                        fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s12,
-                          vertical: AppSpace.s10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr12,
-                          borderSide: BorderSide(color: context.divider),
-                        ),
-                      ),
-                      items: _accounts
-                          .map(
-                            (a) => DropdownMenuItem(value: a, child: Text(a)),
-                          )
-                          .toList(),
-                      onChanged: _saving
-                          ? null
-                          : (val) => setState(() => _account = val ?? _account),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: context.surfaces.buttonStyle(
-                        OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppGeometry.roundedr12,
-                          ),
-                          side: BorderSide(color: context.divider),
-                        ),
-                        filled: false,
-                        icon: false,
-                      ),
-                      icon: Icon(
-                        Icons.calendar_today_outlined,
-                        size: 16,
-                        color: context.textPrimary,
-                      ),
-                      label: Text(
-                        DateFormat('MMM d').format(_date),
-                        style: AscentTextStyles.bodyMedium.copyWith(
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _date,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now().add(
-                            const Duration(days: 30),
-                          ),
-                        );
-                        if (picked != null) {
-                          setState(() => _date = picked);
-                        }
-                      },
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: _account,
+                isExpanded: true,
+                decoration: field('Account'),
+                items: _accounts
+                    .map(
+                      (value) =>
+                          DropdownMenuItem(value: value, child: Text(value)),
+                    )
+                    .toList(),
+                onChanged: _saving
+                    ? null
+                    : (value) => setState(() => _account = value ?? _account),
               ),
-              const SizedBox(height: 24),
-
-              // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: AscentButton.outlined(
-                      label: 'Cancel',
-                      compact: true,
-                      onPressed: _saving ? null : () => Navigator.pop(context),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AscentButton.primary(
-                      label: 'Save Transaction',
-                      compact: true,
-                      onPressed: _saving ? null : _saveTransaction,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                  label: Text(DateFormat('d MMM yyyy').format(_date)),
+                  onPressed: _saving
+                      ? null
+                      : () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _date,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 30),
+                            ),
+                          );
+                          if (mounted && picked != null) {
+                            setState(() => _date = picked);
+                          }
+                        },
+                ),
               ),
             ],
-          ),
+            const SizedBox(height: 14),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              children: [
+                AscentButton.ghost(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: _saving ? null : () => Navigator.pop(context),
+                ),
+                AscentButton.tonal(
+                  label: 'Save transaction',
+                  compact: true,
+                  loading: _saving,
+                  onPressed: _saving ? null : _saveTransaction,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

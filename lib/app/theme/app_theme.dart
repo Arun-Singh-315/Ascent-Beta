@@ -252,7 +252,7 @@ class AscentTheme {
         style: FilledButton.styleFrom(
           backgroundColor: SharedControlColors.actionBlue,
           foregroundColor: Colors.white,
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 36),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -467,11 +467,11 @@ class AscentTheme {
             ),
           ),
           minimumSize: const WidgetStatePropertyAll(
-            Size(64, 48),
+            Size(64, 36),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           ),
         ),
       ),
@@ -538,14 +538,12 @@ class AscentTheme {
           minimumSize: WidgetStatePropertyAll(
             Size(
               64,
-              (isNordicSky || isMerlotLinen)
-                  ? 48
-                  : (day ? AppSurfaces.day.minTapTarget : 42),
+              36,
             ),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           ),
         ),
       ),

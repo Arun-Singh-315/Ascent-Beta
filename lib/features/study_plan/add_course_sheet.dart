@@ -10,16 +10,16 @@ import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 class AddCourseSheet extends ConsumerStatefulWidget {
   const AddCourseSheet({super.key});
 
   static Future<Course?> show(BuildContext context) {
-    return showModalBottomSheet<Course>(
+    return showAscentCenteredForm<Course>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
+      maxWidth: 560,
       builder: (ctx) => const AddCourseSheet(),
     );
   }
@@ -184,7 +184,6 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
@@ -193,7 +192,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
       ),
       nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: context.divider.withValues(alpha: 0.6),
           width: AppBorderScale.w1,
@@ -206,24 +205,11 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
             AppSpace.s20,
             AppSpace.s16,
             AppSpace.s20,
-            bottomInset + AppSpace.s16,
+            AppSpace.s16,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top drag handle
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.divider,
-                    borderRadius: AppGeometry.roundedr2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-
               // Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,34 +240,21 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
               const SizedBox(height: 8),
 
               // Step Indicator Pills
-              Row(
-                children: [
-                  _StepPill(
-                    index: 0,
-                    label: 'Course Info',
-                    isActive: _currentStep == 0,
-                    onTap: () => setState(() => _currentStep = 0),
-                  ),
-                  const SizedBox(width: 6),
-                  _StepPill(
-                    index: 1,
-                    label: 'Modules & Lectures',
-                    isActive: _currentStep == 1,
-                    onTap: () => setState(() => _currentStep = 1),
-                  ),
-                  const SizedBox(width: 6),
-                  _StepPill(
-                    index: 2,
-                    label: 'Review',
-                    isActive: _currentStep == 2,
-                    onTap: () => setState(() => _currentStep = 2),
-                  ),
+              AscentSegmentedControl<int>(
+                segments: const [
+                  AscentSegment(value: 0, label: 'Course'),
+                  AscentSegment(value: 1, label: 'Modules'),
+                  AscentSegment(value: 2, label: 'Review'),
                 ],
+                selected: _currentStep,
+                accented: true,
+                onChanged: (step) => setState(() => _currentStep = step),
               ),
               const SizedBox(height: 14),
 
               // Step Content
-              Expanded(
+              Flexible(
+                fit: FlexFit.loose,
                 child: SingleChildScrollView(
                   child: _currentStep == 0
                       ? _buildStep0Details(isDark)
@@ -305,7 +278,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                     ),
                   if (_currentStep > 0) const SizedBox(width: 10),
                   Expanded(
-                    child: AscentButton.primary(
+                    child: AscentButton.tonal(
                       label: _currentStep < 2 ? 'Next Step' : 'Save Course',
                       icon: _currentStep < 2
                           ? Icons.arrow_forward_rounded
@@ -539,7 +512,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
               const SizedBox(height: 6),
               Align(
                 alignment: Alignment.centerRight,
-                child: AscentButton.primary(
+                child: AscentButton.tonal(
                   label: '+ Add Module',
                   compact: true,
                   onPressed: _addModuleWithLectures,
@@ -699,51 +672,6 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _StepPill extends StatelessWidget {
-  final int index;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _StepPill({
-    required this.index,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr10,
-        child: AppPill(
-          selected: isActive,
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
-          alignment: Alignment.center,
-          nightDecoration: BoxDecoration(
-            color: isActive ? context.accentPrimary : context.bgBase,
-            borderRadius: AppGeometry.roundedr10,
-            border: Border.all(
-              color: isActive ? context.accentPrimary : context.divider,
-            ),
-          ),
-          child: Text(
-            label,
-            style: AppTypeRoles.typeRole34.copyWith(
-              color: context.surfaces.contentForeground(
-                isActive,
-                isActive ? AppPalette.white : context.textMuted,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

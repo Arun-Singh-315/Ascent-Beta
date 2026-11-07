@@ -23,7 +23,10 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/time_tracking_provider.dart';
+import '../../core/streak/study_streak_provider.dart';
 import '../../features/home/widgets/day_one_tutorial_card.dart';
+import '../../core/database/dev_database_seeder.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -271,6 +274,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       }
     } finally {
       _isSaving = false;
+    }
+  }
+
+  Future<void> _seed20DaysTestData() async {
+    HapticFeedback.mediumImpact();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Seeding 20 days of test data...'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+      final db = ref.read(databaseProvider);
+      await DevDatabaseSeeder.seed20DaysData(db);
+      ref.invalidate(userProfileStreamProvider);
+      ref.invalidate(todayActivitiesProvider);
+      ref.invalidate(allRemindersProvider);
+      ref.invalidate(todayWaterMlStreamProvider);
+      ref.invalidate(todayMedicineLogsStreamProvider);
+      ref.invalidate(activeMedicinesStreamProvider);
+      ref.invalidate(todayWalkDistanceStreamProvider);
+      ref.invalidate(recentThoughtsStreamProvider);
+      ref.invalidate(studyStreakProvider);
+      ref.invalidate(activeMomentumChallengeStreamProvider);
+      ref.invalidate(todayMomentumCommitmentsStreamProvider);
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Populated 20 days of medicine, hydration, walks, thoughts & history!'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to seed data: $e')),
+        );
+      }
     }
   }
 
@@ -1588,6 +1631,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       color: g.inkMuted,
                     ),
                     onTap: () => context.push('/backup'),
+                  ),
+                  _Divider(color: g.line),
+                  ListTile(
+                    key: const ValueKey('settings_seed_20_days_data'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
+                        color: g.claySoft,
+                        borderRadius: AppGeometry.roundedr10,
+                      ),
+                      child: Icon(
+                        Icons.auto_fix_high_rounded,
+                        color: g.clay,
+                        size: 20,
+                      ),
+                    ),
+                    title: Text(
+                      'Fill 20 Days Fake Data',
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.ink)
+                          .merge(AppTypeRoles.typeRole8),
+                    ),
+                    subtitle: Text(
+                      'Populate 20 days of medicine, water, walks, tasks, thoughts & history',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.play_arrow_rounded,
+                      size: 18,
+                      color: g.clay,
+                    ),
+                    onTap: _seed20DaysTestData,
                   ),
                   _Divider(color: g.line),
                   ListTile(

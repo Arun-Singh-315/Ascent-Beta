@@ -11,8 +11,8 @@ import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../promises/widgets/promise_action_button.dart';
-import '../../promises/widgets/promise_chat_composer.dart';
 import '../../promises/widgets/promise_detail_sheet.dart';
+import '../../promises/widgets/promise_chat_composer.dart';
 
 /// Compact, highly focused Promise section on the Ascent Home screen.
 /// Answers three questions immediately:
@@ -26,39 +26,98 @@ class HomePromiseSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final priorityPromise = ref.watch(priorityPromiseProvider);
+    final allActive = ref.watch(activePromisesStreamProvider).value ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header adhering strictly to Rule 18
+        // Section Header adhering strictly to Rule 18 & Rule 13
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                'Promises',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Promises',
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (allActive.length > 1) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: g.line, width: 0.8),
+                      ),
+                      child: Text(
+                        '${allActive.length}',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            TextButton(
-              onPressed: () {
+            const SizedBox(width: 6),
+            InkResponse(
+              radius: 18,
+              onTap: () {
                 HapticFeedback.selectionClick();
                 context.push('/promises');
               },
-              child: const Text('View ›'),
+              child: Icon(Icons.arrow_forward_rounded, size: 20, color: g.ink),
             ),
           ],
         ),
         const SizedBox(height: 12),
 
         // Priority card or quiet empty state
-        if (priorityPromise != null)
-          _buildPriorityCard(context, ref, priorityPromise, g)
-        else
+        if (priorityPromise != null) ...[
+          _buildPriorityCard(context, ref, priorityPromise, g),
+          if (allActive.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/promises');
+                  },
+                  icon: Icon(Icons.commit_rounded, size: 15, color: g.clay),
+                  label: Text(
+                    '+${allActive.length - 1} more commitments',
+                    style: TextStyle(
+                      color: g.clay,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ] else
           _buildQuietEmptyState(context, g),
       ],
     );

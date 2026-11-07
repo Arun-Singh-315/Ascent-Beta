@@ -2,17 +2,13 @@ import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
-import '../../app/theme/dimension_tokens.dart';
+import '../../app/theme/surface_tokens.dart';
 import 'dart:async';
 
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
-import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
@@ -22,33 +18,28 @@ import '../money/add_transaction_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import '../promises/providers/promise_providers.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/daily_welcome_dialog.dart';
 import '../../core/services/daily_welcome_service.dart';
 import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
+import 'widgets/home_life_shelf.dart';
+import '../promises/providers/promise_providers.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
 import 'widgets/ascent_dynamic_island.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
-import 'widgets/quick_modules_nav_hub.dart';
+import 'widgets/smart_catch_up_banner.dart';
 import 'widgets/streak_celebration_dialog.dart';
-import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
-import '../vault/widgets/vault_home_preview.dart';
 
-/// Redesigned Home Screen according to the Ascent Home Redesign specification:
-/// - Clean intentional surface levels.
-/// - Clay accent with neutral ink hierarchy.
-/// - First screen leads with Today execution.
-/// - Stationary ambient atmosphere painter behind smooth scrolling view.
+/// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, this.notificationUri});
   final Uri? notificationUri;
@@ -78,7 +69,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   Timer? _dayTimer;
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
-  String? _activeShortcutId;
+  bool _entryDialogsReady = false;
 
   @override
   void initState() {
@@ -94,56 +85,70 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       if (mounted) setState(() => _heavierModulesReady = true);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 350));
-      if (!mounted) return;
-      final preferences = ref.read(sharedPreferencesProvider);
-      final notice = preferences.getString('ascent_restore_notice_v1');
-      if (notice != null) {
-        preferences.remove('ascent_restore_notice_v1');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
+      try {
+        await Future.delayed(const Duration(milliseconds: 350));
+        if (!mounted) return;
+        final preferences = ref.read(sharedPreferencesProvider);
+        final notice = preferences.getString('ascent_restore_notice_v1');
+        if (notice != null) {
+          preferences.remove('ascent_restore_notice_v1');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(notice),
+              duration: const Duration(seconds: 8),
+            ),
+          );
+        }
+
+        if (!mounted) return;
+        final profile = await ref
+            .read(userProfileStreamProvider.future)
+            .onError((_, _) => null);
+        if (!mounted || !canEnterWorkspace(profile, preferences)) return;
+
+        final tutorialDismissed =
+            (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false);
+        if (!tutorialDismissed && mounted) {
+          // First login: the one-time guide is today's welcome, so the daily
+          // one waits for tomorrow instead of stacking on top of it.
+          preferences.setBool(DayOneTutorialDialog.prefKey, true);
+          await preferences.setString(
+            'ascent_first_home_day_v1',
+            briefingDay(DateTime.now()).toIso8601String(),
+          );
+          await markDailyWelcomeSeen(preferences, DateTime.now());
+          if (!mounted) return;
+          await DayOneTutorialDialog.show(
+            context,
+            userName: profile?.name ?? '',
+          );
+          return;
+        }
+
+        // Every other day: one daily welcome on the first open, never again that
+        // day, and never when Home was opened for a specific destination.
+        final uri = widget.notificationUri;
+        final homeOnly = uri == null || uri.path == '/home';
+        final now = DateTime.now();
+        if (!mounted ||
+            !homeOnly ||
+            !shouldShowDailyWelcome(
+              prefs: preferences,
+              now: now,
+              autoOpen: ref.read(dailyBriefingAutoOpenProvider),
+            )) {
+          return;
+        }
+        await markDailyWelcomeSeen(preferences, now);
+        if (!mounted) return;
+        await DailyWelcomeDialog.show(
+          context,
+          day: briefingDay(now),
+          name: profile?.name ?? '',
         );
+      } finally {
+        if (mounted) setState(() => _entryDialogsReady = true);
       }
-
-      if (!mounted) return;
-      final profile = await ref
-          .read(userProfileStreamProvider.future)
-          .onError((_, _) => null);
-      if (!mounted || !canEnterWorkspace(profile, preferences)) return;
-
-      final tutorialDismissed =
-          (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
-          (preferences.getBool('ascent_quick_start_v1') ?? false);
-      if (!tutorialDismissed && mounted) {
-        // First login: the one-time guide is today's welcome, so the daily
-        // one waits for tomorrow instead of stacking on top of it.
-        preferences.setBool(DayOneTutorialDialog.prefKey, true);
-        await markDailyWelcomeSeen(preferences, DateTime.now());
-        await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
-        return;
-      }
-
-      // Every other day: one daily welcome on the first open, never again that
-      // day, and never when Home was opened for a specific destination.
-      final uri = widget.notificationUri;
-      final homeOnly = uri == null || uri.path == '/home';
-      final now = DateTime.now();
-      if (!mounted ||
-          !homeOnly ||
-          !shouldShowDailyWelcome(
-            prefs: preferences,
-            now: now,
-            autoOpen: ref.read(dailyBriefingAutoOpenProvider),
-          )) {
-        return;
-      }
-      await markDailyWelcomeSeen(preferences, now);
-      if (!mounted) return;
-      await DailyWelcomeDialog.show(
-        context,
-        day: briefingDay(now),
-        name: profile?.name ?? '',
-      );
     });
   }
 
@@ -186,7 +191,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
     final profileAsync = ref.watch(userProfileStreamProvider);
     final layout = ref.watch(homeLayoutProvider);
-    if (!layout.shortcuts.contains(_activeShortcutId)) _activeShortcutId = null;
     ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
@@ -203,360 +207,163 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       }
     });
 
-    return PopScope(
-      canPop: _activeShortcutId == null,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (_activeShortcutId != null) {
-          setState(() => _activeShortcutId = null);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: g.bg,
-        body: SafeArea(
-          child: HomeAtmosphereBackground(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: profileAsync.when(
-                    loading: () => const _HomeLoadingView(),
-                    error: (err, _) {
-                      debugPrint('Home profile load failed: $err');
-                      return EmptyState(
-                        icon: Icons.cloud_off_rounded,
-                        title: "Couldn't load your Home",
-                        subtitle:
-                            'Something went wrong while loading. Please try again.',
-                        actionLabel: 'Try again',
-                        onAction: () => ref.invalidate(userProfileStreamProvider),
-                      );
-                    },
-                    data: (profile) {
-                      final isValidProfile = canEnterWorkspace(
-                        profile,
-                        ref.read(sharedPreferencesProvider),
-                      );
+    return Scaffold(
+      backgroundColor: g.bg,
+      body: SafeArea(
+        child: HomeAtmosphereBackground(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: profileAsync.when(
+                  loading: () => const _HomeLoadingView(),
+                  error: (err, _) {
+                    debugPrint('Home profile load failed: $err');
+                    return EmptyState(
+                      icon: Icons.cloud_off_rounded,
+                      title: "Couldn't load your Home",
+                      subtitle:
+                          'Something went wrong while loading. Please try again.',
+                      actionLabel: 'Try again',
+                      onAction: () => ref.invalidate(userProfileStreamProvider),
+                    );
+                  },
+                  data: (profile) {
+                    final isValidProfile = canEnterWorkspace(
+                      profile,
+                      ref.read(sharedPreferencesProvider),
+                    );
 
-                      if (!isValidProfile) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          final router = GoRouter.maybeOf(context);
-                          if (router != null) {
-                            router.go('/onboarding');
-                          }
-                        });
-                        return const Center(
-                          child: CircularProgressIndicator(
-                            key: ValueKey('blockage_profile_indicator'),
-                          ),
-                        );
-                      }
-
-                      return RefreshIndicator(
-                        onRefresh: () async {
-                          ref.invalidate(userProfileStreamProvider);
-                          ref.invalidate(todayFocusTaskProvider);
-                          ref.invalidate(currentStreakStreamProvider);
-                          ref.invalidate(learningHubProvider);
-                          ref.invalidate(nextUpcomingInterviewProvider);
-                          ref.invalidate(recentThoughtsStreamProvider);
-                          ref.invalidate(todayActivitiesProvider);
-                          ref.invalidate(activeMomentumChallengeStreamProvider);
-                          ref.invalidate(
-                            todayMomentumCommitmentsStreamProvider,
-                          );
-                          ref.invalidate(studyStreakProvider);
-                          ref.invalidate(allRemindersProvider);
-                          ref.invalidate(dismissedTodayReminderIdsProvider);
-                        },
-                        color: g.clay,
-                        child: ListView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(
-                            left: AppSpace.s24,
-                            right: AppSpace.s24,
-                            top: AppSpace.s16,
-                            bottom: AppSpace.s96,
-                          ),
-                          children: [
-                            // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
-                            HomeHeader(profile: profile),
-
-                            // Live state is independent of shortcut preferences.
-                            const AnimatedSize(
-                              duration: Duration(milliseconds: 260),
-                              curve: Curves.easeOutCubic,
-                              alignment: Alignment.topCenter,
-                              child: AscentDynamicIsland(),
-                            ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: AppSpace.s16,
-                                ),
-                                child: HomeShortcutPanel(
-                                  shortcuts: layout.shortcuts,
-                                  activeShortcutId: _activeShortcutId,
-                                  onSelectShortcut: (id) =>
-                                      setState(() => _activeShortcutId = id),
-                                ),
-                              ),
-
-                            // ── SHORTCUT DRILLDOWN / FULL HOME FEED ──
-                            if (_activeShortcutId != null) ...[
-                              _buildBackToHomeBar(context),
-                              _buildSingleShortcutFeature(
-                                _activeShortcutId!,
-                                layout,
-                              ),
-                            ] else ...[
-                              // Mind Palace / Thought capture stays at the top of the feed
-                              if (layout.visible.contains('mind'))
-                                const Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: AppSpace.s20,
-                                  ),
-                                  child: ThoughtWallHomePreview(
-                                    previewLimit: 1,
-                                    compact: true,
-                                  ),
-                                ),
-
-                              // HERO: Activity Hub
-                              if (layout.visible.contains('today'))
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AppSpace.s24,
-                                  ),
-                                  child: ActivityHubCard(
-                                    previewLimit:
-                                        layout.compact.contains('today')
-                                        ? 2
-                                        : 4,
-                                  ),
-                                ),
-
-                              PlanningNotificationHandler(
-                                uri: widget.notificationUri,
-                              ),
-
-                              // Contextual & remaining modules (hidden when empty)
-                              ..._buildContextualModules(context, layout),
-
-                              if (layout.visible.isEmpty)
-                                EmptyState(
-                                  icon: Icons.dashboard_customize_outlined,
-                                  title: 'Make this space yours',
-                                  subtitle:
-                                      'Nothing is shown on Home right now. Open tools to browse everything Ascent can do.',
-                                  actionLabel: 'Open tools',
-                                  onAction: () => context.push('/more'),
-                                ),
-                            ],
-                          ],
+                    if (!isValidProfile) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        final router = GoRouter.maybeOf(context);
+                        if (router != null) {
+                          router.go('/onboarding');
+                        }
+                      });
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          key: ValueKey('blockage_profile_indicator'),
                         ),
                       );
+                    }
+
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        ref.invalidate(userProfileStreamProvider);
+                        ref.invalidate(todayFocusTaskProvider);
+                        ref.invalidate(currentStreakStreamProvider);
+                        ref.invalidate(learningHubProvider);
+                        ref.invalidate(nextUpcomingInterviewProvider);
+                        ref.invalidate(recentThoughtsStreamProvider);
+                        ref.invalidate(latestHomeThoughtProvider);
+                        ref.invalidate(todayActivitiesProvider);
+                        ref.invalidate(activeMomentumChallengeStreamProvider);
+                        ref.invalidate(todayMomentumCommitmentsStreamProvider);
+                        ref.invalidate(studyStreakProvider);
+                        ref.invalidate(allRemindersProvider);
+                        ref.invalidate(dismissedTodayReminderIdsProvider);
+                      },
+                      color: g.clay,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(
+                          left: AppSpace.s24,
+                          right: AppSpace.s24,
+                          top: AppSpace.s16,
+                          bottom: AppSpace.s96,
+                        ),
+                        children: [
+                          HomeHeader(profile: profile),
+                          const AnimatedSize(
+                            duration: Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            alignment: Alignment.topCenter,
+                            child: AscentDynamicIsland(),
+                          ),
+                          if (layout.visible.contains('today'))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 28),
+                              child: ActivityHubCard(
+                                previewLimit: layout.compact.contains('today')
+                                    ? 2
+                                    : 3,
+                              ),
+                            ),
+                          if (layout.visible.contains('mind'))
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 28),
+                              child: ThoughtWallHomePreview(
+                                previewLimit: 1,
+                                compact: true,
+                              ),
+                            ),
+                          PlanningNotificationHandler(
+                            uri: widget.notificationUri,
+                          ),
+                          ..._buildContextualModules(context, layout),
+                          if (layout.visible.contains('life') &&
+                              layout.tools.isNotEmpty)
+                            const HomeLifeShelf(),
+                          // Favorites navigate to their own space instead of
+                          // replacing the feed with another copy of its cards.
+                          HomeShortcutPanel(shortcuts: layout.shortcuts),
+                          if (_entryDialogsReady &&
+                              ref
+                                      .read(sharedPreferencesProvider)
+                                      .getString('ascent_first_home_day_v1') !=
+                                  _briefingDate.toIso8601String())
+                            const SmartCatchUpBanner(),
+                          if (layout.visible.isEmpty)
+                            EmptyState(
+                              icon: Icons.dashboard_customize_outlined,
+                              title: 'Make this space yours',
+                              subtitle: 'Choose what belongs on your Home.',
+                              actionLabel: 'Open tools',
+                              onAction: () => context.push('/more'),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Return-user greeting: floats at the top for a few seconds and
+              // never pushes the Things hub down, positioned below header controls.
+              if (_welcomeBackDays != null)
+                Positioned(
+                  top: 96,
+                  left: AppSpace.s24,
+                  right: AppSpace.s24,
+                  child: WelcomeBackBanner(
+                    days: _welcomeBackDays!,
+                    visibleFor: const Duration(seconds: 3),
+                    onDismissed: () {
+                      if (mounted) setState(() => _welcomeBackDays = null);
                     },
                   ),
                 ),
-                // Return-user greeting: floats at the top for a few seconds and
-                // never pushes the Things hub down, positioned below header controls.
-                if (_welcomeBackDays != null)
-                  Positioned(
-                    top: 96,
-                    left: AppSpace.s24,
-                    right: AppSpace.s24,
-                    child: WelcomeBackBanner(
-                      days: _welcomeBackDays!,
-                      visibleFor: const Duration(seconds: 3),
-                      onDismissed: () {
-                        if (mounted) setState(() => _welcomeBackDays = null);
-                      },
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildBackToHomeBar(BuildContext context) {
-    final g = context.glass;
-    final shortcutLabel = _activeShortcutId != null
-        ? (kRegisteredShortcuts[_activeShortcutId]?.label ?? _activeShortcutId!)
-        : '';
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s16),
-      child: Semantics(
-        button: true,
-        excludeSemantics: true,
-        label: shortcutLabel.isEmpty
-            ? 'Back to home'
-            : 'Back to home from $shortcutLabel',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            key: const ValueKey('back_to_home_button'),
-            borderRadius: AscentRadii.borderLg,
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() => _activeShortcutId = null);
-            },
-            child: Container(
-              alignment: Alignment.centerLeft,
-              constraints: const BoxConstraints(
-                minHeight: AscentDimensions.minTouchTarget,
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s16,
-                vertical: AppSpace.s12,
-              ),
-              decoration: BoxDecoration(
-                color: g.fill,
-                borderRadius: AscentRadii.borderLg,
-                border: Border.all(color: g.edge),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.arrow_back_rounded, size: 18, color: g.clay),
-                  const SizedBox(width: AppSpace.s8),
-                  Text(
-                    'Back to home',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: g.clay,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpace.s12),
-                  Expanded(
-                    child: Text(
-                      shortcutLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSingleShortcutFeature(String id, HomeLayout layout) {
-    switch (id) {
-      case 'today':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: ActivityHubCard(previewLimit: 20),
-        );
-      case 'thought-wall':
-      case 'mind':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: ThoughtWallHomePreview(previewLimit: 20),
-        );
-      case 'reminders':
-        final reminders = ref.watch(homeVisibleRemindersProvider);
-        if (reminders.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpace.s24),
-              child: Text(
-                'No reminders scheduled.',
-                style: TextStyle(color: context.glass.inkMuted),
-              ),
-            ),
-          );
-        }
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpace.s32),
-          child: HomeDismissibleRemindersSection(
-            reminders: reminders,
-            onAddReminder: () => context.push('/reminders'),
-            onViewAll: () => context.push('/reminders'),
-            onDismissReminder: (r) =>
-                runReminderAction(context, ref, r, ReminderRowAction.delete),
-            onCompleteReminder: (r) =>
-                runReminderAction(context, ref, r, ReminderRowAction.done),
-            onSnoozeReminder: (r) =>
-                runReminderAction(context, ref, r, ReminderRowAction.snooze),
-          ),
-        );
-      case 'learning':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: LearningHubCard(),
-        );
-      case 'hydration':
-      case 'health':
-      case 'medicine':
-      case 'walk':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: QuickModulesNavHub(),
-        );
-      case 'promises':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: HomePromiseSection(),
-        );
-      case 'money':
-        return _homeSection('money', layout);
-      case 'vault':
-        return _homeSection('vault', layout);
-      case 'checkin':
-        return const Padding(
-          padding: EdgeInsets.only(bottom: AppSpace.s32),
-          child: DailyCheckInCard(),
-        );
-      default:
-        return _homeSection(id, layout);
-    }
   }
 
   List<Widget> _buildContextualModules(
     BuildContext context,
     HomeLayout layout,
   ) {
-    final hour = DateTime.now().hour;
-    final isMorning = hour < 12;
-    final isEvening = hour >= 17;
-    final widgets = <Widget>[];
-
-    Widget deferredModule(Widget child) {
-      if (!_heavierModulesReady) return const SizedBox.shrink();
-      return child;
-    }
-
-    // 1. Morning: Life & Health (Water/Medicine) higher up
-    if (isMorning &&
-        layout.visible.contains('life') &&
-        layout.tools.isNotEmpty) {
-      widgets.add(
-        deferredModule(
-          const Padding(
-            padding: EdgeInsets.only(bottom: AppSpace.s24),
-            child: QuickModulesNavHub(),
-          ),
-        ),
-      );
-    }
-
-    // 2. Active Reminders (hidden when empty)
+    final modules = <Widget>[];
+    Widget spaced(Widget child) =>
+        Padding(padding: const EdgeInsets.only(bottom: 28), child: child);
+    // Reminders have a single home. Do not repeat them in a top glance.
     if (layout.visible.contains('reminders')) {
       final reminders = ref.watch(homeVisibleRemindersProvider);
       if (reminders.isNotEmpty) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpace.s32),
-            child: HomeDismissibleRemindersSection(
+        modules.add(
+          spaced(
+            HomeDismissibleRemindersSection(
               reminders: reminders,
               onAddReminder: () => context.push('/reminders'),
               onViewAll: () => context.push('/reminders'),
@@ -571,207 +378,55 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         );
       }
     }
-
-    // 3. Learning Hub (hidden when empty/unstarted)
+    if (!_heavierModulesReady) return modules;
     if (layout.visible.contains('learning')) {
       final learning = ref.watch(learningHubProvider);
       if (learning.hasStartedLearning && learning.courses.isNotEmpty) {
-        widgets.add(
-          deferredModule(
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpace.s32),
-              child: LearningHubCard(),
-            ),
-          ),
-        );
+        modules.add(spaced(const LearningHubCard()));
       }
     }
-
-    // 4. Promises (hidden when empty)
-    if (layout.visible.contains('promises')) {
-      final promises = ref.watch(activePromisesStreamProvider).value ?? [];
-      if (promises.isNotEmpty) {
-        widgets.add(
-          deferredModule(
-            const Padding(
-              padding: EdgeInsets.only(bottom: AppSpace.s24),
-              child: HomePromiseSection(),
-            ),
-          ),
-        );
-      }
+    if (layout.visible.contains('promises') &&
+        ref.watch(priorityPromiseProvider) != null) {
+      modules.add(spaced(const HomePromiseSection()));
     }
-
-    // 5. Evening: Daily Check-In higher up (hidden when empty)
-    if (isEvening && layout.visible.contains('checkin')) {
-      widgets.add(
-        deferredModule(
-          const Padding(
-            padding: EdgeInsets.only(bottom: AppSpace.s32),
-            child: DailyCheckInCard(),
-          ),
-        ),
-      );
+    if (layout.visible.contains('checkin') && DateTime.now().hour >= 17) {
+      modules.add(spaced(const DailyCheckInCard()));
     }
-
-    // 6. Afternoon/Non-morning: Life & Health (if visible)
-    if (!isMorning &&
-        layout.visible.contains('life') &&
-        layout.tools.isNotEmpty) {
-      widgets.add(
-        deferredModule(
-          const Padding(
-            padding: EdgeInsets.only(bottom: AppSpace.s24),
-            child: QuickModulesNavHub(),
-          ),
-        ),
-      );
-    }
-
-    // 7. Streak Meter (if visible)
-    if (layout.visible.contains('streak') &&
-        ref.watch(homeStreakVisibleProvider)) {
-      widgets.add(
-        deferredModule(
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpace.s32),
-            child: StudyStreakMeterCard(
-              status: ref.watch(studyStreakProvider),
-              onTap: () => ref
-                  .read(homeLayoutProvider.notifier)
-                  .save(
-                    layout.copyWith(
-                      visible: {...layout.visible}..remove('streak'),
-                    ),
-                  ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return widgets;
-  }
-
-  Widget _homeSection(String id, HomeLayout layout) {
-    Widget spaced(Widget child) => Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s32),
-      child: child,
-    );
-    switch (id) {
-      case 'streak':
-        if (!ref.watch(homeStreakVisibleProvider)) {
-          return const SizedBox.shrink();
-        }
-        return spaced(
-          StudyStreakMeterCard(
-            status: ref.watch(studyStreakProvider),
-            onTap: () => ref
-                .read(homeLayoutProvider.notifier)
-                .save(
-                  layout.copyWith(
-                    visible: {...layout.visible}..remove('streak'),
-                  ),
-                ),
-          ),
-        );
-      case 'promises':
-        return const SizedBox.shrink();
-      case 'reminders':
-        final reminders = ref.watch(homeVisibleRemindersProvider);
-        if (reminders.isEmpty) return const SizedBox.shrink();
-        return spaced(
-          HomeDismissibleRemindersSection(
-            reminders: reminders,
-            onAddReminder: () => context.push('/reminders'),
-            onViewAll: () => context.push('/reminders'),
-            onDismissReminder: (reminder) async {
-              await runReminderAction(
-                context,
-                ref,
-                reminder,
-                ReminderRowAction.delete,
-              );
-            },
-            onCompleteReminder: (reminder) async {
-              await runReminderAction(
-                context,
-                ref,
-                reminder,
-                ReminderRowAction.done,
-              );
-            },
-            onSnoozeReminder: (reminder) async {
-              await runReminderAction(
-                context,
-                ref,
-                reminder,
-                ReminderRowAction.snooze,
-              );
-            },
-          ),
-        );
-      case 'today':
-        return spaced(
-          ActivityHubCard(previewLimit: layout.compact.contains(id) ? 2 : 4),
-        );
-      case 'learning':
-        return spaced(const LearningHubCard());
-      case 'life':
-        if (layout.tools.isEmpty) return const SizedBox.shrink();
-        if (layout.tools.length == homeTools.length) {
-          return spaced(const QuickModulesNavHub());
-        }
-        return spaced(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Life & Health',
-                style: AppTypeRoles.typeRole1.copyWith(
-                  color: context.glass.ink,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: layout.tools
-                    .map(
-                      (tool) => AppPill.action(
-                        label: Text(homeTools[tool]!),
-                        onPressed: () => context.push('/$tool'),
-                      ),
-                    )
-                    .toList(),
-              ),
-              if (layout.tools.contains('hydration'))
-                TextButton(
-                  onPressed: () async {
-                    await ref.read(waterDaoProvider).addWater(250);
-                  },
-                  child: const Text('Log 250 ml water'),
-                ),
-            ],
-          ),
-        );
-      case 'money':
-        return spaced(
+    if (layout.visible.contains('vault') &&
+        !layout.shortcuts.contains('vault')) {
+      modules.add(
+        spaced(
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.payments_outlined),
-            title: const Text('Log an expense'),
-            subtitle: const Text('Amount, category and date — when you want'),
-            onTap: () => AddTransactionSheet.show(context),
+            leading: Icon(
+              Icons.shield_outlined,
+              color: context.glass.inkSecondary,
+            ),
+            title: const Text('Your private vault'),
+            trailing: const Icon(Icons.arrow_forward_rounded, size: 20),
+            onTap: () => context.push('/vault'),
           ),
-        );
-      case 'checkin':
-        return spaced(const DailyCheckInCard());
-      case 'vault':
-        return spaced(const VaultHomePreview());
-      default:
-        return const SizedBox.shrink();
+        ),
+      );
     }
+    if (layout.visible.contains('money')) {
+      modules.add(
+        spaced(
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet_outlined),
+            title: const Text('Quick expense'),
+            trailing: const Icon(Icons.add_rounded),
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const AddTransactionSheet(),
+            ),
+          ),
+        ),
+      );
+    }
+    return modules;
   }
 }
 

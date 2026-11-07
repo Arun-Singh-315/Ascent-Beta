@@ -11,7 +11,7 @@ const homeSections = <String, String>{
   'today': 'Today',
   'learning': 'Learning',
   'life': 'Life & Health',
-  'mind': 'Mind Space',
+  'mind': 'Thought Wall',
   'money': 'Quick expense',
   'checkin': 'Daily check-in',
   'vault': 'Ascent Vault',
@@ -26,7 +26,7 @@ const homeTools = <String, String>{
 const homeShortcutRoutes = <String, String>{
   'promises': 'Promises',
   'today': 'Today',
-  'thought-wall': 'Mind Palace',
+  'thought-wall': 'Thought Wall',
   'learning': 'Learning',
   'reminders': 'Reminders',
   'money': 'Money',

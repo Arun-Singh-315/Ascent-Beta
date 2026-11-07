@@ -81,13 +81,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.byTooltip('Edit Prescription'));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Update Prescription'), findsOneWidget);
+    expect(find.text('Edit medicine'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.enterText(find.byType(TextField).first, 'Renamed schedule');
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.ensureVisible(find.text('Update Prescription'));
+    await tester.ensureVisible(find.text('Continue'));
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.text('Update Prescription'));
+    await tester.tap(find.text('Continue'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.ensureVisible(find.text('Save medicine'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Save medicine'));
     for (var i = 0; i < 10; i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 20)),
@@ -99,7 +103,7 @@ void main() {
     );
     expect(medicines, hasLength(1));
     expect(medicines!.single.name, 'Renamed schedule');
-    expect(find.text('Update Prescription'), findsNothing);
+    expect(find.text('Edit medicine'), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

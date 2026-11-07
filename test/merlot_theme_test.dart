@@ -21,7 +21,7 @@ void main() {
     }
 
     test('Surfaces stay neutral and actions have accessible blue labels', () {
-      expect(MerlotPalette.canvas, const Color(0xFFF2F2F7));
+      expect(MerlotPalette.canvas, const Color(0xFFFBFBFD));
       expect(MerlotPalette.surface, Colors.white);
       expect(MerlotPalette.action, const Color(0xFF006FE6));
       expect(MerlotPalette.danger, const Color(0xFFD92D20));

@@ -12,6 +12,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/history_action.dart';
 
@@ -39,7 +40,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
 
   void _showSetGoalDialog(int currentGoal) {
     _goalController.text = currentGoal.toString();
-    showDialog(
+    showAscentFrostedDialog<void>(
       context: context,
       builder: (ctx) {
         final g = ctx.glass;
@@ -93,10 +94,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: g.clay,
-                      width: 1.5,
-                    ),
+                    borderSide: BorderSide(color: g.clay, width: 1.5),
                   ),
                 ),
               ),
@@ -105,19 +103,19 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: ctx.textMuted),
-              ),
+              child: Text('Cancel', style: TextStyle(color: ctx.textMuted)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: g.clay,
-                foregroundColor: Colors.white,
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                backgroundColor: g.tonalBg,
+                foregroundColor: g.tonalFg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
               ),
               onPressed: () async {
                 final newGoal = int.tryParse(_goalController.text.trim());
@@ -137,7 +135,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
 
   void _showCustomIntakeDialog() {
     _customMlController.clear();
-    showDialog(
+    showAscentFrostedDialog<void>(
       context: context,
       builder: (ctx) {
         final g = ctx.glass;
@@ -192,10 +190,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: g.clay,
-                      width: 1.5,
-                    ),
+                    borderSide: BorderSide(color: g.clay, width: 1.5),
                   ),
                 ),
               ),
@@ -206,14 +201,17 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
               onPressed: () => Navigator.of(ctx).pop(),
               child: Text('Cancel', style: TextStyle(color: ctx.textMuted)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: g.clay,
-                foregroundColor: Colors.white,
+            FilledButton.tonal(
+              style: FilledButton.styleFrom(
+                backgroundColor: g.tonalBg,
+                foregroundColor: g.tonalFg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
               ),
               onPressed: () async {
                 final amount = int.tryParse(_customMlController.text.trim());
@@ -289,7 +287,8 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             padding: const EdgeInsets.all(AppSpace.s16),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isStacked = constraints.maxWidth < 270 || textScale >= 1.5;
+                final isStacked =
+                    constraints.maxWidth < 270 || textScale >= 1.5;
 
                 final ringWidget = SizedBox(
                   width: isStacked ? 100 : 110,
@@ -303,7 +302,10 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                         curve: Curves.easeOutCubic,
                         builder: (context, animatedVal, _) {
                           return CustomPaint(
-                            size: Size(isStacked ? 100 : 110, isStacked ? 100 : 110),
+                            size: Size(
+                              isStacked ? 100 : 110,
+                              isStacked ? 100 : 110,
+                            ),
                             painter: _AppleHealthRingPainter(
                               progress: animatedVal,
                               trackColor: isDark
@@ -332,7 +334,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              '$percent%',
+                              currentMl == 0 ? 'First sip' : '$percent%',
                               style: AscentTextStyles.cardTitle.copyWith(
                                 color: context.textPrimary,
                                 fontWeight: FontWeight.w700,
@@ -371,20 +373,18 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                               children: [
                                 TextSpan(
                                   text: '$val',
-                                  style: AscentTextStyles.displaySmall
-                                      .copyWith(
-                                        color: context.textPrimary,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.5,
-                                      ),
+                                  style: AscentTextStyles.displaySmall.copyWith(
+                                    color: context.textPrimary,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.5,
+                                  ),
                                 ),
                                 TextSpan(
                                   text: ' / $targetMl mL',
-                                  style: AscentTextStyles.bodyMedium
-                                      .copyWith(
-                                        color: context.textMuted,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  style: AscentTextStyles.bodyMedium.copyWith(
+                                    color: context.textMuted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -408,8 +408,10 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                         fit: BoxFit.scaleDown,
                         child: Text(
                           isGoalMet
-                              ? '🎉 Daily Goal Achieved'
-                              : '$remainingMl mL to daily goal',
+                              ? 'Daily Goal Achieved'
+                              : (currentMl == 0
+                                  ? 'Record your first sip below'
+                                  : '$remainingMl mL to daily goal'),
                           style: AscentTextStyles.captionMedium.copyWith(
                             color: isGoalMet
                                 ? AppPalette.colorFF10B981
@@ -481,10 +483,11 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                   const SizedBox(width: 4),
                                   Text(
                                     'Undo Last',
-                                    style: AscentTextStyles.captionMedium.copyWith(
-                                      color: context.textMuted,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AscentTextStyles.captionMedium
+                                        .copyWith(
+                                          color: context.textMuted,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -533,7 +536,9 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 360;
-              final buttonWidth = (constraints.maxWidth - (isNarrow ? 8 : 24)) / (isNarrow ? 2 : 4);
+              final buttonWidth =
+                  (constraints.maxWidth - (isNarrow ? 8 : 24)) /
+                  (isNarrow ? 2 : 4);
 
               return Wrap(
                 spacing: 8,
@@ -669,7 +674,9 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                       ),
                       itemBuilder: (ctx, index) {
                         final log = visibleLogs[index];
-                        final timeStr = DateFormat('h:mm a').format(log.timestamp);
+                        final timeStr = DateFormat(
+                          'h:mm a',
+                        ).format(log.timestamp);
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -695,17 +702,17 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                   children: [
                                     Text(
                                       '+${log.amountMl} mL',
-                                      style: AscentTextStyles.bodyMedium.copyWith(
-                                        color: context.textPrimary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: AscentTextStyles.bodyMedium
+                                          .copyWith(
+                                            color: context.textPrimary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
                                     const SizedBox(height: 1),
                                     Text(
                                       timeStr,
-                                      style: AscentTextStyles.captionMedium.copyWith(
-                                        color: context.textMuted,
-                                      ),
+                                      style: AscentTextStyles.captionMedium
+                                          .copyWith(color: context.textMuted),
                                     ),
                                   ],
                                 ),
@@ -749,10 +756,11 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                   _showAllLogs
                                       ? 'Show Less'
                                       : 'Show All ${logs.length} Entries',
-                                  style: AscentTextStyles.captionMedium.copyWith(
-                                    color: g.clay,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                  style: AscentTextStyles.captionMedium
+                                      .copyWith(
+                                        color: g.clay,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                   textAlign: TextAlign.center,
                                 ),
                               ),
@@ -882,7 +890,8 @@ class _AppleQuickIntakeButton extends StatefulWidget {
   });
 
   @override
-  State<_AppleQuickIntakeButton> createState() => _AppleQuickIntakeButtonState();
+  State<_AppleQuickIntakeButton> createState() =>
+      _AppleQuickIntakeButtonState();
 }
 
 class _AppleQuickIntakeButtonState extends State<_AppleQuickIntakeButton> {
@@ -1055,13 +1064,18 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: history.map((record) {
-                  final heightFactor = (record.totalMl / maxVal).clamp(0.06, 1.0);
+                  final heightFactor = (record.totalMl / maxVal).clamp(
+                    0.06,
+                    1.0,
+                  );
                   final now = DateTime.now();
                   final isToday =
                       record.date.day == now.day &&
                       record.date.month == now.month &&
                       record.date.year == now.year;
-                  final dayLabel = DateFormat('E').format(record.date).substring(0, 1);
+                  final dayLabel = DateFormat(
+                    'E',
+                  ).format(record.date).substring(0, 1);
 
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -1086,8 +1100,8 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                           color: record.isGoalMet
                               ? AppPalette.colorFF10B981
                               : (isToday
-                                  ? g.clay
-                                  : g.clay.withValues(alpha: 0.35)),
+                                    ? g.clay
+                                    : g.clay.withValues(alpha: 0.35)),
                           borderRadius: BorderRadius.circular(6),
                           border: isToday
                               ? Border.all(
@@ -1102,7 +1116,9 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                         isToday ? 'Today' : dayLabel,
                         style: AscentTextStyles.captionMedium.copyWith(
                           color: isToday ? g.clay : context.textMuted,
-                          fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isToday
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           fontSize: 10.5,
                         ),
                       ),
