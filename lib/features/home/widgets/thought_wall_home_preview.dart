@@ -313,11 +313,20 @@ class _ThoughtWallHomePreviewState
                     : (g.frozen
                           ? const Color(0xFFFBFDFF)
                           : const Color(0xFFFFFDFB))),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _focusNode.hasFocus ? g.clay : g.line,
             width: _focusNode.hasFocus ? 1.5 : .75,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: (_focusNode.hasFocus ? g.clay : Colors.black).withValues(
+                alpha: context.isDark ? 0.18 : 0.04,
+              ),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -346,7 +355,7 @@ class _ThoughtWallHomePreviewState
                 textCapitalization: TextCapitalization.sentences,
                 style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                 decoration: InputDecoration(
-                  hintText: "Capture a thought…",
+                  hintText: "Capture an insight, reflection, or clarity…",
                   hintStyle: TextStyle(
                     color: g.inkMuted,
                     fontSize: 14,
@@ -1163,11 +1172,29 @@ class _ThoughtWallHomePreviewState
         if (widget.showComposer)
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: g.line, width: .75),
+              color: context.isDark
+                  ? g.fill.withValues(alpha: 0.35)
+                  : (g.merlot
+                        ? MerlotPalette.surface
+                        : (g.frozen
+                              ? const Color(0xFFFBFDFF)
+                              : const Color(0xFFFFFDFB))),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: _focusNode.hasFocus ? g.clay : g.line,
+                width: _focusNode.hasFocus ? 1.5 : .75,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (_focusNode.hasFocus ? g.clay : Colors.black).withValues(
+                    alpha: context.isDark ? 0.18 : 0.04,
+                  ),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
+            padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
             child: Row(
               children: [
                 InlineListAddButton(
@@ -1175,6 +1202,7 @@ class _ThoughtWallHomePreviewState
                   focusNode: _focusNode,
                   enabled: !_saving,
                 ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     key: _fieldKey,
@@ -1183,16 +1211,21 @@ class _ThoughtWallHomePreviewState
                     minLines: 1,
                     maxLines: 3,
                     textCapitalization: TextCapitalization.sentences,
-                    style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
-                    decoration: const InputDecoration(
-                      hintText: 'Capture a thought…',
+                    style: AppTypography.plusJakartaSans14W60080(color: g.ink),
+                    decoration: InputDecoration(
+                      hintText: 'Capture an insight, reflection, or clarity…',
+                      hintStyle: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 4,
-                        vertical: 12,
+                        vertical: 10,
                       ),
                     ),
                   ),
@@ -1207,8 +1240,9 @@ class _ThoughtWallHomePreviewState
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: g.ink.withValues(alpha: .08),
                     disabledForegroundColor: g.inkMuted,
+                    minimumSize: const Size(38, 38),
                   ),
-                  icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                  icon: const Icon(Icons.arrow_upward_rounded, size: 19),
                 ),
               ],
             ),
@@ -1306,78 +1340,89 @@ class _ThoughtWallHomePreviewState
                     ],
                   ),
                 ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(17),
-                      topRight: Radius.circular(17),
-                      bottomRight: Radius.circular(17),
-                      bottomLeft: Radius.circular(5),
-                    ),
-                    border: Border.all(
-                      color: context.isDark
-                          ? const Color(0xFF2C2C2E)
-                          : const Color(0x33000000),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                      bottomLeft: Radius.circular(4),
-                    ),
-                    child: InkWell(
-                      key: const ValueKey('home_latest_thought_bubble'),
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () =>
-                          context.push('/thought-wall?thought=${latest.id}'),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 10,
+                child: Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  child: InkWell(
+                    key: const ValueKey('home_latest_thought_bubble'),
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () =>
+                        context.push('/thought-wall?thought=${latest.id}'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: context.isDark
+                            ? g.fill.withValues(alpha: 0.35)
+                            : (g.merlot
+                                  ? MerlotPalette.surface
+                                  : (g.frozen
+                                        ? const Color(0xFFF4F7FB)
+                                        : const Color(0xFFFBF9F5))),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: context.isDark
+                              ? g.edge.withValues(alpha: 0.6)
+                              : g.line,
+                          width: 1.0,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (locked)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 7),
-                                child: Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 15,
-                                  color: g.ink,
-                                ),
-                              ),
-                            Flexible(
-                              child: Text(
-                                locked
-                                    ? 'Private thought'
-                                    : ThoughtExcerpt.displayContent(
-                                        latest.content,
-                                      ),
-                                key: const ValueKey('home_latest_thought_text'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: g.ink,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.4,
-                                ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (context.isDark ? Colors.black : g.clay)
+                                .withValues(alpha: context.isDark ? 0.2 : 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 3,
+                            height: 20,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: g.clay,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          if (locked)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 7),
+                              child: Icon(
+                                Icons.lock_outline_rounded,
+                                size: 15,
+                                color: g.ink,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 17,
-                              color: g.ink,
+                          Flexible(
+                            child: Text(
+                              locked
+                                  ? 'Private thought'
+                                  : ThoughtExcerpt.displayContent(
+                                      latest.content,
+                                    ),
+                              key: const ValueKey('home_latest_thought_text'),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.plusJakartaSans14W60080(
+                                color: g.ink,
+                              ).copyWith(
+                                fontStyle: FontStyle.italic,
+                                height: 1.35,
+                              ),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 15,
+                            color: g.inkMuted,
+                          ),
+                        ],
                       ),
                     ),
                   ),

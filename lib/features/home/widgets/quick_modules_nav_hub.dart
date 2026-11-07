@@ -1,6 +1,7 @@
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +45,16 @@ class QuickModulesNavHub extends ConsumerWidget {
     final medProgress = totalMedDoses > 0
         ? (takenMedDoses / totalMedDoses).clamp(0.0, 1.0)
         : 0.0;
+    final allMeds = ref.watch(allMedicinesStreamProvider).value ?? [];
+    final nextDose = todayMedicineLogs.where((l) => !l.isTaken).firstOrNull;
+    final nextMedName = nextDose != null
+        ? allMeds.where((m) => m.id == nextDose.medicineId).firstOrNull?.name
+        : null;
+    final medBriefDescription = nextDose != null && nextMedName != null
+        ? 'Next: $nextMedName (${nextDose.timeSlot})'
+        : (totalMedDoses > 0 && takenMedDoses >= totalMedDoses
+            ? 'All prescribed doses completed for today · Schedule intact'
+            : (totalMedDoses > 0 ? '$takenMedDoses of $totalMedDoses doses taken' : 'No prescriptions due today'));
 
     // Hydration stream watchers
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
@@ -51,6 +62,10 @@ class QuickModulesNavHub extends ConsumerWidget {
     final waterProgress = waterGoal > 0
         ? (waterMl / waterGoal).clamp(0.0, 1.0)
         : 0.0;
+    final remainingWater = math.max(0, waterGoal - waterMl);
+    final waterBriefDescription = remainingWater > 0
+        ? '$remainingWater mL remaining today · Drink water regularly'
+        : 'Daily hydration target accomplished!';
 
     // Challenge watchers
     final challengeAsync = ref.watch(activeChallengeProvider);
@@ -251,7 +266,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final stacked =
-                        constraints.maxWidth < 320 ||
+                        constraints.maxWidth < 600 ||
                         MediaQuery.textScalerOf(context).scale(14) > 18;
 
                     final medicineCell = _LifeGridCell(
@@ -369,6 +384,20 @@ class QuickModulesNavHub extends ConsumerWidget {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                ),
+                              if (totalMedDoses > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    medBriefDescription,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: g.inkMuted,
+                                    ),
                                   ),
                                 ),
                             ],
@@ -513,7 +542,19 @@ class QuickModulesNavHub extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, bottom: 6),
+                                child: Text(
+                                  waterBriefDescription,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ),
                               _NeutralProgressBar(
                                 key: const ValueKey('hydration_progress_bar'),
                                 progress: waterProgress,

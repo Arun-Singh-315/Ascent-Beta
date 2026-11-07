@@ -120,9 +120,12 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _HomeHeaderRow(
-            date: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            date: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 // Live breathing day-cycle indicator dot
                 AnimatedBuilder(
                   animation: _pulseController,
@@ -246,7 +249,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 ),
               ],
             ),
-            actions: [
+          ),
+          actions: [
               // Apple-Style Quick Theme Morph Button
               Material(
                 color: Colors.transparent,
@@ -371,71 +375,29 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
             ],
           ),
           const SizedBox(height: 18),
-          // Dynamic greeting with ambient time-of-day badge
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Text(
-                greeting,
-                style: AscentTextStyles.homeBody.copyWith(
-                  color: g.inkSecondary,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                decoration: BoxDecoration(
-                  color: periodColor.withValues(alpha: context.isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: periodColor.withValues(alpha: context.isDark ? 0.4 : 0.25),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(periodIcon, size: 11.5, color: periodColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      periodSubtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: periodColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Executive, clean greeting
+          Text(
+            greeting,
+            style: GoogleFonts.dmSans(
+              color: g.inkMuted,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.1,
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: periodGradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              blendMode: BlendMode.srcIn,
-              child: Text(
-                name,
-                key: const ValueKey('home_user_name'),
-                style: AscentTextStyles.homeDisplay.copyWith(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.8,
-                  height: 1.15,
-                ),
+            child: Text(
+              name,
+              key: const ValueKey('home_user_name'),
+              style: GoogleFonts.plusJakartaSans(
+                color: g.ink,
+                fontSize: 30,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.7,
+                height: 1.15,
               ),
             ),
           ),
@@ -576,7 +538,7 @@ class _HomeHeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 280) {
+        if (constraints.maxWidth < 340) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
