@@ -236,8 +236,8 @@ class AscentTextStyles {
 
   // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
 
-  /// Display 32 / 38 · 700 (Bricolage Grotesque) — Dynamic luxury personal signature
-  static TextStyle get homeDisplay => GoogleFonts.bricolageGrotesque(
+  /// Display 32 / 38 · 700 (Plus Jakarta Sans) — Dynamic luxury personal signature
+  static TextStyle get homeDisplay => GoogleFonts.plusJakartaSans(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 38 / 32,
@@ -259,8 +259,8 @@ class AscentTextStyles {
     height: 24 / 17,
   );
 
-  /// Body 14 / 20 · 400 (Inter) · ls 0.1 — Crisp modern metadata and greeting
-  static TextStyle get homeBody => GoogleFonts.inter(
+  /// Body 14 / 20 · 400 (DM Sans) · ls 0.1 — Crisp modern metadata and greeting
+  static TextStyle get homeBody => GoogleFonts.dmSans(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 20 / 14,

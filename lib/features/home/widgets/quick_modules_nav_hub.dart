@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/day_glass_material.dart';
@@ -353,10 +354,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                                 RichText(
                                   textScaler: MediaQuery.textScalerOf(context),
                                   text: TextSpan(
-                                    style:
-                                        AppTypography.bricolageGrotesque17W600107(
-                                          color: g.ink,
-                                        ).copyWith(fontSize: 22),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: g.ink,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                    ),
                                     children: [
                                       TextSpan(text: '$takenMedDoses'),
                                       TextSpan(
@@ -375,12 +378,13 @@ class QuickModulesNavHub extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 8),
-                              if (medicineLogs.hasValue)
-                                _NeutralProgressBar(
-                                  key: const ValueKey('medicine_progress_bar'),
-                                  progress: medProgress,
-                                  fillColor: g.clay,
-                                ),
+                              _NeutralProgressBar(
+                                key: const ValueKey('medicine_progress_bar'),
+                                progress: medProgress,
+                                fillColor: medProgress >= 1.0
+                                    ? const Color(0xFF10B981)
+                                    : g.clay,
+                              ),
                             ],
                           ),
                         ],
@@ -435,10 +439,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                                         context,
                                       ),
                                       text: TextSpan(
-                                        style:
-                                            AppTypography.bricolageGrotesque17W600107(
-                                              color: g.ink,
-                                            ).copyWith(fontSize: 22),
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: g.ink,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.3,
+                                        ),
                                         children: [
                                           TextSpan(text: '$waterMl'),
                                           TextSpan(
@@ -511,7 +517,9 @@ class QuickModulesNavHub extends ConsumerWidget {
                               _NeutralProgressBar(
                                 key: const ValueKey('hydration_progress_bar'),
                                 progress: waterProgress,
-                                fillColor: g.clay,
+                                fillColor: waterProgress >= 1.0
+                                    ? const Color(0xFF10B981)
+                                    : g.clay,
                               ),
                             ],
                           ),
