@@ -83,6 +83,14 @@ class _SmartCatchUpBannerState extends ConsumerState<SmartCatchUpBanner> {
     final moneyCheckedToday =
         prefs.getString('ascent_money_checked_date') == todayStr;
 
+    // Hydration throttling & frequency capping (max 2 per day, min 4h cooldown)
+    final hydrationSnoozeUntilMs =
+        prefs.getInt('ascent_hydration_snooze_until') ?? 0;
+    final hydrationSnoozed =
+        now.millisecondsSinceEpoch < hydrationSnoozeUntilMs;
+    final hydrationPromptCount =
+        prefs.getInt('ascent_hydration_prompts_$todayStr') ?? 0;
+
     // Determine pending catch-up candidate
     final items = <CatchUpItem>[];
 
@@ -130,8 +138,10 @@ class _SmartCatchUpBannerState extends ConsumerState<SmartCatchUpBanner> {
       }
     }
 
-    // Priority B: Hydration behind schedule (waking hours: 9 AM - 10 PM)
+    // Priority B: Hydration behind schedule (waking hours: 9 AM - 10 PM, capped at 2x/day, 4h cooldown)
     if (!_dismissedDomains.contains(CatchUpDomain.hydration) &&
+        !hydrationSnoozed &&
+        hydrationPromptCount < 2 &&
         now.hour >= 9 &&
         now.hour <= 22) {
       final hoursAwake = (now.hour - 8).clamp(1, 14);
@@ -213,10 +223,23 @@ class _SmartCatchUpBannerState extends ConsumerState<SmartCatchUpBanner> {
     final db = ref.read(databaseProvider);
     switch (item.domain) {
       case CatchUpDomain.hydration:
-        final amount = int.parse(action);
-        await db.waterDao.addWater(amount);
-        final total = await db.waterDao.getWaterForDate(DateTime.now());
-        return 'Logged $amount mL. You have recorded $total mL of water today.';
+        final amount = int.tryParse(action) ?? 0;
+        if (amount > 0) {
+          await db.waterDao.addWater(amount);
+        }
+        final prefs = ref.read(sharedPreferencesProvider);
+        final now = DateTime.now();
+        final today = DateFormat('yyyy-MM-dd').format(now);
+        final count = prefs.getInt('ascent_hydration_prompts_$today') ?? 0;
+        await prefs.setInt(
+          'ascent_hydration_snooze_until',
+          now.add(const Duration(hours: 4)).millisecondsSinceEpoch,
+        );
+        await prefs.setInt('ascent_hydration_prompts_$today', count + 1);
+        final total = await db.waterDao.getWaterForDate(now);
+        return amount > 0
+            ? 'Logged $amount mL. You have recorded $total mL of water today.'
+            : 'Hydration check snoozed for 4 hours.';
       case CatchUpDomain.medicine:
         if (item.targetId != null) {
           await db.medicineDao.setDoseTaken(item.targetId!, true);
@@ -439,7 +462,23 @@ class _CatchUpDialogState extends State<_CatchUpDialog> {
                   AscentButton.ghost(
                     label: summary == null ? 'Skip for now' : 'Done',
                     compact: true,
-                    onPressed: _saving ? null : () => Navigator.pop(context),
+                    onPressed: _saving
+                        ? null
+                        : () {
+                            if (widget.items.any((i) => i.domain == CatchUpDomain.hydration)) {
+                              widget.onLog(
+                                const CatchUpItem(
+                                  domain: CatchUpDomain.hydration,
+                                  title: '',
+                                  prompt: '',
+                                  icon: Icons.water_drop,
+                                  accentColor: Colors.blue,
+                                ),
+                                '0',
+                              );
+                            }
+                            Navigator.pop(context);
+                          },
                   ),
                   if (summary != null &&
                       widget.items.any(

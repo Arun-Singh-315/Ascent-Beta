@@ -1235,11 +1235,13 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   ),
                 ),
                 if (activity.linkedTaskId != null && !done)
-                  AscentStarButton(
-                    key: ValueKey('activity_priority_${activity.id}'),
-                    selected: activity.priority == 'high',
-                    onChanged: _setStar,
-                  ),
+                  // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
+                  if (timedAction == null || activity.priority == 'high')
+                    AscentStarButton(
+                      key: ValueKey('activity_priority_${activity.id}'),
+                      selected: activity.priority == 'high',
+                      onChanged: _setStar,
+                    ),
                 if (timedAction != null) ...[
                   const SizedBox(width: 6),
                   timedAction,
@@ -1258,18 +1260,19 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     tooltip: 'Completed',
                   ),
                 ],
-                InkResponse(
-                  radius: 16,
-                  onTap: () => _showQuickActionsSheet(context, ref),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.more_horiz_rounded,
-                      size: 18,
-                      color: g.inkMuted,
+                if (timedAction == null || done)
+                  InkResponse(
+                    radius: 16,
+                    onTap: () => _showQuickActionsSheet(context, ref),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.more_horiz_rounded,
+                        size: 18,
+                        color: g.inkMuted,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
