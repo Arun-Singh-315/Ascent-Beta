@@ -185,7 +185,7 @@ void main() {
         tester
             .getSize(find.byKey(const ValueKey('rhythm_card_hydration')))
             .width,
-        lessThan(shelf.width),
+        shelf.width,
       );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
