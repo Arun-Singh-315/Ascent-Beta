@@ -82,7 +82,7 @@ class _HandlerState extends ConsumerState<PlanningNotificationHandler> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                    'This activity was removed or rescheduled. Open Plans in Things hub for the latest version.',
+                    'This activity was removed or rescheduled. Open Plans in Dayboard for the latest version.',
                   ),
                 ),
               );
@@ -125,7 +125,7 @@ class _HandlerState extends ConsumerState<PlanningNotificationHandler> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Could not open this plan. Open Plans in Things hub to retry.',
+                'Could not open this plan. Open Plans in Dayboard to retry.',
               ),
             ),
           );

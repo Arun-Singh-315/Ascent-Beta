@@ -206,7 +206,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
       return AiResponse(
         text:
-            'Ready to add $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm to save it to your Activity Hub.',
+            'Ready to add $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm to save it to your Dayboard.',
         proposedAction: AiProposedAction(
           type: AiActionType.activityCreated,
           title: 'Add $kindStr: ${taskMatch['title']}',
@@ -744,7 +744,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     buffer.writeln(
-      "\n**Action:** Tap below to start your study focus session or open your Activity Hub.",
+      "\n**Action:** Tap below to start your study focus session or open your Dayboard.",
     );
 
     return AiResponse(
@@ -1208,7 +1208,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   // ---------------------------------------------------------------------------
-  // Chai Break
+  // Pause
   // ---------------------------------------------------------------------------
 
   bool _isChaiBreakRequest(String lower) =>
@@ -1259,7 +1259,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final waterMl = ref.read(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.read(dailyWaterGoalStreamProvider).value ?? 2500;
 
-    // 5. Learning Hub status
+    // 5. Growth status
     final learningState = ref.read(learningHubProvider);
     final course = learningState.course;
     Lecture? nextLecture;

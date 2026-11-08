@@ -61,6 +61,9 @@ void main() {
   late SharedPreferences prefs;
 
   setUpAll(() async {
+    await (FontLoader(
+      'AscentZodiacSymbols',
+    )..addFont(rootBundle.load('assets/fonts/AscentZodiacSymbols.ttf'))).load();
     GoogleFonts.config.allowRuntimeFetching = false;
     await (FontLoader(
       'MaterialIcons',
@@ -197,7 +200,7 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(
         tester.getTopLeft(find.byType(ActivityHubCard)).dy,
-        lessThan(tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy),
+        greaterThan(tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy),
       );
       await capture(tester, key, 'home-light-empty');
       await tester.scrollUntilVisible(
@@ -206,22 +209,19 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await settle(tester);
-      expect(find.byKey(const ValueKey('home_routine_medicine')), findsNothing);
-      expect(find.byKey(const ValueKey('home_routine_momentum')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('home_routine_medicine')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('home_routine_momentum')), findsOneWidget);
       final waterCard = find.byKey(const ValueKey('home_routine_hydration'));
       final initialX = tester.getTopLeft(waterCard).dx;
-      await tester.drag(
-        find.byKey(const ValueKey('home_life_shelf')),
-        const Offset(-220, 0),
-      );
+      await tester.drag(waterCard, const Offset(-220, 0));
       await settle(tester);
       expect(tester.takeException(), isNull);
-      expect(tester.getTopLeft(waterCard).dx, lessThan(initialX));
+      expect(tester.getTopLeft(waterCard).dx, closeTo(initialX, 1));
       await capture(tester, key, 'home-life-shelf');
-      await tester.drag(
-        find.byKey(const ValueKey('home_life_shelf')),
-        const Offset(300, 0),
-      );
+      await tester.drag(waterCard, const Offset(300, 0));
       await settle(tester);
       expect(tester.getTopLeft(waterCard).dx, closeTo(initialX, 1));
       await unmount(tester);
@@ -247,6 +247,20 @@ void main() {
         final key = GlobalKey();
         await tester.pumpWidget(
           buildApp(
+            profile: _testUserProfile.copyWith(
+              dateOfBirth: drift.Value(DateTime(1998, 6, 10)),
+            ),
+            reminders: [
+              Reminder(
+                id: 73,
+                title: 'Evening supplements',
+                scheduledAt: DateTime.now().add(const Duration(hours: 2)),
+                alarmEnabled: false,
+                alertSyncPending: false,
+                isActive: true,
+                createdAt: DateTime.now(),
+              ),
+            ],
             capture: key,
             dark: dark,
             scale: scale,
@@ -278,20 +292,50 @@ void main() {
         expect(tester.takeException(), isNull);
         await capture(tester, key, 'home-${dark ? 'dark' : 'light'}-$scale');
         if (scale == 1) {
-          await tester.tap(find.text('Done'));
+          await tester.scrollUntilVisible(
+            find.descendant(
+              of: find.byType(ActivityHubCard),
+              matching: find.text('Done'),
+            ),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.ensureVisible(
+            find.descendant(
+              of: find.byType(ActivityHubCard),
+              matching: find.text('Done'),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(
+            find.descendant(
+              of: find.byType(ActivityHubCard),
+              matching: find.text('Done'),
+            ),
+          );
           await settle(tester);
           expect(
             find.byKey(const ValueKey('activity_quick_input')),
             findsNothing,
           );
           expect(find.text('Read a chapter of Atomic Habits'), findsNothing);
-          await tester.tap(find.text('Plans'));
+          await tester.tap(
+            find.descendant(
+              of: find.byType(ActivityHubCard),
+              matching: find.text('Plans'),
+            ),
+          );
           await settle(tester);
           expect(
             find.byKey(const ValueKey('activity_quick_input')),
             findsNothing,
           );
-          await tester.tap(find.text('Active'));
+          await tester.tap(
+            find.descendant(
+              of: find.byType(ActivityHubCard),
+              matching: find.text('Today'),
+            ),
+          );
           await settle(tester);
           expect(find.text('Read a chapter of Atomic Habits'), findsOneWidget);
         }
@@ -307,22 +351,19 @@ void main() {
       }
     }
   });
-  testWidgets(
-    'First welcome dismisses into Home without stacking catch-up dialogs',
-    (tester) async {
-      await prefs.setBool(DayOneTutorialDialog.prefKey, false);
-      await tester.pumpWidget(buildApp());
-      await settle(tester);
-      expect(find.byType(DayOneTutorialDialog), findsOneWidget);
-      await tester.tap(find.byTooltip('Explore on my own'));
-      await settle(tester);
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(SmartCatchUpBanner), findsNothing);
-      await tester.runAsync(
-        () async => expect(await db.select(db.taskTable).get(), isEmpty),
-      );
-      expect(tester.takeException(), isNull);
-      await unmount(tester);
-    },
-  );
+  testWidgets('First Home opens without blocking welcome or catch-up dialogs', (
+    tester,
+  ) async {
+    await prefs.setBool(DayOneTutorialDialog.prefKey, false);
+    await tester.pumpWidget(buildApp());
+    await settle(tester);
+    expect(find.byType(DayOneTutorialDialog), findsNothing);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(SmartCatchUpBanner), findsNothing);
+    await tester.runAsync(
+      () async => expect(await db.select(db.taskTable).get(), isEmpty),
+    );
+    expect(tester.takeException(), isNull);
+    await unmount(tester);
+  });
 }

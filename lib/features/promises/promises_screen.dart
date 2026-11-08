@@ -136,7 +136,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                       const SizedBox(height: 16),
 
                       Text(
-                        'Promises',
+                        'Commitments',
                         style: AscentTextStyles.homeTitle.copyWith(
                           color: g.ink,
                           fontSize: 28,

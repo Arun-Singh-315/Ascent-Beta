@@ -45,7 +45,7 @@ class HomePromiseSection extends ConsumerWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Promises',
+                        'Commitments',
                         style: AscentTextStyles.homeTitle.copyWith(
                           color: g.ink,
                           fontSize: 20,
@@ -134,6 +134,8 @@ class HomePromiseSection extends ConsumerWidget {
 
     return InkWell(
       key: const ValueKey('home_promise_card'),
+      onLongPress: () =>
+          showPromiseActionMenu(context, promise, locked: isLocked),
       onTap: () {
         HapticFeedback.selectionClick();
         PromiseDetailSheet.show(context, promise);
@@ -171,6 +173,12 @@ class HomePromiseSection extends ConsumerWidget {
                       ),
                     ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Commitment actions',
+                  icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted),
+                  onPressed: () =>
+                      showPromiseActionMenu(context, promise, locked: isLocked),
                 ),
                 if (promise.isPrivate)
                   Tooltip(
@@ -338,7 +346,7 @@ class HomePromiseSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'No active promises',
+                    'Add your first commitment',
                     style: TextStyle(
                       color: g.ink,
                       fontSize: 14.5,

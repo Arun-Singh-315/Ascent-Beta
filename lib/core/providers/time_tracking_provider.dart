@@ -1,3 +1,4 @@
+import 'local_day_provider.dart';
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -503,11 +504,12 @@ final dismissedTodayActivityIdsProvider =
 class DismissedTodayActivityIdsNotifier extends Notifier<Set<String>> {
   @override
   Set<String> build() {
+    ref.watch(localDayProvider);
     return _loadFromPrefs();
   }
 
   String _todayKey() {
-    final now = DateTime.now();
+    final now = ref.read(localDayProvider);
     return 'ascent_dismissed_today_activities_${now.year}_${now.month}_${now.day}';
   }
 
@@ -561,11 +563,12 @@ final dismissedTodayReminderIdsProvider =
 class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
   @override
   Set<int> build() {
+    ref.watch(localDayProvider);
     return _loadFromPrefs();
   }
 
   String _todayKey() {
-    final now = DateTime.now();
+    final now = ref.read(localDayProvider);
     return 'ascent_dismissed_today_reminders_${now.year}_${now.month}_${now.day}';
   }
 
@@ -606,6 +609,7 @@ class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
 }
 
 final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
+  ref.watch(localDayProvider);
   final remindersAsync = ref.watch(allRemindersProvider);
   final dismissedIds = ref.watch(dismissedTodayReminderIdsProvider);
   final reminders = remindersAsync.value ?? [];
@@ -633,6 +637,7 @@ final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
 final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   ref,
 ) async* {
+  ref.watch(localDayProvider);
   final taskDao = ref.watch(taskDaoProvider);
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
@@ -732,7 +737,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       if (task.actualCompletedDate != null) {
         if (task.isDailyStanding) {
           final comp = task.actualCompletedDate!;
-          isTaskDoneToday = (comp.year == today.year &&
+          isTaskDoneToday =
+              (comp.year == today.year &&
               comp.month == today.month &&
               comp.day == today.day);
         } else {
@@ -778,14 +784,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             task.plannedDate!.day,
           ).isBefore(startOfToday);
 
-      final matchingReminder = reminders.where(
-        (r) =>
-            r.isActive &&
-            (r.linkedTaskId == task.id ||
-                (r.linkedTaskId == null &&
-                    r.title.trim().toLowerCase() ==
-                        task.title.trim().toLowerCase())),
-      ).firstOrNull;
+      final matchingReminder = reminders
+          .where(
+            (r) =>
+                r.isActive &&
+                (r.linkedTaskId == task.id ||
+                    (r.linkedTaskId == null &&
+                        r.title.trim().toLowerCase() ==
+                            task.title.trim().toLowerCase())),
+          )
+          .firstOrNull;
       final hasReminder = matchingReminder != null;
 
       DateTime? scheduledTime;
@@ -820,9 +828,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           priority: task.priority,
           kind: kind,
           targetMinutes: targetMinutes,
-          plannedDate: medicineDose == null
-              ? task.plannedDate
-              : scheduledTime,
+          plannedDate: medicineDose == null ? task.plannedDate : scheduledTime,
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
@@ -835,7 +841,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       );
     }
 
-    // 2. Process standalone sessions (excluding lectures which are kept in Learning Hub)
+    // 2. Process standalone sessions (excluding lectures which are kept in Growth)
     for (final session in sessions) {
       if (accountedSessionIds.contains(session.id) ||
           (session.activityRefType == 'lecture' ||
@@ -1102,5 +1108,4 @@ Future<void> deleteTodayActivity(
   }
 
   // Standalone sessions are dismissed from Today, never erased from history.
-
 }

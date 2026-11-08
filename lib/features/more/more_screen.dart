@@ -194,7 +194,7 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.bubble_chart_rounded,
                   iconTint: g.frozen ? g.slate : AppPalette.colorFFEC8C38,
-                  title: 'Thought Wall • Mind Space',
+                  title: 'Mindspace',
                   subtitle:
                       'Unfiltered self-talk, sparks, daily wins & reflections',
                   route: '/thought-wall',
@@ -213,7 +213,7 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.directions_walk_rounded,
                   iconTint: g.sage,
-                  title: 'Walk & Run Outdoor Tracker',
+                  title: 'Move · Walk & run',
                   subtitle:
                       'Live GPS route telemetry, cadence, steps & endurance',
                   route: '/walk',
@@ -230,7 +230,7 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.coffee_rounded,
                   iconTint: g.amber,
-                  title: 'Chai & Mindful Break',
+                  title: 'Pause · Mindful breaks',
                   subtitle:
                       'Mindful brewing timers, calming ambiance & reset',
                   route: '/chai-break',
@@ -249,7 +249,7 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.school_outlined,
                   iconTint: g.slate,
-                  title: 'Learning Hub & Courses',
+                  title: 'Growth · Courses',
                   subtitle:
                       'Curated syllabi, audio player & study tracking',
                   route: '/learning',

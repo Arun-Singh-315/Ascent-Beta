@@ -3,8 +3,8 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 
 /// The official Ascent logo widget.
-/// Renders the signature geometric concentric radar/focus logo
-/// on a deep dark squircle container with subtle border and lighting.
+/// Renders the calm ascending ribbon mark on a midnight-blue squircle
+/// with a subtle edge and soft lighting.
 class AscentLogo extends StatelessWidget {
   final double size;
   final double? borderRadius;

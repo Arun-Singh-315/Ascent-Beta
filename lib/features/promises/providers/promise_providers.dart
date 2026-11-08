@@ -1,3 +1,4 @@
+import '../../../core/providers/local_day_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,12 +79,13 @@ class UnlockedPromiseIdsNotifier extends Notifier<Set<int>> {
 /// Session-wide unlocked private promise IDs.
 final unlockedPromiseIdsProvider =
     NotifierProvider<UnlockedPromiseIdsNotifier, Set<int>>(
-  UnlockedPromiseIdsNotifier.new,
-);
+      UnlockedPromiseIdsNotifier.new,
+    );
 
 /// Computes the single most urgent, relevant active promise for the Home screen.
 /// Never returns a completed or paused promise.
 final priorityPromiseProvider = Provider<PromiseModel?>((ref) {
+  ref.watch(localDayProvider);
   final activeAsync = ref.watch(activePromisesStreamProvider);
   return activeAsync.when(
     data: (promises) {

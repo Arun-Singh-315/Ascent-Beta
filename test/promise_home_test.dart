@@ -65,7 +65,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify section heading
-      expect(find.text('Promises'), findsOneWidget);
+      expect(find.text('Commitments'), findsOneWidget);
 
       // Verify promise title
       expect(find.text('Call mom and dad'), findsOneWidget);

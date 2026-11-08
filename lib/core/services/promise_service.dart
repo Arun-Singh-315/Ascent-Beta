@@ -4,7 +4,7 @@ import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
 
 /// Promises are reflections with shared daily check-ins, never implicit tasks.
-/// All commitments live in Thought Wall so editing, backup and archive work normally.
+/// All commitments live in Mindspace so editing, backup and archive work normally.
 class PromiseService {
   PromiseService(
     this._db, {

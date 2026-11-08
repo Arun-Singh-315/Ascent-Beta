@@ -149,7 +149,7 @@ class AscentDrawer extends ConsumerWidget {
               color: context.accentPrimary,
             ),
             _DrawerTile(icon:Icons.history_rounded,label:'History',route:'/history',color:context.accentPrimary),
-            _DrawerTile(icon:Icons.view_agenda_outlined,label:'Things hub',route:'/things',color:context.accentPrimary),
+            _DrawerTile(icon:Icons.view_agenda_outlined,label:'Dayboard',route:'/things',color:context.accentPrimary),
             _DrawerTile(
               icon: Icons.insights_rounded,
               label: 'Analytics & Insights',

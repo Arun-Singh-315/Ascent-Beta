@@ -10,8 +10,6 @@ import '../../../app/theme/dimension_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/surface_tokens.dart';
-import '../../../core/database/app_database.dart';
-import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../shared/widgets/ascent_card.dart';
 import '../../reminders/reminder_action_ui.dart';
@@ -31,9 +29,7 @@ class HomeTopRemindersGlance extends ConsumerWidget {
     final g = context.glass;
     final nextReminder = reminders.first;
     final totalCount = reminders.length;
-    final timeStr = nextReminder.scheduledAt != null
-        ? DateFormat('h:mm a').format(nextReminder.scheduledAt!)
-        : 'Today';
+    final timeStr = DateFormat('h:mm a').format(nextReminder.scheduledAt);
 
     return Padding(
       padding: EdgeInsets.only(bottom: AppSpace.s12),
@@ -154,11 +150,7 @@ class HomeTopRemindersGlance extends ConsumerWidget {
                       width: 0.8,
                     ),
                   ),
-                  child: Icon(
-                    Icons.check_rounded,
-                    size: 16,
-                    color: g.inkMuted,
-                  ),
+                  child: Icon(Icons.check_rounded, size: 16, color: g.inkMuted),
                 ),
               ),
             ),

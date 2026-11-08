@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/providers/database_provider.dart';
 
-/// The 5 Human Energy & Time Lenses for Things Hub.
+/// The 5 Human Energy & Time Lenses for Dayboard.
 /// Instead of rigid database kinds, human days are organized by cognitive load.
 enum ThingsSmartLens {
   all(
@@ -63,7 +63,7 @@ class ThingsActionChipData {
 }
 
 /// The intelligent metadata synthesized for any task.
-/// Things Hub never just reflects dumb text; it attaches domain blueprints,
+/// Dayboard never just reflects dumb text; it attaches domain blueprints,
 /// micro-steps, and contextual action chips.
 class ThingsEnrichment {
   final String categoryLabel;

@@ -27,7 +27,7 @@ String captureLabel(CaptureKind kind) => switch (kind) {
   CaptureKind.water => 'Water',
 };
 String captureDestination(CaptureKind kind) => switch (kind) {
-  CaptureKind.todo || CaptureKind.timer => 'Things hub',
+  CaptureKind.todo || CaptureKind.timer => 'Dayboard',
   CaptureKind.reminder => 'Reminders',
   CaptureKind.thought => 'Mind Palace',
   CaptureKind.routine => 'Plans',

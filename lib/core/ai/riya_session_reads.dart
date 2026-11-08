@@ -64,7 +64,7 @@ class RiyaSessionReads {
               ])
               ..limit(4, offset: a['offset'] as int? ?? 0))
             .get();
-    final domain = learning ? 'Learning' : 'Focus';
+    final domain = learning ? 'Growth' : 'Focus';
     String label(String text) =>
         text.length <= 160 ? text : '${text.substring(0, 157)}…';
     return RiyaResult(

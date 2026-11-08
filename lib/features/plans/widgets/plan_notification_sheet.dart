@@ -160,7 +160,7 @@ class _NotificationState extends ConsumerState<PlanNotificationSheet> {
           child: item.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, _) => const Text(
-              'Could not load this activity. Open Plans in Things hub.',
+              'Could not load this activity. Open Plans in Dayboard.',
             ),
             data: (row) {
               if (row == null) {

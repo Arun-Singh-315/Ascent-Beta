@@ -10,7 +10,7 @@ import '../planning_providers.dart';
 import 'plan_collection_detail.dart';
 import 'plan_collection_editor.dart';
 
-/// Compact list of active plans shown inside the Things hub.
+/// Compact list of active plans shown inside the Dayboard.
 ///
 /// Each plan is one tappable row with a title and a single status line.
 /// Repeating routines live inside their plan, so they are not listed again.
@@ -49,10 +49,7 @@ class HomePlansPreview extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: g.fill,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: g.line,
-                            width: 0.8,
-                          ),
+                          border: Border.all(color: g.line, width: 0.8),
                         ),
                         child: Center(
                           child: Icon(
@@ -112,6 +109,7 @@ class HomePlansPreview extends ConsumerWidget {
                         side: BorderSide(color: g.edge),
                       ),
                       onPressed: () => showPlanCollectionDetail(context, p.id),
+                      onLongPress: () => showPlanActionMenu(context, p),
                       child: Row(
                         children: [
                           Icon(

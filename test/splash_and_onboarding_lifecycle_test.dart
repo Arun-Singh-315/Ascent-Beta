@@ -104,15 +104,17 @@ void main() {
       }
 
       await settle();
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.text('Let’s begin'));
       await settle();
       await tester.enterText(
         find.byKey(const ValueKey('onboarding_name')),
         'Arun',
       );
-      await tester.tap(find.text('Riya'));
-      await tester.pump();
-      await tester.tap(find.text('Open Ascent'));
+      await tester.tap(find.byKey(const ValueKey('onboarding_dob')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
       await settle();
       expect(find.text('Home ready'), findsOneWidget);
       await tester.runAsync(() async {
@@ -122,7 +124,7 @@ void main() {
         expect(await db.select(db.taskTable).get(), isEmpty);
         expect(await db.thoughtDao.watchAllThoughts().first, isEmpty);
       });
-      expect(prefs.getString('ascent_assistant_name'), 'Riya');
+      expect(prefs.getBool('ascent_first_moment_pending_v1'), isTrue);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

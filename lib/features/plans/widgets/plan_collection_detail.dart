@@ -1,3 +1,5 @@
+import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import 'package:flutter/services.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../shared/widgets/app_surfaces.dart';
@@ -12,30 +14,35 @@ import '../../../core/services/plan_collection_service.dart';
 import '../planning_providers.dart';
 import 'plan_collection_editor.dart';
 
-Future<void> showPlanCollectionDetail(BuildContext context, String id) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: BoxDecoration(
-          color: ctx.bgSurfaceElevated,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: ctx.glass.line),
-        ),
-        child: PlanCollectionDetail(id: id),
-      ),
-    );
+Future<void> showPlanCollectionDetail(
+  BuildContext context,
+  String id, {
+  String? initialAction,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  useSafeArea: true,
+  backgroundColor: Colors.transparent,
+  builder: (ctx) => Container(
+    decoration: BoxDecoration(
+      color: ctx.bgSurfaceElevated,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      border: Border.all(color: ctx.glass.line),
+    ),
+    child: PlanCollectionDetail(id: id, initialAction: initialAction),
+  ),
+);
 
 class PlanCollectionDetail extends ConsumerStatefulWidget {
-  const PlanCollectionDetail({super.key, required this.id});
+  const PlanCollectionDetail({super.key, required this.id, this.initialAction});
+  final String? initialAction;
   final String id;
   @override
   ConsumerState<PlanCollectionDetail> createState() => _DetailState();
 }
 
 class _DetailState extends ConsumerState<PlanCollectionDetail> {
+  bool _initialActionHandled = false;
   String _filter = 'All';
   String? _error;
   bool _busy = false;
@@ -73,100 +80,31 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
     }
   }
 
-  Future<bool> _confirm(String title, String message) async {
-    final g = context.glass;
-    return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpace.s20),
-              decoration: BoxDecoration(
-                color: ctx.bgSurfaceElevated,
-                borderRadius: AppGeometry.roundedr24,
-                border: Border.all(color: g.line),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpace.s8),
-                        decoration: BoxDecoration(
-                          color: context.stateDanger.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          color: context.stateDanger,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpace.s12),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: g.ink,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpace.s12),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      color: g.inkSecondary,
-                      height: 1.4,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpace.s20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        child: Text(
-                          'Cancel',
-                          style: TextStyle(color: g.inkMuted),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpace.s8),
-                      FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: context.stateDanger,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppGeometry.roundedr12,
-                          ),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ) ??
-        false;
-  }
+  Future<bool> _confirm(String title, String message) async =>
+      await AscentDialog.confirm(
+        context: context,
+        title: title,
+        content: message,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Keep',
+        isDestructive: true,
+        icon: Icons.delete_outline_rounded,
+      ) ==
+      true;
 
   Future<void> _rename(PlanCollectionView plan) async {
+    if (await AscentDialog.confirm(
+              context: context,
+              title: 'Edit this plan?',
+              content: 'Your changes will only be applied when you save.',
+              confirmLabel: 'Continue editing',
+              cancelLabel: 'Keep as is',
+              icon: Icons.edit_outlined,
+            ) !=
+            true ||
+        !mounted) {
+      return;
+    }
     final g = context.glass;
     final name = TextEditingController(text: plan.title),
         notes = TextEditingController(text: plan.description);
@@ -679,6 +617,14 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
   Widget build(BuildContext context) {
     final plans = ref.watch(planCollectionsProvider);
     final plan = plans.value?.where((c) => c.id == widget.id).firstOrNull;
+    if (plan != null &&
+        widget.initialAction != null &&
+        !_initialActionHandled) {
+      _initialActionHandled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _planAction(plan, widget.initialAction!);
+      });
+    }
     final items = ref.watch(planItemsProvider(widget.id));
     final g = context.glass;
 
@@ -1461,7 +1407,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: g.clay,
-                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr16,
                         ),
@@ -1493,5 +1441,28 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
         ),
       ),
     );
+  }
+}
+
+Future<void> showPlanActionMenu(
+  BuildContext context,
+  PlanCollectionView plan,
+) async {
+  final action = await showAscentActionMenu<String>(
+    context: context,
+    title: plan.title,
+    actions: const [
+      AscentAction('view', 'View plan', Icons.open_in_new_rounded),
+      AscentAction('edit', 'Edit plan', Icons.edit_outlined),
+      AscentAction(
+        'delete',
+        'Delete plan',
+        Icons.delete_outline_rounded,
+        destructive: true,
+      ),
+    ],
+  );
+  if (action != null && context.mounted) {
+    await showPlanCollectionDetail(context, plan.id, initialAction: action);
   }
 }

@@ -309,7 +309,7 @@ class _EmptyChallenge extends StatelessWidget {
         _MessageCard(
           title: 'Works with Ascent',
           body:
-              'Learning Hub provides lecture completions. Activity Hub and Focus provide timed sessions. Challenge reads both and keeps their original records untouched.',
+              'Growth provides lecture completions. Dayboard and Focus provide timed sessions. Challenge reads both and keeps their original records untouched.',
         ),
       ],
     );
@@ -382,7 +382,7 @@ class _ChallengeDetail extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Text(
-          '${challenge.type == 'learning' ? 'Learning Hub' : 'Activity Hub'} · Day $elapsedDays of $totalDays',
+          '${challenge.type == 'learning' ? 'Growth' : 'Dayboard'} · Day $elapsedDays of $totalDays',
           style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
         ),
         const SizedBox(height: 14),
@@ -484,7 +484,7 @@ class _ChallengeDetail extends StatelessWidget {
           title:
               '${progress.completedAmount.floor()} / ${challenge.targetTotal.ceil()} min verified',
           body: challenge.type == 'learning'
-              ? 'Completed lectures from the linked course count once, using Learning Hub records.'
+              ? 'Completed lectures from the linked course count once, using Growth records.'
               : 'Completed Focus sessions linked to the selected Todo count once. The Todo checkbox does not add minutes.',
         ),
         const SizedBox(height: 16),
@@ -499,7 +499,7 @@ class _ChallengeDetail extends StatelessWidget {
           ),
           label: Text(
             challenge.type == 'learning'
-                ? 'Open Learning Hub'
+                ? 'Open Growth'
                 : 'Open linked activity',
           ),
         ),

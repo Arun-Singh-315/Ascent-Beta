@@ -46,7 +46,7 @@ String formatThoughtForShare(Thought thought) {
     buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
   }
   buffer.writeln('"${thought.content.trim()}"');
-  buffer.writeln('\n— Mind Space · Ascent');
+  buffer.writeln('\n— Mindspace · Ascent');
   return buffer.toString();
 }
 
@@ -73,7 +73,7 @@ String formatMultipleThoughtsForShare(List<Thought> thoughts) {
     buffer.writeln('"${t.content.trim()}"');
     buffer.writeln();
   }
-  buffer.writeln('— Shared from Mind Space · Ascent');
+  buffer.writeln('— Shared from Mindspace · Ascent');
   return buffer.toString().trim();
 }
 
@@ -82,7 +82,7 @@ Future<void> shareThought(Thought thought) async {
   HapticFeedback.lightImpact();
   final text = formatThoughtForShare(thought);
   await SharePlus.instance.share(
-    ShareParams(text: text, subject: 'Mind Space Reflection'),
+    ShareParams(text: text, subject: 'Mindspace Reflection'),
   );
 }
 
@@ -94,7 +94,7 @@ Future<void> shareMultipleThoughts(List<Thought> thoughts) async {
   await SharePlus.instance.share(
     ShareParams(
       text: text,
-      subject: 'Mind Space Reflections (${thoughts.length} notes)',
+      subject: 'Mindspace Reflections (${thoughts.length} notes)',
     ),
   );
 }
@@ -107,7 +107,7 @@ int compareWallThoughts(Thought a, Thought b) {
   return date != 0 ? date : b.id.compareTo(a.id);
 }
 
-/// Thought Wall / Mind Space Screen ("Me to Me")
+/// Mindspace / Mindspace Screen ("Me to Me")
 /// An aesthetic spatial wall for unfiltered self-talk, sparks of inspiration,
 /// daily wins, and letters to your future self.
 class ThoughtWallScreen extends ConsumerStatefulWidget {
@@ -166,7 +166,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     'general': ('General', Icons.notes_rounded),
     'suggestions': ('Suggestions', Icons.lightbulb_outline_rounded),
     'life_goals': ('Life Goals', Icons.flag_outlined),
-    'promise': ('Promises', Icons.handshake_rounded),
+    'promise': ('Commitments', Icons.handshake_rounded),
     'pinned': ('Pinned', Icons.push_pin_rounded),
     'archived': ('Archived', Icons.archive_outlined),
   };
@@ -1153,7 +1153,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       child: AscentScaffold(
         title: _isSelectionMode
             ? '${_selectedIds.length} Selected'
-            : 'Thought Wall',
+            : 'Mindspace',
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
@@ -1224,7 +1224,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 else
                   TextButton.icon(
                     icon: const Icon(Icons.handshake_rounded, size: 17),
-                    label: const Text('Promises'),
+                    label: const Text('Commitments'),
                     onPressed: () => context.push('/promises'),
                   ),
                 IconButton(

@@ -288,7 +288,7 @@ class ThoughtDetailSheet extends ConsumerWidget {
                       _DetailAction(
                         key: const ValueKey('detail_promises'),
                         icon: Icons.handshake_outlined,
-                        label: 'Promises',
+                        label: 'Commitments',
                         onTap: () => openRoute('/promises'),
                       ),
                       if (!locked)

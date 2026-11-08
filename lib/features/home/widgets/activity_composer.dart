@@ -1,3 +1,5 @@
+import '../../../core/services/note_draft_binding.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_star_button.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
@@ -28,6 +30,7 @@ class ActivityComposer extends ConsumerStatefulWidget {
 
 class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   final _text = TextEditingController();
+  NoteDraftBinding? _draft;
   FocusNode? _internalFocus;
   FocusNode get _effectiveFocus =>
       widget.focusNode ?? (_internalFocus ??= FocusNode());
@@ -43,7 +46,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void initState() {
     super.initState();
-    _text.text = widget.initialTitle ?? '';
+    if (widget.initialTitle == null) {
+      _draft = NoteDraftBinding(
+        _text,
+        ref.read(sharedPreferencesProvider),
+        'home_activity',
+      );
+    } else {
+      _text.text = widget.initialTitle!;
+    }
     _text.addListener(_changed);
     _effectiveFocus.addListener(_changed);
   }
@@ -54,6 +65,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
 
   @override
   void dispose() {
+    _draft?.dispose();
     _text.removeListener(_changed);
     _effectiveFocus.removeListener(_changed);
     _internalFocus?.dispose();
@@ -540,7 +552,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
                   decoration: InputDecoration(
-                    hintText: 'Add a thing…',
+                    hintText: 'Add a task…',
                     hintStyle: TextStyle(color: g.inkMuted),
                     counterText: '',
                     filled: false,
@@ -579,23 +591,25 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   ),
                 ),
               ),
-              IconButton.filled(
+              IconButton.outlined(
                 tooltip: 'Add activity',
                 onPressed: _saving || !hasText ? null : _send,
                 style: IconButton.styleFrom(
-                  backgroundColor: SharedControlColors.actionBlue,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: g.ink.withValues(alpha: .08),
+                  backgroundColor: Colors.transparent,
+                  foregroundColor:
+                      Theme.of(context).brightness == Brightness.dark
+                      ? SharedControlColors.actionBlueDark
+                      : SharedControlColors.actionBlue,
+                  disabledBackgroundColor: Colors.transparent,
+                  side: BorderSide(color: g.line, width: .8),
+                  minimumSize: const Size(44, 44),
                   disabledForegroundColor: g.inkMuted,
                 ),
                 icon: _saving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.arrow_upward_rounded, size: 20),
               ),

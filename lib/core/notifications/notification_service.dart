@@ -863,7 +863,7 @@ class NotificationService {
     return scheduledDate;
   }
 
-  /// Replaces a bounded Things hub bundle; never creates reminder records.
+  /// Replaces a bounded Dayboard bundle; never creates reminder records.
   Future<void> scheduleThingsCheckIn({
     required int id,
     required DateTime at,
@@ -871,7 +871,7 @@ class NotificationService {
     required String body,
     String payload = '/things',
     String channelId = 'ascent_things_check_ins_v1',
-    String channelName = 'Things hub check-ins',
+    String channelName = 'Dayboard check-ins',
     List<AndroidNotificationAction>? actions,
   }) async {
     if (!_isInitialized) await initialize();
@@ -897,7 +897,7 @@ class NotificationService {
           styleInformation: BigTextStyleInformation(
             body,
             contentTitle: title,
-            summaryText: 'Things hub · A gentle check-in',
+            summaryText: 'Dayboard · A gentle check-in',
           ),
         ),
         iOS: const DarwinNotificationDetails(threadIdentifier: 'ascent.things'),
@@ -1677,7 +1677,7 @@ class NotificationService {
             (isPaused
                 ? 'Session Paused'
                 : (isLecture
-                      ? 'Ascent • Learning Hub'
+                      ? 'Ascent • Growth'
                       : 'Ascent • Active Focus')),
         category: AndroidNotificationCategory.status,
         actions: actions,
@@ -1806,7 +1806,7 @@ class NotificationService {
     }
   }
 
-  /// Shows or updates an ongoing notification for Chai & Coffee break countdown.
+  /// Shows or updates an ongoing notification for Pause break countdown.
   Future<void> showOngoingChaiBreakNotification({
     required int remainingSeconds,
     required String soundscapeTitle,
@@ -1830,7 +1830,7 @@ class NotificationService {
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
         channelOngoingSessionName,
-        channelDescription: 'Ongoing Chai & Coffee break countdown',
+        channelDescription: 'Ongoing Pause break countdown',
         importance: Importance.low,
         priority: Priority.low,
         ongoing: !isPaused,
@@ -1838,7 +1838,7 @@ class NotificationService {
         onlyAlertOnce: true,
         showWhen: false,
         color: AscentColors.accentInfo,
-        subText: isPaused ? 'Break Paused' : 'Chai & Coffee Break',
+        subText: isPaused ? 'Break Paused' : 'Pause',
         category: AndroidNotificationCategory.status,
         actions: actions,
       );
@@ -1848,7 +1848,7 @@ class NotificationService {
       );
       await _plugin.show(
         id: ongoingChaiBreakNotificationId,
-        title: isPaused ? '☕ Chai Break Paused' : '☕ Chai & Coffee Sanctuary',
+        title: isPaused ? '☕ Break paused' : '☕ Pause',
         body: '$soundscapeTitle • $timeStr remaining',
         payload: '/chai-break',
         notificationDetails: NotificationDetails(

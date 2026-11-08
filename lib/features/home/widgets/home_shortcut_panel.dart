@@ -1,130 +1,25 @@
+import 'home_capture_actions.dart';
+import '../../../core/providers/local_day_provider.dart';
+import '../../../core/learning_hub/learning_hub_provider.dart';
+import 'home_shortcut_summary.dart';
+import 'home_record_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../app/theme/glass_theme.dart';
-import 'home_shortcut_editor.dart';
-import '../../../app/theme/dimension_tokens.dart';
-import '../../../core/providers/database_provider.dart';
+import 'package:intl/intl.dart';
+import '../../../app/theme/shared_control_tokens.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../promises/providers/promise_providers.dart';
+import 'home_day_design.dart';
+import 'home_shortcut_editor.dart';
+import 'home_shortcut_icon.dart';
+import 'home_shortcuts.dart';
+export 'home_shortcuts.dart';
 
-class HomeShortcutItem {
-  final String id;
-  final String label;
-  final IconData icon;
-  final String route;
-
-  const HomeShortcutItem({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.route,
-  });
-}
-
-const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
-  'promises': HomeShortcutItem(
-    id: 'promises',
-    label: 'Promises',
-    icon: Icons.bookmark_added_outlined,
-    route: '/promises',
-  ),
-  'today': HomeShortcutItem(
-    id: 'today',
-    label: 'Today',
-    icon: Icons.calendar_today_rounded,
-    route: '/today',
-  ),
-  'thought-wall': HomeShortcutItem(
-    id: 'thought-wall',
-    label: 'Mind Space',
-    icon: Icons.lightbulb_outline_rounded,
-    route: '/thought-wall',
-  ),
-  'mind': HomeShortcutItem(
-    id: 'thought-wall',
-    label: 'Mind Space',
-    icon: Icons.lightbulb_outline_rounded,
-    route: '/thought-wall',
-  ),
-  'learning': HomeShortcutItem(
-    id: 'learning',
-    label: 'Learning',
-    icon: Icons.school_outlined,
-    route: '/learning',
-  ),
-  'reminders': HomeShortcutItem(
-    id: 'reminders',
-    label: 'Reminders',
-    icon: Icons.notifications_none_rounded,
-    route: '/reminders',
-  ),
-  'money': HomeShortcutItem(
-    id: 'money',
-    label: 'Money',
-    icon: Icons.account_balance_wallet_outlined,
-    route: '/money',
-  ),
-  'focus': HomeShortcutItem(
-    id: 'focus',
-    label: 'Focus',
-    icon: Icons.timer_outlined,
-    route: '/focus',
-  ),
-  'medicine': HomeShortcutItem(
-    id: 'medicine',
-    label: 'Medicine',
-    icon: Icons.medication_outlined,
-    route: '/medicine',
-  ),
-  'hydration': HomeShortcutItem(
-    id: 'hydration',
-    label: 'Water',
-    icon: Icons.water_drop_outlined,
-    route: '/hydration',
-  ),
-  'health': HomeShortcutItem(
-    id: 'hydration',
-    label: 'Water',
-    icon: Icons.water_drop_outlined,
-    route: '/hydration',
-  ),
-  'walk': HomeShortcutItem(
-    id: 'walk',
-    label: 'Walk',
-    icon: Icons.directions_walk_rounded,
-    route: '/walk',
-  ),
-  'chai-break': HomeShortcutItem(
-    id: 'chai-break',
-    label: 'Breaks',
-    icon: Icons.coffee_outlined,
-    route: '/chai-break',
-  ),
-  'momentum': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Challenges',
-    icon: Icons.flag_outlined,
-    route: '/momentum',
-  ),
-  'challenge': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Challenges',
-    icon: Icons.flag_outlined,
-    route: '/momentum',
-  ),
-  'vault': HomeShortcutItem(
-    id: 'vault',
-    label: 'Vault',
-    icon: Icons.shield_outlined,
-    route: '/vault',
-  ),
-};
-
-/// Dynamic top shortcut bar on Home (up to four user-customized shortcuts)
-/// featuring live glanceable count badges for tasks, thoughts, and reminders.
+/// Four personal doorways and immediately visible reminder context.
 class HomeShortcutPanel extends ConsumerWidget {
   const HomeShortcutPanel({
     super.key,
@@ -133,326 +28,294 @@ class HomeShortcutPanel extends ConsumerWidget {
     this.badgeCounts,
     this.activeShortcutId,
     this.onSelectShortcut,
+    this.showReminders = false,
+    this.reminders,
   });
-
-  /// The list of shortcut IDs configured by user (e.g. from HomeLayout.shortcuts).
   final List<String>? shortcuts;
-
-  /// Optional direct items override (e.g. for testing).
   final List<HomeShortcutItem>? shortcutItems;
-
-  /// Optional manual badge count override map for testing or explicit mocking.
   final Map<String, int>? badgeCounts;
-
-  /// Currently selected shortcut ID (if any) filtering the Home feed below.
   final String? activeShortcutId;
-
-  /// Callback when a shortcut is tapped to filter Home or toggle back to home.
   final ValueChanged<String?>? onSelectShortcut;
+  final bool showReminders;
+  final List<Reminder>? reminders;
 
   List<HomeShortcutItem> _resolveItems() {
-    if (shortcutItems != null) {
-      return shortcutItems!.take(4).toList();
-    }
-    final raw =
-        shortcuts ?? const ['thought-wall', 'hydration', 'momentum', 'vault'];
-    final items = <HomeShortcutItem>[];
-    for (final id in raw) {
+    if (shortcutItems != null) return shortcutItems!.take(4).toList();
+    final result = <HomeShortcutItem>[];
+    for (final id
+        in shortcuts ?? const ['focus', 'hydration', 'assistant', 'vault']) {
       final item = kRegisteredShortcuts[id];
-      if (item != null && !items.any((e) => e.route == item.route)) {
-        items.add(item);
+      if (item != null && !result.any((other) => other.route == item.route)) {
+        result.add(item);
       }
-      if (items.length >= 4) break;
+      if (result.length == 4) break;
     }
-    return items;
-  }
-
-  int _resolveBadgeCount(WidgetRef ref, String id) {
-    if (badgeCounts != null && badgeCounts!.containsKey(id)) {
-      return badgeCounts![id] ?? 0;
-    }
-    switch (id) {
-      case 'today':
-        return ref
-                .watch(todayActivitiesProvider)
-                .value
-                ?.where(
-                  (a) =>
-                      a.status != TodayActivityStatus.done &&
-                      a.completedAt == null,
-                )
-                .length ??
-            0;
-      case 'thought-wall':
-      case 'mind':
-        return ref.watch(todayThoughtsCountStreamProvider).value ?? 0;
-      case 'reminders':
-        return ref
-                .watch(allRemindersProvider)
-                .value
-                ?.where((r) => r.isActive)
-                .length ??
-            0;
-      case 'promises':
-        return ref.watch(activePromisesStreamProvider).value?.length ?? 0;
-      case 'hydration':
-      case 'health':
-        final ml = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-        return ml > 0 ? (ml ~/ 250) : 0;
-      case 'medicine':
-        return ref.watch(todayMedicineLogsStreamProvider).value?.length ?? 0;
-      default:
-        return 0;
-    }
-  }
-
-  static Color _getMineralColor(String id, bool isDark) {
-    switch (id) {
-      case 'thought-wall':
-      case 'mind':
-        return isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1); // Twilight Indigo
-      case 'hydration':
-      case 'health':
-        return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7); // Glacial Sky
-      case 'momentum':
-      case 'challenge':
-        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706); // Solar Amber
-      case 'promises':
-        return isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48); // Champagne Rose
-      case 'today':
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C); // Warm Tangerine
-      case 'chai-break':
-        return isDark ? const Color(0xFFF59E0B) : const Color(0xFFB45309); // Honeyed Cinnamon
-      case 'medicine':
-        return isDark ? const Color(0xFF34D399) : const Color(0xFF059669); // Glacial Eucalyptus
-      case 'money':
-        return isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04); // Matte Brass
-      case 'focus':
-        return isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED); // Muted Lavender
-      case 'learning':
-        return isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB); // Deep Iris
-      case 'reminders':
-        return isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626); // Sunset Coral
-      case 'vault':
-      default:
-        return isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B); // Titanium Slate
-    }
+    return result;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = HomeDayDesign.ink(dark);
     final items = _resolveItems();
-
-    if (items.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
+    final List<Reminder> upcoming = showReminders
+        ? (reminders ?? ref.watch<List<Reminder>>(homeVisibleRemindersProvider))
+        : <Reminder>[];
+    final day = ref.watch(localDayProvider);
+    final older = upcoming.where((r) => r.scheduledAt.isBefore(day)).toList();
+    final today = upcoming.where((r) => !r.scheduledAt.isBefore(day)).toList();
+    final assistant = items.any((item) => item.id == 'assistant')
+        ? ref.watch(assistantNameProvider)
+        : 'Riya';
+    return Container(
       key: const ValueKey('home_shortcut_panel'),
-      padding: const EdgeInsets.only(top: 10, bottom: 6),
-      child: Stack(
-        clipBehavior: Clip.none,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: HomeDayDesign.line(dark), width: .8),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
-                width: 1.2,
-              ),
-              color: Colors.transparent,
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              AscentDimensions.spaceSm,
-              42,
-              AscentDimensions.spaceSm,
-              10,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.map((item) {
-                final count = _resolveBadgeCount(ref, item.id);
-                final isSelected = activeShortcutId == item.id;
-                final mineral = _getMineralColor(item.id, isDark);
-                return Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      key: ValueKey('shortcut_${item.id}'),
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        if (onSelectShortcut != null) {
-                          onSelectShortcut!(isSelected ? null : item.id);
-                        } else {
-                          context.push(item.route);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: isSelected
-                            ? BoxDecoration(
-                                color: mineral.withValues(
-                                  alpha: isDark ? 0.20 : 0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: mineral.withValues(alpha: 0.5),
-                                  width: 1.0,
-                                ),
-                              )
-                            : null,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isSelected
-                                        ? mineral.withValues(
-                                            alpha: isDark ? 0.25 : 0.16,
-                                          )
-                                        : mineral.withValues(
-                                            alpha: isDark ? 0.10 : 0.07,
-                                          ),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? mineral.withValues(alpha: 0.7)
-                                          : mineral.withValues(
-                                              alpha: isDark ? 0.22 : 0.15,
-                                            ),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      item.icon,
-                                      size: 19,
-                                      color: isSelected
-                                          ? mineral
-                                          : (isDark
-                                              ? mineral.withValues(alpha: 0.95)
-                                              : mineral),
-                                    ),
-                                  ),
-                                ),
-                                if (count > 0)
-                                  Positioned(
-                                    top: -5,
-                                    right: -8,
-                                    child: Container(
-                                      key: ValueKey(
-                                        'shortcut_badge_${item.id}',
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1.5,
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 16,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: mineral.withValues(
-                                          alpha: isDark ? 0.35 : 0.22,
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: mineral.withValues(alpha: 0.45),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            count > 99 ? '99+' : '$count',
-                                            style: TextStyle(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: g.ink,
-                                              height: 1.1,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item.label,
-                              style: TextStyle(
-                                color: g.inkSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.1,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Your space',
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: ink,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.5,
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-          Positioned(
-            right: 6,
-            top: 0,
-            child: IconButton(
-              key: const ValueKey('edit_home_shortcuts'),
-              tooltip: 'Add or remove shortcuts',
-              onPressed: () => showHomeShortcutEditor(context),
-              icon: const Icon(Icons.add_rounded, size: 20),
-            ),
-          ),
-          Positioned(
-            top: -9,
-            left: 20,
-            child: Container(
-              key: const ValueKey('shortcut_legend_title'),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF161618)
-                    : const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
-                  width: 1.0,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bolt_rounded, size: 11, color: g.clay),
-                  const SizedBox(width: 4),
-                  Text(
-                    'QUICK ACTIONS',
-                    style: TextStyle(
-                      color: g.inkMuted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
+              IconButton(
+                key: const ValueKey('home_add'),
+                tooltip: 'Add activity, thought or commitment',
+                onPressed: () => showHomeCaptureActions(context),
+                icon: Icon(Icons.add_rounded, color: ink),
+              ),
+              IconButton(
+                key: const ValueKey('edit_home_shortcuts'),
+                tooltip: 'Edit shortcuts',
+                onPressed: () => showHomeShortcutEditor(context),
+                icon: Icon(Icons.edit_outlined, size: 20, color: ink),
+              ),
+            ],
+          ),
+          if (items.isEmpty)
+            TextButton.icon(
+              onPressed: () => showHomeShortcutEditor(context),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Choose shortcuts'),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final large =
+                    MediaQuery.textScalerOf(context).scale(14) > 21 ||
+                    constraints.maxWidth < 250;
+                final columns = large ? 2 : items.length;
+                final width =
+                    (constraints.maxWidth - (columns - 1) * 8) / columns;
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 12,
+                  children: [
+                    for (final item in items)
+                      SizedBox(
+                        width: width,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            key: ValueKey('shortcut_${item.id}'),
+                            overlayColor: WidgetStatePropertyAll(
+                              ink.withValues(alpha: .06),
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              if (onSelectShortcut != null) {
+                                onSelectShortcut!(
+                                  activeShortcutId == item.id ? null : item.id,
+                                );
+                              } else {
+                                final route =
+                                    item.id == 'learning' &&
+                                        !ref
+                                            .read(learningHubProvider)
+                                            .hasStartedLearning
+                                    ? '/study-plan'
+                                    : item.route;
+                                context.push(route);
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 7),
+                              child: Column(
+                                children: [
+                                  HomeShortcutIcon(
+                                    key: ValueKey('shortcut_icon_${item.id}'),
+                                    icon: item.icon,
+                                    selected: activeShortcutId == item.id,
+                                    size: 44,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    item.id == 'assistant'
+                                        ? assistant
+                                        : item.label,
+                                    textAlign: TextAlign.center,
+                                    style: AscentTextStyles.labelMedium
+                                        .copyWith(
+                                          color: ink,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    badgeCounts?.containsKey(item.id) == true
+                                        ? '${badgeCounts![item.id]} today'
+                                        : ref.watch(
+                                            homeShortcutSummaryProvider(
+                                              item.id,
+                                            ),
+                                          ),
+                                    key: ValueKey(
+                                      'shortcut_summary_${item.id}',
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    style: AscentTextStyles.labelSmall.copyWith(
+                                      color: HomeDayDesign.secondary(dark),
+                                      fontSize: 10.5,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          if (upcoming.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(
+                height: 1,
+                thickness: .7,
+                color: HomeDayDesign.line(dark),
               ),
             ),
-          ),
+            if (older.isNotEmpty)
+              TextButton.icon(
+                onPressed: () => context.push('/reminders'),
+                icon: const Icon(Icons.history_rounded, size: 18),
+                label: Text('${older.length} earlier overdue'),
+              ),
+            for (final reminder in today.take(2))
+              _ReminderPreview(reminder: reminder),
+            if (upcoming.length > 2)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => context.push('/reminders'),
+                  child: Text('All ${upcoming.length} reminders'),
+                ),
+              ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _ReminderPreview extends ConsumerWidget {
+  const _ReminderPreview({required this.reminder});
+  final Reminder reminder;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final now = DateTime.now();
+    final time = reminder.scheduledAt;
+    final overdue = time.isBefore(now);
+    final today = DateUtils.isSameDay(now, time);
+    final tomorrow = DateUtils.isSameDay(
+      now.add(const Duration(days: 1)),
+      time,
+    );
+    final day = today
+        ? 'Today'
+        : tomorrow
+        ? 'Tomorrow'
+        : DateFormat('d MMM').format(time);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: ValueKey('hub_reminder_${reminder.id}'),
+        borderRadius: BorderRadius.circular(14),
+        onLongPress: () => showHomeReminderActions(context, ref, reminder),
+        onTap: () => context.push('/reminders?reminder=${reminder.id}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+          child: Row(
+            children: [
+              Icon(
+                Icons.access_time_rounded,
+                size: 22,
+                color: overdue
+                    ? (dark
+                          ? SharedControlColors.dueRedDark
+                          : SharedControlColors.dueRed)
+                    : (dark
+                          ? SharedControlColors.actionBlueDark
+                          : SharedControlColors.actionBlue),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      reminder.title,
+                      style: AscentTextStyles.listRowTitle.copyWith(
+                        color: HomeDayDesign.ink(dark),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: overdue
+                            ? (dark
+                                  ? SharedControlColors.dueRedDark
+                                  : SharedControlColors.dueRed)
+                            : HomeDayDesign.secondary(dark),
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: HomeDayDesign.secondary(dark),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

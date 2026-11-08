@@ -207,6 +207,17 @@ void main() {
       await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
       await settle(tester);
 
+      // Deletion waits for an explicit confirmation; cancelling preserves it.
+      expect(await db.thoughtDao.getThoughtById(id), isNotNull);
+      expect(find.text('Delete this thought?'), findsOneWidget);
+      await tester.tap(find.text('Keep thought'));
+      await settle(tester);
+      expect(await db.thoughtDao.getThoughtById(id), isNotNull);
+      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
+      await settle(tester);
+      await tester.tap(find.text('Delete').last);
+      await settle(tester);
+
       // Verify thought is deleted
       final thoughtAfter = await db.thoughtDao.getThoughtById(id);
       expect(thoughtAfter, isNull);

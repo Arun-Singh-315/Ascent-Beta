@@ -301,7 +301,7 @@ class _ThoughtWallAppearanceSheetState
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Applies to every card in Thought Wall and Home.',
+                  'Applies to every card in Mindspace and Home.',
                   style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
                 ),
                 if (_error != null)

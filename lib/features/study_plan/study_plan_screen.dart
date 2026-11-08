@@ -10,7 +10,7 @@ class StudyPlanScreen extends StatelessWidget {
     return const ComingSoonScreen(
       title: 'Study Plan',
       subtitle:
-          'Structured curriculum planning and lecture progression. Use the Learning Hub on Home to continue your active lectures!',
+          'Structured curriculum planning and lecture progression. Use the Growth on Home to continue your active lectures!',
       icon: Icons.school_rounded,
     );
   }

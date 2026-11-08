@@ -299,7 +299,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
               const SizedBox(height: 18),
               AscentSegmentedControl<String>(
                 segments: const [
-                  AscentSegment(value: 'learning', label: 'Learning'),
+                  AscentSegment(value: 'learning', label: 'Growth'),
                   AscentSegment(value: 'activity', label: 'Activity'),
                 ],
                 selected: _type,
@@ -320,7 +320,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   ),
                   child: Text(
                     _type == 'learning'
-                        ? 'Add a course with unfinished lectures in Learning Hub first.'
+                        ? 'Add a course with unfinished lectures in Growth first.'
                         : _tasksLoaded
                         ? 'Add a time-bound Todo in Today first. Activity proof comes from completed Focus sessions.'
                         : 'Loading your activities…',
@@ -336,7 +336,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: _type == 'learning'
-                        ? 'Learning Hub course'
+                        ? 'Growth course'
                         : 'Timed Todo activity',
                     border: OutlineInputBorder(
                       borderRadius: AppGeometry.roundedr12,

@@ -274,8 +274,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
             context,
             content: Text(
               widget.existingThought != null
-                  ? 'Updated reflection in Mind Space'
-                  : 'Pinned to your Thought Wall',
+                  ? 'Updated reflection in Mindspace'
+                  : 'Pinned to your Mindspace',
             ),
             duration: const Duration(seconds: 3),
           ),
@@ -364,14 +364,14 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                         Text(
                           widget.existingThought != null
                               ? 'Edit Reflection'
-                              : 'Drop on Thought Wall',
+                              : 'Drop on Mindspace',
                           style: AscentTextStyles.headlineMedium
                               .copyWith(color: context.textPrimary)
                               .merge(AppTypeRoles.typeRole21),
                         ),
                         Text(
                           widget.existingThought != null
-                              ? 'Refine your thoughts in Mind Space.'
+                              ? 'Refine your thoughts in Mindspace.'
                               : 'Honest talk from you, to you.',
                           style: AscentTextStyles.bodySmall.copyWith(
                             color: context.textMuted,
@@ -520,7 +520,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                     ? 'Save Changes'
                     : (_isPinned
                           ? 'Pin to Wall (Pinned)'
-                          : 'Pin to Thought Wall'),
+                          : 'Pin to Mindspace'),
                 expanded: true,
                 icon: widget.existingThought != null
                     ? Icons.check_rounded

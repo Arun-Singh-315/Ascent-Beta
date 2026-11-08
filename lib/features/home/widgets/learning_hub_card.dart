@@ -61,7 +61,7 @@ class LearningHubCard extends ConsumerWidget {
             runSpacing: 4,
             children: [
               Text(
-                'Learning',
+                'Growth',
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,

@@ -1,3 +1,4 @@
+import 'local_day_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
@@ -232,6 +233,7 @@ final allMedicinesStreamProvider = StreamProvider<List<Medicine>>((ref) {
 final todayMedicineLogsStreamProvider = StreamProvider<List<MedicineLog>>((
   ref,
 ) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(medicineDaoProvider);
   return dao.watchTodayMedicineLogs();
 });
@@ -246,6 +248,7 @@ final activeMomentumChallengeStreamProvider =
 
 final todayMomentumCommitmentsStreamProvider =
     StreamProvider<List<MomentumCommitment>>((ref) {
+      ref.watch(localDayProvider);
       final dao = ref.watch(momentumDaoProvider);
       final now = DateTime.now();
       return dao.watchCommitmentsForDate(now);
@@ -254,6 +257,7 @@ final todayMomentumCommitmentsStreamProvider =
 // ── Finance Reactive Stream Providers ─────────────────────────────────────────
 
 final todaySpendingStreamProvider = StreamProvider<double>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(financeDaoProvider);
   return dao.watchTodaySpending();
 });
@@ -289,6 +293,7 @@ final savingsGoalsStreamProvider = StreamProvider<List<SavingsGoal>>((ref) {
 // ── Walk & Activity Stream Providers ──────────────────────────────────────────
 
 final todayWalkDistanceStreamProvider = StreamProvider<double>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(walkDaoProvider);
   return dao.watchTodayDistance();
 });
@@ -311,11 +316,13 @@ final activityGoalStreamProvider = StreamProvider<DailyActivityGoal>((ref) {
 // ── Water Hydration Stream Providers ──────────────────────────────────────────
 
 final todayWaterMlStreamProvider = StreamProvider<int>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(waterDaoProvider);
   return dao.watchTodayWaterMl();
 });
 
 final todayWaterLogsStreamProvider = StreamProvider<List<WaterLog>>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(waterDaoProvider);
   return dao.watchTodayWaterLogs();
 });
@@ -331,7 +338,7 @@ final past7DaysHydrationStreamProvider =
       return dao.watchPast7DaysHistory();
     });
 
-// ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
+// ── Mindspace & Mindspace Stream Providers ────────────────────────────────
 
 final thoughtCategoriesStreamProvider = StreamProvider<Map<String, String>>((
   ref,
@@ -350,6 +357,7 @@ final archivedThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
 });
 
 final todayThoughtsCountStreamProvider = StreamProvider<int>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(thoughtDaoProvider);
   return dao.watchTodayThoughtsCount();
 });
@@ -404,16 +412,18 @@ final userProfileStreamProvider = StreamProvider<UserProfile?>((ref) {
 });
 
 final todayTasksStreamProvider = StreamProvider<List<Task>>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(taskDaoProvider);
-  return dao.watchTasksByDate(DateTime.now());
+  return dao.watchTasksByDate(ref.watch(localDayProvider));
 });
 
 final todayFocusTaskProvider = FutureProvider<Task?>((ref) async {
+  final day = ref.watch(localDayProvider);
   final dao = ref.watch(taskDaoProvider);
   final overdue = await dao.watchOverdueTasks().first;
   if (overdue.isNotEmpty) return overdue.first;
 
-  final todayTasks = await dao.watchTasksByDate(DateTime.now()).first;
+  final todayTasks = await dao.watchTasksByDate(day).first;
   final pending = todayTasks
       .where((t) => t.actualCompletedDate == null)
       .toList();
@@ -423,11 +433,13 @@ final todayFocusTaskProvider = FutureProvider<Task?>((ref) async {
 });
 
 final currentStreakStreamProvider = StreamProvider<int>((ref) {
+  ref.watch(localDayProvider);
   final dao = ref.watch(consistencyDaoProvider);
   return dao.watchCurrentStreak();
 });
 
 final todayLogStreamProvider = FutureProvider<ConsistencyLog?>((ref) async {
+  ref.watch(localDayProvider);
   final dao = ref.watch(consistencyDaoProvider);
   return dao.getTodayLog();
 });

@@ -7,7 +7,7 @@ import '../home/widgets/home_schedule_sheet.dart';
 import 'thought_action_ui.dart';
 import 'thought_category_action.dart';
 
-/// Permanent, compact actions shared by Home and Thought Wall cards.
+/// Permanent, compact actions shared by Home and Mindspace cards.
 class ThoughtQuickActions extends ConsumerStatefulWidget {
   const ThoughtQuickActions({
     super.key,

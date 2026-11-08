@@ -252,7 +252,7 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.chaiBreak,
       builder: (context, state) => const FeatureGuideHost(
-        feature: 'Chai & Coffee',
+        feature: 'Pause',
         child: ChaiBreakScreen(),
       ),
     ),

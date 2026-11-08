@@ -1,6 +1,6 @@
 import '../../app/theme/app_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
-import '../../shared/widgets/ascent_segmented_control.dart';
+import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -139,29 +139,19 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
     }
   }
 
-  Future<bool> startWithoutSetup() async {
-    if (state.isSubmitting) return false;
-    state = state.copyWith(isSubmitting: true);
-    try {
-      final prefs = ref.read(sharedPreferencesProvider);
-      if (!await prefs.setBool('ascent_onboarding_complete', true) ||
-          !await prefs.setBool('ascent_quick_start_v1', true)) {
-        return false;
-      }
-      ref.invalidate(onboardingCompleteProvider);
-      return true;
-    } catch (_) {
-      return false;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
-    }
-  }
+  // Kept for callers from older flows; required identity cannot be bypassed.
+  Future<bool> startWithoutSetup() async => false;
 
   Future<bool> submitAndSeedPlan(
     BuildContext context,
     WidgetRef widgetRef,
   ) async {
-    if (state.isSubmitting || state.name.trim().length < 2) return false;
+    if (state.isSubmitting ||
+        state.name.trim().runes.length < 2 ||
+        state.dateOfBirth == null ||
+        state.dateOfBirth!.isAfter(DateUtils.dateOnly(DateTime.now()))) {
+      return false;
+    }
     state = state.copyWith(isSubmitting: true);
     try {
       final db = ref.read(databaseProvider);
@@ -197,6 +187,7 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
 
       final prefs = ref.read(sharedPreferencesProvider);
       await prefs.setBool('ascent_quick_start_v1', true);
+      await prefs.setBool('ascent_first_moment_pending_v1', true);
       await markOnboardingComplete(widgetRef);
       return true;
     } catch (_) {
@@ -212,7 +203,7 @@ final onboardingProvider =
       OnboardingNotifier.new,
     );
 
-/// A two-step welcome with one persistent primary action. Setup is optional.
+/// A compact welcome followed by the two required personal details.
 class OnboardingShell extends StatelessWidget {
   const OnboardingShell({super.key});
   @override
@@ -230,48 +221,79 @@ class _WelcomeFlow extends ConsumerStatefulWidget {
 
 class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
   final _name = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  bool _showDobError = false;
   String? _error;
-  static const ink = Color(0xFF202D3F);
-  static const muted = Color(0xFF607087);
-
+  static const ink = Color(0xFF20232A);
+  static const muted = Color(0xFF606872);
   @override
   void dispose() {
     _name.dispose();
     super.dispose();
   }
 
+  Future<void> _pickBirthday() async {
+    FocusScope.of(context).unfocus();
+    final now = DateUtils.dateOnly(DateTime.now());
+    final state = ref.read(onboardingProvider);
+    final value = await showDatePicker(
+      context: context,
+      helpText: 'Your date of birth',
+      initialDate:
+          state.dateOfBirth ?? DateTime(now.year - 22, now.month, now.day),
+      firstDate: DateTime(1900),
+      lastDate: now,
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (value != null && mounted) {
+      ref.read(onboardingProvider.notifier).setDateOfBirth(value);
+      setState(() {
+        _showDobError = false;
+        _error = null;
+      });
+    }
+  }
+
   Future<void> _continue() async {
     final notifier = ref.read(onboardingProvider.notifier);
-    if (ref.read(onboardingProvider).stepIndex == 0) {
+    final state = ref.read(onboardingProvider);
+    if (state.isSubmitting) return;
+    if (state.stepIndex == 0) {
       HapticFeedback.selectionClick();
       notifier.setStep(1);
       return;
     }
+    final valid = _form.currentState!.validate();
+    setState(() => _showDobError = state.dateOfBirth == null);
+    if (!valid || state.dateOfBirth == null) return;
     FocusScope.of(context).unfocus();
-    final name = _name.text.trim();
-    if (name.isNotEmpty && name.runes.length < 2) {
-      setState(
-        () => _error = 'Use at least two characters, or leave this blank.',
-      );
-      return;
-    }
-    notifier.updateNameRole(name, 'Mindful Growth');
-    final saved = name.isEmpty
-        ? await notifier.startWithoutSetup()
-        : await notifier.submitAndSeedPlan(context, ref);
+    notifier.updateNameRole(_name.text.trim(), 'Mindful Growth');
+    final saved = await notifier.submitAndSeedPlan(context, ref);
     if (!mounted) return;
     if (saved) {
       context.go(NotificationService.consumePendingDestination() ?? '/home');
     } else {
-      setState(() => _error = 'Could not save your choice. Please try again.');
+      setState(
+        () => _error = 'Could not save. Your details are still here—try again.',
+      );
     }
   }
+
+  Widget _action(OnboardingDraftState state, String label) =>
+      AscentButton.primary(
+        key: const ValueKey('onboarding_next'),
+        label: label,
+        icon: Icons.arrow_forward_rounded,
+        expanded: false,
+        compact: true,
+        loading: state.isSubmitting,
+        onPressed: state.isSubmitting ? null : _continue,
+      );
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final first = state.stepIndex == 0;
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return PopScope(
       canPop: first,
       onPopInvokedWithResult: (didPop, _) {
@@ -280,116 +302,76 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F8FC),
-        body: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: Row(
-                      children: [
-                        if (!first)
-                          IconButton(
-                            tooltip: 'Back',
-                            onPressed: state.isSubmitting
-                                ? null
-                                : () => ref
-                                      .read(onboardingProvider.notifier)
-                                      .setStep(0),
-                            icon: const Icon(
-                              Icons.arrow_back_rounded,
-                              size: 20,
+        backgroundColor: const Color(0xFFFFFCF8),
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/welcome_horizon.png'),
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFFFCF8), Color(0xFFF0F5F4), Color(0xFFF9EEE4)],
+            ),
+          ),
+          child: SafeArea(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (!first)
+                            IconButton(
+                              tooltip: 'Back',
+                              onPressed: state.isSubmitting
+                                  ? null
+                                  : () => ref
+                                        .read(onboardingProvider.notifier)
+                                        .setStep(0),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            )
+                          else
+                            const AscentLogo(size: 28),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Ascent',
+                            style: AscentTextStyles.cardTitle.copyWith(
                               color: ink,
                             ),
-                          )
-                        else
-                          const AscentLogo(size: 32),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Ascent',
-                          style: AscentTextStyles.homeTitle.copyWith(
-                            fontSize: 18,
-                            color: ink,
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          first ? '01 / 02' : '02 / 02',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: Duration(milliseconds: reducedMotion ? 0 : 280),
-                      switchInCurve: Curves.easeOutCubic,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, .025),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: SingleChildScrollView(
-                        key: ValueKey(first),
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-                        child: first ? _intro() : _personalize(state),
-                      ),
-                    ),
-                  ),
-                  // The next step never lives inside the scrollable content.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text(
-                              _error!,
-                              style: const TextStyle(
-                                color: SharedControlColors.dueRed,
+                          const Spacer(),
+                          if (MediaQuery.textScalerOf(context).scale(14) < 21)
+                            Text(
+                              first ? 'WELCOME' : 'MAKE IT YOURS',
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: muted,
+                                letterSpacing: 1,
                               ),
                             ),
-                          ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                first
-                                    ? 'Less setup. More living.'
-                                    : 'Everything else can wait.',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: muted,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            AscentButton.primary(
-                              key: const ValueKey('onboarding_next'),
-                              label: first ? 'Continue' : 'Open Ascent',
-                              icon: Icons.arrow_forward_rounded,
-                              loading: state.isSubmitting,
-                              expanded: false,
-                              compact: true,
-                              onPressed: state.isSubmitting ? null : _continue,
-                            ),
-                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+                      AnimatedSwitcher(
+                        duration: Duration(
+                          milliseconds: MediaQuery.disableAnimationsOf(context)
+                              ? 0
+                              : 280,
                         ),
-                      ],
-                    ),
+                        child: first ? _intro(state) : _personalize(state),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -398,137 +380,12 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
     );
   }
 
-  Widget _intro() => Column(
+  Widget _intro(OnboardingDraftState state) => Column(
+    key: const ValueKey('welcome_intro'),
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'A LITTLE ROOM FOR YOU',
-        style: AscentTextStyles.labelSmall.copyWith(
-          color: muted,
-          letterSpacing: 1.4,
-          fontSize: 10.5,
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'Small steps.\nClearer days.',
-        style: AscentTextStyles.homeTitle.copyWith(
-          color: ink,
-          fontSize: 34,
-          height: 1.12,
-          letterSpacing: -1.2,
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'A place for what you want to do, what’s on your mind, and the little routines that matter.',
-        style: AscentTextStyles.body.copyWith(color: muted, height: 1.5),
-      ),
-      const SizedBox(height: 24),
-      Container(
-        key: const ValueKey('onboarding_preview'),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFE9F0FD), Color(0xFFF0F5F2), Color(0xFFFBF0E8)],
-          ),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.wb_twilight_outlined,
-                  size: 20,
-                  color: SharedControlColors.actionBlue,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'A day with a little more space',
-                    style: AscentTextStyles.labelMedium.copyWith(color: ink),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            _previewRow(
-              Icons.radio_button_unchecked,
-              'One thing worth doing',
-              'Things Hub',
-              const Color(0xFFFFFFFF),
-            ),
-            const SizedBox(height: 10),
-            _previewRow(
-              Icons.edit_note_rounded,
-              'An idea worth keeping',
-              'Thought Wall',
-              const Color(0xFFFFFAF6),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Your own plans and thoughts will live here.',
-              style: AscentTextStyles.labelSmall.copyWith(
-                color: muted,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-
-  Widget _previewRow(IconData icon, String title, String label, Color fill) =>
-      Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: fill,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: SharedControlColors.actionBlue, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AscentTextStyles.labelSmall.copyWith(color: muted),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    title,
-                    style: AscentTextStyles.labelMedium.copyWith(color: ink),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-
-  Widget _personalize(OnboardingDraftState state) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'YOUR SPACE, YOUR PACE',
-        style: AscentTextStyles.labelSmall.copyWith(
-          color: muted,
-          letterSpacing: 1.4,
-          fontSize: 10.5,
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'Make yourself\nat home.',
+        'A little more room\nfor your day.',
         style: AscentTextStyles.homeTitle.copyWith(
           color: ink,
           fontSize: 32,
@@ -538,86 +395,207 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
       ),
       const SizedBox(height: 12),
       Text(
-        'A name is a nice place to start. Leave it blank if you’d rather settle in first.',
-        style: AscentTextStyles.body.copyWith(color: muted, height: 1.45),
+        'Plans, thoughts, and everyday rituals. Together.',
+        style: AscentTextStyles.body.copyWith(color: muted),
       ),
-      const SizedBox(height: 24),
-      TextField(
-        key: const ValueKey('onboarding_name'),
-        controller: _name,
-        enabled: !state.isSubmitting,
-        textCapitalization: TextCapitalization.words,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => _continue(),
-        onChanged: (_) => setState(() => _error = null),
-        decoration: InputDecoration(
-          labelText: 'Your name · optional',
-          hintText: 'What should we call you?',
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFE0E7F0)),
-          ),
-        ),
-      ),
-      const SizedBox(height: 24),
+      const SizedBox(height: 22),
+      const _WelcomeArtwork(),
+      const SizedBox(height: 18),
       Text(
-        'Your companion',
-        style: AscentTextStyles.labelMedium.copyWith(color: ink),
-      ),
-      const SizedBox(height: 8),
-      AscentSegmentedControl<String>(
-        segments: const [
-          AscentSegment(value: 'Aria', label: 'Aria'),
-          AscentSegment(value: 'Riya', label: 'Riya'),
-        ],
-        selected: state.companionName,
-        enabled: !state.isSubmitting,
-        onChanged: (value) =>
-            ref.read(onboardingProvider.notifier).setCompanion(value),
+        'A glimpse of what you can make.',
+        style: AscentTextStyles.labelSmall.copyWith(color: muted),
       ),
       const SizedBox(height: 20),
-      Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEDF3F0),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.spa_outlined, color: Color(0xFF4F7563), size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Start with something small.',
-                    style: AscentTextStyles.cardTitle.copyWith(
-                      color: ink,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Begin with one thing, and let your day take shape. Your first step is yours to choose.',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: muted,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      _action(state, 'Let’s begin'),
+      const SizedBox(height: 14),
+      Text(
+        'Your space. At your pace.',
+        style: AscentTextStyles.labelSmall.copyWith(color: muted),
       ),
     ],
   );
+  Widget _personalize(OnboardingDraftState state) => Container(
+    key: const ValueKey('welcome_details'),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .85),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: const Color(0xFFE1E4E1)),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0C273B36),
+          blurRadius: 26,
+          offset: Offset(0, 12),
+        ),
+      ],
+    ),
+    child: Form(
+      key: _form,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.wb_twilight_rounded,
+            size: 32,
+            color: Color(0xFFA97D52),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Make it yours.',
+            style: AscentTextStyles.homeTitle.copyWith(
+              fontSize: 28,
+              color: ink,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Your name for a warm welcome. Your birthday for your Rashi.',
+            style: AscentTextStyles.body.copyWith(color: muted),
+          ),
+          const SizedBox(height: 24),
+          TextFormField(
+            key: const ValueKey('onboarding_name'),
+            controller: _name,
+            enabled: !state.isSubmitting,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.name],
+            onFieldSubmitted: (_) => _pickBirthday(),
+            validator: (value) => (value ?? '').trim().runes.length < 2
+                ? 'Enter your name (at least two characters).'
+                : null,
+            decoration: InputDecoration(
+              labelText: 'Your name',
+              hintText: 'What should we call you?',
+              filled: false,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Semantics(
+            button: true,
+            label: 'Date of birth, required',
+            child: InkWell(
+              key: const ValueKey('onboarding_dob'),
+              onTap: state.isSubmitting ? null : _pickBirthday,
+              borderRadius: BorderRadius.circular(16),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Date of birth',
+                  errorText: _showDobError
+                      ? 'Choose your date of birth.'
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  suffixIcon: const Icon(
+                    Icons.calendar_month_rounded,
+                    size: 21,
+                  ),
+                ),
+                child: Text(
+                  state.dateOfBirth == null
+                      ? 'Choose your birthday'
+                      : DateFormat.yMMMd().format(state.dateOfBirth!),
+                  style: AscentTextStyles.body.copyWith(
+                    color: state.dateOfBirth == null ? muted : ink,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Both details are required. You can change them in your profile.',
+            style: AscentTextStyles.labelSmall.copyWith(color: muted),
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: SharedControlColors.dueRed),
+              ),
+            ),
+          const SizedBox(height: 22),
+          _action(state, 'Continue'),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Native layered paper, so the illustration stays crisp without an image load.
+class _WelcomeArtwork extends StatelessWidget {
+  const _WelcomeArtwork();
+  @override
+  Widget build(BuildContext context) {
+    final large = MediaQuery.textScalerOf(context).scale(14) > 21;
+    Widget card(IconData icon, String text, Color fill) => Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x192C3C35),
+            blurRadius: 22,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF5A7764), size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: AscentTextStyles.cardTitle.copyWith(
+                fontSize: 16,
+                color: const Color(0xFF20232A),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return Container(
+      key: const ValueKey('onboarding_preview'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFDCECF5), Color(0xFFF9E9D9), Color(0xFFE2ECDE)],
+        ),
+      ),
+      child: Column(
+        children: [
+          Transform.rotate(
+            angle: large ? 0 : -.045,
+            child: card(
+              Icons.radio_button_unchecked_rounded,
+              'Make time for a walk',
+              const Color(0xFFFDFEFC),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Transform.rotate(
+            angle: large ? 0 : .045,
+            child: card(
+              Icons.auto_awesome_rounded,
+              'An idea worth keeping',
+              const Color(0xFFFFF8ED),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

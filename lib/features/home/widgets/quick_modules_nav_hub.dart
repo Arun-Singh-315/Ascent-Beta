@@ -17,12 +17,12 @@ import '../../challenge/challenge_providers.dart';
 import '../../challenge/domain/challenge_pace_engine.dart';
 import '../../medicine/medicine_editor_sheet.dart';
 
-/// Level 2 · Secondary: Life & Health Hub
+/// Level 2 · Secondary: Daily rhythm Hub
 /// Clean, balanced layout:
 /// - Challenge banner (full-width, top of card).
 /// - Medicine prescription tracker with daily dose compliance.
 /// - Hydration with instant +250mL action.
-/// - Chai & Coffee Break sanctuary footer.
+/// - Pause sanctuary footer.
 class QuickModulesNavHub extends ConsumerWidget {
   const QuickModulesNavHub({
     super.key,
@@ -97,7 +97,7 @@ class QuickModulesNavHub extends ConsumerWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              showHealth ? 'Life & Health' : 'Challenge',
+              showHealth ? 'Daily rhythm' : 'Challenge',
               style: AscentTextStyles.homeTitle.copyWith(
                 color: g.ink,
                 fontSize: 20,
@@ -622,7 +622,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
-                              'Chai & Coffee Break',
+                              'Pause',
                               style: AscentTextStyles.homeHeadline
                                   .copyWith(color: g.ink)
                                   .merge(AppTypeRoles.typeRole61),

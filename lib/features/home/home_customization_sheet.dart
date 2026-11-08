@@ -92,7 +92,7 @@ class _HomeCustomizationSheetState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Things Hub leads your day. Supporting cards appear when relevant; hidden tools remain available from More.',
+                      'Dayboard leads your day. Supporting cards appear when relevant; hidden tools remain available from More.',
                       style: AscentTextStyles.bodySmall.copyWith(
                         color: g.inkMuted,
                       ),
@@ -168,7 +168,7 @@ class _HomeCustomizationSheetState
                       ),
                     const SizedBox(height: 18),
                     Text(
-                      'Life & Health tools',
+                      'Daily rhythm tools',
                       style: AscentTextStyles.labelMedium.copyWith(
                         color: g.ink,
                       ),

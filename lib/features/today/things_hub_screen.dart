@@ -80,7 +80,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'This activity is no longer pending. Here is your Things hub.',
+              'This activity is no longer pending. Here is your Dayboard.',
             ),
           ),
         );
@@ -120,7 +120,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
     final g = context.glass;
 
     return AscentScaffold(
-      title: 'Things hub',
+      title: 'Dayboard',
       subtitle: 'Make room for your next step',
       actions: [
         IconButton(

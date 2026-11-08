@@ -1120,7 +1120,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: _buildQuickChip(
-                                widget.compact ? 'Promises' : 'Today\'s agenda',
+                                widget.compact ? 'Commitments' : 'Today\'s agenda',
                                 Icons.checklist_rounded,
                                 () => _handleSubmitted(
                                   widget.compact
@@ -1155,7 +1155,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       const SizedBox(height: 4),
                     ],
 
-                    // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
+                    // Mindspace Consistent Input Box (Glass fill + Pill + Animated Send Circle)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
                       child: SafeArea(

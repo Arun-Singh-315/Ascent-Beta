@@ -1,3 +1,4 @@
+import 'activity_row_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,10 +38,9 @@ class _MedicineActivityGroupCardState
     with SingleTickerProviderStateMixin {
   bool _expanded = false;
 
-  int get _takenCount =>
-      widget.activities
-          .where((a) => a.status == TodayActivityStatus.done)
-          .length;
+  int get _takenCount => widget.activities
+      .where((a) => a.status == TodayActivityStatus.done)
+      .length;
 
   bool get _isAllDone =>
       widget.activities.isNotEmpty &&
@@ -185,15 +185,16 @@ class _MedicineActivityGroupCardState
                                 widget.dosage.isNotEmpty
                                     ? '${widget.medicineName} (${widget.dosage})'
                                     : widget.medicineName,
-                                style: AppTypography.thoughtContent(
-                                  color: allDone ? g.inkMuted : g.ink,
-                                ).copyWith(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  decoration: allDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
+                                style:
+                                    AppTypography.thoughtContent(
+                                      color: allDone ? g.inkMuted : g.ink,
+                                    ).copyWith(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      decoration: allDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -285,204 +286,202 @@ class _MedicineActivityGroupCardState
     final isFuture = dose.isScheduledInFuture;
     final timeStr = _formatTime(dose.scheduledTime ?? dose.plannedDate);
 
-    return Container(
-      key: ValueKey('group_dose_${dose.id}'),
-      margin: const EdgeInsets.symmetric(vertical: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: isDone
-            ? g.sage.withValues(alpha: 0.06)
-            : g.ink.withValues(alpha: 0.015),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
+    return GestureDetector(
+      onLongPress: () => showActivityActions(context, ref, dose),
+      child: Container(
+        key: ValueKey('group_dose_${dose.id}'),
+        margin: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
           color: isDone
-              ? g.sage.withValues(alpha: 0.25)
-              : g.line.withValues(alpha: 0.15),
+              ? g.sage.withValues(alpha: 0.06)
+              : g.ink.withValues(alpha: 0.015),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDone
+                ? g.sage.withValues(alpha: 0.25)
+                : g.line.withValues(alpha: 0.15),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Circular Check / Time target
-          SizedBox(
-            width: 34,
-            height: 34,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(17),
-                onTap: () => _completeDose(dose),
-                child: Center(
-                  child: Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDone
-                          ? g.sage.withValues(alpha: 0.16)
-                          : (isFuture
-                              ? g.ink.withValues(alpha: 0.04)
-                              : Colors.transparent),
-                      border: Border.all(
+        child: Row(
+          children: [
+            // Circular Check / Time target
+            SizedBox(
+              width: 34,
+              height: 34,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(17),
+                  onTap: () => _completeDose(dose),
+                  child: Center(
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: isDone
-                            ? g.sage
-                            : (isFuture ? g.inkMuted : g.clay),
-                        width: 1.5,
+                            ? g.sage.withValues(alpha: 0.16)
+                            : (isFuture
+                                  ? g.ink.withValues(alpha: 0.04)
+                                  : Colors.transparent),
+                        border: Border.all(
+                          color: isDone
+                              ? g.sage
+                              : (isFuture ? g.inkMuted : g.clay),
+                          width: 1.5,
+                        ),
                       ),
+                      child: isDone
+                          ? Center(
+                              child: Icon(
+                                Icons.check_rounded,
+                                size: 14,
+                                color: g.sage,
+                              ),
+                            )
+                          : (isFuture
+                                ? Center(
+                                    child: Icon(
+                                      Icons.schedule_rounded,
+                                      size: 12,
+                                      color: g.inkMuted,
+                                    ),
+                                  )
+                                : null),
                     ),
-                    child: isDone
-                        ? Center(
-                            child: Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: g.sage,
-                            ),
-                          )
-                        : (isFuture
-                            ? Center(
-                                child: Icon(
-                                  Icons.schedule_rounded,
-                                  size: 12,
-                                  color: g.inkMuted,
-                                ),
-                              )
-                            : null),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
 
-          // Time & Title
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    if (timeStr.isNotEmpty) ...[
-                      Text(
-                        timeStr,
-                        style: TextStyle(
-                          color: isDone ? g.inkMuted : g.ink,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                    Flexible(
-                      child: Text(
-                        dose.notes?.split('•').first.trim().isNotEmpty == true
-                            ? dose.notes!.split('•').first.trim()
-                            : (widget.dosage.isNotEmpty
-                                ? widget.dosage
-                                : dose.title),
-                        style: TextStyle(
-                          color: isDone ? g.inkMuted : g.inkSecondary,
-                          fontSize: 12,
-                          decoration: isDone
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Action: Done chip vs Scheduled Badge vs Done button
-          if (isDone) ...[
-            const GlassChip(
-              label: 'Done',
-              icon: Icons.check_rounded,
-              selected: true,
-              success: true,
-              tooltip: 'Completed',
-            ),
-          ] else if (isFuture) ...[
-            Semantics(
-              button: true,
-              label: 'Scheduled for $timeStr',
-              child: InkWell(
-                key: ValueKey('activity_scheduled_${dose.id}'),
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  AscentSnackBar.show(
-                    context,
-                    message:
-                        'Scheduled for $timeStr. You can complete it once that time arrives.',
-                  );
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: g.ink.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: g.ink.withValues(alpha: 0.15)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            // Time & Title
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
                     children: [
-                      Icon(Icons.schedule_rounded, size: 12, color: g.clay),
-                      const SizedBox(width: 4),
-                      Text(
-                        timeStr,
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                      if (timeStr.isNotEmpty) ...[
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            color: isDone ? g.inkMuted : g.ink,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          dose.notes?.split('•').first.trim().isNotEmpty == true
+                              ? dose.notes!.split('•').first.trim()
+                              : (widget.dosage.isNotEmpty
+                                    ? widget.dosage
+                                    : dose.title),
+                          style: TextStyle(
+                            color: isDone ? g.inkMuted : g.inkSecondary,
+                            fontSize: 12,
+                            decoration: isDone
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
-          ] else ...[
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: 48,
-                minWidth: 48,
+            const SizedBox(width: 8),
+
+            // Action: Done chip vs Scheduled Badge vs Done button
+            if (isDone) ...[
+              const GlassChip(
+                label: 'Done',
+                icon: Icons.check_rounded,
+                selected: true,
+                success: true,
+                tooltip: 'Completed',
               ),
-              child: Center(
-                child: FilledButton.icon(
-                  key: ValueKey('activity_action_${dose.id}'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: g.ink,
-                    foregroundColor: g.bg,
-                    minimumSize: const Size(0, 32),
+            ] else if (isFuture) ...[
+              Semantics(
+                button: true,
+                label: 'Scheduled for $timeStr',
+                child: InkWell(
+                  key: ValueKey('activity_scheduled_${dose.id}'),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    AscentSnackBar.show(
+                      context,
+                      message:
+                          'Scheduled for $timeStr. You can complete it once that time arrives.',
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                      horizontal: 8,
+                      vertical: 5,
                     ),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                    shape: RoundedRectangleBorder(
+                    decoration: BoxDecoration(
+                      color: g.ink.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: g.ink.withValues(alpha: 0.15)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded, size: 12, color: g.clay),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  icon: const Icon(Icons.check_rounded, size: 13),
-                  label: const Text('Done'),
-                  onPressed: () => _completeDose(dose),
                 ),
               ),
-            ),
+            ] else ...[
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                child: Center(
+                  child: FilledButton.icon(
+                    key: ValueKey('activity_action_${dose.id}'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: g.ink,
+                      foregroundColor: g.bg,
+                      minimumSize: const Size(0, 32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(fontWeight: FontWeight.w600, fontSize: 11),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.check_rounded, size: 13),
+                    label: const Text('Done'),
+                    onPressed: () => _completeDose(dose),
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

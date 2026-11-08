@@ -255,7 +255,7 @@ final accountabilityFollowUpEnabledProvider =
       AccountabilityFollowUpNotifier.new,
     );
 
-/// Bounded, combined Things hub check-ins, independent of explicit reminders.
+/// Bounded, combined Dayboard check-ins, independent of explicit reminders.
 final thingsCheckInsEnabledProvider =
     NotifierProvider<ThingsCheckInsNotifier, bool>(ThingsCheckInsNotifier.new);
 

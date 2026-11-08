@@ -1,3 +1,4 @@
+import 'home_capture_entrance.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -158,16 +159,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       orElse: () => (0, 0),
     );
 
-    ref.listen(todayActivitiesProvider, (prev, next) {
-      next.whenData((items) {
-        if (!mounted) return;
-        if (!_listLoadedOnce) {
-          _listLoadedOnce = true;
-        }
-        _seenActivityIds.addAll(items.map((e) => e.id));
-      });
-    });
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -178,7 +169,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           children: [
             Expanded(
               child: Text(
-                'Things Hub',
+                'Dayboard',
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
@@ -187,7 +178,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               ),
             ),
             IconButton(
-              tooltip: 'Open Things Hub',
+              tooltip: 'Open Dayboard',
               onPressed: () {
                 HapticFeedback.selectionClick();
                 context.push('/things');
@@ -207,7 +198,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             children: [
               _HubTabs(
                 key: const ValueKey('activity_hub_tabs'),
-                labels: const ['Active', 'Done', 'Plans'],
+                labels: const ['Today', 'Done', 'Plans'],
                 selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
                 onSelected: (i) => setState(() {
                   _showCompleted = i == 1;
@@ -293,6 +284,15 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                           ),
                         ),
                         data: (items) {
+                          final animateNew = _listLoadedOnce;
+                          final knownIds = Set<String>.of(_seenActivityIds);
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            _listLoadedOnce = true;
+                            _seenActivityIds.addAll(
+                              items.map((item) => item.id),
+                            );
+                          });
                           final medicineItems = items
                               .where((a) => a.sourceType == 'medicine')
                               .toList();
@@ -438,15 +438,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                     compact: true,
                                   )
                                 else if (entry is _ActivityRowEntry)
-                                  _ActivityEntrance(
+                                  HomeCaptureEntrance(
                                     key: ValueKey(
                                       'entrance_${entry.activity.id}',
                                     ),
                                     animate:
-                                        _listLoadedOnce &&
-                                        !_seenActivityIds.contains(
-                                          entry.activity.id,
-                                        ),
+                                        animateNew &&
+                                        !knownIds.contains(entry.activity.id),
                                     child: ActivityRowItem(
                                       key: ValueKey(entry.activity.id),
                                       activity: entry.activity,
@@ -732,69 +730,4 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
       ),
     );
   }
-}
-
-class _ActivityEntrance extends StatefulWidget {
-  const _ActivityEntrance({
-    super.key,
-    required this.animate,
-    required this.child,
-  });
-
-  final bool animate;
-  final Widget child;
-
-  @override
-  State<_ActivityEntrance> createState() => _ActivityEntranceState();
-}
-
-class _ActivityEntranceState extends State<_ActivityEntrance>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 450),
-    value: widget.animate ? 0 : 1,
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (!widget.animate) return;
-    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
-      _controller.value = 1;
-    } else {
-      _controller.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    child: widget.child,
-    builder: (context, child) {
-      final fade = Curves.easeOutCubic.transform(_controller.value);
-      final slide = Curves.easeOutCubic.transform(_controller.value);
-      final scale = Curves.easeOutBack.transform(_controller.value);
-      return Opacity(
-        opacity: fade.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, -18 * (1 - slide)),
-          child: Transform.scale(
-            scale: 0.96 + 0.04 * scale,
-            alignment: Alignment.topCenter,
-            child: child,
-          ),
-        ),
-      );
-    },
-  );
 }

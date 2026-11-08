@@ -40,10 +40,10 @@ class AppConstants {
   static const String channelAlarmsDesc = 'High-priority ringing alarms for critical reminders and timers';
 
   static const String channelLearningId = 'ascent_learning';
-  static const String channelLearningName = 'Ascent Learning Hub';
+  static const String channelLearningName = 'Ascent Growth';
   static const String channelLearningDesc = 'Ongoing study timers and lecture tracking notifications';
 
   static const String channelChaiBreakId = 'ascent_chai_break';
-  static const String channelChaiBreakName = 'Ascent Chai Break';
+  static const String channelChaiBreakName = 'Ascent Pause';
   static const String channelChaiBreakDesc = 'Break sanctuary timer and ambient soundscape player controls';
 }

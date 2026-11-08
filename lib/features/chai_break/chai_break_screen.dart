@@ -23,7 +23,7 @@ enum ChaiBreakMode {
   brewWithMe,
 }
 
-/// Apple Mindfulness & Zen-inspired Chai & Coffee Screen
+/// Apple Mindfulness & Zen-inspired Pause Screen
 /// Minimalist, serene, tactile, informative with a clean single-view chill sanctuary.
 class ChaiBreakScreen extends ConsumerStatefulWidget {
   const ChaiBreakScreen({super.key});
@@ -78,7 +78,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Chai & Coffee',
+                            'Pause',
                             style: AscentTextStyles.cardTitle.copyWith(
                               color: g.ink,
                               fontWeight: FontWeight.w700,

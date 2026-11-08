@@ -237,7 +237,7 @@ class AscentDialog extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: g.elevated,
-          borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
+          borderRadius: BorderRadius.circular(30),
           border: Border.all(
             color: g.line,
             width: AscentDimensions.contentOutlineWidth,

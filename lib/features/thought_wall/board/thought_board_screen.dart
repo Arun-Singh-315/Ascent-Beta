@@ -33,7 +33,7 @@ import 'board_routes.dart';
 import 'spaces_shelf.dart';
 import 'thought_detail_sheet.dart';
 
-/// The Thought Wall: a calm board of thoughts. Cards carry no buttons. Spaces
+/// The Mindspace: a calm board of thoughts. Cards carry no buttons. Spaces
 /// (Movies, Books …) sit in one row on top; everything you can do with a
 /// thought is behind a tap.
 class ThoughtBoardScreen extends ConsumerStatefulWidget {
@@ -556,7 +556,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     final activeAsync = ref.watch(allThoughtsStreamProvider);
     if (activeAsync.hasError && !activeAsync.hasValue) {
       return AscentScaffold(
-        title: 'Thought Wall',
+        title: 'Mindspace',
         showFeatureHelp: false,
         body: EmptyState(
           icon: Icons.cloud_off_outlined,
@@ -700,7 +700,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   ),
                 IconButton(
                   key: const ValueKey('board_top_promises'),
-                  tooltip: 'Promises',
+                  tooltip: 'Commitments',
                   icon: Icon(Icons.handshake_outlined, color: g.ink),
                   onPressed: () => context.push('/promises'),
                 ),

@@ -512,7 +512,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 ),
                 const SizedBox(height: 20),
                 AscentButton.primary(
-                  label: 'Save Reflection to Mind Space',
+                  label: 'Save Reflection to Mindspace',
                   expanded: true,
                   onPressed: () async {
                     final title = titleController.text.trim();
@@ -537,7 +537,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Saved reflection to Mind Space! 💭'),
+                          content: Text('Saved reflection to Mindspace! 💭'),
                           behavior: SnackBarBehavior.floating,
                           duration: Duration(seconds: 2),
                         ),

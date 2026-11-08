@@ -1,3 +1,4 @@
+import '../../home/widgets/activity_row_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,11 +18,7 @@ import '../models/things_intelligence.dart';
 /// "The Compass Card" — Intelligent Hero card highlighting the single next best action.
 /// Never just reflects text: auto-synthesizes category blueprints, micro-steps, and contextual actions.
 class ThingsHeroCard extends ConsumerStatefulWidget {
-  const ThingsHeroCard({
-    super.key,
-    required this.activity,
-    this.onTap,
-  });
+  const ThingsHeroCard({super.key, required this.activity, this.onTap});
 
   final TodayActivityItem activity;
   final VoidCallback? onTap;
@@ -41,7 +38,8 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
     final isLecture = activity.sourceType == 'lecture';
-    final isTimed = activity.kind == ActivityKind.duration ||
+    final isTimed =
+        activity.kind == ActivityKind.duration ||
         (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
         isLecture;
 
@@ -73,6 +71,7 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
         ),
         child: InkWell(
           onTap: widget.onTap,
+          onLongPress: () => showActivityActions(context, ref, activity),
           borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,16 +220,14 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
                 ),
               ),
 
-              if (activity.notes != null && activity.notes!.trim().isNotEmpty) ...[
+              if (activity.notes != null &&
+                  activity.notes!.trim().isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
                   activity.notes!.trim(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: g.inkMuted,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: g.inkMuted, fontSize: 12),
                 ),
               ],
 
@@ -288,7 +285,11 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var i = 0; i < enrichment.microSteps.length; i++) ...[
+                      for (
+                        var i = 0;
+                        i < enrichment.microSteps.length;
+                        i++
+                      ) ...[
                         if (i > 0) const SizedBox(height: 6),
                         GestureDetector(
                           onTap: () {
@@ -366,17 +367,16 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
                       onPressed: () => _handleHeroAction(context, ref),
                     ),
                   ),
-                  if (enrichment.actionChips.any((c) => c.type == ThingsActionType.moneyLog)) ...[
+                  if (enrichment.actionChips.any(
+                    (c) => c.type == ThingsActionType.moneyLog,
+                  )) ...[
                     const SizedBox(width: 8),
                     Container(
                       height: 38,
                       decoration: BoxDecoration(
                         color: g.fill,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: g.line,
-                          width: 0.8,
-                        ),
+                        border: Border.all(color: g.line, width: 0.8),
                       ),
                       child: TextButton.icon(
                         onPressed: () {
@@ -404,27 +404,37 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
     );
   }
 
-  (String, Color, IconData) _resolveHeroBadge(
-    TodayActivityItem a,
-    dynamic g,
-  ) {
+  (String, Color, IconData) _resolveHeroBadge(TodayActivityItem a, dynamic g) {
     if (a.status == TodayActivityStatus.inProgress) {
-      return ('In progress', SharedControlColors.actionBlue, Icons.timer_rounded);
+      return (
+        'In progress',
+        SharedControlColors.actionBlue,
+        Icons.timer_rounded,
+      );
     }
     if (a.status == TodayActivityStatus.paused) {
       return ('Paused', g.clay as Color, Icons.pause_circle_rounded);
     }
     if (a.isOverdue) {
-      return ('Overdue', SharedControlColors.dueRed, Icons.warning_amber_rounded);
+      return (
+        'Overdue',
+        SharedControlColors.dueRed,
+        Icons.warning_amber_rounded,
+      );
     }
     if (a.priority == 'high') {
       return ('High priority', SharedControlColors.dueRed, Icons.flag_rounded);
     }
     if (a.scheduledTime != null &&
-        a.scheduledTime!.difference(DateTime.now()) <= const Duration(hours: 1)) {
+        a.scheduledTime!.difference(DateTime.now()) <=
+            const Duration(hours: 1)) {
       return ('Due soon', g.clay as Color, Icons.schedule_rounded);
     }
-    return ('Next up', SharedControlColors.actionBlue, Icons.arrow_forward_rounded);
+    return (
+      'Next up',
+      SharedControlColors.actionBlue,
+      Icons.arrow_forward_rounded,
+    );
   }
 
   Future<void> _handleHeroAction(BuildContext context, WidgetRef ref) async {
@@ -433,7 +443,8 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
     final isLecture = activity.sourceType == 'lecture';
-    final isTimed = activity.kind == ActivityKind.duration ||
+    final isTimed =
+        activity.kind == ActivityKind.duration ||
         (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
         isLecture;
 

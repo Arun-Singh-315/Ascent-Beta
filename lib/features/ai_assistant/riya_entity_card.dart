@@ -70,7 +70,7 @@ class RiyaEntityCard extends ConsumerWidget {
                   actions: [
                     TextButton(
                       onPressed: () => context.push('/promises'),
-                      child: const Text('Open Promises'),
+                      child: const Text('Open Commitments'),
                     ),
                   ],
                 );
