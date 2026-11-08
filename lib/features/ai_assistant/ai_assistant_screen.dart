@@ -980,9 +980,59 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
                 final messages = snapshot.data ?? [];
                 final hasMessages = messages.isNotEmpty;
+                final todayFestival = ref.watch(todayFestivalProvider);
 
                 return Column(
                   children: [
+                    if (todayFestival != null && hasMessages)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          14,
+                          MediaQuery.paddingOf(context).top + kToolbarHeight + 4,
+                          14,
+                          0,
+                        ),
+                        child: Container(
+                          key: const ValueKey('riya_festive_banner_ongoing'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: todayFestival.accentColor.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: todayFestival.accentColor.withValues(
+                                alpha: 0.35,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                todayFestival.emoji,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Happy ${todayFestival.name}! ${todayFestival.riyaWish}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     // Chat stream
                     Expanded(
                       child: messages.isEmpty
@@ -995,9 +1045,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               controller: _scrollController,
                               padding: EdgeInsets.fromLTRB(
                                 14,
-                                MediaQuery.paddingOf(context).top +
-                                    kToolbarHeight +
-                                    8,
+                                todayFestival != null
+                                    ? 8
+                                    : MediaQuery.paddingOf(context).top +
+                                        kToolbarHeight +
+                                        8,
                                 14,
                                 12,
                               ),
