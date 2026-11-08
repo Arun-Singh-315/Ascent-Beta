@@ -812,12 +812,62 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           final reminders = allReminders
               .where((r) => !r.title.startsWith('Did you do it?'))
               .toList();
-          if (reminders.isEmpty) {
+          if (reminders.isEmpty && !_isCalendarView) {
             return ListView(
-              padding: const EdgeInsets.all(AppSpace.s16),
+              padding: const EdgeInsets.only(
+                left: AppSpace.s16,
+                right: AppSpace.s16,
+                top: AppSpace.s16,
+                bottom: AppSpace.s80,
+              ),
               children: [
                 if (!_notificationsEnabled) _notificationPermissionNotice(),
-                const SizedBox(height: 48),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpace.s16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AscentSegmentedControl<int>(
+                          segments: const [
+                            AscentSegment(
+                              value: 0,
+                              label: 'Active (0)',
+                            ),
+                            AscentSegment(
+                              value: 1,
+                              label: 'Completed (0)',
+                            ),
+                          ],
+                          selected: _selectedTab,
+                          onChanged: (val) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedTab = val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.s8),
+                      IconButton.filledTonal(
+                        key: const ValueKey('calendar_toggle_button'),
+                        tooltip: 'Show Calendar',
+                        style: IconButton.styleFrom(
+                          backgroundColor: g.fill,
+                          foregroundColor: g.inkSecondary,
+                          side: BorderSide(color: g.line),
+                          padding: const EdgeInsets.all(AppSpace.s10),
+                        ),
+                        icon: const Icon(
+                          Icons.calendar_month_rounded,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _isCalendarView = true);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
                 EmptyState(
                   icon: Icons.notifications_none_rounded,
                   title: 'No Reminders Yet',
@@ -825,6 +875,17 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       'Set reminders for upcoming interviews, study blocks, and application deadlines.',
                   actionLabel: 'Create Reminder',
                   onAction: () => _openAddEditReminderSheet(),
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                    label: const Text('Open Calendar & Schedule View'),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _isCalendarView = true);
+                    },
+                  ),
                 ),
               ],
             );
