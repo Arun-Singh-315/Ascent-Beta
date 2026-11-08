@@ -343,22 +343,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         Padding(padding: const EdgeInsets.only(bottom: 28), child: child);
     if (!_heavierModulesReady) return modules;
     if (layout.visible.contains('learning')) {
-      final learning = ref.watch(learningHubProvider);
-      if (learning.hasStartedLearning && learning.courses.isNotEmpty) {
-        modules.add(spaced(const LearningHubCard()));
-      } else {
-        modules.add(
-          spaced(
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.menu_book_outlined),
-              title: const Text('Start learning'),
-              trailing: const Icon(Icons.arrow_forward_rounded),
-              onTap: () => context.push('/study-plan'),
-            ),
-          ),
-        );
-      }
+      modules.add(spaced(const LearningHubCard()));
     }
     if (layout.visible.contains('promises')) {
       modules.add(spaced(const HomePromiseSection()));

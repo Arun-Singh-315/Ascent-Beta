@@ -100,7 +100,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           Icons.water_drop_rounded,
           'Choose an amount to log',
           'Choose an amount',
-          const Color(0xFF3E78A6),
+          const Color(0xFF0284C7),
           '/hydration',
         ),
       if (layout.tools.contains('walk'))
@@ -110,7 +110,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           Icons.directions_walk_rounded,
           'Keep your walking distance together, one walk at a time.',
           'Start a walk',
-          const Color(0xFF567157),
+          const Color(0xFF10B981),
           '/walk',
         ),
       if (layout.tools.contains('chai-break'))
@@ -120,7 +120,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           Icons.spa_rounded,
           'Take a breather',
           'Take a minute',
-          Color(0xFF976848),
+          Color(0xFFF59E0B),
           '/chai-break',
         ),
       if (layout.tools.contains('medicine'))
@@ -138,7 +138,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           !doseState.isLoading && !doseState.hasError && doses.isEmpty
               ? 'Set up a routine'
               : 'View your doses',
-          const Color(0xFF78658D),
+          const Color(0xFFEC4899),
           '/medicine',
         ),
       if (layout.tools.contains('momentum'))
@@ -148,7 +148,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           Icons.flag_rounded,
           challenge?.title ?? 'Choose a challenge to build a little momentum.',
           'View challenge',
-          const Color(0xFF657785),
+          const Color(0xFF8B5CF6),
           '/momentum',
         ),
     ];
@@ -280,17 +280,29 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
     final blue = dark
         ? SharedControlColors.actionBlueDark
         : SharedControlColors.actionBlue;
-    return Material(
-      color: Color.alphaBlend(
-        tool.tint.withValues(alpha: dark ? .12 : .07),
-        g.bg,
-      ),
-      shape: RoundedRectangleBorder(
+
+    double? progress;
+    if (tool.id == 'hydration' && goal != null && goal > 0 && water != null && water > 0) {
+      progress = (water / goal).clamp(0.0, 1.0);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: dark
+            ? Color.alphaBlend(tool.tint.withValues(alpha: 0.12), g.elevated)
+            : Color.alphaBlend(tool.tint.withValues(alpha: 0.07), Colors.white),
         borderRadius: BorderRadius.circular(22),
-        side: BorderSide(
-          color: selected ? blue : g.line,
-          width: selected ? 1.3 : .8,
+        border: Border.all(
+          color: selected ? (dark ? blue : tool.tint) : g.line.withValues(alpha: 0.55),
+          width: selected ? 1.4 : 0.8,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: tool.tint.withValues(alpha: dark ? 0.08 : 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -310,10 +322,24 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          tool.icon,
-                          size: 23,
-                          color: dark ? g.ink : tool.tint,
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: tool.tint.withValues(alpha: dark ? 0.22 : 0.14),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: tool.tint.withValues(alpha: 0.35),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              tool.icon,
+                              size: 19,
+                              color: tool.tint,
+                            ),
+                          ),
                         ),
                         const Spacer(),
                         if (selected)
@@ -333,25 +359,41 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Text(
                       tool.title,
-                      style: AscentTextStyles.cardTitle.copyWith(
-                        color: g.ink,
-                        fontSize: 17,
+                      style: TextStyle(
+                        color: g.inkSecondary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
                     Text(
                       ref
                           .watch(homeShortcutSummaryProvider(tool.id))
                           .replaceFirst(RegExp(r' today$'), ''),
                       key: ValueKey('rhythm_summary_${tool.id}'),
-                      style: AscentTextStyles.body.copyWith(
+                      style: AscentTextStyles.cardTitle.copyWith(
                         color: g.ink,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
                       ),
                     ),
+                    if (progress != null && !selected) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          backgroundColor: g.line.withValues(alpha: 0.25),
+                          valueColor: AlwaysStoppedAnimation<Color>(tool.tint),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

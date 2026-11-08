@@ -99,6 +99,33 @@ class LearningHubCard extends ConsumerWidget {
                       children: [
                         if (!hasStarted) ...[
                           Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: g.clay.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: g.clay.withValues(alpha: 0.35),
+                                width: 1.0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: g.clay.withValues(alpha: 0.14),
+                                  blurRadius: 16,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.auto_stories_rounded,
+                                color: g.clay,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
                               vertical: 3,
@@ -111,25 +138,28 @@ class LearningHubCard extends ConsumerWidget {
                                 width: 0.8,
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome_rounded,
-                                  size: 13,
-                                  color: g.clay,
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  'STUDIO ASCENT',
-                                  style: TextStyle(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 13,
                                     color: g.clay,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.8,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'STUDIO ASCENT',
+                                    style: TextStyle(
+                                      color: g.clay,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),

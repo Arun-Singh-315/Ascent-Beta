@@ -417,6 +417,11 @@ final todayTasksStreamProvider = StreamProvider<List<Task>>((ref) {
   return dao.watchTasksByDate(ref.watch(localDayProvider));
 });
 
+final allTasksStreamProvider = StreamProvider<List<Task>>((ref) {
+  final dao = ref.watch(taskDaoProvider);
+  return dao.watchAllTasks();
+});
+
 final todayFocusTaskProvider = FutureProvider<Task?>((ref) async {
   final day = ref.watch(localDayProvider);
   final dao = ref.watch(taskDaoProvider);
