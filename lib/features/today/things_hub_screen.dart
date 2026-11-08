@@ -124,6 +124,12 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       subtitle: 'Make room for your next step',
       actions: [
         IconButton(
+          key: const ValueKey('things_calendar_button'),
+          tooltip: 'Calendar & Deadlines',
+          icon: const Icon(Icons.calendar_month_rounded),
+          onPressed: () => context.push('/reminders'),
+        ),
+        IconButton(
           tooltip: 'Quick capture',
           icon: const Icon(Icons.add_circle_outline_rounded),
           onPressed: () => showQuickCapture(context),

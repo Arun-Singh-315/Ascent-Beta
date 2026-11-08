@@ -31,6 +31,7 @@ import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
 import '../../thought_wall/thought_wall_appearance_sheet.dart';
+import '../../../core/services/festival_service.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mindspace
@@ -480,50 +481,124 @@ class _ThoughtWallHomePreviewState
                   ),
                 );
               }
+              final todayFestival = ref.watch(todayFestivalProvider);
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSparkChip(
-                      icon: Icons.lightbulb_outline_rounded,
-                      label: 'Spark an idea',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '💡 ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.emoji_events_outlined,
-                      label: 'Log a win',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '🎯 Win: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.edit_note_rounded,
-                      label: 'Reflect',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = 'Reflecting on: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
+                    if (todayFestival != null) ...[
+                      Container(
+                        key: const ValueKey('festival_default_thought_card'),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: todayFestival.accentColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: todayFestival.accentColor.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  todayFestival.emoji,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    '${todayFestival.name} Reflection',
+                                    style: AscentTextStyles.labelMedium.copyWith(
+                                      color: context.isDark
+                                          ? const Color(0xFFFDE68A)
+                                          : const Color(0xFF92400E),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              todayFestival.thought,
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: g.ink.withValues(alpha: 0.85),
+                                fontStyle: FontStyle.italic,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (todayFestival != null)
+                          _buildSparkChip(
+                            icon: Icons.auto_awesome_rounded,
+                            label: '${todayFestival.emoji} ${todayFestival.name}',
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _controller.text =
+                                  '${todayFestival.emoji} ${todayFestival.name}: ';
+                              _controller.selection =
+                                  TextSelection.fromPosition(
+                                TextPosition(offset: _controller.text.length),
+                              );
+                              _focusNode.requestFocus();
+                            },
+                            g: g,
+                          ),
+                        _buildSparkChip(
+                          icon: Icons.lightbulb_outline_rounded,
+                          label: 'Spark an idea',
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _controller.text = '💡 ';
+                            _controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _controller.text.length),
+                            );
+                            _focusNode.requestFocus();
+                          },
+                          g: g,
+                        ),
+                        _buildSparkChip(
+                          icon: Icons.emoji_events_outlined,
+                          label: 'Log a win',
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _controller.text = '🎯 Win: ';
+                            _controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _controller.text.length),
+                            );
+                            _focusNode.requestFocus();
+                          },
+                          g: g,
+                        ),
+                        _buildSparkChip(
+                          icon: Icons.edit_note_rounded,
+                          label: 'Reflect',
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            _controller.text = 'Reflecting on: ';
+                            _controller.selection = TextSelection.fromPosition(
+                              TextPosition(offset: _controller.text.length),
+                            );
+                            _focusNode.requestFocus();
+                          },
+                          g: g,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1063,9 +1138,11 @@ class _ThoughtWallHomePreviewState
       );
     }
 
+    final todayFestival = ref.watch(todayFestivalProvider);
     final hasThoughts =
         (recentThoughtsAsync.value?.isNotEmpty ?? false) ||
-        pendingDraft != null;
+        pendingDraft != null ||
+        todayFestival != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

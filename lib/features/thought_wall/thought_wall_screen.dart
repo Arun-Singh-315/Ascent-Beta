@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
+import '../../core/services/festival_service.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/message_composer.dart';
@@ -1447,19 +1448,26 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   }
 
                   if (filtered.isEmpty) {
+                    final todayFestival = ref.watch(todayFestivalProvider);
                     return SingleChildScrollView(
                       child: EmptyState(
                         title: _categoryFilter == 'archived'
                             ? 'No archived reflections'
                             : (_viewToggle == 'today'
-                                  ? 'No thoughts logged today'
+                                  ? (todayFestival != null
+                                        ? '${todayFestival.emoji} Happy ${todayFestival.name}'
+                                        : 'No thoughts logged today')
                                   : 'No past or archived reflections'),
                         subtitle: _categoryFilter == 'archived'
                             ? 'Reflections you archive from the wall will be safely stored here.'
-                            : 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
+                            : (todayFestival != null
+                                  ? todayFestival.thought
+                                  : 'Drop an unfiltered reflection, spark of idea, or note to yourself.'),
                         icon: _categoryFilter == 'archived'
                             ? Icons.archive_outlined
-                            : Icons.bubble_chart_rounded,
+                            : (todayFestival != null
+                                  ? Icons.auto_awesome_rounded
+                                  : Icons.bubble_chart_rounded),
                         actionLabel: 'Drop a Thought',
                         onAction: () => _focusNode.requestFocus(),
                       ),

@@ -18,6 +18,9 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/time_tracking_provider.dart';
+import '../../core/services/festival_service.dart';
+import '../../shared/widgets/festive_sparkle_badge.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
@@ -750,6 +753,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final remindersAsync = ref.watch(allRemindersProvider);
     final tasksAsync = ref.watch(allTasksStreamProvider);
     final allTasks = tasksAsync.value ?? const <Task>[];
+    final activitiesAsync = ref.watch(todayActivitiesProvider);
+    final allActivities = activitiesAsync.value ?? const <TodayActivityItem>[];
 
     final g = context.glass;
 
@@ -769,6 +774,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             HapticFeedback.selectionClick();
             setState(() => _isCalendarView = !_isCalendarView);
           },
+        ),
+        IconButton(
+          key: const ValueKey('calendar_dayboard_button'),
+          tooltip: 'Dayboard & Activities',
+          icon: const Icon(Icons.dashboard_customize_outlined),
+          onPressed: () => context.push('/things'),
         ),
         IconButton(
           tooltip: 'Routines & Plans',
@@ -963,6 +974,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   g,
                   reminders.where((r) => r.isActive).toList(),
                   allTasks,
+                  allActivities,
                 ),
               ] else if (_selectedTab == 0) ...[
                 if (overdueReminders.isNotEmpty) ...[
@@ -1497,8 +1509,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     BuildContext context,
     AscentGlass g,
     List<Reminder> activeReminders,
-    List<Task> allTasks,
-  ) {
+    List<Task> allTasks, [
+    List<TodayActivityItem> allActivities = const [],
+  ]) {
     final now = DateTime.now();
     final isCurrentMonth =
         _calendarMonth.year == now.year && _calendarMonth.month == now.month;
@@ -1517,6 +1530,22 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           }
           return _isSameDay(now, _selectedCalendarDate);
         }).toList();
+
+    final dayTaskIds = dayTasks.map((t) => t.id).toSet();
+    final dayActivities =
+        allActivities.where((a) {
+          if (a.status == TodayActivityStatus.done) return false;
+          if (a.linkedTaskId != null && dayTaskIds.contains(a.linkedTaskId)) {
+            return false;
+          }
+          if (a.plannedDate != null) {
+            return _isSameDay(a.plannedDate!, _selectedCalendarDate);
+          }
+          return _isSameDay(now, _selectedCalendarDate);
+        }).toList();
+
+    final selectedFestival =
+        FestivalService.getFestivalForDate(_selectedCalendarDate);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1754,8 +1783,18 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 curve: Curves.easeInOut,
                 child:
                     _isMonthExpanded
-                        ? _buildMonthGrid(g, activeReminders, allTasks)
-                        : _buildWeekStrip(g, activeReminders, allTasks),
+                        ? _buildMonthGrid(
+                          g,
+                          activeReminders,
+                          allTasks,
+                          allActivities,
+                        )
+                        : _buildWeekStrip(
+                          g,
+                          activeReminders,
+                          allTasks,
+                          allActivities,
+                        ),
               ),
             ],
           ),
@@ -1784,7 +1823,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${dayReminders.length} reminder${dayReminders.length == 1 ? '' : 's'} • ${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}',
+                    '${dayReminders.length} reminder${dayReminders.length == 1 ? '' : 's'} • ${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}${dayActivities.isNotEmpty ? ' • ${dayActivities.length} activit${dayActivities.length == 1 ? 'y' : 'ies'}' : ''}',
                     style: AscentTextStyles.bodySmall.copyWith(
                       color: g.inkSecondary,
                     ),
@@ -1803,8 +1842,20 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         ),
         const SizedBox(height: 12),
 
+        // Festival Celebration Banner if selected date is a festival
+        if (selectedFestival != null)
+          FestiveBannerCard(
+            festival: selectedFestival,
+            onTap: () {
+              HapticFeedback.lightImpact();
+            },
+          ),
+
         // Agenda Items
-        if (dayReminders.isEmpty && dayTasks.isEmpty)
+        if (dayReminders.isEmpty &&
+            dayTasks.isEmpty &&
+            dayActivities.isEmpty &&
+            selectedFestival == null)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
             decoration: BoxDecoration(
@@ -1829,7 +1880,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Reminders and tasks scheduled for this day will appear here.',
+                  'Reminders, tasks, and activities scheduled for this day will appear here.',
                   textAlign: TextAlign.center,
                   style: AscentTextStyles.bodySmall.copyWith(
                     color: g.inkSecondary,
@@ -1894,6 +1945,35 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ),
             ),
             for (final task in dayTasks) _buildCalendarTaskTile(task, g),
+            const SizedBox(height: 12),
+          ],
+          if (dayActivities.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'THINGS & ACTIVITIES',
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: const Color(0xFF10B981),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final activity in dayActivities)
+              _buildCalendarActivityTile(activity, g),
           ],
         ],
       ],
@@ -1903,8 +1983,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget _buildWeekStrip(
     AscentGlass g,
     List<Reminder> activeReminders,
-    List<Task> allTasks,
-  ) {
+    List<Task> allTasks, [
+    List<TodayActivityItem> allActivities = const [],
+  ]) {
     final monday = _selectedCalendarDate.subtract(
       Duration(days: _selectedCalendarDate.weekday - 1),
     );
@@ -1923,6 +2004,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               activeReminders,
               allTasks,
               g,
+              allActivities: allActivities,
             ),
           ),
       ],
@@ -1932,8 +2014,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget _buildMonthGrid(
     AscentGlass g,
     List<Reminder> activeReminders,
-    List<Task> allTasks,
-  ) {
+    List<Task> allTasks, [
+    List<TodayActivityItem> allActivities = const [],
+  ]) {
     final firstDay = DateTime(_calendarMonth.year, _calendarMonth.month, 1);
     final firstMonday = firstDay.subtract(Duration(days: firstDay.weekday - 1));
     final daysInMonth =
@@ -1958,6 +2041,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     activeReminders,
                     allTasks,
                     g,
+                    allActivities: allActivities,
                   ),
                 ),
             ],
@@ -1972,11 +2056,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     bool isCurrentMonth,
     List<Reminder> activeReminders,
     List<Task> allTasks,
-    AscentGlass g,
-  ) {
+    AscentGlass g, {
+    List<TodayActivityItem> allActivities = const [],
+  }) {
     final now = DateTime.now();
     final isSelected = _isSameDay(day, _selectedCalendarDate);
     final isToday = _isSameDay(day, now);
+    final festival = FestivalService.getFestivalForDate(day);
 
     final hasReminders = activeReminders.any(
       (r) => _isSameDay(r.scheduledAt, day),
@@ -1984,6 +2070,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final hasTasks = allTasks.any((t) {
       if (t.actualCompletedDate != null) return false;
       if (t.plannedDate != null) return _isSameDay(t.plannedDate!, day);
+      return _isSameDay(now, day);
+    });
+    final taskIds = allTasks.map((t) => t.id).toSet();
+    final hasActivities = allActivities.any((a) {
+      if (a.status == TodayActivityStatus.done) return false;
+      if (a.linkedTaskId != null && taskIds.contains(a.linkedTaskId)) {
+        return false;
+      }
+      if (a.plannedDate != null) return _isSameDay(a.plannedDate!, day);
       return _isSameDay(now, day);
     });
 
@@ -2007,7 +2102,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ? g.clay.withValues(alpha: 0.22)
                   : (isToday
                       ? g.clay.withValues(alpha: 0.08)
-                      : Colors.transparent),
+                      : (festival != null
+                          ? festival.accentColor.withValues(alpha: 0.08)
+                          : Colors.transparent)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color:
@@ -2015,7 +2112,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     ? g.clay
                     : (isToday
                         ? g.clay.withValues(alpha: 0.4)
-                        : Colors.transparent),
+                        : (festival != null
+                            ? festival.accentColor.withValues(alpha: 0.35)
+                            : Colors.transparent)),
             width: isSelected ? 1.4 : 0.8,
           ),
         ),
@@ -2044,6 +2143,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                if (festival != null)
+                  Container(
+                    width: 5,
+                    height: 5,
+                    margin: const EdgeInsets.symmetric(horizontal: 1),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: festival.accentColor,
+                    ),
+                  ),
                 if (hasReminders)
                   Container(
                     width: 4.5,
@@ -2064,7 +2173,21 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       color: Color(0xFFF59E0B),
                     ),
                   ),
-                if (!hasReminders && !hasTasks) const SizedBox(height: 4.5),
+                if (hasActivities && !hasTasks)
+                  Container(
+                    width: 4.5,
+                    height: 4.5,
+                    margin: const EdgeInsets.symmetric(horizontal: 1),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                if (festival == null &&
+                    !hasReminders &&
+                    !hasTasks &&
+                    !hasActivities)
+                  const SizedBox(height: 5),
               ],
             ),
           ],
@@ -2245,6 +2368,93 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarActivityTile(TodayActivityItem activity, AscentGlass g) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final isTimer = activity.kind != ActivityKind.todo;
+    final isMedicine = activity.sourceType == 'medicine';
+    final accent =
+        isMedicine
+            ? const Color(0xFFEC4899)
+            : (isTimer ? const Color(0xFF10B981) : const Color(0xFF3B82F6));
+
+    return Container(
+      key: ValueKey('calendar_activity_tile_${activity.id}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: g.fill,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: g.line, width: 0.8),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/things');
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: dark ? 0.22 : 0.14),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.35),
+                    width: 0.8,
+                  ),
+                ),
+                child: Icon(
+                  isMedicine
+                      ? Icons.medication_rounded
+                      : (isTimer
+                          ? Icons.timer_outlined
+                          : Icons.check_circle_outline_rounded),
+                  size: 15,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity.title,
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      activity.categoryTag.isNotEmpty
+                          ? '${activity.categoryTag} · Dayboard'
+                          : 'Dayboard Activity',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 13,
+                color: g.inkMuted,
+              ),
+            ],
+          ),
         ),
       ),
     );

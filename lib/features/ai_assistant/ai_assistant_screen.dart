@@ -32,6 +32,7 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/database/app_database.dart';
+import '../../core/services/festival_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 
@@ -2399,6 +2400,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
     return Consumer(
       builder: (context, ref, _) {
         final profile = ref.watch(userProfileStreamProvider).value;
+        final todayFestival = ref.watch(todayFestivalProvider);
         final userName = profile?.name.isNotEmpty == true
             ? profile!.name.split(' ').first
             : 'there';
@@ -2528,6 +2530,76 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                     height: 1.4,
                   ),
                 ),
+                if (todayFestival != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    key: const ValueKey('riya_festive_wish_card'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          todayFestival.accentColor.withValues(
+                            alpha: isDark ? 0.22 : 0.12,
+                          ),
+                          context.glass.clay.withValues(
+                            alpha: isDark ? 0.16 : 0.08,
+                          ),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: todayFestival.accentColor.withValues(
+                          alpha: 0.35,
+                        ),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              todayFestival.emoji,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Happy ${todayFestival.name}, $userName!',
+                                key: const ValueKey('riya_festive_greeting'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? const Color(0xFFFDE68A)
+                                      : const Color(0xFF92400E),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          todayFestival.riyaWish,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : const Color(0xFF78350F),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 20),
 
@@ -2597,6 +2669,8 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
                   children: [
+                    if (todayFestival != null)
+                      '${todayFestival.emoji} ${todayFestival.name} wish',
                     'Plan my day',
                     'Log 250ml water',
                     'What are my tasks today?',

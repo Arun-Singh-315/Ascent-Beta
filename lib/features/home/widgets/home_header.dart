@@ -12,6 +12,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/home_layout_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/cosmic_profile_service.dart';
+import '../../../core/services/festival_service.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import 'home_day_design.dart';
 
@@ -58,6 +59,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
       ref.watch(currentStreakStreamProvider).value ?? 0,
     );
     final showStreak = streak > 0 && ref.watch(homeStreakVisibleProvider);
+    final todayFestival = ref.watch(todayFestivalProvider);
 
     Widget circle({
       required Key key,
@@ -231,6 +233,50 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                       },
                     ),
                     const SizedBox(height: 14),
+                    if (todayFestival != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          key: const ValueKey('home_festival_banner'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: todayFestival.accentColor.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: todayFestival.accentColor.withValues(
+                                alpha: 0.32,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                todayFestival.emoji,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'Happy ${todayFestival.name}, ${name.isNotEmpty ? name.split(' ').first : 'friend'}! ✨',
+                                  style: AscentTextStyles.labelMedium.copyWith(
+                                    color: dark
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFF92400E),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     if (sign != null || showStreak)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -286,7 +332,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                         ),
                       ),
                     Text(
-                      day.cue,
+                      todayFestival != null ? todayFestival.thought : day.cue,
                       key: const ValueKey('home_day_cue'),
                       style: AscentTextStyles.bodySmall.copyWith(
                         color: secondary,
