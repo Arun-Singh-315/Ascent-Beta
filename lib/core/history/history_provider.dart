@@ -8,7 +8,7 @@ const historyModules = {
   'focus': 'Focus',
   'thoughts': 'Thoughts',
   'promises': 'Commitments',
-  'medicines': 'Medicines',
+  'medicines': 'Care & medicines',
   'hydration': 'Hydration',
   'walks': 'Walks',
   'routines': 'Plans & routines',
@@ -21,7 +21,7 @@ const historyModules = {
   'breaks': 'Chai breaks',
 };
 String historyModule(String value) => switch (value) {
-  'medicine_doses' => 'medicines',
+  'medicine_doses' || 'care_plans' || 'care_records' => 'medicines',
   'routine_sessions' => 'routines',
   'plans' => 'routines',
   _ => value,

@@ -102,6 +102,8 @@ part 'daos/plan_dao.dart';
     ChallengeLinkTable,
     ChallengeProofEventTable,
     ChallengeAmendmentTable,
+    CarePlanTable,
+    CareRecordTable,
     MedicineTable,
     MedicineLogTable,
     PlanDefinitionTable,
@@ -153,7 +155,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -283,7 +285,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(planCollectionItemTable);
         await _createPlanningIndexes();
       }
-      Future<void> addColumnSafely(TableInfo table, GeneratedColumn column) async {
+      Future<void> addColumnSafely(
+        TableInfo table,
+        GeneratedColumn column,
+      ) async {
         final pragma = await customSelect(
           "PRAGMA table_info('${table.actualTableName}')",
         ).get();
@@ -305,6 +310,12 @@ class AppDatabase extends _$AppDatabase {
       if (from < 21) {
         await addColumnSafely(userProfileTable, userProfileTable.dateOfBirth);
       }
+      if (from < 24) {
+        await createTableSafely(carePlanTable);
+        await createTableSafely(careRecordTable);
+        await addColumnSafely(medicineTable, medicineTable.carePlanId);
+        await addColumnSafely(medicineTable, medicineTable.purpose);
+      }
       if (from < 22) {
         await createTableSafely(historyEventTable);
         await createTableSafely(waterGoalVersionTable);
@@ -314,6 +325,15 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 23) {
         await addColumnSafely(taskTable, taskTable.isDailyStanding);
+      }
+      if (from < 24) {
+        // Refresh medicine triggers to capture treatment context as well.
+        for (final operation in ['insert', 'update', 'delete']) {
+          await customStatement(
+            'DROP TRIGGER IF EXISTS history_medicines_$operation',
+          );
+        }
+        await HistoryLedger.install(this);
       }
     },
   );
@@ -377,6 +397,8 @@ class AppDatabase extends _$AppDatabase {
         'reminders',
         'medicine_logs',
         'medicines',
+        'care_records',
+        'care_plans',
         'water_logs',
         'water_goals',
         'walk_sessions',

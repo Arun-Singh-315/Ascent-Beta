@@ -11,7 +11,7 @@ import '../../app/theme/text_styles.dart';
 /// - Opaque elevated surface fill
 /// - Primary text for message
 /// - Action ink for Undo / actions
-/// - Radius 12px, screen margins 16px, minHeight 48px
+/// - Radius 16px, screen margins 16px, minHeight 48px
 /// - Screen-reader / accessibility support with error preservation
 class AscentSnackBar {
   AscentSnackBar._();
@@ -26,61 +26,32 @@ class AscentSnackBar {
     final g = context.glass;
 
     return SnackBar(
-      content: Container(
+      content: ConstrainedBox(
         constraints: const BoxConstraints(
-          minHeight: AscentDimensions.buttonHeightStandard,
+          minHeight: AscentDimensions.minTouchTarget,
         ),
-        decoration: BoxDecoration(
-          color: g.elevated,
-          borderRadius: BorderRadius.circular(AscentDimensions.radiusMd),
-          border: Border.all(
-            color: isError ? g.errorInk : g.line,
-            width: AscentDimensions.contentOutlineWidth,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          heightFactor: 1,
+          child: DefaultTextStyle(
+            style: AscentTextStyles.body.copyWith(color: g.ink, height: 1.5),
+            child: content,
           ),
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AscentDimensions.spaceLg,
-          vertical: AscentDimensions.spaceSm,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: DefaultTextStyle(
-                style: AscentTextStyles.body.copyWith(color: g.ink),
-                child: content,
-              ),
-            ),
-            if (action != null) ...[
-              const SizedBox(width: AscentDimensions.spaceSm),
-              TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  action.onPressed();
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: g.actionInk,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AscentDimensions.spaceSm,
-                  ),
-                  minimumSize: const Size(48, 36),
-                ),
-                child: Text(
-                  action.label,
-                  style: AscentTextStyles.buttonLabel.copyWith(
-                    color: g.actionInk,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
+      // A native action participates in TalkBack timing and is single-use.
+      action: action,
+      actionOverflowThreshold: .25,
       duration: duration,
       persist: false,
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      padding: EdgeInsets.zero,
+      backgroundColor: g.elevated,
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: isError ? g.errorInk : g.line),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       margin: const EdgeInsets.all(AscentDimensions.spaceLg),
     );
   }
@@ -96,7 +67,7 @@ class AscentSnackBar {
   }) {
     HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.of(context);
-    messenger.removeCurrentSnackBar();
+    // Queue feedback so a later message cannot erase an available Undo action.
 
     final g = context.glass;
 
@@ -107,11 +78,7 @@ class AscentSnackBar {
         content: Row(
           children: [
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: 20,
-                color: isError ? g.errorInk : g.actionInk,
-              ),
+              Icon(icon, size: 20, color: isError ? g.errorInk : g.actionInk),
               const SizedBox(width: AscentDimensions.spaceSm),
             ],
             Expanded(
@@ -164,11 +131,11 @@ class AscentSnackBar {
     BuildContext context, {
     required String message,
     required VoidCallback onUndo,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = const Duration(seconds: 8),
   }) => show(
     context,
     message: message,
-    icon: Icons.delete_outline_rounded,
+    icon: Icons.undo_rounded,
     duration: duration,
     actionLabel: 'Undo',
     onAction: onUndo,
@@ -189,7 +156,6 @@ class AscentSnackBar {
 
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) return;
-    messenger.hideCurrentSnackBar();
 
     final g = context.glass;
 
@@ -217,10 +183,7 @@ class AscentSnackBar {
                     const SizedBox(height: 1),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        color: g.inkMuted,
-                        fontSize: 11.5,
-                      ),
+                      style: TextStyle(color: g.inkMuted, fontSize: 11.5),
                     ),
                   ],
                 ],

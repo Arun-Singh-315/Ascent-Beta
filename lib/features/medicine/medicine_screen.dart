@@ -1,3 +1,9 @@
+import 'care_design.dart';
+import 'care_forms.dart';
+import 'care_plans_view.dart';
+import 'dose_history_screen.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
@@ -8,7 +14,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
@@ -26,7 +31,8 @@ class MedicineScreen extends ConsumerStatefulWidget {
 class _MedicineScreenState extends ConsumerState<MedicineScreen>
     with WidgetsBindingObserver {
   final _updating = <int>{};
-  bool _showMedicines = false;
+  int _view = 0;
+  bool get _showMedicines => _view == 1;
   bool _showTaken = false;
   Timer? _dayTimer;
 
@@ -76,10 +82,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       HapticFeedback.selectionClick();
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not update this dose. Try again.'),
-          ),
+        AscentSnackBar.error(
+          context,
+          message: 'Could not update this dose. Try again.',
         );
       }
     } finally {
@@ -93,7 +98,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       builder: (ctx) => AlertDialog(
         title: Text('Remove ${medicine.name}?'),
         content: const Text(
-          'This permanently removes the medicine, dose history, and its linked reminders and tasks. Archive the schedule to keep your history.',
+          'This removes the medicine, dose history, and linked reminders and tasks. You can undo immediately afterwards. Archive the schedule if you want to keep its history long term.',
         ),
         actions: [
           TextButton(
@@ -109,13 +114,32 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     );
     if (confirmed != true || !mounted) return;
     try {
-      await ref.read(medicineServiceProvider).deleteMedicine(medicine.id);
+      final restore = await ref
+          .read(medicineServiceProvider)
+          .removeWithUndo(medicine.id);
+      if (mounted) {
+        AscentSnackBar.undo(
+          context,
+          message: '${medicine.name} removed',
+          onUndo: () async {
+            try {
+              await restore();
+            } catch (_) {
+              if (mounted) {
+                AscentSnackBar.error(
+                  context,
+                  message: 'Could not restore this medicine.',
+                );
+              }
+            }
+          },
+        );
+      }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not remove this medicine. Try again.'),
-          ),
+        AscentSnackBar.error(
+          context,
+          message: 'Could not remove this medicine. Try again.',
         );
       }
     }
@@ -136,29 +160,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     ),
   );
 
-  Widget _tag(String text, {IconData? icon}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: BoxDecoration(
-      color: context.bgSurfaceElevated,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: context.glass.line),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 15, color: context.glass.inkSecondary),
-          const SizedBox(width: 6),
-        ],
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(color: context.glass.inkSecondary),
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget _tag(String text, {IconData? icon}) => CarePill(text, icon: icon);
 
   Widget _summary(List<MedicineLog> logs, {required bool hasMedicines}) {
     final g = context.glass;
@@ -170,69 +172,100 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
           (log) => !log.isTaken && log.timeSlot.compareTo(currentTime) >= 0,
         )
         .firstOrNull;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
+    return CareHero(
+      eyebrow: DateFormat('EEEE, MMM d').format(now),
+      title: 'One dose\nat a time.',
+      child: hasMedicines
+          ? Container(
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: g.sage.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(14),
+                color: g.surface.withValues(alpha: .7),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Icon(Icons.medication_outlined, color: g.sage, size: 28),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Your daily care',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  Row(
+                    children: [
+                      SizedBox.square(
+                        dimension: 44,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                              value: logs.isEmpty ? 0 : taken / logs.length,
+                              strokeWidth: 4,
+                              color: g.actionInk,
+                              backgroundColor: g.track,
+                            ),
+                            Icon(
+                              taken == logs.length && logs.isNotEmpty
+                                  ? Icons.check_rounded
+                                  : Icons.medication_outlined,
+                              size: 20,
+                              color: g.actionInk,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          logs.isEmpty
+                              ? 'No doses scheduled today'
+                              : '$taken of ${logs.length} doses taken',
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (next != null) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      'Next scheduled dose · ${MedicineService.formatTimeSlot(next.timeSlot)}',
+                      style: TextStyle(
+                        color: g.inkSecondary,
+                        fontSize: 12,
+                        height: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('EEEE, MMM d').format(now),
-                    style: TextStyle(color: g.inkMuted),
-                  ),
+                  ],
                 ],
               ),
+            )
+          : Text(
+              'A little structure for the care that matters.',
+              style: TextStyle(
+                color: g.inkSecondary,
+                fontSize: 14,
+                height: 1.6,
+              ),
             ),
-          ],
+    );
+  }
+
+  Widget _careContext(Medicine medicine) {
+    final plan = ref
+        .watch(carePlansProvider)
+        .value
+        ?.where((p) => p.id == medicine.carePlanId)
+        .firstOrNull;
+    if (plan == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        '${plan.person} · ${plan.title}',
+        style: TextStyle(
+          color: context.glass.inkMuted,
+          fontSize: 12,
+          height: 1.5,
         ),
-        if (hasMedicines) ...[
-          const SizedBox(height: 20),
-          Text(
-            logs.isEmpty
-                ? 'No doses scheduled today'
-                : '$taken of ${logs.length} doses taken',
-            style: TextStyle(
-              color: g.inkSecondary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(
-            value: logs.isEmpty ? 0 : taken / logs.length,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(4),
-            color: g.sage,
-            backgroundColor: g.track,
-          ),
-        ],
-        if (next != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Text(
-              'Next scheduled dose · ${MedicineService.formatTimeSlot(next.timeSlot)}',
-              style: TextStyle(color: g.inkMuted),
-            ),
-          ),
-      ],
+      ),
     );
   }
 
@@ -249,9 +282,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
           medicine.name,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
+            fontSize: 17,
             color: g.ink,
           ),
         ),
+        _careContext(medicine),
         const SizedBox(height: 2),
         Text(
           medicine.dosage,
@@ -267,14 +302,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                 'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
             onTap: () {
               HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                  content: Text(
+              AscentSnackBar.show(
+                context,
+                message:
                     'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
-                  ),
-                ),
+                icon: Icons.schedule_rounded,
               );
             },
           )
@@ -355,7 +387,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       medicine.durationDays,
     );
     final status = !medicine.isActive
-        ? 'Paused'
+        ? 'Archived'
         : today.isBefore(start)
         ? 'Starts ${DateFormat.MMMd().format(start)}'
         : today.isAfter(end)
@@ -369,101 +401,172 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       /* Keep a damaged schedule editable. */
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            alignment: WrapAlignment.spaceBetween,
-            children: [
-              _tag(
-                '${medicine.type[0].toUpperCase()}${medicine.type.substring(1)}',
-                icon: Icons.medication_outlined,
-              ),
-              _tag(status),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            medicine.name,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(medicine.dosage, style: TextStyle(color: g.inkSecondary)),
-          if (medicine.instructions.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                medicine.instructions,
-                style: TextStyle(color: g.inkMuted, height: 1.4),
-              ),
-            ),
-          const SizedBox(height: 16),
-          Text(
-            '${times.length} daily dose${times.length == 1 ? '' : 's'}',
-            style: TextStyle(color: g.inkMuted),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final time in times)
+      padding: const EdgeInsets.only(bottom: 14),
+      child: CarePanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
                 _tag(
-                  MedicineService.formatTimeSlot(time),
-                  icon: Icons.schedule_rounded,
+                  medicine.type.isEmpty
+                      ? 'Medicine'
+                      : '${medicine.type[0].toUpperCase()}${medicine.type.substring(1)}',
+                  icon: Icons.medication_outlined,
                 ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '${DateFormat.MMMd().format(start)} – ${DateFormat.yMMMd().format(end)}',
-            style: TextStyle(color: g.inkMuted),
-          ),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(
-            value: day / medicine.durationDays,
-            minHeight: 4,
-            borderRadius: BorderRadius.circular(4),
-            color: g.sage,
-            backgroundColor: g.track,
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              Tooltip(
-                message: 'Edit Prescription',
-                child: TextButton.icon(
-                  onPressed: () =>
-                      showMedicineEditor(context, medicine: medicine),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('Edit schedule'),
+                _tag(status),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              medicine.name,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: g.ink,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+            _careContext(medicine),
+            const SizedBox(height: 6),
+            Text(medicine.dosage, style: TextStyle(color: g.inkSecondary)),
+            if (medicine.purpose.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  medicine.purpose,
+                  style: TextStyle(color: g.inkSecondary, height: 1.5),
                 ),
               ),
-              IconButton(
-                tooltip: medicine.isActive ? 'Archive schedule, keep history' : 'Restore schedule',
-                onPressed: () async {
-                  await ref.read(medicineServiceProvider).updateMedicine(medicine.id, active: !medicine.isActive);
-                },
-                icon: Icon(medicine.isActive ? Icons.archive_outlined : Icons.unarchive_outlined, color: g.primaryButtonBg),
+            if (medicine.instructions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  medicine.instructions,
+                  style: TextStyle(color: g.inkMuted, height: 1.4),
+                ),
               ),
-              IconButton(
-                tooltip: 'Delete prescription and history permanently',
-                onPressed: () => _delete(medicine),
-                icon: Icon(Icons.delete_outline_rounded, color: g.inkMuted),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 16),
+            Text(
+              '${times.length} daily dose${times.length == 1 ? '' : 's'}',
+              style: TextStyle(color: g.inkMuted),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final time in times)
+                  _tag(
+                    MedicineService.formatTimeSlot(time),
+                    icon: Icons.schedule_rounded,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${DateFormat.MMMd().format(start)} – ${DateFormat.yMMMd().format(end)}',
+              style: TextStyle(color: g.inkMuted),
+            ),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: day / medicine.durationDays,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(4),
+              color: g.actionInk,
+              backgroundColor: g.track,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Tooltip(
+                  message: 'Edit Prescription',
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        showMedicineEditor(context, medicine: medicine),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Edit schedule'),
+                  ),
+                ),
+                IconButton(
+                  tooltip: medicine.isActive
+                      ? 'Archive schedule, keep history'
+                      : 'Restore schedule',
+                  onPressed: () async {
+                    final service = ref.read(medicineServiceProvider);
+                    final revision = service.db.workspaceRevision;
+                    try {
+                      await service.updateMedicine(
+                        medicine.id,
+                        active: !medicine.isActive,
+                      );
+                      if (mounted) {
+                        AscentSnackBar.undo(
+                          context,
+                          message: medicine.isActive
+                              ? 'Schedule archived. Dose history kept.'
+                              : 'Schedule restored',
+                          onUndo: () async {
+                            try {
+                              if (revision != service.db.workspaceRevision) {
+                                throw StateError('Workspace changed');
+                              }
+                              await service.updateMedicine(
+                                medicine.id,
+                                active: medicine.isActive,
+                              );
+                            } catch (_) {
+                              if (mounted) {
+                                AscentSnackBar.error(
+                                  context,
+                                  message:
+                                      'Could not restore this schedule state.',
+                                );
+                              }
+                            }
+                          },
+                        );
+                      }
+                    } catch (_) {
+                      if (mounted) {
+                        AscentSnackBar.error(
+                          context,
+                          message: 'Could not update this schedule.',
+                        );
+                      }
+                    }
+                  },
+                  icon: Icon(
+                    medicine.isActive
+                        ? Icons.archive_outlined
+                        : Icons.unarchive_outlined,
+                    color: g.primaryButtonBg,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Dose history',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => DoseHistoryScreen(medicine: medicine),
+                    ),
+                  ),
+                  icon: Icon(Icons.history_rounded, color: g.actionInk),
+                ),
+                IconButton(
+                  tooltip: 'Delete prescription and history permanently',
+                  onPressed: () => _delete(medicine),
+                  icon: Icon(Icons.delete_outline_rounded, color: g.errorInk),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -480,7 +583,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       ),
       const SizedBox(height: 6),
       Text(
-        'Track daily doses, exact times, and courses here.',
+        'Start with your prescription. Add a care plan when you want to keep reports and notes together.',
         textAlign: TextAlign.center,
         style: TextStyle(color: context.glass.inkMuted, height: 1.4),
       ),
@@ -494,44 +597,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     ],
   );
 
-  Widget _tab(String label, bool medicines) {
-    final selected = _showMedicines == medicines;
-    return Expanded(
-      child: Semantics(
-        selected: selected,
-        child: TextButton(
-          key: ValueKey(
-            medicines ? 'medicine_view_medicines' : 'medicine_view_today',
-          ),
-          onPressed: () => setState(() => _showMedicines = medicines),
-          style: TextButton.styleFrom(
-            backgroundColor: selected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.transparent,
-            foregroundColor: selected
-                ? Theme.of(context).colorScheme.onPrimary
-                : context.glass.inkSecondary,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Text(label, textAlign: TextAlign.center),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final medicines = ref.watch(allMedicinesStreamProvider);
     final today = ref.watch(todayMedicineLogsStreamProvider);
     return AscentScaffold(
-      title: 'Medicines',
-      subtitle: 'Daily care',
+      title: 'Your care',
+      subtitle: 'Medicines, plans & your health story',
       showFeatureHelp: false,
       actions: [
-        const HistoryAction(module:'medicines'),
+        const HistoryAction(module: 'medicines'),
         IconButton(
           tooltip: 'Add Medicine',
           onPressed: () => showMedicineEditor(context),
@@ -559,203 +634,230 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: _surface(
-                  padding: const EdgeInsets.all(4),
-                  child: Row(
-                    children: [_tab('Today', false), _tab('My meds', true)],
-                  ),
+                child: AscentSegmentedControl<int>(
+                  selected: _view,
+                  accented: true,
+                  segments: const [
+                    AscentSegment(
+                      value: 0,
+                      label: 'Today',
+                      key: ValueKey('medicine_view_today'),
+                    ),
+                    AscentSegment(
+                      value: 1,
+                      label: 'Medicines',
+                      key: ValueKey('medicine_view_medicines'),
+                    ),
+                    AscentSegment(
+                      value: 2,
+                      label: 'Care plans',
+                      key: ValueKey('medicine_view_plans'),
+                    ),
+                  ],
+                  onChanged: (view) => setState(() => _view = view),
                 ),
               ),
               Expanded(
-                child: ListView(
-                  key: ValueKey(_showMedicines),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                  children: [
-                    if (!_showMedicines)
-                      _surface(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (today.hasValue)
-                              _summary(
-                                logs,
-                                hasMedicines: medicines.isNotEmpty,
-                              ),
-                            if (today.hasError)
-                              TextButton(
-                                onPressed: () => ref.invalidate(
-                                  todayMedicineLogsStreamProvider,
-                                ),
-                                child: const Text(
-                                  'Could not load today’s doses. Tap to retry.',
-                                ),
-                              ),
-                            if (today.isLoading)
-                              const LinearProgressIndicator(),
-                            if (logs.isNotEmpty) ...[
-                              Padding(
-                                padding: const EdgeInsets.only(top: 18),
-                                child: Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    GlassChip(
-                                      label:
-                                          '${logs.where((l) => !l.isTaken).length} pending',
-                                      icon: Icons.schedule,
-                                      selected: !_showTaken,
-                                      onTap: () =>
-                                          setState(() => _showTaken = false),
-                                    ),
-                                    GlassChip(
-                                      label:
-                                          '${logs.where((l) => l.isTaken).length} taken',
-                                      icon: Icons.check,
-                                      success: true,
-                                      selected: _showTaken,
-                                      onTap: () =>
-                                          setState(() => _showTaken = true),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              _label(
-                                _showTaken ? 'Taken today' : 'Today’s schedule',
-                              ),
-                              for (final slot
-                                  in logs
-                                      .where((l) => l.isTaken == _showTaken)
-                                      .map((l) => l.timeSlot)
-                                      .toSet())
-                                Builder(
-                                  builder: (context) {
-                                    final slotLogs = logs
-                                        .where(
-                                          (l) =>
-                                              l.timeSlot == slot &&
-                                              l.isTaken == _showTaken,
-                                        )
-                                        .toList();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 12),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Wrap(
-                                            spacing: 12,
-                                            runSpacing: 8,
-                                            crossAxisAlignment:
-                                                WrapCrossAlignment.center,
-                                            children: [
-                                              Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.schedule_rounded,
-                                                    size: 15,
-                                                    color: context
-                                                        .glass
-                                                        .inkSecondary,
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    MedicineService.formatTimeSlot(
-                                                      slot,
-                                                    ),
-                                                    style: TextStyle(
-                                                      fontSize: 13.5,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: context.glass.ink,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 3,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: context.glass.ink
-                                                      .withValues(alpha: 0.06),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
-                                                  style: TextStyle(
-                                                    fontSize: 11.5,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: context
-                                                        .glass
-                                                        .inkSecondary,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 12),
-                                          for (
-                                            int i = 0;
-                                            i < slotLogs.length;
-                                            i++
-                                          )
-                                            _dose(
-                                              slotLogs[i],
-                                              byId[slotLogs[i].medicineId]!,
-                                              isLast: i == slotLogs.length - 1,
-                                            ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              if (!logs.any((l) => l.isTaken == _showTaken))
-                                Text(
-                                  _showTaken
-                                      ? 'No doses taken yet today.'
-                                      : 'All scheduled doses taken. Your history is under Taken.',
-                                  style: TextStyle(
-                                    color: context.glass.inkMuted,
+                child: _view == 2
+                    ? const CarePlansView()
+                    : ListView(
+                        key: ValueKey(_showMedicines),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                        children: [
+                          if (!_showMedicines)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (today.hasValue)
+                                  _summary(
+                                    logs,
+                                    hasMedicines: medicines.isNotEmpty,
                                   ),
-                                ),
-                            ],
-                            if (medicines.isEmpty) ...[
-                              const SizedBox(height: 20),
-                              Divider(color: context.glass.line, height: 1),
-                              const SizedBox(height: 20),
-                              _emptyMedicines(),
-                            ],
-                          ],
-                        ),
-                      ),
-                    if (_showMedicines)
-                      _surface(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Your medicines',
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            if (medicines.isEmpty) ...[
-                              const SizedBox(height: 20),
-                              _emptyMedicines(),
-                            ] else
-                              for (var i = 0; i < medicines.length; i++) ...[
-                                if (i > 0)
+                                if (today.hasError)
+                                  TextButton(
+                                    onPressed: () => ref.invalidate(
+                                      todayMedicineLogsStreamProvider,
+                                    ),
+                                    child: const Text(
+                                      'Could not load today’s doses. Tap to retry.',
+                                    ),
+                                  ),
+                                if (today.isLoading)
+                                  const LinearProgressIndicator(),
+                                if (logs.isNotEmpty) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 18),
+                                    child: AscentSegmentedControl<bool>(
+                                      selected: _showTaken,
+                                      accented: true,
+                                      segments: [
+                                        AscentSegment(
+                                          value: false,
+                                          label:
+                                              '${logs.where((l) => !l.isTaken).length} pending',
+                                          icon: Icons.schedule_rounded,
+                                        ),
+                                        AscentSegment(
+                                          value: true,
+                                          label:
+                                              '${logs.where((l) => l.isTaken).length} taken',
+                                          icon: Icons.check_rounded,
+                                        ),
+                                      ],
+                                      onChanged: (value) =>
+                                          setState(() => _showTaken = value),
+                                    ),
+                                  ),
+                                  _label(
+                                    _showTaken
+                                        ? 'Taken today'
+                                        : 'Today’s schedule',
+                                  ),
+                                  for (final slot
+                                      in logs
+                                          .where((l) => l.isTaken == _showTaken)
+                                          .map((l) => l.timeSlot)
+                                          .toSet())
+                                    Builder(
+                                      builder: (context) {
+                                        final slotLogs = logs
+                                            .where(
+                                              (l) =>
+                                                  l.timeSlot == slot &&
+                                                  l.isTaken == _showTaken,
+                                            )
+                                            .toList();
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 12,
+                                          ),
+                                          child: CarePanel(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Wrap(
+                                                  spacing: 12,
+                                                  runSpacing: 8,
+                                                  crossAxisAlignment:
+                                                      WrapCrossAlignment.center,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons
+                                                              .schedule_rounded,
+                                                          size: 15,
+                                                          color: context
+                                                              .glass
+                                                              .inkSecondary,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 6,
+                                                        ),
+                                                        Text(
+                                                          MedicineService.formatTimeSlot(
+                                                            slot,
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontSize: 13.5,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: context
+                                                                .glass
+                                                                .ink,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 3,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: context.glass.ink
+                                                            .withValues(
+                                                              alpha: 0.06,
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
+                                                        style: TextStyle(
+                                                          fontSize: 11.5,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: context
+                                                              .glass
+                                                              .inkSecondary,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 12),
+                                                for (
+                                                  int i = 0;
+                                                  i < slotLogs.length;
+                                                  i++
+                                                )
+                                                  _dose(
+                                                    slotLogs[i],
+                                                    byId[slotLogs[i]
+                                                        .medicineId]!,
+                                                    isLast:
+                                                        i ==
+                                                        slotLogs.length - 1,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  if (!logs.any((l) => l.isTaken == _showTaken))
+                                    Text(
+                                      _showTaken
+                                          ? 'No doses taken yet today.'
+                                          : 'All scheduled doses taken. Your history is under Taken.',
+                                      style: TextStyle(
+                                        color: context.glass.inkMuted,
+                                      ),
+                                    ),
+                                ],
+                                if (medicines.isEmpty) ...[
+                                  const SizedBox(height: 20),
                                   Divider(color: context.glass.line, height: 1),
-                                _medicine(medicines[i]),
+                                  const SizedBox(height: 20),
+                                  _emptyMedicines(),
+                                ],
                               ],
+                            ),
+                          if (_showMedicines) ...[
+                            CareHero(
+                              compact: true,
+                              eyebrow: 'Your medicine shelf',
+                              title: 'A routine,\nwith room for you.',
+                            ),
+                            const CareSectionHeading(
+                              'Your medicines',
+                              icon: Icons.medication_outlined,
+                            ),
+                            if (medicines.isEmpty)
+                              _surface(child: _emptyMedicines())
+                            else
+                              for (final medicine in medicines)
+                                _medicine(medicine),
                           ],
-                        ),
+                        ],
                       ),
-                  ],
-                ),
               ),
             ],
           );

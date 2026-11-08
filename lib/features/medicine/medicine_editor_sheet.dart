@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'package:drift/drift.dart' show Value;
+import 'package:intl/intl.dart';
+import 'care_forms.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/glass_theme.dart';
@@ -10,17 +13,27 @@ import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import 'medicine_time_dialog.dart';
 
-Future<void> showMedicineEditor(BuildContext context, {Medicine? medicine}) =>
-    showAscentCenteredForm<void>(
-      context: context,
-      maxWidth: 420,
-      barrierDismissible: false,
-      builder: (_) => MedicineEditorSheet(medicine: medicine),
-    );
+Future<void> showMedicineEditor(
+  BuildContext context, {
+  Medicine? medicine,
+  int? carePlanId,
+}) => showAscentCenteredForm<void>(
+  context: context,
+  maxWidth: 420,
+  barrierDismissible: false,
+  builder: (_) =>
+      MedicineEditorSheet(medicine: medicine, carePlanId: carePlanId),
+);
 
 class MedicineEditorSheet extends ConsumerStatefulWidget {
-  const MedicineEditorSheet({super.key, this.medicine, this.isDialog = true});
+  const MedicineEditorSheet({
+    super.key,
+    this.medicine,
+    this.isDialog = true,
+    this.carePlanId,
+  });
   final Medicine? medicine;
+  final int? carePlanId;
   final bool isDialog;
   @override
   ConsumerState<MedicineEditorSheet> createState() =>
@@ -39,6 +52,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
   late final _duration = TextEditingController(
     text: '${widget.medicine?.durationDays ?? 7}',
   );
+  late final _purpose = TextEditingController(text: widget.medicine?.purpose);
+  late int? _carePlanId = widget.medicine?.carePlanId ?? widget.carePlanId;
+  late DateTime _start = widget.medicine?.startDate ?? DateTime.now();
   late List<String> _times;
   int _step = 0;
   bool _saving = false;
@@ -56,7 +72,14 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _dose, _instructions, _duration, _type]) {
+    for (final controller in [
+      _name,
+      _dose,
+      _instructions,
+      _duration,
+      _type,
+      _purpose,
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -109,9 +132,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
       return;
     }
     final days = int.tryParse(_duration.text);
-    if (days == null || days < 1 || days > 3650 || _times.isEmpty) {
+    if (days == null || days < 1 || days > 366 || _times.isEmpty) {
       setState(
-        () => _error = 'Add a time and a duration between 1 and 3650 days.',
+        () => _error = 'Add a time and a duration between 1 and 366 days.',
       );
       return;
     }
@@ -129,7 +152,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
           dosage: _dose.text.trim(),
           scheduledTimes: times,
           durationDays: days,
-          startDate: DateTime.now(),
+          startDate: _start,
+          carePlanId: _carePlanId,
+          purpose: _purpose.text,
           instructions: _instructions.text.trim(),
           type: _type.text.trim().isEmpty ? 'other' : _type.text.trim(),
         );
@@ -140,7 +165,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
           dosage: _dose.text.trim(),
           scheduledTimes: times,
           durationDays: days,
-          startDate: med.startDate,
+          startDate: _start,
+          carePlanId: Value(_carePlanId),
+          purpose: _purpose.text,
           instructions: _instructions.text.trim(),
           type: _type.text.trim().isEmpty ? 'other' : _type.text.trim(),
         );
@@ -172,6 +199,8 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
             ? 'dosage'
             : label == 'Instructions (optional)'
             ? 'instructions'
+            : label == 'What is it for? (optional)'
+            ? 'purpose'
             : label == 'Form (optional)'
             ? 'type'
             : 'duration'}',
@@ -187,13 +216,13 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
         hintText: hint,
         counterText: '',
         filled: true,
-        fillColor: context.glass.fill,
+        fillColor: context.glass.ink.withValues(alpha: .035),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: context.glass.line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: context.glass.line),
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -228,8 +257,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                           : 'Edit medicine',
                       style: TextStyle(
                         color: g.ink,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -.6,
                       ),
                     ),
                   ),
@@ -249,6 +279,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                 segments: const [
                   AscentSegment(value: 0, label: 'Details'),
                   AscentSegment(value: 1, label: 'Schedule'),
+                  AscentSegment(value: 2, label: 'Care'),
                 ],
                 selected: _step,
                 enabled: !_saving,
@@ -278,6 +309,57 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                   'Instructions (optional)',
                   _instructions,
                   'Food, water, or other notes',
+                  maxLength: 2000,
+                ),
+              ] else if (_step == 2) ...[
+                _field(
+                  'What is it for? (optional)',
+                  _purpose,
+                  'Purpose explained by your clinician',
+                  maxLength: 1000,
+                ),
+                const SizedBox(height: 12),
+                ref
+                    .watch(carePlansProvider)
+                    .when(
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, _) => TextButton(
+                        onPressed: () => ref.invalidate(carePlansProvider),
+                        child: const Text('Could not load care plans. Retry'),
+                      ),
+                      data: (plans) => DropdownButtonFormField<int>(
+                        key: ValueKey('care_plan_$_carePlanId'),
+                        initialValue: plans.any((p) => p.id == _carePlanId)
+                            ? _carePlanId
+                            : null,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Care plan (optional)',
+                        ),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('No care plan'),
+                          ),
+                          for (final plan in plans)
+                            DropdownMenuItem(
+                              value: plan.id,
+                              child: Text(
+                                plan.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: _saving
+                            ? null
+                            : (id) => setState(() => _carePlanId = id),
+                      ),
+                    ),
+                const SizedBox(height: 12),
+                Text(
+                  'Record the purpose and instructions given by your clinician.',
+                  style: TextStyle(color: g.inkMuted, height: 1.5),
                 ),
               ] else ...[
                 const SizedBox(height: 14),
@@ -314,13 +396,50 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                 _field(
                   'Duration (days)',
                   _duration,
-                  'Number of days',
+                  '1–366 days, as prescribed',
                   keyboard: TextInputType.number,
                 ),
-                _field(
-                  'Form (optional)',
-                  _type,
-                  'Tablet, drops, syrup, or your own',
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _type.text,
+                  decoration: const InputDecoration(labelText: 'Medicine form'),
+                  items: [
+                    for (final type in [
+                      'tablet',
+                      'capsule',
+                      'syrup',
+                      'drops',
+                      'injection',
+                    ])
+                      DropdownMenuItem(
+                        value: type,
+                        child: Text(type[0].toUpperCase() + type.substring(1)),
+                      ),
+                  ],
+                  onChanged: _saving ? null : (value) => _type.text = value!,
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_outlined),
+                  title: const Text('Course starts'),
+                  subtitle: Text(DateFormat.yMMMd().format(_start)),
+                  onTap: _saving
+                      ? null
+                      : () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _start,
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime(
+                              DateTime.now().year + 20,
+                              12,
+                              31,
+                            ),
+                          );
+                          if (mounted && date != null) {
+                            setState(() => _start = date);
+                          }
+                        },
                 ),
                 const SizedBox(height: 10),
                 Text(

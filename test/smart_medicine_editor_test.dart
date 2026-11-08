@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/medicine/medicine_service.dart';
+import 'package:ascent/core/medicine/care_repository.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/medicine/medicine_editor_sheet.dart';
@@ -147,6 +148,66 @@ void main() {
       expect(updated.durationDays, 42);
       expect(updated.startDate, start);
       expect(updated.type, 'drops');
+    },
+  );
+  testWidgets(
+    'care context can move between concerns without changing dose evidence',
+    (t) async {
+      final repo = CareRepository(db);
+      final first = await repo.savePlan(
+        title: 'First concern',
+        person: 'My care',
+        clinician: '',
+        notes: '',
+      );
+      final second = await repo.savePlan(
+        title: 'Recovery care',
+        person: 'My care',
+        clinician: '',
+        notes: '',
+      );
+      final service = MedicineService(db, syncAlerts: false);
+      final id = await service.addMedicine(
+        name: 'My medicine',
+        dosage: 'Recorded dose',
+        scheduledTimes: ['07:15'],
+        durationDays: 7,
+        startDate: DateTime.now(),
+        carePlanId: first,
+      );
+      final before = await t.runAsync(
+        () => db.medicineDao.watchLogsForMedicine(id).first,
+      );
+      await mount(
+        t,
+        medicine: await t.runAsync<Medicine>(
+          () async => (await db.medicineDao.getMedicineById(id))!,
+        ),
+      );
+      await t.tap(find.text('Care'));
+      await flush(t);
+      await t.enterText(
+        find.byKey(const ValueKey('medicine_purpose')),
+        'Purpose from my prescription',
+      );
+      await t.tap(find.byType(DropdownButtonFormField<int>));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Recovery care').last);
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Save medicine'));
+      await t.tap(find.text('Save medicine'));
+      await flush(t);
+      final updated = (await db.medicineDao.getMedicineById(id))!;
+      expect(updated.carePlanId, second);
+      expect(updated.purpose, 'Purpose from my prescription');
+      expect(updated.scheduledTimes, '["07:15"]');
+      expect(
+        await t.runAsync(() => db.medicineDao.watchLogsForMedicine(id).first),
+        before,
+      );
+      expect(t.takeException(), isNull);
+      await t.pumpWidget(const SizedBox());
+      await t.pump(const Duration(seconds: 1));
     },
   );
   for (final dark in [false, true]) {

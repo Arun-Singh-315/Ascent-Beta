@@ -100,6 +100,8 @@ void main() {
     final envelope = jsonDecode(await service.export()) as Map<String, dynamic>;
     final payload = envelope['payload'] as Map<String, dynamic>;
     payload['schema'] = 19;
+    (payload['tables'] as Map).remove('care_plans');
+    (payload['tables'] as Map).remove('care_records');
     (payload['tables'] as Map).remove('thought_categories');
     Object? canonical(Object? value) {
       if (value is Map) {
@@ -134,6 +136,8 @@ void main() {
           jsonDecode(await service.export()) as Map<String, dynamic>;
       final payload = envelope['payload'] as Map<String, dynamic>;
       payload['schema'] = 18;
+      (payload['tables'] as Map).remove('care_plans');
+      (payload['tables'] as Map).remove('care_records');
       for (final row in payload['tables']['thoughts'] as List) {
         (row as Map).remove('category');
       }
@@ -167,6 +171,8 @@ void main() {
     final envelope = jsonDecode(await service.export()) as Map<String, dynamic>;
     final payload = envelope['payload'] as Map<String, dynamic>;
     payload['schema'] = 14;
+    (payload['tables'] as Map).remove('care_plans');
+    (payload['tables'] as Map).remove('care_records');
     final legacyTables = payload['tables'] as Map;
     legacyTables.remove('thought_reminder_links');
     legacyTables.remove('thought_merge_sources');

@@ -256,7 +256,7 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('Medicines'), findsOneWidget);
-        expect(find.text('Daily care'), findsOneWidget);
+        expect(find.text('Your care'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(milliseconds: 100));

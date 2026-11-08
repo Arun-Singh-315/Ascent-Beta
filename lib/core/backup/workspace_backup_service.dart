@@ -152,10 +152,12 @@ class WorkspaceBackupService {
     final files = <Map<String, dynamic>>[];
     var totalBytes = 0;
     final missingFiles = <String>[];
-    for (final path
-        in (tables['resumes'] as List)
-            .map((r) => r['file_path'] as String)
-            .toSet()) {
+    for (final path in <String>{
+      ...(tables['resumes'] as List).map((r) => r['file_path'] as String),
+      ...(tables['care_records'] as List)
+          .map((r) => r['file_path'])
+          .whereType<String>(),
+    }) {
       final file = File(path);
       if (!await file.exists()) {
         if (safetyCopy) {
@@ -163,12 +165,12 @@ class WorkspaceBackupService {
           continue;
         }
         throw StateError(
-          'A saved resume file is missing. Reattach it in Resume Vault before exporting.',
+          'A saved attachment is missing. Restore the file before exporting.',
         );
       }
       totalBytes += await file.length();
       if (totalBytes > maxFileBytes) {
-        throw StateError('Resume files exceed the 40 MB backup limit.');
+        throw StateError('Attachments exceed the 40 MB backup limit.');
       }
       final bytes = await file.readAsBytes();
       files.add({
@@ -304,15 +306,21 @@ class WorkspaceBackupService {
       );
       payload['schema'] = 20;
     }
-    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
-        payload['schema'] == 20 && db.schemaVersion >= 21 && payload['tables'] is Map) {
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 20 &&
+        db.schemaVersion >= 21 &&
+        payload['tables'] is Map) {
       for (final row in (payload['tables']['user_profiles'] as List? ?? [])) {
         (row as Map).putIfAbsent('date_of_birth', () => null);
       }
       payload['schema'] = 21;
     }
-    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
-        payload['schema'] == 21 && db.schemaVersion >= 22 && payload['tables'] is Map) {
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 21 &&
+        db.schemaVersion >= 22 &&
+        payload['tables'] is Map) {
       for (final row in (payload['tables']['tasks'] as List? ?? [])) {
         (row as Map).putIfAbsent('is_archived', () => 0);
       }
@@ -321,12 +329,33 @@ class WorkspaceBackupService {
       payload['historyBackfillRequired'] = true;
       payload['schema'] = 22;
     }
-    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 &&
-        payload['schema'] == 22 && db.schemaVersion >= 23 && payload['tables'] is Map) {
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 22 &&
+        db.schemaVersion >= 23 &&
+        payload['tables'] is Map) {
       for (final row in (payload['tables']['tasks'] as List? ?? [])) {
         (row as Map).putIfAbsent('is_daily_standing', () => 0);
       }
       payload['schema'] = 23;
+    }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 23 &&
+        db.schemaVersion >= 24 &&
+        payload['tables'] is Map) {
+      final tables = payload['tables'] as Map;
+      if (tables.containsKey('care_plans') ||
+          tables.containsKey('care_records')) {
+        throw const FormatException('Legacy backup contains newer care tables');
+      }
+      tables['care_plans'] = <dynamic>[];
+      tables['care_records'] = <dynamic>[];
+      for (final row in tables['medicines'] as List? ?? []) {
+        (row as Map)['care_plan_id'] = null;
+        row['purpose'] = '';
+      }
+      payload['schema'] = 24;
     }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
@@ -404,12 +433,15 @@ class WorkspaceBackupService {
         throw const FormatException('Invalid file checksum or size');
       }
     }
-    final referenced = (tables['resumes'] as List)
-        .map((r) => r['file_path'])
-        .toSet();
+    final referenced = {
+      ...(tables['resumes'] as List).map((r) => r['file_path']),
+      ...(tables['care_records'] as List)
+          .map((r) => r['file_path'])
+          .whereType<String>(),
+    };
     if (referenced.difference(sources).isNotEmpty ||
         sources.difference(referenced).isNotEmpty) {
-      throw const FormatException('Resume attachments are incomplete');
+      throw const FormatException('Saved attachments are incomplete');
     }
     return payload;
   }
@@ -516,7 +548,10 @@ class WorkspaceBackupService {
           final name = table.actualTableName;
           for (final rawRow in payload['tables'][name] as List) {
             final row = Map<String, dynamic>.from(rawRow as Map);
-            if (name == 'resumes') row['file_path'] = paths[row['file_path']];
+            if (name == 'resumes' ||
+                (name == 'care_records' && row['file_path'] != null)) {
+              row['file_path'] = paths[row['file_path']];
+            }
             if (name == 'time_sessions' && row['status'] == 'running') {
               final at = DateTime.fromMillisecondsSinceEpoch(
                 ((row['last_heartbeat_at'] ?? row['started_at']) as int) * 1000,

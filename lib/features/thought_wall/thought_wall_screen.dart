@@ -1664,53 +1664,48 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
   Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
     final dao = ref.read(thoughtDaoProvider);
-    final messenger = ScaffoldMessenger.of(context);
+    // The card leaves the tree after deletion; feedback belongs to the page.
+    final feedbackContext = Scaffold.of(context).context;
     void failure(String message) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(SnackBar(content: Text(message)));
+      if (feedbackContext.mounted) {
+        AscentSnackBar.error(feedbackContext, message: message);
+      }
     }
-
     try {
       final snapshot = await dao.deleteThoughtForUndo(thought.id);
       if (snapshot == null) {
-        if (messenger.mounted) failure('This thought is no longer available.');
+        failure('This thought is no longer available.');
         return false;
       }
       Future<void> restore() async {
         try {
-          if (!await dao.restoreThoughtDeletion(snapshot) &&
-              messenger.mounted) {
+          if (!await dao.restoreThoughtDeletion(snapshot)) {
             failure('Undo is no longer available. Newer changes were kept.');
           }
         } catch (_) {
-          if (messenger.mounted) {
-            messenger.hideCurrentSnackBar();
-            messenger.showSnackBar(
-              SnackBar(
-                content: const Text('Could not restore the thought.'),
-                action: SnackBarAction(label: 'Retry', onPressed: restore),
-              ),
+          if (feedbackContext.mounted) {
+            AscentSnackBar.show(
+              feedbackContext,
+              message: 'Could not restore the thought.',
+              isError: true,
+              icon: Icons.error_outline_rounded,
+              duration: const Duration(seconds: 8),
+              actionLabel: 'Retry',
+              onAction: restore,
             );
           }
         }
       }
-
-      if (messenger.mounted) {
-        messenger.hideCurrentSnackBar();
-        messenger.showSnackBar(
-          SnackBar(
-            persist: false,
-            content: const Text('Thought removed'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'Undo', onPressed: restore),
-          ),
+      if (feedbackContext.mounted) {
+        AscentSnackBar.undo(
+          feedbackContext,
+          message: 'Thought removed',
+          onUndo: restore,
         );
       }
       return true;
     } catch (_) {
-      if (messenger.mounted) {
-        failure('Could not delete the thought. Please try again.');
-      }
+      failure('Could not delete the thought. Please try again.');
       return false;
     }
   }

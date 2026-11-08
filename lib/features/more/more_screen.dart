@@ -222,8 +222,8 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.medication_rounded,
                   iconTint: g.clay,
-                  title: 'Medicine & Prescriptions',
-                  subtitle: 'Daily dose schedules, timing reminders & tracking',
+                  title: 'Your care · Medicines & plans',
+                  subtitle: 'Daily medicines, care plans, reports & history',
                   route: '/medicine',
                 ),
                 _TileDivider(),
@@ -231,8 +231,7 @@ class MoreScreen extends ConsumerWidget {
                   icon: Icons.coffee_rounded,
                   iconTint: g.amber,
                   title: 'Pause · Mindful breaks',
-                  subtitle:
-                      'Mindful brewing timers, calming ambiance & reset',
+                  subtitle: 'Mindful brewing timers, calming ambiance & reset',
                   route: '/chai-break',
                 ),
               ],
@@ -250,8 +249,7 @@ class MoreScreen extends ConsumerWidget {
                   icon: Icons.school_outlined,
                   iconTint: g.slate,
                   title: 'Growth · Courses',
-                  subtitle:
-                      'Curated syllabi, audio player & study tracking',
+                  subtitle: 'Curated syllabi, audio player & study tracking',
                   route: '/learning',
                 ),
                 _TileDivider(),
@@ -278,7 +276,8 @@ class MoreScreen extends ConsumerWidget {
                   icon: Icons.notifications_none_rounded,
                   iconTint: g.amber,
                   title: 'Reminders & Alerts',
-                  subtitle: 'Scheduled notifications, recurring prompts & alarms',
+                  subtitle:
+                      'Scheduled notifications, recurring prompts & alarms',
                   route: '/reminders',
                 ),
                 _TileDivider(),
@@ -309,13 +308,20 @@ class MoreScreen extends ConsumerWidget {
                   route: '/vault',
                 ),
                 _TileDivider(),
-                _MoreListTile(icon:Icons.history_rounded,iconTint:g.primaryButtonBg,title:'History',subtitle:'Search activity across your workspace',route:'/history'),
+                _MoreListTile(
+                  icon: Icons.history_rounded,
+                  iconTint: g.primaryButtonBg,
+                  title: 'History',
+                  subtitle: 'Search activity across your workspace',
+                  route: '/history',
+                ),
                 _TileDivider(),
                 _MoreListTile(
                   icon: Icons.insights_rounded,
                   iconTint: g.slate,
                   title: 'Analytics & Trends',
-                  subtitle: 'Focus hours, habit consistency & lifestyle metrics',
+                  subtitle:
+                      'Focus hours, habit consistency & lifestyle metrics',
                   route: '/analytics',
                 ),
               ],
