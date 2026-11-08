@@ -21,12 +21,67 @@ class HistoryScreen extends ConsumerStatefulWidget {
 }
 
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
-  String _query = '', _outcome = 'all';
+  String _query = '', _outcome = 'all', _domainCategory = 'all';
   String? _module;
   DateTimeRange? _range;
   int _limit = 60;
   AppLifecycleListener? _lifecycle;
   UnlockedPromiseIdsNotifier? _unlocked;
+
+  String _getDomainForModule(String module) {
+    final mod = historyModule(module);
+    switch (mod) {
+      case 'tasks':
+      case 'focus':
+      case 'learning':
+        return 'focus_tasks';
+      case 'hydration':
+      case 'walks':
+      case 'routines':
+      case 'medicines':
+      case 'breaks':
+        return 'health_rhythm';
+      case 'thoughts':
+      case 'promises':
+      case 'money':
+      case 'vault':
+        return 'mind_promises';
+      default:
+        return 'focus_tasks';
+    }
+  }
+
+  String _getDomainBadgeLabel(String module) {
+    final mod = historyModule(module);
+    switch (mod) {
+      case 'tasks':
+        return 'Task';
+      case 'focus':
+        return 'Focus';
+      case 'learning':
+        return 'Learning';
+      case 'hydration':
+        return 'Water';
+      case 'walks':
+        return 'Walk';
+      case 'routines':
+        return 'Routine';
+      case 'medicines':
+        return 'Medicine';
+      case 'breaks':
+        return 'Break';
+      case 'thoughts':
+        return 'Thought';
+      case 'promises':
+        return 'Promise';
+      case 'money':
+        return 'Money';
+      case 'vault':
+        return 'Vault';
+      default:
+        return historyModules[mod] ?? 'Activity';
+    }
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -69,6 +124,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   bool _matches(HistoryEvent e) =>
+      (_domainCategory == 'all' ||
+          _getDomainForModule(e.module) == _domainCategory) &&
       (_module == null ||
           historyModule(e.module) == _module ||
           (widget.module == 'tasks' &&
@@ -281,6 +338,21 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ),
                   onChanged: (v) => setState(() {
                     _query = v.trim().toLowerCase();
+                    _limit = 60;
+                  }),
+                ),
+                const SizedBox(height: 12),
+                AscentSegmentedControl<String>(
+                  key: const ValueKey('history_domain_segments'),
+                  segments: const [
+                    AscentSegment(value: 'all', label: 'All'),
+                    AscentSegment(value: 'focus_tasks', label: 'Focus & Tasks'),
+                    AscentSegment(value: 'health_rhythm', label: 'Habits & Health'),
+                    AscentSegment(value: 'mind_promises', label: 'Mind & Promises'),
+                  ],
+                  selected: _domainCategory,
+                  onChanged: (v) => setState(() {
+                    _domainCategory = v;
                     _limit = 60;
                   }),
                 ),
@@ -558,17 +630,46 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    Text(
-                                                      events[j].title,
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: TextStyle(
-                                                        color: g.ink,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontSize: 14.5,
-                                                      ),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          margin: const EdgeInsets.only(right: 6),
+                                                          padding: const EdgeInsets.symmetric(
+                                                            horizontal: 6,
+                                                            vertical: 1.5,
+                                                          ),
+                                                          decoration: BoxDecoration(
+                                                            color: g.clay.withValues(alpha: 0.12),
+                                                            borderRadius: BorderRadius.circular(6),
+                                                            border: Border.all(
+                                                              color: g.line.withValues(alpha: 0.25),
+                                                              width: 0.5,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            _getDomainBadgeLabel(events[j].module),
+                                                            style: TextStyle(
+                                                              color: g.inkSecondary,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.w600,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        Expanded(
+                                                          child: Text(
+                                                            events[j].title,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow.ellipsis,
+                                                            style: TextStyle(
+                                                              color: g.ink,
+                                                              fontWeight:
+                                                                  FontWeight.w600,
+                                                              fontSize: 14.5,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                     const SizedBox(height: 2),
                                                     Text(

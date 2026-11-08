@@ -1,3 +1,4 @@
+import 'home_day_design.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'home_shortcut_summary.dart';
 import 'package:flutter/material.dart';
@@ -155,54 +156,106 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
     final selected = tools.where((tool) => tool.id == _expanded).firstOrNull;
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Daily rhythm',
-            style: AscentTextStyles.sectionHeading.copyWith(color: g.ink),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Today',
-            style: AscentTextStyles.bodySmall.copyWith(color: g.inkSecondary),
-          ),
-          const SizedBox(height: 14),
-          AnimatedSize(
-            duration: Duration(
-              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 260,
+      child: AnimatedSize(
+        duration: Duration(
+          milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 300,
+        ),
+        curve: Curves.easeInOutCubic,
+        alignment: Alignment.topCenter,
+        child: Container(
+          key: const ValueKey('home_life_shelf_enclosure'),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: HomeDayDesign.line(dark),
+              width: 0.8,
             ),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final columns =
-                    constraints.maxWidth < 280 ||
-                        MediaQuery.textScalerOf(context).scale(14) > 23
-                    ? 1
-                    : 2;
-                final width =
-                    (constraints.maxWidth - (columns - 1) * 10) / columns;
-                final ordered = tools;
-                return Wrap(
-                  key: const ValueKey('home_life_shelf'),
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final tool in ordered)
-                      SizedBox(
-                        key: ValueKey('rhythm_card_${tool.id}'),
-                        width: tool.id == selected?.id
-                            ? constraints.maxWidth
-                            : width,
-                        child: _tile(tool, dark, g, water, goal),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Daily rhythm',
+                          style: AscentTextStyles.sectionHeading.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Today',
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.inkSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 3.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: g.clay.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: g.clay.withValues(alpha: 0.25),
+                        width: 0.75,
                       ),
-                  ],
-                );
-              },
-            ),
+                    ),
+                    child: Text(
+                      '${tools.length} active',
+                      style: TextStyle(
+                        color: g.clay,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns =
+                      constraints.maxWidth < 280 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 23
+                      ? 1
+                      : 2;
+                  final width =
+                      (constraints.maxWidth - (columns - 1) * 10) / columns;
+                  final ordered = tools;
+                  return Wrap(
+                    key: const ValueKey('home_life_shelf'),
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      for (final tool in ordered)
+                        SizedBox(
+                          key: ValueKey('rhythm_card_${tool.id}'),
+                          width: tool.id == selected?.id
+                              ? constraints.maxWidth
+                              : width,
+                          child: _tile(tool, dark, g, water, goal),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -377,7 +430,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                     TextButton.icon(
                       onPressed: () => context.push(tool.route),
                       icon: const Icon(Icons.history_rounded, size: 18),
-                      label: const Text('Today’s history and goal'),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Today’s history and goal'),
+                      ),
                     ),
                     if (_error != null)
                       Padding(

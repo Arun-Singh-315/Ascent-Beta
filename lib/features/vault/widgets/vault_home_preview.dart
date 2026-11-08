@@ -21,48 +21,59 @@ class VaultHomePreview extends ConsumerWidget {
     final items = ref.watch(vaultItemsStreamProvider).value ?? [];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // ── SECTION HEADING (Strict Rule 18 Adherence) ─────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'Vault',
-              style: AscentTextStyles.homeTitle.copyWith(
-                color: g.ink,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+        SizedBox(
+          width: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Text(
+                'Vault',
+                textAlign: TextAlign.center,
+                style: AscentTextStyles.homeTitle.copyWith(
+                  color: g.ink,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                context.push('/vault');
-              },
-              icon: Icon(
-                isUnlocked ? Icons.lock_open_rounded : Icons.shield_outlined,
-                size: 16,
-                color: g.clay,
+              Positioned(
+                right: 0,
+                child: TextButton.icon(
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/vault');
+                  },
+                  icon: Icon(
+                    isUnlocked ? Icons.lock_open_rounded : Icons.shield_outlined,
+                    size: 16,
+                    color: g.clay,
+                  ),
+                  label: Text(
+                    isUnlocked ? 'Open' : 'Unlock',
+                    style: TextStyle(color: g.clay, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
-              label: Text(
-                isUnlocked ? 'Open' : 'Unlock',
-                style: TextStyle(color: g.clay, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
 
         const SizedBox(height: AppSpace.s12),
 
-        // ── UNIFIED GLASS SURFACE ─────────────────────────────────────
+        // ── SASSY TRANSPARENT BORDERED SURFACE ─────────────────────────
         GlassSurface(
           key: const ValueKey('home_vault_card'),
-          borderRadius: BorderRadius.circular(18),
-          padding: const EdgeInsets.all(AppSpace.s16),
-          enableBlur: Theme.of(context).brightness == Brightness.light,
+          borderRadius: BorderRadius.circular(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          fillColor: Colors.transparent,
+          hasShadow: false,
+          enableBlur: false,
+          customBorder: Border.all(
+            color: g.line.withValues(alpha: 0.8),
+            width: 1.0,
+          ),
           onTap: () {
             HapticFeedback.selectionClick();
             context.push('/vault');
@@ -76,61 +87,71 @@ class VaultHomePreview extends ConsumerWidget {
   }
 
   Widget _buildLockedContent(BuildContext context, AscentGlass g, int count) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
-          width: 48,
-          height: 48,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             color: g.clay.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: g.clay.withValues(alpha: 0.30),
+              width: 1.0,
+            ),
           ),
-          child: Icon(Icons.shield_rounded, color: g.clay, size: 24),
-        ),
-        const SizedBox(width: AppSpace.s14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Encrypted & Locked',
-                style: AscentTextStyles.displaySmall.copyWith(
-                  color: g.ink,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                count > 0
-                    ? '$count secure item(s) protected'
-                    : 'Cards, IDs, logins & docs',
-                style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-              ),
-            ],
+          child: Center(
+            child: Icon(Icons.shield_rounded, color: g.clay, size: 26),
           ),
         ),
+        const SizedBox(height: AppSpace.s12),
+        Text(
+          'Private Vault',
+          textAlign: TextAlign.center,
+          style: AscentTextStyles.displaySmall.copyWith(
+            color: g.ink,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          count > 0
+              ? '$count secure item(s) protected'
+              : 'Cards, IDs, logins & private notes',
+          textAlign: TextAlign.center,
+          style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+        ),
+        const SizedBox(height: 14),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          constraints: const BoxConstraints(maxWidth: 240),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: g.fill.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: g.line),
+            color: g.clay.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: g.clay.withValues(alpha: 0.35),
+              width: 0.8,
+            ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.fingerprint_rounded, size: 16, color: g.clay),
-              const SizedBox(width: 4),
-              Text(
-                'Unlock',
-                style: TextStyle(
-                  color: g.clay,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.fingerprint_rounded, size: 16, color: g.clay),
+                const SizedBox(width: 6),
+                Text(
+                  'Unlock Sanctuary',
+                  style: TextStyle(
+                    color: g.clay,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -155,45 +176,43 @@ class VaultHomePreview extends ConsumerWidget {
     final otherCount = count - (cardCount + idCount + loginCount);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: g.sage.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.lock_open_rounded, color: g.sage, size: 22),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: g.sage.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: g.sage.withValues(alpha: 0.35),
+              width: 1.0,
             ),
-            const SizedBox(width: AppSpace.s12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Vault Unlocked',
-                    style: AscentTextStyles.displaySmall.copyWith(
-                      color: g.ink,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$count items accessible in secure session',
-                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
+          child: Center(
+            child: Icon(Icons.lock_open_rounded, color: g.sage, size: 26),
+          ),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        Text(
+          'Vault Unlocked',
+          textAlign: TextAlign.center,
+          style: AscentTextStyles.displaySmall.copyWith(
+            color: g.ink,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$count items accessible in secure session',
+          textAlign: TextAlign.center,
+          style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
         ),
         if (count > 0) ...[
           const SizedBox(height: AppSpace.s12),
           Wrap(
+            alignment: WrapAlignment.center,
             spacing: 6,
             runSpacing: 6,
             children: [

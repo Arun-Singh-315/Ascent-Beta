@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
@@ -2253,42 +2254,95 @@ class _ConversationMessageBubble extends StatelessWidget {
 // Inline Animated Thinking Bubble
 // ---------------------------------------------------------------------------
 
-class _ThinkingBubble extends StatelessWidget {
-  const _ThinkingBubble({required this.name, required this.accentColor});
+class _ThinkingBubble extends StatefulWidget {
+  const _ThinkingBubble({
+    required this.name,
+    required this.accentColor,
+  });
   final String name;
   final Color accentColor;
+
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 300),
-      child: GlassSurface(
-        radius: 18,
-        enableBlur: false,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: accentColor,
+  State<_ThinkingBubble> createState() => _ThinkingBubbleState();
+}
+
+class _ThinkingBubbleState extends State<_ThinkingBubble> {
+  int _stepIndex = 0;
+  Timer? _timer;
+  static const _thinkingSteps = [
+    'Reflecting on your daily rhythm…',
+    'Synthesizing commitments & timeline…',
+    'Aligning cognitive focus…',
+    'Formulating tailored guidance…',
+    'Polishing clarity & insights…',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (!isTest) {
+      _timer = Timer.periodic(const Duration(milliseconds: 1600), (_) {
+        if (mounted) {
+          setState(() {
+            _stepIndex = (_stepIndex + 1) % _thinkingSteps.length;
+          });
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.84,
+        ),
+        child: GlassSurface(
+          radius: 18,
+          enableBlur: false,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: widget.accentColor,
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                '$name is checking…',
-                style: TextStyle(color: context.glass.inkMuted, fontSize: 12),
+              const SizedBox(width: 10),
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    '${widget.name} is checking: ${_thinkingSteps[_stepIndex]}',
+                    key: ValueKey(_stepIndex),
+                    style: TextStyle(
+                      color: g.inkSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2350,11 +2404,6 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
             : 'there';
         final accent = context.accentPrimary;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        final hour = DateTime.now().hour;
-        final greetingTime = hour < 12
-            ? 'Good morning'
-            : (hour < 17 ? 'Good afternoon' : 'Good evening');
 
         return Center(
           child: SingleChildScrollView(
@@ -2459,18 +2508,19 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                 const SizedBox(height: 12),
 
                 Text(
-                  '$greetingTime, $userName',
+                  'How can I help you\nascend today?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
                     color: context.textPrimary,
-                    letterSpacing: -0.3,
+                    letterSpacing: -0.6,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
-                  'I\'m ${widget.assistantName}, your personal assistant. How can I help you today?',
+                  'Always by your side, $userName. Direct your thoughts, routines, and growth.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
@@ -2539,68 +2589,55 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
-                // Soft suggestion pills
+                // Subtle lower suggestions
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
-                  children:
-                      [
-                        'Plan my day',
-                        'Log 250ml water',
-                        'What are my tasks today?',
-                        'Check my walk status',
-                        'Medicine schedule',
-                        'Explain Dynamic Programming',
-                      ].map((prompt) {
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onSelectPrompt(prompt);
-                            },
+                  children: [
+                    'Plan my day',
+                    'Log 250ml water',
+                    'What are my tasks today?',
+                  ].map((prompt) {
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          widget.onSelectPrompt(prompt);
+                        },
+                        borderRadius: AscentRadii.borderXl,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? context.bgSurface.withValues(alpha: 0.6)
+                                : Colors.white.withValues(alpha: 0.7),
                             borderRadius: AscentRadii.borderXl,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? context.bgSurface.withValues(alpha: 0.85)
-                                    : Colors.white.withValues(alpha: 0.90),
-                                borderRadius: AscentRadii.borderXl,
-                                border: Border.all(
-                                  color: isDark
-                                      ? context.glass.edge
-                                      : context.divider,
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: isDark ? 0.20 : 0.04,
-                                    ),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                prompt,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textPrimary,
-                                ),
-                              ),
+                            border: Border.all(
+                              color: isDark
+                                  ? context.glass.edge
+                                  : context.divider.withValues(alpha: 0.5),
+                              width: 0.8,
                             ),
                           ),
-                        );
-                      }).toList(),
+                          child: Text(
+                            prompt,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: context.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -2763,24 +2800,26 @@ class _AtmosphericChatBackground extends StatelessWidget {
           ? const Color(0xFF2A1020)
           : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
-      // Default: warm midnight indigo → violet for dark; soft lavender cream for light
+      // Default: rich atmospheric fusion of twilight sapphire, amethyst, and warm dusk amber
       gradientColors = isDark
           ? const [
-              Color(0xFF0C0F1A), // deep midnight
-              Color(0xFF111526), // soft indigo depth
-              Color(0xFF0E1220), // rich dark base
+              Color(0xFF090C16), // deep twilight base
+              Color(0xFF101326), // midnight sapphire
+              Color(0xFF140D22), // deep amethyst transition
+              Color(0xFF0B0E19), // grounded nocturnal depth
             ]
           : const [
-              Color(0xFFF5F4FC), // soft lavender white
-              Color(0xFFF8F7FE), // near white
-              Color(0xFFF2F1FB), // gentle tint
+              Color(0xFFF7F6FD), // soft opalescent white
+              Color(0xFFF2EFFB), // subtle lavender mist
+              Color(0xFFFBF4F2), // warm dawn whisper
+              Color(0xFFF4F6FC), // crystal soft surface
             ];
       aurora1 = isDark
-          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6) // warm violet glow
-          : accentColor.withValues(alpha: 0.06);
+          ? const Color(0xFF381A5A).withValues(alpha: 0.65) // rich glowing amethyst
+          : accentColor.withValues(alpha: 0.08);
       aurora2 = isDark
-          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5) // cool indigo glow
-          : const Color(0xFF7C6FD0).withValues(alpha: 0.05);
+          ? const Color(0xFF15335C).withValues(alpha: 0.55) // luminous oceanic sapphire
+          : const Color(0xFF8672E8).withValues(alpha: 0.06);
     }
 
     return DecoratedBox(

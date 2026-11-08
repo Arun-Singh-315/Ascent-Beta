@@ -50,73 +50,118 @@ class LearningHubCard extends ConsumerWidget {
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         SizedBox(
           width: double.infinity,
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 16,
-            runSpacing: 4,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
               Text(
                 'Growth',
+                textAlign: TextAlign.center,
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              TextButton(
-                onPressed: () => context.push('/study-plan'),
-                child: Text(hasStarted ? 'Switch course' : 'Catalog'),
+              Positioned(
+                right: 0,
+                child: TextButton(
+                  onPressed: () => context.push('/study-plan'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: g.clay,
+                  ),
+                  child: Text(hasStarted ? 'Switch course' : 'Catalog'),
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 8),
         HomeOutlineSurface(
-          radius: 22,
-          padding: const EdgeInsets.all(16),
+          radius: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Tooltip(
                 message: hasStarted ? active.title : 'Explore learning courses',
                 child: InkWell(
                   onTap: openPlayer,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
                     width: double.infinity,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                hasStarted
-                                    ? course.title
-                                    : 'Pick your next course',
-                                key: const ValueKey('home_learning_course'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: g.inkSecondary,
-                                  fontSize: 12,
+                        if (!hasStarted) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: g.clay.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: g.clay.withValues(alpha: 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome_rounded,
+                                  size: 13,
+                                  color: g.clay,
                                 ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'STUDIO ASCENT',
+                                  style: TextStyle(
+                                    color: g.clay,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          children: [
+                            Text(
+                              hasStarted
+                                  ? course.title
+                                  : 'Pick your next course',
+                              key: const ValueKey('home_learning_course'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: g.inkSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             if (hasStarted) ...[
-                              const SizedBox(width: 8),
                               Text(
                                 '${position + 1}/${lectures.length}',
                                 key: const ValueKey('home_learning_position'),
+                                textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: g.clay,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
@@ -128,9 +173,10 @@ class LearningHubCard extends ConsumerWidget {
                           key: const ValueKey('home_learning_title'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             color: g.ink,
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -142,11 +188,11 @@ class LearningHubCard extends ConsumerWidget {
               if (hasStarted) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(6),
                   child: Container(
                     decoration: BoxDecoration(
                       color: g.track,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: g.line.withValues(alpha: 0.5),
                         width: 0.5,
@@ -169,7 +215,7 @@ class LearningHubCard extends ConsumerWidget {
                       state.formattedElapsed,
                       style: TextStyle(
                         color: g.ink,
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -185,6 +231,7 @@ class LearningHubCard extends ConsumerWidget {
               ],
               const SizedBox(height: 12),
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
                     child: FilledButton(
@@ -214,11 +261,11 @@ class LearningHubCard extends ConsumerWidget {
                               ),
                         minimumSize: const Size(0, 44),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
+                          horizontal: 16,
                           vertical: 10,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: Text(

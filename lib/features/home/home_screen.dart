@@ -29,6 +29,7 @@ import 'widgets/home_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
+import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/smart_catch_up_banner.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/thought_wall_home_preview.dart';
@@ -368,20 +369,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     }
     if (layout.visible.contains('vault') &&
         !layout.shortcuts.contains('vault')) {
-      modules.add(
-        spaced(
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.shield_outlined,
-              color: context.glass.inkSecondary,
-            ),
-            title: const Text('Your private vault'),
-            trailing: const Icon(Icons.arrow_forward_rounded, size: 20),
-            onTap: () => context.push('/vault'),
-          ),
-        ),
-      );
+      modules.add(spaced(const VaultHomePreview()));
     }
     if (layout.visible.contains('money')) {
       modules.add(
