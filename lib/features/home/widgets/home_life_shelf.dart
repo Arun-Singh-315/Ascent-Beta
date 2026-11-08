@@ -1,4 +1,3 @@
-import 'home_day_design.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'home_shortcut_summary.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +40,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
   int _amount = 250;
   bool _saving = false;
   String? _error;
+
   Future<void> _logWater() async {
     if (_saving) return;
     setState(() {
@@ -92,6 +92,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
     final doseState = ref.watch(todayMedicineLogsStreamProvider);
     final doses = doseState.value ?? [];
     final challenge = ref.watch(activeChallengeProvider).value;
+
     final tools = [
       if (layout.tools.contains('hydration'))
         _RhythmTool(
@@ -152,8 +153,9 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           '/momentum',
         ),
     ];
+
     if (tools.isEmpty) return const SizedBox.shrink();
-    final selected = tools.where((tool) => tool.id == _expanded).firstOrNull;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: AnimatedSize(
@@ -164,15 +166,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         alignment: Alignment.topCenter,
         child: Container(
           key: const ValueKey('home_life_shelf_enclosure'),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: HomeDayDesign.line(dark),
-              width: 0.8,
-            ),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -186,8 +179,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                       children: [
                         Text(
                           'Daily rhythm',
-                          style: AscentTextStyles.sectionHeading.copyWith(
+                          style: AscentTextStyles.homeTitle.copyWith(
                             color: g.ink,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -195,6 +190,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                           'Today',
                           style: AscentTextStyles.bodySmall.copyWith(
                             color: g.inkSecondary,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -203,15 +199,15 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 3.5,
+                      horizontal: 10,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: g.clay.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: g.clay.withValues(alpha: 0.25),
-                        width: 0.75,
+                        width: 0.8,
                       ),
                     ),
                     child: Text(
@@ -219,39 +215,26 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                       style: TextStyle(
                         color: g.clay,
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final columns =
-                      constraints.maxWidth < 280 ||
-                          MediaQuery.textScalerOf(context).scale(14) > 23
-                      ? 1
-                      : 2;
-                  final width =
-                      (constraints.maxWidth - (columns - 1) * 10) / columns;
-                  final ordered = tools;
-                  return Wrap(
-                    key: const ValueKey('home_life_shelf'),
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (final tool in ordered)
-                        SizedBox(
-                          key: ValueKey('rhythm_card_${tool.id}'),
-                          width: tool.id == selected?.id
-                              ? constraints.maxWidth
-                              : width,
-                          child: _tile(tool, dark, g, water, goal),
-                        ),
-                    ],
-                  );
-                },
+              Column(
+                key: const ValueKey('home_life_shelf'),
+                children: [
+                  for (final tool in tools)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: SizedBox(
+                        key: ValueKey('rhythm_card_${tool.id}'),
+                        width: double.infinity,
+                        child: _tile(tool, dark, g, water, goal),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -286,23 +269,20 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
       progress = (water / goal).clamp(0.0, 1.0);
     }
 
+    final summary = ref
+        .watch(homeShortcutSummaryProvider(tool.id))
+        .replaceFirst(RegExp(r' today$'), '');
+
     return Container(
       decoration: BoxDecoration(
-        color: dark
-            ? Color.alphaBlend(tool.tint.withValues(alpha: 0.12), g.elevated)
-            : Color.alphaBlend(tool.tint.withValues(alpha: 0.07), Colors.white),
-        borderRadius: BorderRadius.circular(22),
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: selected ? (dark ? blue : tool.tint) : g.line.withValues(alpha: 0.55),
-          width: selected ? 1.4 : 0.8,
+          color: selected
+              ? (dark ? blue : tool.tint)
+              : g.line.withValues(alpha: 0.75),
+          width: selected ? 1.4 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: tool.tint.withValues(alpha: dark ? 0.08 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -316,17 +296,18 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
               key: ValueKey('home_routine_${tool.id}'),
               onTap: _saving ? null : () => _toggle(tool.id),
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
-                          width: 36,
-                          height: 36,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: tool.tint.withValues(alpha: dark ? 0.22 : 0.14),
+                            color: tool.tint.withValues(alpha: dark ? 0.20 : 0.12),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: tool.tint.withValues(alpha: 0.35),
@@ -336,54 +317,74 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                           child: Center(
                             child: Icon(
                               tool.icon,
-                              size: 19,
+                              size: 22,
                               color: tool.tint,
                             ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: 6,
+                                children: [
+                                  Text(
+                                    tool.title,
+                                    style: TextStyle(
+                                      color: g.inkSecondary,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  if (tool.id == 'hydration' && goal != null && goal > 0)
+                                    Text(
+                                      '· Goal $goal ml',
+                                      style: TextStyle(
+                                        color: g.inkMuted,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                summary,
+                                key: ValueKey('rhythm_summary_${tool.id}'),
+                                style: AscentTextStyles.cardTitle.copyWith(
+                                  color: g.ink,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         if (selected)
                           IconButton(
                             tooltip: 'Close details',
                             onPressed: _saving ? null : () => _toggle(tool.id),
                             icon: Icon(
                               Icons.keyboard_arrow_up_rounded,
+                              size: 22,
                               color: blue,
                             ),
                           )
                         else
                           Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            size: 18,
+                            size: 22,
                             color: g.inkSecondary,
                           ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      tool.title,
-                      style: TextStyle(
-                        color: g.inkSecondary,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      ref
-                          .watch(homeShortcutSummaryProvider(tool.id))
-                          .replaceFirst(RegExp(r' today$'), ''),
-                      key: ValueKey('rhythm_summary_${tool.id}'),
-                      style: AscentTextStyles.cardTitle.copyWith(
-                        color: g.ink,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
                     if (progress != null && !selected) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
@@ -402,7 +403,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           if (selected)
             Padding(
               key: ValueKey('rhythm_detail_${tool.id}'),
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

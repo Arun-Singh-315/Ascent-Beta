@@ -264,7 +264,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                               const SizedBox(width: 8),
                               Flexible(
                                 child: Text(
-                                  'Happy ${todayFestival.name}, ${name.isNotEmpty ? name.split(' ').first : 'friend'}! ✨',
+                                  'Happy ${todayFestival.name}! ✨',
                                   style: AscentTextStyles.labelMedium.copyWith(
                                     color: dark
                                         ? const Color(0xFFFDE68A)
