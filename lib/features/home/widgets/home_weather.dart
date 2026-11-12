@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/home_design.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 
@@ -72,35 +73,80 @@ class HomeWeather extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(homeWeatherProvider);
     final current = state.value?['current'] as Map<String, dynamic>?;
-    final design = HomeDesign.of(context);
-    return TextButton.icon(
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    final city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first;
+    final String label;
+    if (current != null) {
+      final temp = (current['temperature_2m'] as num).round();
+      final cityName = city ?? weatherDescription((current['weather_code'] as num).toInt());
+      label = '$temp° · $cityName';
+    } else if (state.hasError) {
+      label = 'Weather unavailable · Retry';
+    } else if (state.isLoading) {
+      label = 'Loading weather…';
+    } else {
+      label = 'Weather · Choose city';
+    }
+
+    final weatherCode = current != null ? (current['weather_code'] as num).toInt() : 0;
+    final IconData iconData;
+    if (current == null) {
+      iconData = Icons.wb_sunny_outlined;
+    } else if (weatherCode < 3) {
+      iconData = Icons.wb_sunny_outlined;
+    } else if (weatherCode >= 51 && weatherCode <= 67) {
+      iconData = Icons.water_drop_outlined;
+    } else {
+      iconData = Icons.cloud_outlined;
+    }
+
+    const blueAction = Color(0xFF2563EB);
+    const blueBorder = Color(0xFF60A5FA);
+
+    return GestureDetector(
       key: const ValueKey('home_weather'),
-      style: TextButton.styleFrom(
-        foregroundColor: design.action,
-        padding: EdgeInsets.zero,
-        alignment: Alignment.centerLeft,
-      ),
-      icon: Icon(
-        current == null
-            ? Icons.cloud_outlined
-            : (current['weather_code'] as num) < 3
-            ? Icons.wb_sunny_outlined
-            : Icons.cloud_outlined,
-        size: 19,
-      ),
-      label: Text(
-        current != null
-            ? '${(current['temperature_2m'] as num).round()}° · ${ref.read(sharedPreferencesProvider).getString('weather_city')?.split(',').first ?? weatherDescription((current['weather_code'] as num).toInt())}'
-            : state.hasError
-            ? 'Weather unavailable · Retry'
-            : state.isLoading
-            ? 'Loading weather…'
-            : 'Weather · Choose city',
-        style: HomeType.supporting,
-      ),
-      onPressed: () => showAscentSheet(
-        context: context,
-        builder: (_) => const _WeatherSheet(),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        showAscentSheet(
+          context: context,
+          builder: (_) => const _WeatherSheet(),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: blueAction.withValues(alpha: dark ? 0.12 : 0.06),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: blueBorder.withValues(alpha: dark ? 0.6 : 0.7),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              iconData,
+              size: 16,
+              color: blueAction,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: blueAction,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -386,9 +432,22 @@ class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
             const LinearProgressIndicator(),
             const SizedBox(height: 16),
           ],
+          if (weather.hasError) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Weather could not load. Check your connection and retry.',
+                style: TextStyle(
+                  color: Colors.red.shade400,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
 
           Text(
-            'Quick choose city',
+            'Choose your city',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,

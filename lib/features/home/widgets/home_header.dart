@@ -57,9 +57,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
     final secondary = design.secondaryText;
     final name = widget.profile?.name.trim() ?? '';
     final dob = widget.profile?.dateOfBirth;
-    final sign = dob == null
+    final sign = widget.profile == null
         ? null
-        : const CosmicProfileService().getZodiac(dob);
+        : (dob == null
+            ? const CosmicProfileService().getZodiac(DateTime(2000, 6, 1))
+            : const CosmicProfileService().getZodiac(dob));
     final streak = math.max(
       ref.watch(studyStreakProvider).displayStreakDays,
       ref.watch(currentStreakStreamProvider).value ?? 0,
@@ -99,53 +101,91 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
           tooltip: dark ? 'Switch to Day mode' : 'Switch to Night mode',
           icon: Icon(
             dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-            size: 22,
+            size: 21,
           ),
           onTap: () => ref
               .read(themeModeProvider.notifier)
               .setThemeMode(dark ? ThemeMode.light : ThemeMode.dark),
         ),
         const SizedBox(width: 10),
-        circle(
-          key: const ValueKey('home_profile_button'),
-          tooltip: 'Profile and settings',
-          icon: Text(
-            name.isEmpty
-                ? 'A'
-                : String.fromCharCode(name.runes.first).toUpperCase(),
-            style: AscentTextStyles.cardTitle.copyWith(
-              color: ink,
-              fontSize: 17,
+        Tooltip(
+          message: 'Profile and settings',
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              key: const ValueKey('home_profile_button'),
+              borderRadius: BorderRadius.circular(24),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/settings');
+              },
+              child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: dark ? const Color(0xFFF3F4F6) : const Color(0xFF0F172A),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  name.isEmpty
+                      ? 'A'
+                      : String.fromCharCode(name.runes.first).toUpperCase(),
+                  style: AscentTextStyles.cardTitle.copyWith(
+                    color: dark ? const Color(0xFF0F172A) : Colors.white,
+                    fontSize: 16.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
           ),
-          onTap: () => context.push('/settings'),
         ),
       ],
     );
     final date = Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
         decoration: BoxDecoration(
-          color: design.surface.withValues(alpha: .65),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: design.separator, width: .8),
+          color: design.surface.withValues(alpha: .55),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: design.separator.withValues(alpha: 0.9),
+            width: 1.1,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.calendar_today_rounded, size: 12, color: design.secondaryText),
-            const SizedBox(width: 6),
-            Text(
-              DateFormat('EEE, d MMM').format(now),
-              key: const ValueKey('home_date'),
-              style: AscentTextStyles.body.copyWith(
-                color: ink,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_today_rounded,
+                size: 15,
+                color: ink.withValues(alpha: 0.85),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                DateFormat('EEE, d MMM').format(now),
+                key: const ValueKey('home_date'),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: ink,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -299,61 +339,82 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                           ),
                         ),
                       ),
-                    if (sign != null || showStreak)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Wrap(
-                          spacing: 14,
-                          runSpacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            if (sign != null)
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 22,
-                                    height: 22,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: design.learningInk,
-                                    ),
-                                    child: Text(
-                                      sign.symbol,
-                                      textScaler: TextScaler.noScaling,
-                                      style: TextStyle(
-                                        fontFamily: 'AscentZodiacSymbols',
-                                        fontSize: 15,
-                                        color: design.canvas,
+                    // Side-by-side Rashi and Weather chips
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (sign != null)
+                            Container(
+                              key: const ValueKey('home_rashi'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: design.surface.withValues(alpha: .55),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: design.separator.withValues(alpha: 0.9),
+                                  width: 1.1,
+                                ),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: dark
+                                            ? Colors.white.withValues(alpha: 0.18)
+                                            : const Color(0xFF4A3E36),
+                                      ),
+                                      child: Text(
+                                        sign.symbol,
+                                        textScaler: TextScaler.noScaling,
+                                        style: const TextStyle(
+                                          fontFamily: 'AscentZodiacSymbols',
+                                          fontSize: 13.5,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
+                                    const SizedBox(width: 8),
+                                    Text(
                                       '${sign.name} · ${sign.vedicRashi} · ${sign.element.label}',
-                                      key: const ValueKey('home_rashi'),
-                                      style: AscentTextStyles.labelMedium
-                                          .copyWith(
-                                            color: ink,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 12,
-                                          ),
+                                      style: AscentTextStyles.bodyMedium.copyWith(
+                                        color: ink,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            if (showStreak)
-                              Text(
+                            ),
+                          const HomeWeather(),
+                          if (showStreak)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 2),
+                              child: Text(
                                 '$streak day streak',
                                 style: AscentTextStyles.labelSmall.copyWith(
                                   color: secondary,
                                 ),
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
                       ),
+                    ),
                     if (todayFestival != null)
                       Text(
                         todayFestival.thought,
@@ -375,8 +436,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 6),
-                    const HomeWeather(),
                   ],
                 ),
               ),
