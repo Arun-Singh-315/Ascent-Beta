@@ -27,6 +27,9 @@ class AscentScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final FloatingActionButtonLocation? floatingActionButtonLocation;
   final Widget? bottomNavigationBar;
+
+  /// A flat canvas shared by the page and app bar when supplied.
+  final Color? backgroundColor;
   final Color? glow1;
   final Color? glow2;
   final PreferredSizeWidget? bottom;
@@ -47,6 +50,7 @@ class AscentScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.floatingActionButtonLocation,
     this.bottomNavigationBar,
+    this.backgroundColor,
     this.glow1,
     this.glow2,
     this.bottom,
@@ -60,7 +64,7 @@ class AscentScaffold extends StatelessWidget {
     final g = context.glass;
 
     return Scaffold(
-      backgroundColor: g.bg,
+      backgroundColor: backgroundColor ?? g.bg,
       extendBodyBehindAppBar: false,
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
@@ -71,6 +75,7 @@ class AscentScaffold extends StatelessWidget {
               leading != null ||
               (actions != null && actions!.isNotEmpty))
           ? AscentAppBar(
+              backgroundColor: backgroundColor,
               title: title,
               titleWidget: titleWidget,
               subtitle: subtitle,
@@ -98,11 +103,16 @@ class AscentScaffold extends StatelessWidget {
       body: SafeArea(
         top: safeAreaTop && (title == null && titleWidget == null),
         bottom: safeAreaBottom,
-        child: AscentAtmosphereBackground(
-          glow1: glow1,
-          glow2: glow2,
-          child: FeatureGuideHost(feature: title, child: body),
-        ),
+        child: backgroundColor != null
+            ? ColoredBox(
+                color: backgroundColor!,
+                child: FeatureGuideHost(feature: title, child: body),
+              )
+            : AscentAtmosphereBackground(
+                glow1: glow1,
+                glow2: glow2,
+                child: FeatureGuideHost(feature: title, child: body),
+              ),
       ),
     );
   }
@@ -111,6 +121,7 @@ class AscentScaffold extends StatelessWidget {
 /// A liquid glass app bar that provides a frosted translucent look,
 /// tactile back pill button, and unified typography.
 class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final Color? backgroundColor;
   final String? title;
   final Widget? titleWidget;
   final String? subtitle;
@@ -122,6 +133,7 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const AscentAppBar({
     super.key,
+    this.backgroundColor,
     this.title,
     this.titleWidget,
     this.subtitle,
@@ -182,10 +194,14 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ? SystemUiOverlayStyle.light
                   : SystemUiOverlayStyle.dark)
               .copyWith(statusBarColor: Colors.transparent),
-      backgroundColor: (Theme.of(context).brightness == Brightness.dark)
-          ? g.bg.withValues(alpha: .85)
-          : Colors.transparent,
-      flexibleSpace: (Theme.of(context).brightness == Brightness.dark)
+      backgroundColor:
+          backgroundColor ??
+          ((Theme.of(context).brightness == Brightness.dark)
+              ? g.bg.withValues(alpha: .85)
+              : Colors.transparent),
+      flexibleSpace:
+          backgroundColor != null ||
+              (Theme.of(context).brightness == Brightness.dark)
           ? null
           : const GlassSurface(
               enableBlur: true,

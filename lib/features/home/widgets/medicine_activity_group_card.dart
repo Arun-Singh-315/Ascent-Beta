@@ -1,4 +1,5 @@
 import 'activity_row_item.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -185,16 +186,16 @@ class _MedicineActivityGroupCardState
                                 widget.dosage.isNotEmpty
                                     ? '${widget.medicineName} (${widget.dosage})'
                                     : widget.medicineName,
-                                style:
-                                    AppTypography.thoughtContent(
-                                      color: allDone ? g.inkMuted : g.ink,
-                                    ).copyWith(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      decoration: allDone
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                    ),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.30,
+                                  letterSpacing: -0.2,
+                                  color: allDone ? g.inkMuted : g.ink,
+                                  decoration: allDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

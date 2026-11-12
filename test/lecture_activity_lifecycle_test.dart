@@ -383,8 +383,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        if (find.text('Delete').evaluate().isNotEmpty) {
-          await tester.tap(find.text('Delete'));
+        if (find.text('Remove').evaluate().isNotEmpty) {
+          await tester.tap(find.text('Remove'));
           await tester.pumpAndSettle();
         }
 

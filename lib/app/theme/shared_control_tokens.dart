@@ -9,6 +9,8 @@ class SharedControlColors {
   // grey = structure/disabled. Importance is a user-selected blue star.
   static const actionBlue = Color(0xFF006FE6);
   static const actionBlueDark = Color(0xFF64ACFF);
+  // Blue ink on a tinted action surface needs more contrast than an accent dot.
+  static const actionBlueInkLight = Color(0xFF005AC8);
   static const dueRed = Color(0xFFD92D20);
   static const dueRedDark = Color(0xFFFF6961);
   static const neutralFillLight = Color(0xFFF2F2F7);

@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 
-import '../../app/theme/text_styles.dart';
+import '../../app/theme/glass_theme.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -21,7 +23,7 @@ import '../../shared/widgets/ascent_logo.dart';
 // ---------------------------------------------------------------------------
 
 class OnboardingDraftState {
-  final int stepIndex; // 0: Vision, 1: Sanctuary Setup, 2: Sealed
+  final int stepIndex; // 0: Vision & Welcome, 1: Personalize Space
   final String name;
   final String targetRole; // Used for focus / intention
   final List<String> targetCompanies; // Kept for backward compatibility
@@ -203,7 +205,7 @@ final onboardingProvider =
       OnboardingNotifier.new,
     );
 
-/// A compact welcome followed by the two required personal details.
+/// Ascent Onboarding Experience — Calm, personal, subtle glass design.
 class OnboardingShell extends StatelessWidget {
   const OnboardingShell({super.key});
   @override
@@ -224,8 +226,7 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
   final _form = GlobalKey<FormState>();
   bool _showDobError = false;
   String? _error;
-  static const ink = Color(0xFF20232A);
-  static const muted = Color(0xFF606872);
+
   @override
   void dispose() {
     _name.dispose();
@@ -238,7 +239,7 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
     final state = ref.read(onboardingProvider);
     final value = await showDatePicker(
       context: context,
-      helpText: 'Your date of birth',
+      helpText: 'Select your birth date',
       initialDate:
           state.dateOfBirth ?? DateTime(now.year - 22, now.month, now.day),
       firstDate: DateTime(1900),
@@ -267,33 +268,25 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
     setState(() => _showDobError = state.dateOfBirth == null);
     if (!valid || state.dateOfBirth == null) return;
     FocusScope.of(context).unfocus();
-    notifier.updateNameRole(_name.text.trim(), 'Mindful Growth');
+    notifier.updateNameRole(_name.text.trim(), state.focusArea);
     final saved = await notifier.submitAndSeedPlan(context, ref);
     if (!mounted) return;
     if (saved) {
       context.go(NotificationService.consumePendingDestination() ?? '/home');
     } else {
       setState(
-        () => _error = 'Could not save. Your details are still here—try again.',
+        () => _error = 'Could not save. Your details are preserved—please try again.',
       );
     }
   }
 
-  Widget _action(OnboardingDraftState state, String label) =>
-      AscentButton.primary(
-        key: const ValueKey('onboarding_next'),
-        label: label,
-        icon: Icons.arrow_forward_rounded,
-        expanded: false,
-        compact: true,
-        loading: state.isSubmitting,
-        onPressed: state.isSubmitting ? null : _continue,
-      );
-
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(onboardingProvider);
     final first = state.stepIndex == 0;
+
     return PopScope(
       canPop: first,
       onPopInvokedWithResult: (didPop, _) {
@@ -302,72 +295,151 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFCF8),
-        body: DecoratedBox(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/welcome_horizon.png'),
-              fit: BoxFit.cover,
-              alignment: Alignment.bottomCenter,
-            ),
+        backgroundColor: isDark ? const Color(0xFF0F141C) : const Color(0xFFF7F9FC),
+        body: Container(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFFFCF8), Color(0xFFF0F5F4), Color(0xFFF9EEE4)],
+              colors: isDark
+                  ? const [
+                      Color(0xFF0C1017),
+                      Color(0xFF131822),
+                      Color(0xFF0F141D),
+                    ]
+                  : const [
+                      Color(0xFFF9FAFC),
+                      Color(0xFFF0F4F8),
+                      Color(0xFFE9F0F6),
+                    ],
             ),
           ),
           child: SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
+                constraints: const BoxConstraints(maxWidth: 480),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          if (!first)
-                            IconButton(
-                              tooltip: 'Back',
-                              onPressed: state.isSubmitting
-                                  ? null
-                                  : () => ref
-                                        .read(onboardingProvider.notifier)
-                                        .setStep(0),
-                              icon: const Icon(Icons.arrow_back_rounded),
-                            )
-                          else
-                            const AscentLogo(size: 28),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Ascent',
-                            style: AscentTextStyles.cardTitle.copyWith(
-                              color: ink,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (MediaQuery.textScalerOf(context).scale(14) < 21)
-                            Text(
-                              first ? 'WELCOME' : 'MAKE IT YOURS',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: muted,
-                                letterSpacing: 1,
+                      // Navigation & Step Header Bar
+                      SizedBox(
+                        width: double.infinity,
+                        child: Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (!first)
+                              InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: state.isSubmitting
+                                    ? null
+                                    : () {
+                                        HapticFeedback.lightImpact();
+                                        ref.read(onboardingProvider.notifier).setStep(0);
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? g.surface : Colors.white.withValues(alpha: 0.8),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: g.line.withValues(alpha: 0.3), width: 1),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.arrow_back_rounded, size: 14, color: g.ink),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Back',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: g.ink,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            else
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const AscentLogo(size: 24),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Ascent',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.3,
+                                      color: g.ink,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                            // Subtle Stage Indicator Capsule
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                              decoration: BoxDecoration(
+                                color: isDark ? g.surface : Colors.white.withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: g.line.withValues(alpha: 0.3),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: first ? 14 : 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(3),
+                                      color: first ? context.accentPrimary : g.inkMuted.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Container(
+                                    width: !first ? 14 : 6,
+                                    height: 6,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(3),
+                                      color: !first ? context.accentPrimary : g.inkMuted.withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    first ? '01 Vision' : '02 Identity',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: g.inkSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 30),
+
+                      const SizedBox(height: 24),
+
+                      // Smooth Card Transition
                       AnimatedSwitcher(
                         duration: Duration(
-                          milliseconds: MediaQuery.disableAnimationsOf(context)
-                              ? 0
-                              : 280,
+                          milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 300,
                         ),
-                        child: first ? _intro(state) : _personalize(state),
+                        child: first ? _buildVisionCard(context, state) : _buildPersonalizeCard(context, state),
                       ),
                     ],
                   ),
@@ -380,221 +452,479 @@ class _WelcomeFlowState extends ConsumerState<_WelcomeFlow> {
     );
   }
 
-  Widget _intro(OnboardingDraftState state) => Column(
-    key: const ValueKey('welcome_intro'),
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'A little more room\nfor your day.',
-        style: AscentTextStyles.homeTitle.copyWith(
-          color: ink,
-          fontSize: 32,
-          height: 1.15,
-          letterSpacing: -1,
+  // ── Step 0: The Vision Card ────────────────────────────────────────────────
+  Widget _buildVisionCard(BuildContext context, OnboardingDraftState state) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = context.accentPrimary;
+
+    return Container(
+      key: const ValueKey('welcome_intro'),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? g.surface.withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: g.line.withValues(alpha: isDark ? 0.35 : 0.22),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      const SizedBox(height: 12),
-      Text(
-        'Plans, thoughts, and everyday rituals. Together.',
-        style: AscentTextStyles.body.copyWith(color: muted),
-      ),
-      const SizedBox(height: 22),
-      const _WelcomeArtwork(),
-      const SizedBox(height: 18),
-      Text(
-        'A glimpse of what you can make.',
-        style: AscentTextStyles.labelSmall.copyWith(color: muted),
-      ),
-      const SizedBox(height: 20),
-      _action(state, 'Let’s begin'),
-      const SizedBox(height: 14),
-      Text(
-        'Your space. At your pace.',
-        style: AscentTextStyles.labelSmall.copyWith(color: muted),
-      ),
-    ],
-  );
-  Widget _personalize(OnboardingDraftState state) => Container(
-    key: const ValueKey('welcome_details'),
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .85),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0xFFE1E4E1)),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x0C273B36),
-          blurRadius: 26,
-          offset: Offset(0, 12),
-        ),
-      ],
-    ),
-    child: Form(
-      key: _form,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.wb_twilight_rounded,
-            size: 32,
-            color: Color(0xFFA97D52),
+          // Cute Accent Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: accent.withValues(alpha: 0.25), width: 0.8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome_rounded, size: 12, color: accent),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    'Your Personal Sanctuary',
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: accent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 14),
+
           Text(
-            'Make it yours.',
-            style: AscentTextStyles.homeTitle.copyWith(
-              fontSize: 28,
-              color: ink,
+            'A quiet space for your mind & daily rhythm.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.6,
+              color: g.ink,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Your name for a warm welcome. Your birthday for your Rashi.',
-            style: AscentTextStyles.body.copyWith(color: muted),
-          ),
-          const SizedBox(height: 24),
-          TextFormField(
-            key: const ValueKey('onboarding_name'),
-            controller: _name,
-            enabled: !state.isSubmitting,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            autofillHints: const [AutofillHints.name],
-            onFieldSubmitted: (_) => _pickBirthday(),
-            validator: (value) => (value ?? '').trim().runes.length < 2
-                ? 'Enter your name (at least two characters).'
-                : null,
-            decoration: InputDecoration(
-              labelText: 'Your name',
-              hintText: 'What should we call you?',
-              filled: false,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+            'Ascent brings plans, focus, daily routines, and gentle AI companionship together in one calm surface.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
+              height: 1.45,
+              color: g.inkSecondary,
             ),
           ),
-          const SizedBox(height: 16),
-          Semantics(
-            button: true,
-            label: 'Date of birth, required',
-            child: InkWell(
-              key: const ValueKey('onboarding_dob'),
-              onTap: state.isSubmitting ? null : _pickBirthday,
-              borderRadius: BorderRadius.circular(16),
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: 'Date of birth',
-                  errorText: _showDobError
-                      ? 'Choose your date of birth.'
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  suffixIcon: const Icon(
-                    Icons.calendar_month_rounded,
-                    size: 21,
-                  ),
-                ),
-                child: Text(
-                  state.dateOfBirth == null
-                      ? 'Choose your birthday'
-                      : DateFormat.yMMMd().format(state.dateOfBirth!),
-                  style: AscentTextStyles.body.copyWith(
-                    color: state.dateOfBirth == null ? muted : ink,
-                  ),
-                ),
-              ),
+
+          const SizedBox(height: 20),
+
+          // 3 Refined, Subtle Glass Vision Pillars
+          _buildPillarTile(
+            context,
+            icon: Icons.wb_sunny_rounded,
+            tintColor: const Color(0xFFD97706),
+            title: 'Daily Rhythm & Focus',
+            subtitle: 'Dayboard, scheduled activities, and timers designed for flow.',
+          ),
+          const SizedBox(height: 10),
+          _buildPillarTile(
+            context,
+            icon: Icons.school_rounded,
+            tintColor: const Color(0xFF2563EB),
+            title: 'Study & Meal Plans',
+            subtitle: 'Structured syllabus milestones and healthy nutrition routines.',
+          ),
+          const SizedBox(height: 10),
+          _buildPillarTile(
+            context,
+            icon: Icons.favorite_rounded,
+            tintColor: const Color(0xFF059669),
+            title: 'Personal Companion',
+            subtitle: 'Riya AI reflects on your schedule, keeping you on track.',
+          ),
+
+          const SizedBox(height: 24),
+
+          // Integrated Forward Action
+          SizedBox(
+            width: double.infinity,
+            child: AscentButton.primary(
+              key: const ValueKey('onboarding_next'),
+              label: 'Let’s begin',
+              icon: Icons.arrow_forward_rounded,
+              expanded: true,
+              loading: state.isSubmitting,
+              onPressed: _continue,
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Both details are required. You can change them in your profile.',
-            style: AscentTextStyles.labelSmall.copyWith(color: muted),
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Text(
-                _error!,
-                style: const TextStyle(color: SharedControlColors.dueRed),
-              ),
-            ),
-          const SizedBox(height: 22),
-          _action(state, 'Continue'),
-        ],
-      ),
-    ),
-  );
-}
-
-/// Native layered paper, so the illustration stays crisp without an image load.
-class _WelcomeArtwork extends StatelessWidget {
-  const _WelcomeArtwork();
-  @override
-  Widget build(BuildContext context) {
-    final large = MediaQuery.textScalerOf(context).scale(14) > 21;
-    Widget card(IconData icon, String text, Color fill) => Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x192C3C35),
-            blurRadius: 22,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: const Color(0xFF5A7764), size: 24),
-          const SizedBox(width: 12),
-          Expanded(
+          Center(
             child: Text(
-              text,
-              style: AscentTextStyles.cardTitle.copyWith(
-                fontSize: 16,
-                color: const Color(0xFF20232A),
+              'Private, local, and crafted for your peace of mind.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                color: g.inkMuted,
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPillarTile(
+    BuildContext context, {
+    required IconData icon,
+    required Color tintColor,
+    required String title,
+    required String subtitle,
+  }) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      key: const ValueKey('onboarding_preview'),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFDCECF5), Color(0xFFF9E9D9), Color(0xFFE2ECDE)],
+        color: isDark ? g.surface.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.025),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: g.line.withValues(alpha: isDark ? 0.25 : 0.15),
+          width: 0.8,
         ),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Transform.rotate(
-            angle: large ? 0 : -.045,
-            child: card(
-              Icons.radio_button_unchecked_rounded,
-              'Make time for a walk',
-              const Color(0xFFFDFEFC),
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: tintColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: tintColor.withValues(alpha: 0.25), width: 0.8),
+            ),
+            child: Center(
+              child: Icon(icon, size: 16, color: tintColor),
             ),
           ),
-          const SizedBox(height: 18),
-          Transform.rotate(
-            angle: large ? 0 : .045,
-            child: card(
-              Icons.auto_awesome_rounded,
-              'An idea worth keeping',
-              const Color(0xFFFFF8ED),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: g.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    color: g.inkSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ── Step 1: The Personalize Card ───────────────────────────────────────────
+  Widget _buildPersonalizeCard(BuildContext context, OnboardingDraftState state) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = context.accentPrimary;
+
+    return Container(
+      key: const ValueKey('welcome_details'),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? g.surface.withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: g.line.withValues(alpha: isDark ? 0.35 : 0.22),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cute Warm Sun Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.25), width: 0.8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.wb_twilight_rounded, size: 13, color: Color(0xFFD97706)),
+                  const SizedBox(width: 5),
+                  Flexible(
+                    child: Text(
+                      'Step 2 of 2 · Customization',
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFD97706),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            Text(
+              'Make Ascent yours.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.6,
+                color: g.ink,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Your name for warm greetings, and your birthday for calibrated astrological rhythms.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                height: 1.4,
+                color: g.inkSecondary,
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Single-Enclosure Glass Name Input
+            TextFormField(
+              key: const ValueKey('onboarding_name'),
+              controller: _name,
+              enabled: !state.isSubmitting,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              onFieldSubmitted: (_) => _pickBirthday(),
+              validator: (value) => (value ?? '').trim().runes.length < 2
+                  ? 'Enter your name (at least two characters).'
+                  : null,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: g.ink,
+              ),
+              decoration: InputDecoration(
+                labelText: 'Your Name',
+                hintText: 'What should we call you?',
+                labelStyle: GoogleFonts.plusJakartaSans(color: g.inkSecondary, fontSize: 13),
+                hintStyle: GoogleFonts.plusJakartaSans(color: g.inkMuted, fontSize: 13),
+                prefixIcon: Icon(Icons.person_outline_rounded, size: 18, color: accent),
+                filled: true,
+                fillColor: isDark ? g.surface.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.025),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: g.line.withValues(alpha: 0.3), width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: accent, width: 1.5),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: SharedControlColors.dueRed, width: 1),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: SharedControlColors.dueRed, width: 1.5),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Single-Enclosure Glass Date of Birth Selector
+            Semantics(
+              button: true,
+              label: 'Date of birth, required',
+              child: InkWell(
+                key: const ValueKey('onboarding_dob'),
+                onTap: state.isSubmitting ? null : _pickBirthday,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isDark ? g.surface.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.025),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: _showDobError
+                          ? SharedControlColors.dueRed
+                          : g.line.withValues(alpha: 0.3),
+                      width: _showDobError ? 1.2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month_rounded, size: 18, color: accent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Date of Birth',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: g.inkSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              state.dateOfBirth == null
+                                  ? 'Select your birthday'
+                                  : DateFormat.yMMMd().format(state.dateOfBirth!),
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: state.dateOfBirth == null ? g.inkMuted : g.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_drop_down_rounded, color: g.inkMuted, size: 22),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            if (_showDobError) ...[
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Choose your date of birth.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: SharedControlColors.dueRed,
+                  ),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 18),
+
+            // Cute Focus Intention Selector
+            Text(
+              'Primary Focus Area',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: g.ink,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                'Inner Peace',
+                'Focus & Flow',
+                'Study & Growth',
+                'Daily Vitality',
+              ].map((focus) {
+                final isSelected = state.focusArea == focus;
+                return ChoiceChip(
+                  label: Text(
+                    focus,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : g.ink,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedColor: accent,
+                  backgroundColor: isDark ? g.surface : Colors.black.withValues(alpha: 0.04),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  side: BorderSide(
+                    color: isSelected ? accent : g.line.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
+                  onSelected: (val) {
+                    if (val) {
+                      HapticFeedback.selectionClick();
+                      ref.read(onboardingProvider.notifier).setFocusArea(focus);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  _error!,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    color: SharedControlColors.dueRed,
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 24),
+
+            // Integrated Action Footer
+            SizedBox(
+              width: double.infinity,
+              child: AscentButton.primary(
+                key: const ValueKey('onboarding_next'),
+                label: 'Continue',
+                icon: Icons.arrow_forward_rounded,
+                expanded: true,
+                loading: state.isSubmitting,
+                onPressed: state.isSubmitting ? null : _continue,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

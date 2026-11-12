@@ -1,5 +1,6 @@
+import 'widgets/home_module_row.dart';
+import 'widgets/home_content_transition.dart';
 import '../../core/providers/local_day_provider.dart';
-import 'widgets/home_first_moment.dart';
 import 'widgets/home_promise_section.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -26,6 +27,8 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
+import 'widgets/home_compact_header.dart';
+import 'widgets/home_calendar.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
@@ -43,7 +46,11 @@ class HomeScreen extends StatelessWidget {
   final Uri? notificationUri;
 
   @override
-  Widget build(BuildContext context) => Theme(
+  Widget build(BuildContext context) => AnimatedTheme(
+    duration: Duration(
+      milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 320,
+    ),
+    curve: Curves.easeInOutCubic,
     data: HomeTheme.from(Theme.of(context)),
     child: _HomeContent(notificationUri: notificationUri),
   );
@@ -63,6 +70,33 @@ bool _welcomeBackShownThisLaunch = false;
 
 class _HomeScreenState extends ConsumerState<_HomeContent>
     with WidgetsBindingObserver {
+  final _homeScroll = ScrollController();
+  final _headerKey = GlobalKey();
+  final _headerCollapse = ValueNotifier<double>(0);
+  double _expandedHeaderHeight = 280;
+
+  void _updateCompactHeader() {
+    final render = _headerKey.currentContext?.findRenderObject();
+    if (render is RenderBox && render.hasSize) {
+      _expandedHeaderHeight = render.size.height;
+    }
+    if (!_homeScroll.hasClients) return;
+    final start = (_expandedHeaderHeight - 76).clamp(0.0, double.infinity);
+    final value = ((_homeScroll.offset - start) / 64).clamp(0.0, 1.0);
+    if (_headerCollapse.value != value) _headerCollapse.value = value;
+  }
+
+  void _returnToTop() {
+    if (!_homeScroll.hasClients) return;
+    _homeScroll.animateTo(
+      0,
+      duration: Duration(
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 1 : 280,
+      ),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
   bool _entryDialogsReady = false;
@@ -71,6 +105,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _homeScroll.addListener(_updateCompactHeader);
     final daysAway = ref.read(daysSinceLastOpenProvider);
     if (!_welcomeBackShownThisLaunch && daysAway >= 3 && daysAway < 999) {
       _welcomeBackShownThisLaunch = true;
@@ -147,6 +182,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _homeScroll.removeListener(_updateCompactHeader);
+    _homeScroll.dispose();
+    _headerCollapse.dispose();
     super.dispose();
   }
 
@@ -155,6 +193,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final g = context.glass;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateCompactHeader();
+    });
     final layout = ref.watch(homeLayoutProvider);
     ref.watch(localHourProvider);
     ref.watch(challengeProofSyncProvider);
@@ -181,6 +222,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             children: [
               Positioned.fill(
                 child: profileAsync.when(
+                  skipLoadingOnReload: true,
+                  skipLoadingOnRefresh: true,
+                  skipError: true,
                   loading: () => const _HomeLoadingView(),
                   error: (err, _) {
                     debugPrint('Home profile load failed: $err');
@@ -232,6 +276,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                       },
                       color: g.clay,
                       child: ListView(
+                        key: const ValueKey('home_scroll'),
+                        controller: _homeScroll,
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(
                           left: 0,
@@ -240,10 +286,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           bottom: AppSpace.s96,
                         ),
                         children: [
-                          HomeHeader(profile: profile),
-                          const SizedBox(height: 10),
+                          HomeHeader(key: _headerKey, profile: profile),
+                          const SizedBox(height: 12),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                            padding: EdgeInsets.fromLTRB(
+                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
+                              0,
+                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
+                              16,
+                            ),
                             child: HomeShortcutPanel(
                               shortcuts: layout.shortcuts,
                               showReminders: layout.visible.contains(
@@ -251,29 +302,32 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               ),
                             ),
                           ),
-                          if (ref.watch(firstMomentPendingProvider))
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                              child: HomeFirstMoment(),
+                          Padding(
+                            padding: _sectionPadding(context),
+                            child: HomeCalendar(),
+                          ),
+                          if (layout.visible.contains('today'))
+                            Padding(
+                              padding: _sectionPadding(context),
+                              child: ActivityHubCard(
+                                previewLimit: layout.compact.contains('today')
+                                    ? 3
+                                    : 6,
+                              ),
                             ),
-                          if (!ref.watch(firstMomentPendingProvider) &&
-                              layout.visible.contains('mind'))
-                            const Padding(
-                              padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
+                          if (layout.visible.contains('mind'))
+                            Padding(
+                              padding: _sectionPadding(context),
                               child: ThoughtWallHomePreview(
                                 previewLimit: 1,
                                 compact: true,
                               ),
                             ),
-                          if (!ref.watch(firstMomentPendingProvider) &&
-                              layout.visible.contains('today'))
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                              child: ActivityHubCard(
-                                previewLimit: layout.compact.contains('today')
-                                    ? 2
-                                    : 3,
-                              ),
+                          if (layout.visible.contains('life') &&
+                              layout.tools.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: HomeLifeShelf(),
                             ),
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
@@ -286,12 +340,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               child: module,
                             ),
                           ),
-                          if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              child: HomeLifeShelf(),
-                            ),
                           if (_entryDialogsReady &&
                               ref
                                       .read(sharedPreferencesProvider)
@@ -307,6 +355,35 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               onAction: () => context.push('/more'),
                             ),
                         ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _headerCollapse,
+                  builder: (context, value, _) {
+                    if (value <= 0 || profileAsync.value == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return IgnorePointer(
+                      ignoring: value < .8,
+                      child: ExcludeSemantics(
+                        excluding: value < .8,
+                        child: Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, -8 * (1 - value)),
+                            child: HomeCompactHeader(
+                              name: profileAsync.value?.name ?? '',
+                              onReturnToTop: _returnToTop,
+                            ),
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -334,19 +411,27 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     );
   }
 
+  EdgeInsets _sectionPadding(BuildContext context) {
+    final margin = MediaQuery.sizeOf(context).width < 360 ? 16.0 : 20.0;
+    return EdgeInsets.fromLTRB(margin, 0, margin, 24);
+  }
+
   List<Widget> _buildContextualModules(
     BuildContext context,
     HomeLayout layout,
   ) {
     final modules = <Widget>[];
-    Widget spaced(Widget child) =>
-        Padding(padding: const EdgeInsets.only(bottom: 28), child: child);
+    Widget spaced(Widget child) => Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: HomeContentTransition(child: child),
+    );
     if (!_heavierModulesReady) return modules;
-    if (layout.visible.contains('learning')) {
-      modules.add(spaced(const LearningHubCard()));
-    }
-    if (layout.visible.contains('promises')) {
-      modules.add(spaced(const HomePromiseSection()));
+    final growthModules = <Widget>[
+      if (layout.visible.contains('learning')) const LearningHubCard(),
+      if (layout.visible.contains('promises')) const HomePromiseSection(),
+    ];
+    if (growthModules.isNotEmpty) {
+      modules.add(spaced(HomeModuleGroup(children: growthModules)));
     }
     if (layout.visible.contains('checkin') &&
         ref.watch(localHourProvider) >= 17) {
@@ -363,12 +448,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             leading: const Icon(Icons.account_balance_wallet_outlined),
             title: const Text('Quick expense'),
             trailing: const Icon(Icons.add_rounded),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const AddTransactionSheet(),
-            ),
+            onTap: () => AddTransactionSheet.show(context),
           ),
         ),
       );
@@ -385,11 +465,13 @@ class _HomeLoadingView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpace.s24),
       children: [
-        SkeletonShimmer.card(height: 50),
+        SkeletonShimmer.card(
+          height: MediaQuery.textScalerOf(context).scale(14) > 21 ? 420 : 260,
+        ),
         const SizedBox(height: 20),
-        SkeletonShimmer.card(height: 120),
+        SkeletonShimmer.card(height: 180),
         const SizedBox(height: 20),
-        SkeletonShimmer.card(height: 72),
+        SkeletonShimmer.card(height: 132),
         const SizedBox(height: 24),
         SkeletonShimmer.card(height: 180),
         const SizedBox(height: 24),

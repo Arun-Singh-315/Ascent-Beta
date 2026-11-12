@@ -54,6 +54,9 @@ class AscentDimensions {
   /// 999 px — Pills, circular action buttons, search bars.
   static const double radiusFull = 999.0;
 
+  /// Illustrated hero and briefing corners.
+  static const double radiusHero = 28;
+
   // ── Component Dimensions ───────────────────────────────────────────────────
   /// 40 px — Visible height of a standard `AscentButton`. The tap region stays
   /// [minTouchTarget] tall; only the drawn shape is slimmer.

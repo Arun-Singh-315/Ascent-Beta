@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../app/theme/home_design.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,10 @@ import '../../../core/services/cosmic_profile_service.dart';
 import '../../../core/services/festival_service.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import 'home_day_design.dart';
+import 'home_weather.dart';
+import 'home_header_scene.dart';
+import 'daily_welcome_dialog.dart';
+import '../../../core/providers/daily_briefing_provider.dart';
 
 class HomeHeader extends ConsumerStatefulWidget {
   const HomeHeader({super.key, required this.profile, this.now});
@@ -47,8 +52,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final now = widget.now ?? DateTime.now();
     final day = HomeDayDesign.at(now, dark: dark);
-    final ink = HomeDayDesign.ink(dark);
-    final secondary = HomeDayDesign.secondary(dark);
+    final design = HomeDesign.of(context);
+    final ink = design.primaryText;
+    final secondary = design.secondaryText;
     final name = widget.profile?.name.trim() ?? '';
     final dob = widget.profile?.dateOfBirth;
     final sign = dob == null
@@ -74,10 +80,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
         onTap();
       },
       style: IconButton.styleFrom(
-        backgroundColor: Colors.transparent,
+        backgroundColor: design.surface.withValues(alpha: .55),
         foregroundColor: ink,
         shape: CircleBorder(
-          side: BorderSide(color: ink.withValues(alpha: .38), width: .8),
+          side: BorderSide(color: design.separator, width: .8),
         ),
         minimumSize: const Size(44, 44),
       ),
@@ -109,33 +115,49 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                 : String.fromCharCode(name.runes.first).toUpperCase(),
             style: AscentTextStyles.cardTitle.copyWith(
               color: ink,
-              fontSize: 20,
+              fontSize: 17,
             ),
           ),
           onTap: () => context.push('/settings'),
         ),
       ],
     );
-    final date = Text(
-      DateFormat('EEE, d MMM').format(now),
-      key: const ValueKey('home_date'),
-      style: AscentTextStyles.body.copyWith(color: ink, fontSize: 14),
+    final date = Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: design.surface.withValues(alpha: .65),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: design.separator, width: .8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.calendar_today_rounded, size: 12, color: design.secondaryText),
+            const SizedBox(width: 6),
+            Text(
+              DateFormat('EEE, d MMM').format(now),
+              key: const ValueKey('home_date'),
+              style: AscentTextStyles.body.copyWith(
+                color: ink,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
 
-    return ClipPath(
+    return ClipRRect(
       key: const ValueKey('home_day_header'),
-      clipper: const _HeaderCurve(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [day.sky, HomeDayDesign.canvas(dark), day.light],
-            stops: const [0, .54, 1],
-          ),
-        ),
+      borderRadius: BorderRadius.zero,
+      child: HomeHeaderScene(
+        flat: true,
+        now: now,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 30),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -159,7 +181,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: 1),
                 duration: Duration(
@@ -180,59 +202,65 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                   children: [
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final showMotif =
-                            constraints.maxWidth >= 300 &&
-                            MediaQuery.textScalerOf(context).scale(14) < 21;
+                        final greeting = Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              day.greeting,
+                              style: HomeType.greeting.copyWith(
+                                color: secondary,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              name.isEmpty ? 'Your day, your pace.' : name,
+                              key: const ValueKey('home_user_name'),
+                              style: HomeType.title.copyWith(color: ink),
+                            ),
+                          ],
+                        );
+                        final mark = Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            key: const ValueKey('home_daily_briefing'),
+                            borderRadius: BorderRadius.circular(34),
+                            onTap: () => DailyWelcomeDialog.show(
+                              context,
+                              day: briefingDay(now),
+                              name: widget.profile?.name ?? '',
+                            ),
+                            child: SizedBox(
+                              width: 68,
+                              height: 68,
+                              child: FittedBox(child: HomeCelestialMark(now: now)),
+                            ),
+                          ),
+                        );
+                        if (MediaQuery.textScalerOf(context).scale(14) > 21 &&
+                            constraints.maxWidth < 350) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              greeting,
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: mark,
+                              ),
+                            ],
+                          );
+                        }
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    day.greeting,
-                                    style: AscentTextStyles.body.copyWith(
-                                      color: ink,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    name.isEmpty
-                                        ? 'Your day, your pace.'
-                                        : name,
-                                    key: const ValueKey('home_user_name'),
-                                    style: AscentTextStyles.homeTitle.copyWith(
-                                      color: ink,
-                                      fontSize: 32,
-                                      height: 1.15,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: -.9,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (showMotif) ...[
-                              const SizedBox(width: 12),
-                              ExcludeSemantics(
-                                child: CustomPaint(
-                                  size: const Size(88, 58),
-                                  painter: _DayHorizon(
-                                    day.sunHeight,
-                                    dark
-                                        ? const Color(0xFFD8B78F)
-                                        : const Color(0xFFB48451),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            Expanded(child: greeting),
+                            const SizedBox(width: 12),
+                            mark,
                           ],
                         );
                       },
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     if (todayFestival != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -243,14 +271,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: todayFestival.accentColor.withValues(
-                              alpha: 0.12,
-                            ),
+                            color: ink.withValues(alpha: .05),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: todayFestival.accentColor.withValues(
-                                alpha: 0.32,
-                              ),
+                              color: ink.withValues(alpha: .16),
                               width: 1,
                             ),
                           ),
@@ -266,9 +290,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                 child: Text(
                                   'Happy ${todayFestival.name}! ✨',
                                   style: AscentTextStyles.labelMedium.copyWith(
-                                    color: dark
-                                        ? const Color(0xFFFDE68A)
-                                        : const Color(0xFF92400E),
+                                    color: ink,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -290,20 +312,20 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Container(
-                                    width: 27,
-                                    height: 27,
+                                    width: 22,
+                                    height: 22,
                                     alignment: Alignment.center,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFFAA805A),
+                                      color: design.learningInk,
                                     ),
                                     child: Text(
                                       sign.symbol,
                                       textScaler: TextScaler.noScaling,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontFamily: 'AscentZodiacSymbols',
-                                        fontSize: 18,
-                                        color: Colors.white,
+                                        fontSize: 15,
+                                        color: design.canvas,
                                       ),
                                     ),
                                   ),
@@ -315,7 +337,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                       style: AscentTextStyles.labelMedium
                                           .copyWith(
                                             color: ink,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 12,
                                           ),
                                     ),
                                   ),
@@ -339,6 +362,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                         height: 1.4,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    const HomeWeather(),
                   ],
                 ),
               ),
@@ -348,69 +373,4 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
       ),
     );
   }
-}
-
-class _HeaderCurve extends CustomClipper<Path> {
-  const _HeaderCurve();
-  @override
-  Path getClip(Size size) => Path()
-    ..lineTo(0, size.height - 15)
-    ..cubicTo(
-      size.width * .32,
-      size.height + 15,
-      size.width * .68,
-      size.height - 26,
-      size.width,
-      size.height - 20,
-    )
-    ..lineTo(size.width, 0)
-    ..close();
-  @override
-  bool shouldReclip(_HeaderCurve oldClipper) => false;
-}
-
-class _DayHorizon extends CustomPainter {
-  const _DayHorizon(this.height, this.color);
-  final double height;
-  final Color color;
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = .9
-      ..style = PaintingStyle.stroke;
-    final horizon = size.height * .79;
-    final center = Offset(size.width * .52, horizon);
-    final radius = 12 + height * 6;
-    canvas.save();
-    canvas.clipRect(Rect.fromLTRB(0, 0, size.width, horizon));
-    final sun = Offset(center.dx, horizon + radius * (1 - height) * .75);
-    canvas.drawCircle(
-      sun,
-      radius,
-      Paint()..color = color.withValues(alpha: .12),
-    );
-    canvas.drawCircle(sun, radius, paint);
-    if (height > .3) {
-      for (var i = 0; i < 5; i++) {
-        final angle = math.pi + (i + 1) * math.pi / 6;
-        canvas.drawLine(
-          sun + Offset(math.cos(angle), math.sin(angle)) * (radius + 6),
-          sun + Offset(math.cos(angle), math.sin(angle)) * (radius + 12),
-          paint,
-        );
-      }
-    }
-    canvas.restore();
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, horizon + 5)
-        ..quadraticBezierTo(center.dx, horizon - 6, size.width, horizon + 5),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_DayHorizon oldDelegate) =>
-      oldDelegate.height != height || oldDelegate.color != color;
 }

@@ -119,48 +119,48 @@ void main() {
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
     });
 
-    testWidgets('legacy badge counts do not clutter the shortcut icons', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const HomeShortcutPanel(
-            shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
-            badgeCounts: {
-              'today': 5,
-              'thought-wall': 3,
-              'reminders': 0,
-              'promises': 12,
-            },
+    testWidgets(
+      'counts appear above shortcut icons without duplicate summaries',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            const HomeShortcutPanel(
+              shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
+              badgeCounts: {
+                'today': 5,
+                'thought-wall': 3,
+                'reminders': 0,
+                'promises': 12,
+              },
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Context is presented in the hub instead of repeated badges
-      expect(find.byKey(const ValueKey('shortcut_badge_today')), findsNothing);
-      expect(find.text('5'), findsNothing);
+        for (final (id, count) in [
+          ('today', '5'),
+          ('thought-wall', '3'),
+          ('promises', '12'),
+          ('reminders', '0'),
+        ]) {
+          final badge = find.byKey(ValueKey('shortcut_badge_$id'));
+          expect(badge, findsOneWidget);
+          expect(tester.widget<Text>(badge).data, count);
+          final icon = find.byKey(ValueKey('shortcut_icon_$id'));
+          expect(
+            tester.getTopLeft(badge).dy,
+            lessThan(tester.getTopLeft(icon).dy),
+          );
+          expect(
+            tester.getCenter(badge).dx,
+            greaterThan(tester.getCenter(icon).dx),
+          );
+          expect(find.text('$count today'), findsNothing);
+        }
+      },
+    );
 
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_thought-wall')),
-        findsNothing,
-      );
-      expect(find.text('3'), findsNothing);
-
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_promises')),
-        findsNothing,
-      );
-      expect(find.text('12'), findsNothing);
-
-      // Badge for 0 count should NOT appear
-      expect(
-        find.byKey(const ValueKey('shortcut_badge_reminders')),
-        findsNothing,
-      );
-    });
-
-    testWidgets('large legacy counts stay out of the shortcut presentation', (
+    testWidgets('large counts remain visible as shortcut badges', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -173,11 +173,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('shortcut_badge_today')), findsNothing);
+      expect(
+        find.byKey(const ValueKey('shortcut_badge_today')),
+        findsOneWidget,
+      );
       expect(find.text('99+'), findsNothing);
     });
 
-    testWidgets('legacy counts remain hidden at large text', (tester) async {
+    testWidgets('shortcut values remain visible at large text', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
           const HomeShortcutPanel(
@@ -196,9 +199,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('24'), findsNothing);
-      expect(find.text('18'), findsNothing);
-      expect(find.text('9'), findsNothing);
+      expect(find.text('24'), findsOneWidget);
+      expect(find.text('18'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
       expect(find.text('99+'), findsNothing);
     });
   });

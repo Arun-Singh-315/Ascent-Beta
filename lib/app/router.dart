@@ -78,6 +78,7 @@ class AscentRoutes {
   static const focus = '/focus';
   static const learning = '/learning';
   static const reminders = '/reminders';
+  static const calendar = '/calendar';
   static const plans = '/plans';
 }
 
@@ -107,6 +108,18 @@ final ascentRouter = GoRouter(
       builder: (context, state) => const OnboardingShell(),
     ),
 
+    GoRoute(
+      path: AscentRoutes.calendar,
+      builder: (context, state) => RemindersScreen(
+        calendarOnly: true,
+        openCalendar: true,
+        thingsOnly: state.uri.queryParameters['scope'] == 'things',
+        initialCalendarDate: DateTime.tryParse(
+          state.uri.queryParameters['date'] ?? '',
+        ),
+      ),
+    ),
+
     // ── Main shell (bottom nav + drawer) ──────────────────────────────────
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => MainScaffold(shell: shell),
@@ -130,6 +143,10 @@ final ascentRouter = GoRouter(
               path: AscentRoutes.reminders,
               pageBuilder: (context, state) => NoTransitionPage(
                 child: RemindersScreen(
+                  openCalendar: state.uri.queryParameters['view'] == 'calendar',
+                  initialCalendarDate: DateTime.tryParse(
+                    state.uri.queryParameters['date'] ?? '',
+                  ),
                   initialReminderId: int.tryParse(
                     state.uri.queryParameters['reminder'] ?? '',
                   ),
@@ -139,13 +156,13 @@ final ascentRouter = GoRouter(
           ],
         ),
 
-        // Tab 2: Money Management
+        // Tab 2: Private Vault
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.money,
+              path: AscentRoutes.vault,
               pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: MoneyScreen()),
+                  const NoTransitionPage(child: VaultScreen()),
             ),
           ],
         ),
@@ -163,8 +180,14 @@ final ascentRouter = GoRouter(
       ],
     ),
 
-    GoRoute(parentNavigatorKey:rootNavigatorKey,path:AscentRoutes.history,
-      builder:(context,state)=>HistoryScreen(module:state.uri.queryParameters['module'],entity:state.uri.queryParameters['entity'])),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.history,
+      builder: (context, state) => HistoryScreen(
+        module: state.uri.queryParameters['module'],
+        entity: state.uri.queryParameters['entity'],
+      ),
+    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.things,
@@ -251,10 +274,8 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.chaiBreak,
-      builder: (context, state) => const FeatureGuideHost(
-        feature: 'Pause',
-        child: ChaiBreakScreen(),
-      ),
+      builder: (context, state) =>
+          const FeatureGuideHost(feature: 'Pause', child: ChaiBreakScreen()),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -373,8 +394,8 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.vault,
-      builder: (context, state) => const VaultScreen(),
+      path: AscentRoutes.money,
+      builder: (context, state) => const MoneyScreen(),
     ),
   ],
 );

@@ -113,23 +113,25 @@ class _HomeFirstMomentState extends ConsumerState<HomeFirstMoment> {
       key: const ValueKey('home_first_moment'),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? g.fill
-            : const Color(0xFFFFF6E9),
+        color: g.fill,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: g.line),
+        border: MediaQuery.highContrastOf(context)
+            ? Border.all(color: g.controlOutline)
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Begin with one thing',
-            style: AscentTextStyles.sectionHeading.copyWith(color: g.ink),
+            style: AscentTextStyles.interfaceSection.copyWith(color: g.ink),
           ),
           const SizedBox(height: 6),
           Text(
             'What would make today feel good?',
-            style: AscentTextStyles.bodySmall.copyWith(color: g.inkSecondary),
+            style: AscentTextStyles.interfaceSupporting.copyWith(
+              color: g.inkSecondary,
+            ),
           ),
           const SizedBox(height: 16),
           AscentSegmentedControl<String>(

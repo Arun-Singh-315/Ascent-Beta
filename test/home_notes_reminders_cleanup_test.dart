@@ -307,8 +307,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Add First Activity 🚀'), findsOneWidget);
-        expect(find.text('Got it! 👍'), findsOneWidget);
+        expect(find.text('Choose your first small step'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );

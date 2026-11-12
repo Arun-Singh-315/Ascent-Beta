@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/history/history_provider.dart';
@@ -304,6 +305,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     return AscentScaffold(
       title: widget.entity == null ? 'History' : 'Item history',
       subtitle: 'Your activity, kept in one place',
+      backgroundColor: context.bgSurface,
       actions: [
         IconButton(
           tooltip: ref.watch(unlockedPromiseIdsProvider).isEmpty

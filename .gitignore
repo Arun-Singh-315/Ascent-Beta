@@ -18,6 +18,7 @@ migrate_working_dir/
 *.apk
 docs/renovation/
 backup_user_data/
+.app_backup/
 
 # IntelliJ related
 *.iml

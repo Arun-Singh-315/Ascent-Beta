@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'color_tokens.dart';
+import 'monochrome_surfaces.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
 import 'shared_control_tokens.dart';
@@ -14,6 +15,7 @@ import 'shared_control_tokens.dart';
 class AscentGlass extends ThemeExtension<AscentGlass> {
   final bool frozen;
   final bool merlot;
+  final MonochromeSurfaces? monochrome;
   final Color bg;
   final Color fill;
   final Color edge;
@@ -47,6 +49,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   const AscentGlass({
     this.frozen = false,
     this.merlot = false,
+    this.monochrome,
     required this.bg,
     required this.fill,
     required this.edge,
@@ -77,39 +80,51 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   bool get isDark => bg.computeLuminance() < 0.2;
 
   /// Content/card surface
-  Color get surface => frozen
-      ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-      : merlot
-      ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
-      : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
+  Color get surface =>
+      monochrome?.surface ??
+      (frozen
+          ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+          : merlot
+          ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+          : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface));
 
   /// Elevated surface (sheet/dialog/menu)
-  Color get elevated => frozen
-      ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-      : merlot
-      ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.surface)
-      : (isDark
-            ? AscentColors.bgSurfaceElevatedDark
-            : AscentColors.bgSurfaceElevated);
+  Color get elevated =>
+      monochrome?.elevated ??
+      (frozen
+          ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+          : merlot
+          ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.surface)
+          : (isDark
+                ? AscentColors.bgSurfaceElevatedDark
+                : AscentColors.bgSurfaceElevated));
 
   /// Recessed surface (inputs/segment track)
-  Color get recessed => frozen
-      ? (isDark ? FrozenPalette.darkRecessed : FrozenPalette.recessed)
-      : merlot
-      ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.recessedWell)
-      : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
+  Color get recessed =>
+      monochrome?.groupedFill ??
+      (frozen
+          ? (isDark ? FrozenPalette.darkRecessed : FrozenPalette.recessed)
+          : merlot
+          ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.recessedWell)
+          : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase));
 
   /// Required control outline
-  Color get controlOutline => frozen
-      ? (isDark
-            ? FrozenPalette.darkControlOutline
-            : FrozenPalette.controlOutline)
-      : merlot
-      ? (isDark ? const Color(0xFF8D939F) : MerlotPalette.line)
-      : (isDark ? const Color(0xFF8D939F) : AscentColors.outlineDay);
+  Color get controlOutline =>
+      monochrome?.controlOutline ??
+      (frozen
+          ? (isDark
+                ? FrozenPalette.darkControlOutline
+                : FrozenPalette.controlOutline)
+          : merlot
+          ? (isDark ? const Color(0xFF8D939F) : MerlotPalette.line)
+          : (isDark ? const Color(0xFF8D939F) : AscentColors.outlineDay));
 
   /// Action ink (links/active icons/focus)
-  Color get actionInk => frozen
+  Color get actionInk => monochrome != null
+      ? (isDark
+            ? SharedControlColors.actionBlueDark
+            : SharedControlColors.actionBlue)
+      : frozen
       ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
       : merlot
       ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
@@ -121,22 +136,28 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   Color get primaryButtonPressed => const Color(0xFF005AC8);
 
   /// Tonal/selection background
-  Color get tonalBg => frozen
-      ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-      : merlot
-      ? (isDark ? MerlotPalette.darkTint : MerlotPalette.tint)
-      : (isDark
-            ? AscentColors.accentPrimaryDimDark
-            : AscentColors.accentPrimaryDim);
+  Color get tonalBg =>
+      monochrome?.groupedFill ??
+      (frozen
+          ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+          : merlot
+          ? (isDark ? MerlotPalette.darkTint : MerlotPalette.tint)
+          : (isDark
+                ? AscentColors.accentPrimaryDimDark
+                : AscentColors.accentPrimaryDim));
 
   /// Tonal/selection foreground
-  Color get tonalFg => frozen
-      ? (isDark
-            ? FrozenPalette.darkTintForeground
-            : FrozenPalette.tintForeground)
-      : merlot
-      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+  Color get tonalFg =>
+      monochrome?.primaryText ??
+      (frozen
+          ? (isDark
+                ? FrozenPalette.darkTintForeground
+                : FrozenPalette.tintForeground)
+          : merlot
+          ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
+          : (isDark
+                ? AscentColors.accentPrimaryDark
+                : AscentColors.accentPrimary));
 
   /// Focus ring
   Color get focusRing => frozen
@@ -344,6 +365,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   ThemeExtension<AscentGlass> copyWith({
     bool? frozen,
     bool? merlot,
+    MonochromeSurfaces? monochrome,
     Color? bg,
     Color? fill,
     Color? edge,
@@ -371,6 +393,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     return AscentGlass(
       frozen: frozen ?? this.frozen,
       merlot: merlot ?? this.merlot,
+      monochrome: monochrome ?? this.monochrome,
       bg: bg ?? this.bg,
       fill: fill ?? this.fill,
       edge: edge ?? this.edge,
@@ -406,6 +429,9 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     return AscentGlass(
       frozen: t < 0.5 ? frozen : other.frozen,
       merlot: t < 0.5 ? merlot : other.merlot,
+      monochrome: monochrome != null && other.monochrome != null
+          ? monochrome!.lerp(other.monochrome, t)
+          : (t < .5 ? monochrome : other.monochrome),
       bg: Color.lerp(bg, other.bg, t)!,
       fill: Color.lerp(fill, other.fill, t)!,
       edge: Color.lerp(edge, other.edge, t)!,

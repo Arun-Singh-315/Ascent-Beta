@@ -1,5 +1,10 @@
+import 'home_section_heading.dart';
+import '../../../core/database/app_database.dart';
+import '../../../app/theme/home_design.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'home_shortcut_summary.dart';
+import 'home_rhythm_artwork.dart';
+import 'home_outline_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,21 +19,11 @@ import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../challenge/challenge_providers.dart';
 
 class _RhythmTool {
-  const _RhythmTool(
-    this.id,
-    this.title,
-    this.icon,
-    this.detail,
-    this.action,
-    this.tint,
-    this.route,
-  );
+  const _RhythmTool(this.id, this.title, this.detail, this.action, this.route);
   final String id, title, detail, action, route;
-  final IconData icon;
-  final Color tint;
 }
 
-/// Tools stay within Home's width. Details expand into the same page scroll.
+/// One illustrated ritual at a time, with natural height for accessible text.
 class HomeLifeShelf extends ConsumerStatefulWidget {
   const HomeLifeShelf({super.key});
   @override
@@ -37,9 +32,71 @@ class HomeLifeShelf extends ConsumerStatefulWidget {
 
 class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
   String? _expanded;
+  String _current = 'hydration';
+  double _dragDistance = 0;
+  int _direction = 1;
+
+  void _showTool(List<_RhythmTool> tools, int requestedIndex) {
+    if (_saving || tools.isEmpty) return;
+    final index = requestedIndex % tools.length;
+    final previous = tools.indexWhere((tool) => tool.id == _current);
+    if (tools[index].id == _current) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _direction = requestedIndex > previous ? 1 : -1;
+      _current = tools[index].id;
+      _expanded = null;
+      _error = null;
+    });
+  }
+
   int _amount = 250;
   bool _saving = false;
   String? _error;
+
+  Future<void> _quickLogWater(int amount) async {
+    _amount = amount;
+    await _logWater();
+  }
+
+  Color _getSummaryColor(
+    String toolId,
+    int? water,
+    int? goal,
+    List<MedicineLog> doses,
+  ) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = HomeDesign.of(context).primaryText;
+    final blue = dark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
+    final red = dark
+        ? SharedControlColors.dueRedDark
+        : SharedControlColors.dueRed;
+    if (toolId == 'hydration') {
+      if (water == null) return ink;
+      if (water == 0) return HomeDesign.of(context).wellnessInk;
+      return goal != null && goal > 0 && water >= goal
+          ? blue
+          : HomeDesign.of(context).wellnessInk;
+    }
+    if (toolId == 'medicine') {
+      if (doses.any(
+        (dose) =>
+            !dose.isTaken &&
+            (DateTime.tryParse(
+                  '${dose.dateStr}T${dose.timeSlot}',
+                )?.isBefore(DateTime.now()) ??
+                false),
+      )) {
+        return red;
+      }
+      return doses.isNotEmpty && doses.every((dose) => dose.isTaken)
+          ? blue
+          : ink;
+    }
+    return ink;
+  }
 
   Future<void> _logWater() async {
     if (_saving) return;
@@ -98,37 +155,30 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         _RhythmTool(
           'hydration',
           'Water',
-          Icons.water_drop_rounded,
           'Choose an amount to log',
           'Choose an amount',
-          const Color(0xFF0284C7),
           '/hydration',
         ),
       if (layout.tools.contains('walk'))
         _RhythmTool(
           'walk',
           'Move',
-          Icons.directions_walk_rounded,
           'Keep your walking distance together, one walk at a time.',
           'Start a walk',
-          const Color(0xFF10B981),
           '/walk',
         ),
       if (layout.tools.contains('chai-break'))
         const _RhythmTool(
           'chai-break',
           'Pause',
-          Icons.spa_rounded,
           'Take a breather',
           'Take a minute',
-          Color(0xFFF59E0B),
           '/chai-break',
         ),
       if (layout.tools.contains('medicine'))
         _RhythmTool(
           'medicine',
           'Care',
-          Icons.favorite_rounded,
           doseState.hasError
               ? 'Could not load your doses.'
               : doseState.isLoading
@@ -139,102 +189,113 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           !doseState.isLoading && !doseState.hasError && doses.isEmpty
               ? 'Set up a routine'
               : 'View your doses',
-          const Color(0xFFEC4899),
           '/medicine',
         ),
       if (layout.tools.contains('momentum'))
         _RhythmTool(
           'momentum',
           'Momentum',
-          Icons.flag_rounded,
           challenge?.title ?? 'Choose a challenge to build a little momentum.',
           'View challenge',
-          const Color(0xFF8B5CF6),
           '/momentum',
         ),
     ];
 
     if (tools.isEmpty) return const SizedBox.shrink();
+    final currentIndex = tools.indexWhere((tool) => tool.id == _current);
+    final index = currentIndex < 0 ? 0 : currentIndex;
+    final current = tools[index];
+    final duration = Duration(
+      milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 220,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
       child: AnimatedSize(
         duration: Duration(
-          milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 300,
+          milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 220,
         ),
         curve: Curves.easeInOutCubic,
         alignment: Alignment.topCenter,
-        child: Container(
-          key: const ValueKey('home_life_shelf_enclosure'),
+        child: HomeOutlineSurface(
+          surfaceKey: const ValueKey('home_life_shelf_enclosure'),
+          frameless: true,
+          radius: 30,
+          padding: EdgeInsets.zero,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Daily rhythm',
-                          style: AscentTextStyles.homeTitle.copyWith(
-                            color: g.ink,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Today',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: g.inkSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.clay.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: g.clay.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      '${tools.length} active',
-                      style: TextStyle(
-                        color: g.clay,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              const HomeSectionHeading(title: 'Daily rhythm'),
               const SizedBox(height: 14),
-              Column(
-                key: const ValueKey('home_life_shelf'),
-                children: [
+              AscentSegmentedControl<String>(
+                key: const ValueKey('rhythm_tool_selector'),
+                accented: true,
+                inline: true,
+                segments: [
                   for (final tool in tools)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: SizedBox(
-                        key: ValueKey('rhythm_card_${tool.id}'),
-                        width: double.infinity,
-                        child: _tile(tool, dark, g, water, goal),
-                      ),
+                    AscentSegment(
+                      value: tool.id,
+                      label: tool.title,
+                      flex: tool.title.length,
+                      key: ValueKey('rhythm_select_${tool.id}'),
                     ),
                 ],
+                selected: current.id,
+                enabled: !_saving,
+                onChanged: (id) =>
+                    _showTool(tools, tools.indexWhere((tool) => tool.id == id)),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                key: const ValueKey('home_life_shelf'),
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: (_) => _dragDistance = 0,
+                onHorizontalDragUpdate: (details) =>
+                    _dragDistance += details.delta.dx,
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  if (_dragDistance.abs() < 40 && velocity.abs() < 250) return;
+                  final delta = _dragDistance.abs() >= 40
+                      ? _dragDistance
+                      : velocity;
+                  final rtl = Directionality.of(context) == TextDirection.rtl;
+                  _showTool(tools, index + ((delta < 0) != rtl ? 1 : -1));
+                },
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.zero,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.zero,
+                        child: ColoredBox(
+                          color: Colors.transparent,
+                          child: AnimatedSwitcher(
+                            duration: duration,
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: Offset(.12 * _direction, 0),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                ),
+                            child: SizedBox(
+                              key: ValueKey('rhythm_card_${current.id}'),
+                              width: double.infinity,
+                              child: _tile(current, dark, g, water, goal),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -265,7 +326,11 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         : SharedControlColors.actionBlue;
 
     double? progress;
-    if (tool.id == 'hydration' && goal != null && goal > 0 && water != null && water > 0) {
+    if (tool.id == 'hydration' &&
+        goal != null &&
+        goal > 0 &&
+        water != null &&
+        water > 0) {
       progress = (water / goal).clamp(0.0, 1.0);
     }
 
@@ -273,240 +338,327 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         .watch(homeShortcutSummaryProvider(tool.id))
         .replaceFirst(RegExp(r' today$'), '');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected
-              ? (dark ? blue : tool.tint)
-              : g.line.withValues(alpha: 0.75),
-          width: selected ? 1.4 : 1.0,
+    final doses = ref.watch(todayMedicineLogsStreamProvider).value ?? [];
+    final challenge = ref.watch(activeChallengeProvider).value;
+    final summaryColor = _getSummaryColor(tool.id, water, goal, doses);
+
+    final design = HomeDesign.of(context);
+    final metric = AnimatedSwitcher(
+      duration: Duration(
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 220,
+      ),
+      layoutBuilder: (current, previous) => Stack(
+        alignment: Alignment.centerLeft,
+        children: [...previous, ?current],
+      ),
+      child: KeyedSubtree(
+        key: ValueKey(summary),
+        child: Text(
+          summary,
+          key: ValueKey('rhythm_summary_${tool.id}'),
+          style:
+              (RegExp(r'^\d').hasMatch(summary)
+                      ? HomeType.metric
+                      : HomeType.section)
+                  .copyWith(color: summaryColor),
         ),
       ),
+    );
+    return Container(
+      decoration: HomeSurfaceStyle.wellness(context),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Semantics(
-            button: true,
-            expanded: selected,
-            child: InkWell(
-              key: ValueKey('home_routine_${tool.id}'),
-              onTap: _saving ? null : () => _toggle(tool.id),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: tool.tint.withValues(alpha: dark ? 0.20 : 0.12),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: tool.tint.withValues(alpha: 0.35),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              tool.icon,
-                              size: 22,
-                              color: tool.tint,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.zero,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Subtle colored left-edge accent bar
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              child: Container(
+                width: 3,
+                decoration: BoxDecoration(
+                  color: design.wellnessInk.withValues(alpha: 0.55),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(3),
+                    bottomLeft: Radius.circular(3),
+                  ),
+                ),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+            Semantics(
+              button: true,
+              expanded: selected,
+              child: InkWell(
+                key: ValueKey('home_routine_${tool.id}'),
+                onTap: _saving ? null : () => _toggle(tool.id),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final details = Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Wrap(
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                spacing: 6,
-                                children: [
-                                  Text(
-                                    tool.title,
-                                    style: TextStyle(
-                                      color: g.inkSecondary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-                                  if (tool.id == 'hydration' && goal != null && goal > 0)
-                                    Text(
-                                      '· Goal $goal ml',
-                                      style: TextStyle(
-                                        color: g.inkMuted,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
                               Text(
-                                summary,
-                                key: ValueKey('rhythm_summary_${tool.id}'),
-                                style: AscentTextStyles.cardTitle.copyWith(
-                                  color: g.ink,
+                                tool.title,
+                                style: HomeType.section.copyWith(
+                                  color: design.wellnessInk,
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.3,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              const SizedBox(height: 18),
+                              if (tool.id == 'hydration') ...[
+                                Text(
+                                  'DRANK TODAY',
+                                  style: HomeType.label.copyWith(
+                                    color: design.wellnessInk,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                              ],
+                              metric,
                             ],
+                          );
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(child: details),
+                              if (constraints.maxWidth >= 270 &&
+                                  MediaQuery.textScalerOf(context).scale(1) <
+                                      1.45 &&
+                                  summary.length < 20) ...[
+                                const SizedBox(width: 12),
+                                ExcludeSemantics(
+                                  child: CustomPaint(
+                                    size: const Size(108, 116),
+                                    painter: HomeRhythmArtwork(
+                                      id: tool.id,
+                                      dark: dark,
+                                      tint: design.wellnessInk,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Text(switch (tool.id) {
+                        'hydration' =>
+                          goal != null && goal > 0 && water != null
+                              ? water >= goal
+                                    ? 'Daily goal reached · $goal ml'
+                                    : '${(goal - water).clamp(0, goal)} ml left · Goal $goal ml'
+                              : 'Build a little refresh into your day.',
+                        'medicine' =>
+                          doses.isEmpty
+                              ? 'Add medicines and dose times when you need them.'
+                              : tool.detail,
+                        'momentum' =>
+                          challenge == null
+                              ? tool.detail
+                              : 'One step at a time. Open your challenge for the next action.',
+                        _ => tool.detail,
+                      }, style: HomeType.supporting.copyWith(color: g.inkSecondary)),
+                      if (progress != null && !selected) ...[
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 4,
+                            backgroundColor: g.line.withValues(alpha: 0.25),
+                            valueColor: AlwaysStoppedAnimation<Color>(blue),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        if (selected)
-                          IconButton(
-                            tooltip: 'Close details',
-                            onPressed: _saving ? null : () => _toggle(tool.id),
-                            icon: Icon(
-                              Icons.keyboard_arrow_up_rounded,
-                              size: 22,
-                              color: blue,
-                            ),
-                          )
-                        else
-                          Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 22,
-                            color: g.inkSecondary,
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (!selected && tool.id == 'hydration')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AscentButton.primary(
+                        label: '+250 ml',
+                        compact: true,
+                        onPressed: _saving ? null : () => _quickLogWater(250),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AscentButton.primary(
+                        label: '+500 ml',
+                        compact: true,
+                        onPressed: _saving ? null : () => _quickLogWater(500),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AscentButton.secondary(
+                        label: 'Custom',
+                        compact: true,
+                        onPressed: _saving ? null : () => _toggle(tool.id),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!selected && tool.id != 'hydration')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: AscentButton.primary(
+                  label: tool.action,
+                  icon: Icons.arrow_forward_rounded,
+                  expanded: true,
+                  compact: true,
+                  onPressed: _saving
+                      ? null
+                      : () {
+                          context.push(tool.route);
+                        },
+                ),
+              ),
+            if (selected)
+              Padding(
+                key: ValueKey('rhythm_detail_${tool.id}'),
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: Divider(height: 1, color: g.line)),
+                        IconButton(
+                          tooltip: 'Close details',
+                          onPressed: _saving ? null : () => _toggle(tool.id),
+                          icon: Icon(
+                            Icons.keyboard_arrow_up_rounded,
+                            color: blue,
                           ),
+                        ),
                       ],
                     ),
-                    if (progress != null && !selected) ...[
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 4,
-                          backgroundColor: g.line.withValues(alpha: 0.25),
-                          valueColor: AlwaysStoppedAnimation<Color>(tool.tint),
+                    const SizedBox(height: 8),
+                    if (ref.watch(homeShortcutSummaryProvider(tool.id)) ==
+                        'Unavailable')
+                      AscentButton.ghost(
+                        label: 'Retry',
+                        icon: Icons.refresh_rounded,
+                        compact: true,
+                        onPressed: () {
+                          switch (tool.id) {
+                            case 'hydration':
+                              ref.invalidate(todayWaterMlStreamProvider);
+                              ref.invalidate(dailyWaterGoalStreamProvider);
+                            case 'walk':
+                              ref.invalidate(todayWalkDistanceStreamProvider);
+                            case 'medicine':
+                              ref.invalidate(todayMedicineLogsStreamProvider);
+                            case 'chai-break':
+                              ref.invalidate(todayPauseCountProvider);
+                            case 'momentum':
+                              ref.invalidate(activeChallengeProvider);
+                          }
+                        },
+                      ),
+                    if (tool.id == 'hydration') ...[
+                      if (goal != null && goal > 0 && water != null) ...[
+                        Text(
+                          'Daily goal · $goal ml',
+                          style: AscentTextStyles.interfaceLabel.copyWith(
+                            color: g.inkSecondary,
+                          ),
                         ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (water / goal).clamp(0, 1),
+                            minHeight: 4,
+                            color: blue,
+                            backgroundColor: g.line,
+                            semanticsLabel:
+                                'Daily water goal, $water of $goal millilitres',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      AscentSegmentedControl<int>(
+                        accented: true,
+                        inline: true,
+                        segments: const [
+                          AscentSegment(value: 150, label: '150 ml'),
+                          AscentSegment(value: 250, label: '250 ml'),
+                          AscentSegment(value: 500, label: '500 ml'),
+                        ],
+                        selected: _amount,
+                        enabled: !_saving,
+                        onChanged: (value) => setState(() => _amount = value),
+                      ),
+                      const SizedBox(height: 14),
+                      AscentButton.primary(
+                        label: 'Add $_amount ml',
+                        expanded: true,
+                        compact: true,
+                        loading: _saving,
+                        onPressed: _saving ? null : _logWater,
+                      ),
+                      AscentButton.ghost(
+                        label: 'Today’s history and goal',
+                        icon: Icons.history_rounded,
+                        compact: true,
+                        onPressed: () => context.push(tool.route),
+                      ),
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: SharedControlColors.errorInk(dark),
+                            ),
+                          ),
+                        ),
+                    ] else ...[
+                      Text(
+                        tool.detail,
+                        style: AscentTextStyles.interfaceSupporting.copyWith(
+                          color: g.inkSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      AscentButton.outlined(
+                        label: tool.action,
+                        expanded: true,
+                        compact: true,
+                        onPressed: () => context.push(tool.route),
                       ),
                     ],
                   ],
                 ),
               ),
+              ],
             ),
-          ),
-          if (selected)
-            Padding(
-              key: ValueKey('rhythm_detail_${tool.id}'),
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Divider(height: 1, color: g.line),
-                  const SizedBox(height: 14),
-                  if (ref.watch(homeShortcutSummaryProvider(tool.id)) ==
-                      'Unavailable')
-                    TextButton.icon(
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Retry'),
-                      onPressed: () {
-                        switch (tool.id) {
-                          case 'hydration':
-                            ref.invalidate(todayWaterMlStreamProvider);
-                            ref.invalidate(dailyWaterGoalStreamProvider);
-                          case 'walk':
-                            ref.invalidate(todayWalkDistanceStreamProvider);
-                          case 'medicine':
-                            ref.invalidate(todayMedicineLogsStreamProvider);
-                          case 'chai-break':
-                            ref.invalidate(todayPauseCountProvider);
-                          case 'momentum':
-                            ref.invalidate(activeChallengeProvider);
-                        }
-                      },
-                    ),
-                  if (tool.id == 'hydration') ...[
-                    if (goal != null && goal > 0 && water != null) ...[
-                      Text(
-                        'Daily goal · $goal ml',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.inkSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: (water / goal).clamp(0, 1),
-                          minHeight: 4,
-                          color: blue,
-                          backgroundColor: g.line,
-                          semanticsLabel:
-                              'Daily water goal, $water of $goal millilitres',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    AscentSegmentedControl<int>(
-                      segments: const [
-                        AscentSegment(value: 150, label: '150 ml'),
-                        AscentSegment(value: 250, label: '250 ml'),
-                        AscentSegment(value: 500, label: '500 ml'),
-                      ],
-                      selected: _amount,
-                      enabled: !_saving,
-                      onChanged: (value) => setState(() => _amount = value),
-                    ),
-                    const SizedBox(height: 14),
-                    AscentButton.primary(
-                      label: 'Log water',
-                      expanded: true,
-                      compact: true,
-                      loading: _saving,
-                      onPressed: _saving ? null : _logWater,
-                    ),
-                    TextButton.icon(
-                      onPressed: () => context.push(tool.route),
-                      icon: const Icon(Icons.history_rounded, size: 18),
-                      label: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('Today’s history and goal'),
-                      ),
-                    ),
-                    if (_error != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: SharedControlColors.errorInk(dark),
-                          ),
-                        ),
-                      ),
-                  ] else ...[
-                    Text(
-                      tool.detail,
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: g.inkSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    AscentButton.outlined(
-                      label: tool.action,
-                      expanded: true,
-                      compact: true,
-                      onPressed: () => context.push(tool.route),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

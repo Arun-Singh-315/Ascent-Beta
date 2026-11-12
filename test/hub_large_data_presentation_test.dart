@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:ascent/core/database/app_database.dart';
+import 'package:drift/native.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +21,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _PreviewTracker extends TimeTrackingNotifier {
+  @override
+  TimeTrackingState build() => const TimeTrackingState();
+}
 
 class _LargeLearning extends LearningHubNotifier {
   @override
@@ -115,10 +122,13 @@ void main() {
   }
 
   late SharedPreferences prefs;
+  late AppDatabase db;
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
+    db = AppDatabase.forTesting(NativeDatabase.memory());
   });
+  tearDown(() async => db.close());
   Widget app(
     Widget child, {
     List<TodayActivityItem> activities = const [],
@@ -127,7 +137,9 @@ void main() {
   }) => ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      databaseProvider.overrideWithValue(db),
       learningHubProvider.overrideWith(_LargeLearning.new),
+      timeTrackingProvider.overrideWith(_PreviewTracker.new),
       todayActivitiesProvider.overrideWith((ref) => Stream.value(activities)),
       planCollectionsProvider.overrideWith((ref) => Stream.value([])),
     ],
@@ -149,6 +161,10 @@ void main() {
   testWidgets(
     '10,000 activities stay capped on Home and lazy in the full list',
     (tester) async {
+      tester.view.physicalSize = const Size(390, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final activities = [for (var i = 0; i < 10000; i++) activity(i)];
       await tester.pumpWidget(
         app(
@@ -158,11 +174,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(ActivityRowItem), findsNWidgets(4));
-      await tester.ensureVisible(find.text('Show more'));
-      await tester.tap(find.text('Show more'));
+      await tester.ensureVisible(find.byKey(const ValueKey('hub_show_more')));
+      await capture(tester, 'outlined_show_more');
+      await tester.tap(find.byKey(const ValueKey('hub_show_more')));
       await tester.pumpAndSettle();
       expect(find.byType(ActivityRowItem), findsNWidgets(20));
       await tester.ensureVisible(find.byKey(const ValueKey('hub_full_list')));
+      await capture(tester, 'outlined_browse_all');
       await tester.tap(find.byKey(const ValueKey('hub_full_list')));
       await tester.pumpAndSettle();
       final list = find.byKey(const ValueKey('hub_full_activity_list'));
@@ -200,6 +218,7 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     },
   );
 
@@ -247,10 +266,11 @@ void main() {
         findsNothing,
       );
       expect(find.text('Start'), findsNWidgets(1));
-      expect(find.text('Stop'), findsOneWidget);
+      expect(find.text('Pause'), findsOneWidget);
       expect(find.text('Resume'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
+      await tester.pump();
     },
   );
 
@@ -292,6 +312,7 @@ void main() {
           await capture(tester, 'learning_${preset.name}_$dark');
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox());
+          await tester.pump();
         },
       );
     }
@@ -346,6 +367,7 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
+      await tester.pump();
     },
   );
 
@@ -380,6 +402,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
+    await tester.pump();
   });
 
   testWidgets(
@@ -402,6 +425,7 @@ void main() {
       expect(find.text('No lectures match this view.'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
+      await tester.pump();
       await tester.pump();
     },
   );

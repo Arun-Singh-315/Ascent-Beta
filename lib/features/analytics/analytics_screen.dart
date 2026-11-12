@@ -191,6 +191,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     return AscentScaffold(
       title: 'Analytics & Velocity',
       subtitle: 'Study cadence & career velocity',
+      backgroundColor: context.bgSurface,
       actions: [
         IconButton(
           icon: Icon(

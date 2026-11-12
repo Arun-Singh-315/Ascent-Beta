@@ -520,6 +520,7 @@ class TodayActivityItem {
   final bool isOverdue;
   final bool hasReminder;
   final String? notes;
+  final DateTime? createdAt;
   final DateTime? completedAt;
   final int? medicineId;
   final String? timeSlot;
@@ -544,6 +545,7 @@ class TodayActivityItem {
     this.isOverdue = false,
     this.hasReminder = false,
     this.notes,
+    this.createdAt,
     this.completedAt,
     this.medicineId,
     this.timeSlot,
@@ -575,6 +577,7 @@ class TodayActivityItem {
     bool? isOverdue,
     bool? hasReminder,
     String? notes,
+    DateTime? createdAt,
     DateTime? completedAt,
     int? medicineId,
     String? timeSlot,
@@ -599,6 +602,7 @@ class TodayActivityItem {
       isOverdue: isOverdue ?? this.isOverdue,
       hasReminder: hasReminder ?? this.hasReminder,
       notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       medicineId: medicineId ?? this.medicineId,
       timeSlot: timeSlot ?? this.timeSlot,

@@ -28,7 +28,7 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
       barrierDismissible: false,
       maxWidth: 420,
       builder: (ctx) => Material(
-        color: ctx.bgSurface,
+        color: ctx.elevatedSurface,
         borderRadius: BorderRadius.circular(28),
         clipBehavior: Clip.antiAlias,
         child: AddTransactionSheet(initialData: initialData, onSaved: onSaved),
@@ -278,7 +278,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: context.bgBase,
+      fillColor: context.recessedSurface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -297,24 +297,37 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Record transaction',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final title = Text(
+                  'Record transaction',
+                  style: TextStyle(
+                    color: context.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
-                ),
-                IconButton(
+                );
+                final close = IconButton(
                   tooltip: 'Close',
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: _saving ? null : () => Navigator.pop(context),
-                ),
-              ],
+                );
+                if (MediaQuery.textScalerOf(context).scale(1) >= 1.45) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(alignment: Alignment.centerRight, child: close),
+                      title,
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(child: title),
+                    close,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 8),
             AscentSegmentedControl<int>(
@@ -370,11 +383,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               DropdownButtonFormField<String>(
                 initialValue: _category,
                 isExpanded: true,
+                itemHeight: null,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: context.textPrimary),
+                menuMaxHeight: MediaQuery.sizeOf(context).height * .65,
+                dropdownColor: context.elevatedSurface,
                 decoration: field('Category'),
                 items: _categories
                     .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
+                      (value) => DropdownMenuItem(
+                        value: value,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(value),
+                        ),
+                      ),
                     )
                     .toList(),
                 onChanged: _saving
@@ -385,11 +409,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               DropdownButtonFormField<String>(
                 initialValue: _account,
                 isExpanded: true,
+                itemHeight: null,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: context.textPrimary),
+                menuMaxHeight: MediaQuery.sizeOf(context).height * .65,
+                dropdownColor: context.elevatedSurface,
                 decoration: field('Account'),
                 items: _accounts
                     .map(
-                      (value) =>
-                          DropdownMenuItem(value: value, child: Text(value)),
+                      (value) => DropdownMenuItem(
+                        value: value,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(value),
+                        ),
+                      ),
                     )
                     .toList(),
                 onChanged: _saving
