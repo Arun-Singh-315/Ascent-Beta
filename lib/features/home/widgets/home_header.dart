@@ -19,7 +19,6 @@ import 'home_day_design.dart';
 import 'home_weather.dart';
 import 'home_header_scene.dart';
 import 'daily_welcome_dialog.dart';
-import '../../../core/services/daily_welcome_service.dart';
 import '../../../core/providers/daily_briefing_provider.dart';
 
 class HomeHeader extends ConsumerStatefulWidget {

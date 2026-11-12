@@ -27,6 +27,18 @@ const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
     icon: Icons.bookmark_added_rounded,
     route: '/promises',
   ),
+  'plans': HomeShortcutItem(
+    id: 'plans',
+    label: 'Plans',
+    icon: Icons.event_repeat_rounded,
+    route: '/plans',
+  ),
+  'study-plan': HomeShortcutItem(
+    id: 'study-plan',
+    label: 'Study',
+    icon: Icons.school_rounded,
+    route: '/study-plan',
+  ),
   'today': HomeShortcutItem(
     id: 'today',
     label: 'Today',

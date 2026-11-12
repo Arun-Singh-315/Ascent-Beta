@@ -39,10 +39,6 @@ class HomeShortcutIcon extends StatelessWidget {
         ? inkFor(identity!, context)
         : HomeShortcutStyle.ink(context);
     final tintColor = identity != null ? design.tintFor(identity!) : Colors.transparent;
-    final tintWithOpacity = Color.alphaBlend(
-      tintColor.withValues(alpha: isDark ? 0.0 : 0.0),
-      tintColor,
-    );
 
     return Container(
       width: size,

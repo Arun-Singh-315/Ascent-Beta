@@ -1,3 +1,4 @@
+import '../../../shared/widgets/ascent_button.dart';
 import 'home_section_heading.dart';
 import 'home_module_row.dart';
 import 'package:flutter/material.dart';
@@ -140,20 +141,17 @@ class LearningHubCard extends ConsumerWidget {
                     : '${state.formattedElapsed} studied · ${(state.remainingSeconds / 60).ceil()} min left',
                 style: HomeType.supporting.copyWith(color: g.inkSecondary),
               ),
-              TextButton.icon(
+              AscentButton.tonal(
+                compact: true,
                 onPressed: resume,
-                icon: Icon(
-                  state.isPlaying
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                ),
-                label: Text(
-                  active.isCompleted
-                      ? 'Review'
-                      : state.isPlaying
-                      ? 'Pause'
-                      : 'Resume',
-                ),
+                icon: state.isPlaying
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                label: active.isCompleted
+                    ? 'Review'
+                    : state.isPlaying
+                    ? 'Pause'
+                    : 'Resume',
               ),
             ],
           ),
