@@ -107,7 +107,7 @@ const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
   ),
   'chai-break': HomeShortcutItem(
     id: 'chai-break',
-    label: 'Pause',
+    label: 'Chai',
     icon: Icons.coffee_rounded,
     route: '/chai-break',
   ),

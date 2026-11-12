@@ -170,9 +170,9 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
       if (layout.tools.contains('chai-break'))
         const _RhythmTool(
           'chai-break',
-          'Pause',
-          'Take a breather',
-          'Take a minute',
+          'Chai',
+          'Study with me lo-fi, mindful pause & tea brew.',
+          'Start session',
           '/chai-break',
         ),
       if (layout.tools.contains('medicine'))
@@ -529,8 +529,8 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Expanded(child: Divider(height: 1, color: g.line)),
                         IconButton(
                           tooltip: 'Close details',
                           onPressed: _saving ? null : () => _toggle(tool.id),

@@ -21,7 +21,7 @@ const homeTools = <String, String>{
   'hydration': 'Water',
   'walk': 'Move',
   'momentum': 'Momentum',
-  'chai-break': 'Pause',
+  'chai-break': 'Chai',
 };
 const homeShortcutRoutes = <String, String>{
   'assistant': 'Assistant',
@@ -35,7 +35,7 @@ const homeShortcutRoutes = <String, String>{
   'medicine': 'Medicine',
   'hydration': 'Water',
   'walk': 'Move',
-  'chai-break': 'Pause',
+  'chai-break': 'Chai',
   'momentum': 'Momentum',
   'vault': 'Vault',
 };
@@ -75,7 +75,7 @@ class HomeLayout {
       'vault',
     },
     tools: homeTools.keys.toSet(),
-    shortcuts: const ['focus', 'hydration', 'assistant', 'vault'],
+    shortcuts: const ['focus', 'chai-break', 'hydration', 'vault'],
   );
   HomeLayout copyWith({
     List<String>? order,

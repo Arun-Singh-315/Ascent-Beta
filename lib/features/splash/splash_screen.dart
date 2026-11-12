@@ -216,7 +216,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     ),
                   ),
                   child: Text(
-                    'BETA · $_versionString',
+                    'Production · v1.0',
                     style: AscentTextStyles.monoCode
                         .copyWith(color: textMuted)
                         .merge(AppTypeRoles.typeRole16),
