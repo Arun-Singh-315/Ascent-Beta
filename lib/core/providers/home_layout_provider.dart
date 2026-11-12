@@ -75,7 +75,7 @@ class HomeLayout {
       'vault',
     },
     tools: homeTools.keys.toSet(),
-    shortcuts: const ['focus', 'chai-break', 'hydration', 'vault'],
+    shortcuts: const ['focus', 'hydration', 'assistant', 'vault'],
   );
   HomeLayout copyWith({
     List<String>? order,

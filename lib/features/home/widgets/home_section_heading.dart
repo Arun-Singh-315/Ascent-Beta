@@ -16,6 +16,8 @@ class HomeSectionHeading extends StatelessWidget {
     this.cutout = false,
     this.dotColor,
     this.titleColor,
+    this.showIndicator = true,
+    this.showDivider = false,
   });
   final String title;
   final String? subtitle;
@@ -24,6 +26,8 @@ class HomeSectionHeading extends StatelessWidget {
   final Widget? leading, trailing;
   final Color? dotColor;
   final Color? titleColor;
+  final bool showIndicator;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +50,7 @@ class HomeSectionHeading extends StatelessWidget {
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!centered && leading == null && dotColor != null)
+        if (!centered && leading == null && dotColor != null && showIndicator)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -63,7 +67,7 @@ class HomeSectionHeading extends StatelessWidget {
               Flexible(child: titleWidget),
             ],
           )
-        else if (!centered && leading == null)
+        else if (!centered && leading == null && showIndicator)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -107,7 +111,18 @@ class HomeSectionHeading extends StatelessWidget {
             )
           else
             ?leading,
-          Expanded(child: labelContent),
+          if (showDivider) ...[
+            labelContent,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                height: 1.0,
+                color: (dotColor ?? design.separator).withValues(alpha: 0.22),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ] else
+            Expanded(child: labelContent),
           if (centered)
             ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 48),

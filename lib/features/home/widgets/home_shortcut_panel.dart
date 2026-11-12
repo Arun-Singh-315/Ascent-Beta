@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../../../shared/widgets/ascent_press_feedback.dart';
 import 'home_section_heading.dart';
 import '../../../app/theme/home_design.dart';
@@ -56,10 +57,12 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
     if (widget.shortcutItems != null) {
       return widget.shortcutItems!.take(4).toList();
     }
+    final raw = widget.shortcuts;
+    final list = (raw == null || raw.contains('chai-break'))
+        ? const ['focus', 'hydration', 'assistant', 'vault']
+        : raw;
     final result = <HomeShortcutItem>[];
-    for (final id
-        in widget.shortcuts ??
-            const ['focus', 'hydration', 'assistant', 'vault']) {
+    for (final id in list) {
       final item = kRegisteredShortcuts[id];
       if (item != null && !result.any((other) => other.route == item.route)) {
         result.add(item);
@@ -124,25 +127,27 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
             children: [
               HomeSectionHeading(
                 title: 'Your space',
+                showIndicator: false,
                 leading: null,
                 trailing: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     key: const ValueKey('home_add'),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                     onTap: () {
                       HapticFeedback.lightImpact();
                       showHomeCaptureActions(context);
                     },
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: g.line, width: 0.8),
+                    child: CustomPaint(
+                      painter: _DashedCircleBorderPainter(
+                        color: g.line.withValues(alpha: dark ? 0.7 : 0.8),
+                        strokeWidth: 1.2,
+                        dashes: 18,
                       ),
-                      child: Center(
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
                         child: Icon(
                           Icons.add_rounded,
                           size: 20,
@@ -395,7 +400,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                             ),
                                             icon: item.icon,
                                             identity: item.id,
-                                            framed: false,
+                                            framed: true,
                                             selected:
                                                 widget.activeShortcutId ==
                                                 item.id,
@@ -474,12 +479,23 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                             top: 3,
                                           ),
                                           child: Text(
-                                            badge.isNotEmpty &&
-                                                    summary.startsWith(badge)
-                                                ? summary
-                                                      .substring(badge.length)
-                                                      .trim()
-                                                : summary,
+                                            () {
+                                              final raw = badge.isNotEmpty &&
+                                                      summary.startsWith(badge)
+                                                  ? summary
+                                                        .substring(badge.length)
+                                                        .trim()
+                                                  : summary;
+                                              var clean = raw.replaceAll(' today', '').trim();
+                                              if (item.id == 'assistant' &&
+                                                  (clean.isEmpty || clean == '0' || clean == '…')) {
+                                                clean = '0 msgs';
+                                              } else if (item.id == 'vault' &&
+                                                  (clean.isEmpty || clean == '0' || clean == '…')) {
+                                                clean = 'Locked';
+                                              }
+                                              return clean;
+                                            }(),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.center,
@@ -744,4 +760,44 @@ class _ReminderPreview extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _DashedCircleBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final int dashes;
+
+  const _DashedCircleBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0,
+    this.dashes = 18,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final radius = size.width / 2;
+    final center = Offset(radius, radius);
+    final circumference = 2 * math.pi * radius;
+    final dashLength = circumference / (dashes * 2);
+    final dashAngle = dashLength / radius;
+
+    for (int i = 0; i < dashes; i++) {
+      final startAngle = i * 2 * dashAngle;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
+        startAngle,
+        dashAngle,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

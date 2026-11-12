@@ -6,6 +6,7 @@ import 'home_outline_surface.dart';
 import 'home_capture_entrance.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -13,7 +14,6 @@ import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
-import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../plans/widgets/home_plans_preview.dart';
 import '../../today/widgets/things_hero_card.dart';
@@ -115,6 +115,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             cutout: false,
             dotColor: SharedControlColors.actionBlue,
             titleColor: SharedControlColors.actionBlue,
+            showDivider: true,
             trailing: HomeSectionArrowButton(
               key: const ValueKey('view_all_things_btn'),
               tooltip: 'Open Things',
@@ -487,17 +488,57 @@ class _HubTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final blue = dark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
+
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: AscentSegmentedControl<int>(
-        accented: true,
-        inline: true,
-        segments: [
-          for (final (index, label) in labels.indexed)
-            AscentSegment(value: index, label: label),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (index, label) in labels.indexed) ...[
+            if (index > 0) const SizedBox(width: 8),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onSelected(index);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: selected == index
+                        ? blue.withValues(alpha: dark ? 0.22 : 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: selected == index
+                          ? blue
+                          : (dark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B)),
+                      fontSize: 14,
+                      fontWeight: selected == index
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
-        selected: selected,
-        onChanged: onSelected,
       ),
     );
   }

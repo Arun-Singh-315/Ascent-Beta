@@ -25,8 +25,9 @@ class HomeShortcutIcon extends StatelessWidget {
     return switch (id) {
       'hydration' || 'walk' || 'medicine' || 'chai-break' => design.wellnessInk,
       'assistant' || 'thought-wall' || 'mind' =>
-        isDark ? const Color(0xFFB8A6E0) : const Color(0xFF5E4B9E),
+        isDark ? const Color(0xFFC084FC) : const Color(0xFF7C3AED),
       'learning' || 'momentum' || 'promises' => design.learningInk,
+      'vault' => isDark ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
       _ => isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue,
     };
   }
@@ -38,7 +39,6 @@ class HomeShortcutIcon extends StatelessWidget {
     final accentInk = identity != null
         ? inkFor(identity!, context)
         : HomeShortcutStyle.ink(context);
-    final tintColor = identity != null ? design.tintFor(identity!) : Colors.transparent;
 
     return Container(
       width: size,
@@ -51,7 +51,9 @@ class HomeShortcutIcon extends StatelessWidget {
                 ? (isDark
                     ? SharedControlColors.actionBlueDark.withValues(alpha: 0.22)
                     : SharedControlColors.actionBlue.withValues(alpha: 0.14))
-                : (isDark ? tintColor.withValues(alpha: 0.28) : tintColor)),
+                : (isDark
+                    ? const Color(0xFF1E293B).withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.85))),
         shape: BoxShape.circle,
         border: !framed
             ? null
@@ -61,23 +63,23 @@ class HomeShortcutIcon extends StatelessWidget {
                           ? SharedControlColors.actionBlueDark
                           : SharedControlColors.actionBlue)
                     : (identity != null
-                        ? accentInk.withValues(alpha: isDark ? 0.42 : 0.25)
+                        ? accentInk.withValues(alpha: isDark ? 0.55 : 0.4)
                         : design.separator),
-                width: selected ? 1.5 : 1.0,
+                width: selected ? 1.5 : 1.1,
               ),
         boxShadow: identity == null || isDark
             ? null
             : [
                 BoxShadow(
-                  color: accentInk.withValues(alpha: 0.08),
-                  blurRadius: 8,
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
               ],
       ),
       child: Icon(
         icon,
-        size: size * .46,
+        size: size * .44,
         color: selected
             ? (isDark
                   ? SharedControlColors.actionBlueDark

@@ -80,9 +80,17 @@ class _HomeCalendarState extends ConsumerState<HomeCalendar> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final title = Text(
-                month,
-                style: HomeType.section.copyWith(color: g.ink, fontSize: 16),
+              final title = InkWell(
+                key: const ValueKey('home_calendar_open'),
+                onTap: () => _open(_weekOffset == 0 ? today : monday),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    month,
+                    style: HomeType.section.copyWith(color: g.ink, fontSize: 16),
+                  ),
+                ),
               );
               final controls = Row(
                 mainAxisSize: MainAxisSize.min,
@@ -102,16 +110,6 @@ class _HomeCalendarState extends ConsumerState<HomeCalendar> {
                       setState(() => _weekOffset++);
                     },
                     icon: const Icon(Icons.chevron_right_rounded),
-                  ),
-                  IconButton(
-                    key: const ValueKey('home_calendar_open'),
-                    tooltip: 'Open full calendar',
-                    onPressed: () => _open(_weekOffset == 0 ? today : monday),
-                    icon: Icon(
-                      Icons.open_in_full_rounded,
-                      color: g.clay,
-                      size: 18,
-                    ),
                   ),
                 ],
               );

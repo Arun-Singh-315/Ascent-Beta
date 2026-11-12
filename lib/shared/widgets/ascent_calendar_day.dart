@@ -51,7 +51,8 @@ class AscentCalendarDay extends StatelessWidget {
           Text(
             weekdayLabel!,
             style: AscentTextStyles.interfaceLabel.copyWith(
-              color: colors.secondaryText,
+              color: today ? colors.primaryText : colors.secondaryText,
+              fontWeight: today ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
           const SizedBox(height: 6),
@@ -62,18 +63,26 @@ class AscentCalendarDay extends StatelessWidget {
           height: diameter,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: today || selected ? blue : Colors.transparent,
+            color: selected && !today ? blue : Colors.transparent,
             shape: BoxShape.circle,
-            border: selected
-                ? Border.all(color: colors.controlOutline, width: 1.5)
-                : null,
+            border: today
+                ? Border.all(
+                    color: dark ? Colors.white : const Color(0xFF0F172A),
+                    width: 1.5,
+                  )
+                : (selected
+                    ? Border.all(color: colors.controlOutline, width: 1.5)
+                    : null),
           ),
           child: Text(
             '${date.day}',
             style: AscentTextStyles.interfaceNavigation.copyWith(
-              color: today || selected
-                  ? (dark ? const Color(0xFF0F172A) : Colors.white)
-                  : (outsideMonth ? colors.secondaryText : colors.primaryText),
+              color: today
+                  ? (dark ? Colors.white : const Color(0xFF0F172A))
+                  : (selected
+                      ? (dark ? const Color(0xFF0F172A) : Colors.white)
+                      : (outsideMonth ? colors.secondaryText : colors.primaryText)),
+              fontWeight: today ? FontWeight.w700 : FontWeight.w500,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -83,11 +92,9 @@ class AscentCalendarDay extends StatelessWidget {
           key: ValueKey(
             'calendar_today_${date.year}_${date.month}_${date.day}',
           ),
-          size: 3,
+          size: 4,
           color: today
-              ? (dark
-                    ? SharedControlColors.actionBlueDark
-                    : SharedControlColors.actionBlue)
+              ? const Color(0xFFF59E0B)
               : Colors.transparent,
         ),
         const SizedBox(height: 3),

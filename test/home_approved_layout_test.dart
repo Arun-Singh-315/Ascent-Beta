@@ -446,7 +446,7 @@ void main() {
         final decoration =
             tester.widget<Container>(box).decoration! as BoxDecoration;
         expect(decoration.color, isNot(Colors.transparent));
-        expect(decoration.border, isNull);
+        expect(decoration.border, isNotNull);
       }
       expect(find.text('Evening supplements'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('hub_reminder_73')));
