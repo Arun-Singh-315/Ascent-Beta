@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/home_design.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 
 class HomeSectionHeading extends StatelessWidget {
@@ -13,6 +15,7 @@ class HomeSectionHeading extends StatelessWidget {
     this.trailing,
     this.cutout = false,
     this.dotColor,
+    this.titleColor,
   });
   final String title;
   final String? subtitle;
@@ -20,6 +23,8 @@ class HomeSectionHeading extends StatelessWidget {
   final bool cutout;
   final Widget? leading, trailing;
   final Color? dotColor;
+  final Color? titleColor;
+
   @override
   Widget build(BuildContext context) {
     final design = HomeDesign.of(context);
@@ -27,7 +32,7 @@ class HomeSectionHeading extends StatelessWidget {
       title,
       textAlign: centered ? TextAlign.center : TextAlign.start,
       style: AscentTextStyles.homeTitle.copyWith(
-        color: design.primaryText,
+        color: titleColor ?? design.primaryText,
         fontSize: 20,
         fontWeight: FontWeight.w700,
       ),
@@ -111,6 +116,72 @@ class HomeSectionHeading extends StatelessWidget {
           else
             ?trailing,
         ],
+      ),
+    );
+  }
+}
+
+/// Circular glass launcher button (→) used across all Home section headers
+/// for opening their respective full screens (Things, Mindspace, Plans, Commitments).
+class HomeSectionArrowButton extends StatelessWidget {
+  const HomeSectionArrowButton({
+    super.key,
+    required this.onTap,
+    this.tooltip = 'Open',
+    this.color,
+  });
+
+  final VoidCallback onTap;
+  final String tooltip;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final arrowColor = color ??
+        (dark
+            ? SharedControlColors.actionBlueDark
+            : SharedControlColors.actionBlue);
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+                  : Colors.white.withValues(alpha: 0.85),
+              border: Border.all(
+                color: arrowColor.withValues(alpha: dark ? 0.5 : 0.4),
+                width: 1.1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: dark ? 0.2 : 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 20,
+              color: arrowColor,
+            ),
+          ),
+        ),
       ),
     );
   }

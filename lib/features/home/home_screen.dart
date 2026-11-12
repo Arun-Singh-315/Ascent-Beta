@@ -339,10 +339,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                                 HomeSectionHeading(
                                   title: 'Plans & Routines',
                                   dotColor: const Color(0xFFC67D32),
-                                  trailing: IconButton(
+                                  trailing: HomeSectionArrowButton(
                                     tooltip: 'Open all plans',
-                                    icon: const Icon(Icons.arrow_forward_rounded),
-                                    onPressed: () => context.push('/plans'),
+                                    color: const Color(0xFFC67D32),
+                                    onTap: () => context.push('/plans'),
                                   ),
                                 ),
                                 const SizedBox(height: 12),

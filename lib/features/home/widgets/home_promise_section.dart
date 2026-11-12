@@ -51,10 +51,10 @@ class HomePromiseSection extends ConsumerWidget {
         HomeSectionHeading(
           title: 'Commitments',
           centered: false,
-          trailing: IconButton(
+          trailing: HomeSectionArrowButton(
             tooltip: 'Open commitments',
-            icon: const Icon(Icons.arrow_forward_rounded),
-            onPressed: () => context.push('/promises'),
+            color: const Color(0xFFC67D32),
+            onTap: () => context.push('/promises'),
           ),
         ),
         const SizedBox(height: 12),

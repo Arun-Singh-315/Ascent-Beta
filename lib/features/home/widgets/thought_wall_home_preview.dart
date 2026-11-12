@@ -653,7 +653,6 @@ class _ThoughtWallHomePreviewState
             }
 
             final titleColor = g.inkMuted;
-            final actionAccentColor = g.clay;
             final thoughtTextColor = g.ink;
             final thoughtTextMutedColor = g.inkMuted;
             final bubbleAccentColor = g.clay;
@@ -1101,20 +1100,6 @@ class _ThoughtWallHomePreviewState
                       child: _draftActions(pendingDraft),
                     ),
                   ),
-                if (!widget.compact)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: actionAccentColor,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        context.push('/thought-wall');
-                      },
-                      child: const Text('View ›'),
-                    ),
-                  ),
               ],
             );
 
@@ -1182,12 +1167,11 @@ class _ThoughtWallHomePreviewState
                     ),
                     onPressed: () => _showBubbleStyleSheet(context),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      context.push('/thought-wall');
-                    },
-                    child: const Text('View ›'),
+                  const SizedBox(width: 4),
+                  HomeSectionArrowButton(
+                    tooltip: 'Open Mindspace',
+                    color: const Color(0xFF7C5CB7),
+                    onTap: () => context.push('/thought-wall'),
                   ),
                 ],
               );
@@ -1249,10 +1233,10 @@ class _ThoughtWallHomePreviewState
               title: 'Mindspace',
               dotColor: const Color(0xFF7C5CB7),
               centered: false,
-              trailing: IconButton(
+              trailing: HomeSectionArrowButton(
                 tooltip: 'Open Mindspace',
-                onPressed: () => context.push('/thought-wall'),
-                icon: Icon(Icons.north_east_rounded, size: 21, color: g.clay),
+                color: const Color(0xFF7C5CB7),
+                onTap: () => context.push('/thought-wall'),
               ),
             ),
             const SizedBox(height: 12),
