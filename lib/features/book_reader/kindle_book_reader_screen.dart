@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
@@ -556,8 +557,21 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
   @override
   Widget build(BuildContext context) {
     final hasPdf = _pdfPath != null && File(_pdfPath!).existsSync();
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
 
-    return Scaffold(
+    return PopScope(
+      canPop: canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: _theme.bg,
       body: SafeArea(
         child: Stack(
@@ -646,7 +660,16 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                         color: _theme.text,
                         size: 22,
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () {
+                        final router = GoRouter.maybeOf(context);
+                        if (router != null && router.canPop()) {
+                          router.pop();
+                        } else if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else if (router != null) {
+                          router.go('/home');
+                        }
+                      },
                     ),
                     Expanded(
                       child: Column(
@@ -873,6 +896,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
           ],
         ),
       ),
+    ),
     );
   }
 

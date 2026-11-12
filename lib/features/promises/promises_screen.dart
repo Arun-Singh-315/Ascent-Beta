@@ -63,7 +63,21 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
     final completedAsync = ref.watch(completedPromisesStreamProvider);
     final pausedAsync = ref.watch(pausedPromisesStreamProvider);
 
-    return Scaffold(
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
+
+    return PopScope(
+      canPop: canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: g.bg,
       body: AscentAtmosphereBackground(
         child: SafeArea(
@@ -89,10 +103,13 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             onPressed: () {
-                              if (context.canPop()) {
-                                context.pop();
-                              } else {
-                                context.go('/');
+                              final router = GoRouter.maybeOf(context);
+                              if (router != null && router.canPop()) {
+                                router.pop();
+                              } else if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else if (router != null) {
+                                router.go('/home');
                               }
                             },
                           ),
@@ -266,6 +283,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
           ),
         ),
       ),
+    ),
     ),
     );
   }

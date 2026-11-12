@@ -743,9 +743,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final name = ref.watch(assistantNameProvider);
     final messagesStream = _messagesStream;
     final accentColor = context.accentPrimary;
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
 
     return PopScope(
-      canPop: !_isLoading,
+      canPop: !_isLoading && canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_isLoading) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
       child: Scaffold(
         resizeToAvoidBottomInset: !widget.compact,
         extendBodyBehindAppBar: true,
@@ -784,7 +795,18 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               color: context.textPrimary,
               size: 19,
             ),
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            onPressed: _isLoading
+                ? null
+                : () {
+                    final router = GoRouter.maybeOf(context);
+                    if (router != null && router.canPop()) {
+                      router.pop();
+                    } else if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else if (router != null) {
+                      router.go('/home');
+                    }
+                  },
           ),
           titleSpacing: 0,
           title: Row(

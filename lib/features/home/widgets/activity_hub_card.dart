@@ -1,4 +1,3 @@
-import '../../../app/theme/home_design.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 import 'activity_starter_actions.dart';
 import 'home_section_heading.dart';

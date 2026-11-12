@@ -43,7 +43,21 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
+
+    return PopScope(
+      canPop: canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: g.bg,
       body: AscentAtmosphereBackground(
         child: SafeArea(
@@ -66,7 +80,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
-                      Navigator.of(context).pop();
+                      final router = GoRouter.maybeOf(context);
+                      if (router != null && router.canPop()) {
+                        router.pop();
+                      } else if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else if (router != null) {
+                        router.go('/home');
+                      }
                     },
                     tooltip: 'Back',
                   ),
@@ -281,7 +302,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
-                              Navigator.of(context).pop();
+                              final router = GoRouter.maybeOf(context);
+                              if (router != null && router.canPop()) {
+                                router.pop();
+                              } else if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else if (router != null) {
+                                router.go('/home');
+                              }
                             },
                             tooltip: 'Finish break early',
                           ),
@@ -320,6 +348,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
           ],
         ),
       ),
+    ),
     ),
     );
   }
