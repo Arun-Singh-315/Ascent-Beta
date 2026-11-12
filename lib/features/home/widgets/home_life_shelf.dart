@@ -254,8 +254,8 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                     _dragDistance += details.delta.dx,
                 onHorizontalDragEnd: (details) {
                   final velocity = details.primaryVelocity ?? 0;
-                  if (_dragDistance.abs() < 40 && velocity.abs() < 250) return;
-                  final delta = _dragDistance.abs() >= 40
+                  if (_dragDistance.abs() < 25 && velocity.abs() < 180) return;
+                  final delta = _dragDistance.abs() >= 25
                       ? _dragDistance
                       : velocity;
                   final rtl = Directionality.of(context) == TextDirection.rtl;
@@ -264,12 +264,12 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.zero,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.zero,
-                        child: ColoredBox(
-                          color: Colors.transparent,
+                      Padding(
+                        padding: EdgeInsets.zero,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: ColoredBox(
+                            color: Colors.transparent,
                           child: AnimatedSwitcher(
                             duration: duration,
                             switchInCurve: Curves.easeOutCubic,
@@ -370,30 +370,12 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(24),
         clipBehavior: Clip.antiAlias,
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Subtle colored left-edge accent bar
-            Positioned(
-              top: 0,
-              bottom: 0,
-              left: 0,
-              child: Container(
-                width: 3,
-                decoration: BoxDecoration(
-                  color: design.wellnessInk.withValues(alpha: 0.55),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(3),
-                    bottomLeft: Radius.circular(3),
-                  ),
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
             Semantics(
               button: true,
               expanded: selected,
@@ -655,11 +637,9 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                   ],
                 ),
               ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 }

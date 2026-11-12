@@ -124,7 +124,9 @@ class LearningHubCard extends ConsumerWidget {
           LinearProgressIndicator(
             value: state.progressFraction.clamp(0.0, 1.0),
             minHeight: 3,
-            color: HomeDesign.of(context).action,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF7BA0C6)
+                : const Color(0xFF4A7097),
             backgroundColor: g.track,
             semanticsLabel: 'Lecture progress',
           ),

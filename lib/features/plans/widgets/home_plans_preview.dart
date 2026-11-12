@@ -98,7 +98,7 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
     final g = context.glass;
 
     return ref.watch(planCollectionsProvider).when(
-          loading: () => const LinearProgressIndicator(),
+          loading: () => const SizedBox.shrink(),
           error: (_, _) => AscentButton.ghost(
             compact: true,
             label: 'Retry plans',

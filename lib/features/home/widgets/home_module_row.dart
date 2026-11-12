@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/home_design.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import 'home_outline_surface.dart';
 
@@ -21,9 +20,11 @@ class HomeModuleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = HomeDesign.of(context);
-    final blue = Theme.of(context).brightness == Brightness.dark
-        ? SharedControlColors.actionBlueDark
-        : SharedControlColors.actionBlue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Softer, less saturated calm slate-blue tone that avoids eye-strain
+    final blue = isDark
+        ? const Color(0xFF7BA0C6)
+        : const Color(0xFF4A7097);
     return Semantics(
       button: true,
       child: Container(

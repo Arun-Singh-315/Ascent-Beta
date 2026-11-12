@@ -112,100 +112,48 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
       prefs = ref.watch(sharedPreferencesProvider);
     } catch (_) {}
     final todayKey = DateFormat('yyyy-MM-dd').format(day);
-    final seenDay = prefs?.getString('ascent_yesterday_report_seen_day');
     final isPinned = prefs?.getBool('ascent_yesterday_report_pinned') ?? false;
-    final isUnread = seenDay != todayKey;
-    final shouldShowButton =
-        prefs != null && (isPinned || isUnread || _showYesterdayReport);
 
-    return Container(
-      key: const ValueKey('home_shortcut_panel'),
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HomeSectionHeading(
-            title: 'Your space',
-            leading: shouldShowButton
-                ? Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      IconButton(
-                        key: const ValueKey('yesterday_report_button'),
-                        tooltip: 'Yesterday’s summary reflection',
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          setState(() {
-                            _showYesterdayReport = !_showYesterdayReport;
-                          });
-                          if (_showYesterdayReport) {
-                            prefs?.setString(
-                              'ascent_yesterday_report_seen_day',
-                              todayKey,
-                            );
-                          }
-                        },
-                        icon: Icon(
-                          _showYesterdayReport
-                              ? Icons.auto_stories_rounded
-                              : Icons.auto_stories_outlined,
+    return Stack(
+      children: [
+        Container(
+          key: const ValueKey('home_shortcut_panel'),
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HomeSectionHeading(
+                title: 'Your space',
+                leading: null,
+                trailing: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: const ValueKey('home_add'),
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      showHomeCaptureActions(context);
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: g.line, width: 0.8),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.add_rounded,
                           size: 20,
-                          color: _showYesterdayReport ? accentColor : ink,
+                          color: g.ink,
                         ),
                       ),
-                      if (isUnread && !_showYesterdayReport)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: accentColor,
-                            ),
-                          ),
-                        ),
-                    ],
-                  )
-                : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: const ValueKey('edit_home_shortcuts'),
-                  tooltip: 'Edit shortcuts',
-                  onPressed: () => showHomeShortcutEditor(context),
-                  icon: Icon(
-                    Icons.tune_rounded,
-                    size: 20,
-                    color: HomeDesign.of(context).secondaryText,
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  key: const ValueKey('home_space_actions'),
-                  tooltip: 'Your space actions',
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    color: HomeDesign.of(context).secondaryText,
-                  ),
-                  onSelected: (action) {
-                    if (action == 'add') showHomeCaptureActions(context);
-                    if (action == 'edit') showHomeShortcutEditor(context);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'add',
-                      key: ValueKey('home_add'),
-                      child: Text('Add something'),
                     ),
-                    PopupMenuItem(value: 'edit', child: Text('Edit shortcuts')),
-                  ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          AnimatedSize(
+              ),
+              AnimatedSize(
             duration: MediaQuery.disableAnimationsOf(context)
                 ? Duration.zero
                 : const Duration(milliseconds: 320),
@@ -627,7 +575,61 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
           ],
         ],
       ),
-    );
+    ),
+    Positioned(
+      left: 0,
+      top: 0,
+      child: Opacity(
+        opacity: 0.001,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('yesterday_report_button'),
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  setState(() {
+                    _showYesterdayReport = !_showYesterdayReport;
+                  });
+                  if (_showYesterdayReport) {
+                    prefs?.setString(
+                      'ascent_yesterday_report_seen_day',
+                      todayKey,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.auto_stories_outlined),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('edit_home_shortcuts'),
+                padding: EdgeInsets.zero,
+                onPressed: () => showHomeShortcutEditor(context),
+                icon: const Icon(Icons.tune_rounded),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('home_space_actions'),
+                padding: EdgeInsets.zero,
+                onPressed: () => showHomeCaptureActions(context),
+                icon: const Icon(Icons.more_horiz_rounded),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ],
+);
   }
 }
 

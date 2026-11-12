@@ -1,3 +1,5 @@
+import 'widgets/home_section_heading.dart';
+import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
 import 'widgets/home_content_transition.dart';
 import '../../core/providers/local_day_provider.dart';
@@ -329,6 +331,36 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               padding: EdgeInsets.symmetric(horizontal: 20),
                               child: HomeLifeShelf(),
                             ),
+                          Padding(
+                            padding: _sectionPadding(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                HomeSectionHeading(
+                                  title: 'Plans & Routines',
+                                  trailing: IconButton(
+                                    tooltip: 'Open all plans',
+                                    icon: const Icon(Icons.arrow_forward_rounded),
+                                    onPressed: () => context.push('/plans'),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  key: const ValueKey('home_plans_big_card'),
+                                  decoration: BoxDecoration(
+                                    color: g.fill,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: g.line,
+                                      width: 0.9,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.all(16),
+                                  child: const HomePlansPreview(),
+                                ),
+                              ],
+                            ),
+                          ),
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
                           ),

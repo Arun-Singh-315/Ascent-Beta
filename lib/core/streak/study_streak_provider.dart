@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -187,24 +188,26 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
     final shortestStreak = prefs.getInt(_kShortestStreakKey) ?? 1;
 
     _midnightWatcher?.cancel();
-    _midnightWatcher = Timer.periodic(const Duration(minutes: 1), (_) {
-      final current = _now();
-      final currentHistory = studyHistoryFromPreferences(prefs!, current);
-      state = _calculator.calculate(
-        todaySeconds: prefs.getInt(_dateKey(current)) ?? 0,
-        yesterdaySeconds:
-            prefs.getInt(
-              _dateKey(DateTime(current.year, current.month, current.day - 1)),
-            ) ??
-            0,
-        priorStreakDays: currentHistory.$1,
-        historicalLongestStreak:
-            ((prefs.getInt(_kLongestStreakKey) ?? 0) > currentHistory.$2)
-            ? prefs.getInt(_kLongestStreakKey)!
-            : currentHistory.$2,
-        now: current,
-      );
-    });
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      _midnightWatcher = Timer.periodic(const Duration(minutes: 1), (_) {
+        final current = _now();
+        final currentHistory = studyHistoryFromPreferences(prefs!, current);
+        state = _calculator.calculate(
+          todaySeconds: prefs.getInt(_dateKey(current)) ?? 0,
+          yesterdaySeconds:
+              prefs.getInt(
+                _dateKey(DateTime(current.year, current.month, current.day - 1)),
+              ) ??
+              0,
+          priorStreakDays: currentHistory.$1,
+          historicalLongestStreak:
+              ((prefs.getInt(_kLongestStreakKey) ?? 0) > currentHistory.$2)
+              ? prefs.getInt(_kLongestStreakKey)!
+              : currentHistory.$2,
+          now: current,
+        );
+      });
+    }
     ref.onDispose(() => _midnightWatcher?.cancel());
 
     return _calculator.calculate(

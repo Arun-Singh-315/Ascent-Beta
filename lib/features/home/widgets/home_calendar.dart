@@ -67,27 +67,6 @@ class _HomeCalendarState extends ConsumerState<HomeCalendar> {
         reminders.hasError || tasks.hasError || activities.hasError;
     final loading =
         reminders.isLoading || tasks.isLoading || activities.isLoading;
-    bool thisWeek(DateTime date) =>
-        !date.isBefore(monday) &&
-        date.isBefore(monday.add(const Duration(days: 7)));
-    final openTasks = (tasks.value ?? const <Task>[])
-        .where((t) => t.actualCompletedDate == null)
-        .toList();
-    final taskIds = openTasks.map((t) => t.id).toSet();
-    final todoCount =
-        openTasks.where((t) => thisWeek(t.plannedDate ?? today)).length +
-        (activities.value ?? const <TodayActivityItem>[])
-            .where(
-              (a) =>
-                  a.status != TodayActivityStatus.done &&
-                  !taskIds.contains(a.linkedTaskId) &&
-                  thisWeek(a.plannedDate ?? today),
-            )
-            .length;
-    final reminderCount = (reminders.value ?? const <Reminder>[])
-        .where((r) => r.isActive && thisWeek(r.scheduledAt))
-        .length;
-    final busyDays = days.where(scheduled.contains).length;
     final month = days.first.month == days.last.month
         ? DateFormat.yMMMM().format(days.first)
         : '${DateFormat.MMM().format(days.first)} – ${DateFormat.yMMM().format(days.last)}';
@@ -186,13 +165,6 @@ class _HomeCalendarState extends ConsumerState<HomeCalendar> {
                 ],
               );
             },
-          ),
-          const SizedBox(height: 10),
-          Text(
-            busyDays == 0
-                ? 'Your week, at a glance.'
-                : '$todoCount ${todoCount == 1 ? 'to-do' : 'to-dos'} · $reminderCount ${reminderCount == 1 ? 'reminder' : 'reminders'} · $busyDays planned days',
-            style: HomeType.supporting.copyWith(color: g.inkSecondary),
           ),
           if (_weekOffset != 0)
             Align(

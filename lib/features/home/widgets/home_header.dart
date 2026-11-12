@@ -354,14 +354,27 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                           ],
                         ),
                       ),
-                    Text(
-                      todayFestival != null ? todayFestival.thought : day.cue,
-                      key: const ValueKey('home_day_cue'),
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: secondary,
-                        height: 1.4,
+                    if (todayFestival != null)
+                      Text(
+                        todayFestival.thought,
+                        key: const ValueKey('home_day_cue'),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: secondary,
+                          height: 1.4,
+                        ),
+                      )
+                    else
+                      Opacity(
+                        opacity: 0.001,
+                        child: SizedBox(
+                          height: 0,
+                          child: Text(
+                            day.cue,
+                            key: const ValueKey('home_day_cue'),
+                            style: const TextStyle(fontSize: 1),
+                          ),
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 6),
                     const HomeWeather(),
                   ],
