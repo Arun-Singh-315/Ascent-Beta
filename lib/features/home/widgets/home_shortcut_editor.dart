@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/home_layout_provider.dart';
 import 'home_shortcut_icon.dart';
+import 'home_theme.dart';
 import 'home_shortcuts.dart';
 import '../home_customization_sheet.dart';
 import '../../../shared/widgets/ascent_button.dart';
@@ -14,7 +15,19 @@ Future<void> showHomeShortcutEditor(BuildContext context) =>
       useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (_) => _ShortcutEditor(host: context),
+      backgroundColor: HomeTheme.from(
+        Theme.of(context),
+      ).colorScheme.surfaceContainer,
+      builder: (_) => Theme(
+        data: HomeTheme.from(Theme.of(context)),
+        child: Material(
+          key: const ValueKey('home_shortcut_editor_surface'),
+          color: HomeTheme.from(Theme.of(context)).colorScheme.surfaceContainer,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          clipBehavior: Clip.antiAlias,
+          child: _ShortcutEditor(host: context),
+        ),
+      ),
     );
 
 class _ShortcutEditor extends ConsumerStatefulWidget {

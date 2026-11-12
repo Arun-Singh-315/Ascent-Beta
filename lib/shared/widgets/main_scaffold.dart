@@ -1,4 +1,5 @@
 import 'ascent_button.dart';
+import '../../app/theme/home_design.dart';
 import 'dart:ui';
 
 import 'package:ascent/app/theme/dimension_tokens.dart';
@@ -8,6 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/monochrome_surfaces.dart';
+import '../../app/theme/shared_control_tokens.dart';
+import '../../features/home/widgets/home_theme.dart';
+import '../../core/providers/calendar_view_mode_provider.dart';
 
 import 'package:flutter/services.dart';
 
@@ -35,13 +40,13 @@ class MainScaffold extends ConsumerStatefulWidget {
       label: 'Reminders',
     ),
     _TabItem(
-      icon: Icons.account_balance_wallet_outlined,
-      activeIcon: Icons.account_balance_wallet_rounded,
-      label: 'Money',
+      icon: Icons.lock_outline_rounded,
+      activeIcon: Icons.lock_rounded,
+      label: 'Vault',
     ),
     _TabItem(
       icon: Icons.grid_view_outlined,
-      activeIcon: Icons.grid_view_rounded,
+      activeIcon: Icons.widgets_rounded,
       label: 'More',
     ),
   ];
@@ -58,6 +63,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   Widget build(BuildContext context) {
     final assistantName = ref.watch(assistantNameProvider);
     final assistantLabel = 'Ask $assistantName';
+    final neutralShell =
+        widget.shell.currentIndex == 0 ||
+        (widget.shell.currentIndex == 1 && ref.watch(calendarViewModeProvider));
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -140,7 +148,10 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       child: Scaffold(
         key: _scaffoldKey,
         drawer: const AscentDrawer(),
+        backgroundColor: neutralShell ? HomeDesign.of(context).canvas : null,
         extendBody: true,
+        // Scaffold's extended-body MediaQuery and each screen's SafeArea
+        // already reserve the full navigation height, including the large-text grid.
         body: widget.shell,
         floatingActionButton:
             MediaQuery.viewInsetsOf(context).bottom > 0 ||
@@ -155,16 +166,23 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                 onPressed: () => AiAssistantScreen.showFromHome(context),
               ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        bottomNavigationBar: _AscentBottomNav(
-          currentIndex: widget.shell.currentIndex,
-          onTap: (index) {
-            HapticFeedback.selectionClick();
-            widget.shell.goBranch(
-              index,
-              initialLocation: index == widget.shell.currentIndex,
-            );
-          },
-          tabs: MainScaffold._tabs,
+        bottomNavigationBar: AnimatedTheme(
+          duration: Duration(
+            milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 320,
+          ),
+          curve: Curves.easeInOutCubic,
+          data: HomeTheme.from(Theme.of(context)),
+          child: _AscentBottomNav(
+            currentIndex: widget.shell.currentIndex,
+            onTap: (index) {
+              HapticFeedback.selectionClick();
+              widget.shell.goBranch(
+                index,
+                initialLocation: index == widget.shell.currentIndex,
+              );
+            },
+            tabs: MainScaffold._tabs,
+          ),
         ),
       ),
     );
@@ -186,6 +204,7 @@ class _AscentBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     final isDark = g.isDark;
+    final neutral = Theme.of(context).extension<MonochromeSurfaces>();
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final highContrast = MediaQuery.of(context).highContrast;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -197,9 +216,9 @@ class _AscentBottomNav extends StatelessWidget {
         : g.elevated;
 
     final navShadow = BoxShadow(
-      color: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),
-      blurRadius: 16,
-      offset: const Offset(0, 4),
+      color: HomeDesign.of(context).shadow,
+      blurRadius: 24,
+      offset: const Offset(0, 8),
       spreadRadius: 0,
     );
 
@@ -228,56 +247,88 @@ class _AscentBottomNav extends StatelessWidget {
                   width: AscentDimensions.contentOutlineWidth,
                 ),
               ),
-              child: Row(
-                children: List.generate(tabs.length, (index) {
-                  final tab = tabs[index];
-                  final isActive = index == currentIndex;
-
-                  final fg = isActive ? g.tonalFg : g.inkSecondary;
-                  final capsuleBg = isActive ? g.tonalBg : Colors.transparent;
-
-                  return Expanded(
-                    child: InkWell(
-                      onTap: () => onTap(index),
-                      borderRadius: BorderRadius.circular(
-                        AscentDimensions.radiusXxl,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: capsuleBg,
-                          borderRadius: BorderRadius.circular(
-                            AscentDimensions.radiusXxl,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  Widget tabAt(int index) {
+                    final tab = tabs[index];
+                    final active = index == currentIndex;
+                    final blue = isDark
+                        ? SharedControlColors.actionBlueDark
+                        : SharedControlColors.actionBlue;
+                    final fg = active ? blue : g.inkSecondary;
+                    return Semantics(
+                      button: true,
+                      selected: active,
+                      label: tab.label,
+                      child: InkWell(
+                        onTap: () => onTap(index),
+                        borderRadius: BorderRadius.circular(24),
+                        child: AnimatedContainer(
+                          duration: Duration(
+                            milliseconds: disableAnimations ? 0 : 200,
+                          ),
+                          curve: Curves.easeOutCubic,
+                          constraints: const BoxConstraints(minHeight: 64),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: active
+                                ? blue.withValues(alpha: isDark ? .18 : .09)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(tab.activeIcon, size: 24, color: fg),
+                              const SizedBox(height: 4),
+                              Text(
+                                tab.label,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    (neutral != null
+                                            ? AscentTextStyles.interfaceLabel
+                                            : AscentTextStyles.caption)
+                                        .copyWith(
+                                          color: fg,
+                                          fontWeight: active
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
+                                        ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      ),
+                    );
+                  }
+
+                  final scale = MediaQuery.textScalerOf(context).scale(1);
+                  final columns = neutral != null && scale >= 1.45
+                      ? (scale > 2.2 ? 1 : 2)
+                      : tabs.length;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var start = 0; start < tabs.length; start += columns)
+                        Row(
                           children: [
-                            Icon(
-                              isActive ? tab.activeIcon : tab.icon,
-                              size: 22,
-                              color: fg,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              tab.label,
-                              style: AscentTextStyles.caption.copyWith(
-                                color: fg,
-                                fontWeight: isActive
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                              ),
-                            ),
+                            for (
+                              var index = start;
+                              index < start + columns && index < tabs.length;
+                              index++
+                            )
+                              Expanded(child: tabAt(index)),
                           ],
                         ),
-                      ),
-                    ),
+                    ],
                   );
-                }),
+                },
               ),
             ),
           ),

@@ -87,6 +87,11 @@ void main() {
         }
         SharedPreferences.setMockInitialValues({
           'ascent_day_one_tutorial_v2_dismissed': true,
+          'ascent_first_home_day_v1': DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          ).toIso8601String(),
           'ascent_daily_briefing_seen_v1': DateTime(
             DateTime.now().year,
             DateTime.now().month,
@@ -201,6 +206,33 @@ void main() {
           );
           expect(tester.takeException(), isNull);
           await snapshot('health');
+          await tester.drag(
+            find.byKey(const ValueKey('home_scroll')),
+            const Offset(0, -800),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            find.byKey(const ValueKey('home_compact_header')),
+            findsOneWidget,
+          );
+          await snapshot('compact');
+          await tester.tap(find.byKey(const ValueKey('home_compact_header')));
+          await tester.pumpAndSettle();
+          expect(
+            tester
+                .widget<ListView>(find.byKey(const ValueKey('home_scroll')))
+                .controller!
+                .offset,
+            closeTo(0, 1),
+          );
+          expect(
+            find.byKey(const ValueKey('home_compact_header')),
+            findsNothing,
+          );
+          container.invalidate(userProfileStreamProvider);
+          await tester.pump();
+          expect(find.byKey(const ValueKey('home_day_header')), findsOneWidget);
+          expect(tester.takeException(), isNull);
         } finally {
           await tester.pumpWidget(const SizedBox());
           await tester.pump(const Duration(seconds: 1));

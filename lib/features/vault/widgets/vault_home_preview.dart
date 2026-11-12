@@ -1,3 +1,5 @@
+import '../../home/widgets/home_module_row.dart';
+import '../../../app/theme/monochrome_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,8 +22,20 @@ class VaultHomePreview extends ConsumerWidget {
     final count = ref.watch(vaultItemCountProvider);
     final items = ref.watch(vaultItemsStreamProvider).value ?? [];
 
+    if (!isUnlocked) {
+      return HomeModuleRow(
+        key: const ValueKey('home_vault_card'),
+        title: 'Private Vault',
+        icon: Icons.lock_outline_rounded,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/vault');
+        },
+      );
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── SECTION HEADING (Strict Rule 18 Adherence) ─────────────────
         Padding(
@@ -29,10 +43,10 @@ class VaultHomePreview extends ConsumerWidget {
           child: Text(
             'Vault',
             textAlign: TextAlign.center,
-            style: AscentTextStyles.homeTitle.copyWith(
+            style: AscentTextStyles.interfaceSection.copyWith(
               color: g.ink,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -44,105 +58,21 @@ class VaultHomePreview extends ConsumerWidget {
           width: double.infinity,
           child: GlassSurface(
             key: const ValueKey('home_vault_card'),
-            borderRadius: BorderRadius.circular(24),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            borderRadius: BorderRadius.zero,
+            padding: const EdgeInsets.symmetric(vertical: 22),
             fillColor: Colors.transparent,
             hasShadow: false,
             enableBlur: false,
-            customBorder: Border.all(
-              color: g.line.withValues(alpha: 0.8),
-              width: 1.0,
+            customBorder: Border(
+              bottom: BorderSide(
+                color: MonochromeSurfaces.of(context).separator,
+              ),
             ),
             onTap: () {
               HapticFeedback.selectionClick();
               context.push('/vault');
             },
-            child: isUnlocked
-                ? _buildUnlockedContent(context, g, count, items)
-                : _buildLockedContent(context, g, count),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLockedContent(BuildContext context, AscentGlass g, int count) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: g.clay.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: g.clay.withValues(alpha: 0.35),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: g.clay.withValues(alpha: 0.14),
-                blurRadius: 18,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Icon(Icons.shield_rounded, color: g.clay, size: 28),
-          ),
-        ),
-        const SizedBox(height: AppSpace.s12),
-        Text(
-          'Private Vault',
-          textAlign: TextAlign.center,
-          style: AscentTextStyles.displaySmall.copyWith(
-            color: g.ink,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.3,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          count > 0
-              ? '$count secure item(s) protected'
-              : 'Cards, IDs, logins & private notes',
-          textAlign: TextAlign.center,
-          style: AscentTextStyles.caption.copyWith(
-            color: g.inkMuted,
-            fontSize: 12.5,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          constraints: const BoxConstraints(maxWidth: 240),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-          decoration: BoxDecoration(
-            color: g.clay.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: g.clay.withValues(alpha: 0.40),
-              width: 0.8,
-            ),
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.fingerprint_rounded, size: 17, color: g.clay),
-                const SizedBox(width: 8),
-                Text(
-                  'Unlock Sanctuary',
-                  style: TextStyle(
-                    color: g.clay,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
+            child: _buildUnlockedContent(context, g, count, items),
           ),
         ),
       ],
@@ -188,17 +118,17 @@ class VaultHomePreview extends ConsumerWidget {
         Text(
           'Vault Unlocked',
           textAlign: TextAlign.center,
-          style: AscentTextStyles.displaySmall.copyWith(
+          style: AscentTextStyles.interfaceDisplay.copyWith(
             color: g.ink,
             fontSize: 16,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           '$count items accessible in secure session',
           textAlign: TextAlign.center,
-          style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+          style: AscentTextStyles.interfaceLabel.copyWith(color: g.inkMuted),
         ),
         if (count > 0) ...[
           const SizedBox(height: AppSpace.s12),

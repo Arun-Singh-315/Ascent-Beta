@@ -15,6 +15,7 @@ import '../../../core/providers/daily_briefing_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
+import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_card.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
 import '../../today/add_activity_sheet.dart';
@@ -346,18 +347,24 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
           ),
 
         if (widget.inSheet) ...[
-          const SizedBox(height: 16),
-          Divider(color: g.line),
-          AscentSwitchRow(
-            title: 'Welcome me each new day',
-            helper:
-                'Open this check-in automatically. You can always find it on Home.',
-            value: ref.watch(dailyBriefingAutoOpenProvider),
-            onChanged: (enabled) async {
-              await ref
-                  .read(dailyBriefingAutoOpenProvider.notifier)
-                  .setEnabled(enabled);
-            },
+          const SizedBox(height: 14),
+          Container(
+            decoration: BoxDecoration(
+              color: g.ink.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: g.line.withValues(alpha: 0.5), width: 0.8),
+            ),
+            child: AscentSwitchRow(
+              title: 'Welcome me each new day',
+              helper:
+                  'Open this check-in automatically. You can always find it on Home.',
+              value: ref.watch(dailyBriefingAutoOpenProvider),
+              onChanged: (enabled) async {
+                await ref
+                    .read(dailyBriefingAutoOpenProvider.notifier)
+                    .setEnabled(enabled);
+              },
+            ),
           ),
         ],
       ],
@@ -527,54 +534,70 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         const SizedBox(height: 14),
 
         // Primary Companion Button
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () => setState(() => _currentStep = 1),
-            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-            label: const Text('Start Today’s Plan'),
-          ),
+        AscentButton.primary(
+          label: 'Start Today’s Plan',
+          icon: Icons.arrow_forward_rounded,
+          expanded: true,
+          compact: true,
+          onPressed: () => setState(() => _currentStep = 1),
         ),
 
         const SizedBox(height: 8),
 
         // Secondary structured links
-        Wrap(
-          spacing: 8,
-          runSpacing: 6,
+        AscentButton.outlined(
+          label: 'Plan one small task',
+          icon: Icons.add,
+          compact: true,
+          expanded: true,
+          onPressed: () async {
+            final navigator = Navigator.of(context);
+            final rootContext = navigator.context;
+            if (widget.inSheet) navigator.pop();
+            await AddActivitySheet.show(widget.inSheet ? rootContext : context);
+          },
+        ),
+
+        const SizedBox(height: 6),
+
+        Row(
           children: [
-            OutlinedButton.icon(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                final rootContext = navigator.context;
-                if (widget.inSheet) navigator.pop();
-                await AddActivitySheet.show(widget.inSheet ? rootContext : context);
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Plan one small task'),
-            ),
-            TextButton.icon(
-              onPressed: () => _navigate('/thought-wall'),
-              icon: const Icon(Icons.edit_note_rounded, size: 16),
-              label: const Text('Capture a thought'),
-            ),
-            TextButton.icon(
-              onPressed: () => _navigate('/ai-assistant'),
-              icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-              label: Text('Ask ${ref.watch(assistantNameProvider)}'),
-            ),
-            if (!widget.inSheet)
-              TextButton(
-                onPressed: () => DailyBriefingCard.show(context, widget.day),
-                child: const Text('Open daily check-in'),
-              )
-            else
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('I’ll explore on my own'),
+            Expanded(
+              child: AscentButton.ghost(
+                label: 'Capture a thought',
+                icon: Icons.edit_note_rounded,
+                compact: true,
+                onPressed: () => _navigate('/thought-wall'),
               ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: AscentButton.ghost(
+                label: 'Ask ${ref.watch(assistantNameProvider)}',
+                icon: Icons.auto_awesome_rounded,
+                compact: true,
+                onPressed: () => _navigate('/ai-assistant'),
+              ),
+            ),
           ],
         ),
+
+        const SizedBox(height: 4),
+
+        if (!widget.inSheet)
+          AscentButton.ghost(
+            label: 'Open daily check-in',
+            compact: true,
+            expanded: true,
+            onPressed: () => DailyBriefingCard.show(context, widget.day),
+          )
+        else
+          AscentButton.ghost(
+            label: 'I’ll explore on my own',
+            compact: true,
+            expanded: true,
+            onPressed: () => Navigator.pop(context),
+          ),
       ],
     );
   }
@@ -751,22 +774,21 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         const SizedBox(height: 12),
 
         // Action to save quick task
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: () async {
-              if (_taskTitleController.text.trim().isNotEmpty) {
-                await _saveQuickTask();
-              } else {
-                final navigator = Navigator.of(context);
-                final rootContext = navigator.context;
-                if (widget.inSheet) navigator.pop();
-                await AddActivitySheet.show(widget.inSheet ? rootContext : context);
-              }
-            },
-            icon: Icon(_taskSaved ? Icons.check_circle_rounded : Icons.add, size: 16),
-            label: Text(_taskSaved ? 'Task added to today!' : 'Plan one small task'),
-          ),
+        AscentButton.primary(
+          label: _taskSaved ? 'Task added to today!' : 'Plan one small task',
+          icon: _taskSaved ? Icons.check_circle_rounded : Icons.add,
+          expanded: true,
+          compact: true,
+          onPressed: () async {
+            if (_taskTitleController.text.trim().isNotEmpty) {
+              await _saveQuickTask();
+            } else {
+              final navigator = Navigator.of(context);
+              final rootContext = navigator.context;
+              if (widget.inSheet) navigator.pop();
+              await AddActivitySheet.show(widget.inSheet ? rootContext : context);
+            }
+          },
         ),
 
         const SizedBox(height: 12),
@@ -775,22 +797,19 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         Row(
           children: [
             Expanded(
-              child: OutlinedButton.icon(
+              child: AscentButton.outlined(
+                label: _waterLogged ? '+250ml logged!' : '+250ml water',
+                icon: _waterLogged ? Icons.check_circle_rounded : Icons.water_drop_outlined,
+                compact: true,
                 onPressed: _logQuickWater,
-                icon: Icon(
-                  _waterLogged ? Icons.check_circle_rounded : Icons.water_drop_outlined,
-                  size: 15,
-                  color: context.waterAccent,
-                ),
-                label: Text(
-                  _waterLogged ? '+250ml logged!' : '+250ml water',
-                  style: const TextStyle(fontSize: 11.5),
-                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: OutlinedButton.icon(
+              child: AscentButton.outlined(
+                label: 'Capture a thought',
+                icon: Icons.edit_note_rounded,
+                compact: true,
                 onPressed: () {
                   if (widget.inSheet) {
                     setState(() => _showThoughtField = !_showThoughtField);
@@ -798,8 +817,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                     _navigate('/thought-wall');
                   }
                 },
-                icon: const Icon(Icons.edit_note_rounded, size: 15),
-                label: const Text('Capture a thought', style: TextStyle(fontSize: 11.5)),
               ),
             ),
           ],
@@ -834,15 +851,18 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         // Stepper Navigation
         Row(
           children: [
-            OutlinedButton(
+            AscentButton.outlined(
+              label: '← Back',
+              compact: true,
               onPressed: () => setState(() => _currentStep = 0),
-              child: const Text('← Back'),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: FilledButton(
+              child: AscentButton.primary(
+                label: 'Next: Launch Day →',
+                compact: true,
+                expanded: true,
                 onPressed: () => setState(() => _currentStep = 2),
-                child: const Text('Next: Launch Day →'),
               ),
             ),
           ],

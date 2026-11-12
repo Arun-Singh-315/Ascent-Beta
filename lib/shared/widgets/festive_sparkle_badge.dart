@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/text_styles.dart';
+import '../../app/theme/monochrome_surfaces.dart';
 import '../../core/services/festival_service.dart';
 
 /// A lightweight, warm festive banner celebrating cultural & national festivals.
 class FestiveBannerCard extends StatefulWidget {
   final FestivalEvent festival;
   final VoidCallback? onTap;
+  final bool restrained;
 
   const FestiveBannerCard({
     super.key,
     required this.festival,
     this.onTap,
+    this.restrained = false,
   });
 
   @override
@@ -24,12 +27,14 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
   @override
   void initState() {
     super.initState();
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     );
-    if (!isTest) {
+    if (!isTest && !widget.restrained) {
       _controller.repeat(reverse: true);
     } else {
       _controller.value = 0.5;
@@ -44,6 +49,54 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.restrained) {
+      final colors = MonochromeSurfaces.of(context);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Material(
+          key: ValueKey('festival_banner_${widget.festival.id}'),
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.festival.emoji,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.festival.name,
+                          style: AscentTextStyles.interfaceTitle.copyWith(
+                            color: colors.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.festival.greeting,
+                          style: AscentTextStyles.interfaceSupporting.copyWith(
+                            color: colors.secondaryText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final dark = Theme.of(context).brightness == Brightness.dark;
     final color = widget.festival.accentColor;
 
@@ -57,7 +110,9 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                color.withValues(alpha: dark ? 0.20 + pulse * 0.08 : 0.12 + pulse * 0.05),
+                color.withValues(
+                  alpha: dark ? 0.20 + pulse * 0.08 : 0.12 + pulse * 0.05,
+                ),
                 color.withValues(alpha: dark ? 0.08 : 0.04),
               ],
               begin: Alignment.topLeft,
@@ -65,12 +120,16 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: color.withValues(alpha: dark ? 0.45 + pulse * 0.20 : 0.35 + pulse * 0.15),
+              color: color.withValues(
+                alpha: dark ? 0.45 + pulse * 0.20 : 0.35 + pulse * 0.15,
+              ),
               width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: dark ? 0.18 + pulse * 0.10 : 0.08 + pulse * 0.05),
+                color: color.withValues(
+                  alpha: dark ? 0.18 + pulse * 0.10 : 0.08 + pulse * 0.05,
+                ),
                 blurRadius: 16 + pulse * 8,
                 spreadRadius: 1,
               ),
@@ -82,7 +141,10 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
               onTap: widget.onTap,
               borderRadius: BorderRadius.circular(20),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -120,7 +182,9 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
                                   widget.festival.name,
                                   style: AscentTextStyles.bodyMedium.copyWith(
                                     fontWeight: FontWeight.w800,
-                                    color: dark ? Colors.white : const Color(0xFF1E293B),
+                                    color: dark
+                                        ? Colors.white
+                                        : const Color(0xFF1E293B),
                                     letterSpacing: -0.2,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -128,7 +192,10 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: color.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(8),
@@ -149,7 +216,9 @@ class _FestiveBannerCardState extends State<FestiveBannerCard>
                           Text(
                             widget.festival.greeting,
                             style: AscentTextStyles.bodySmall.copyWith(
-                              color: dark ? Colors.white70 : const Color(0xFF475569),
+                              color: dark
+                                  ? Colors.white70
+                                  : const Color(0xFF475569),
                               height: 1.35,
                             ),
                             maxLines: 2,

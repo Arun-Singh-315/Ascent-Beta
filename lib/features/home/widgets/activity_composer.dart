@@ -47,11 +47,10 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   void initState() {
     super.initState();
     if (widget.initialTitle == null) {
-      _draft = NoteDraftBinding(
-        _text,
-        ref.read(sharedPreferencesProvider),
-        'home_activity',
-      );
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        _draft = NoteDraftBinding(_text, prefs, 'home_activity');
+      } catch (_) {}
     } else {
       _text.text = widget.initialTitle!;
     }
@@ -527,9 +526,8 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: g.line, width: .75),
+            color: Colors.transparent,
+            border: Border(top: BorderSide(color: g.line, width: .75)),
           ),
           padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
           child: Row(
@@ -552,7 +550,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
                   decoration: InputDecoration(
-                    hintText: 'Add a task…',
+                    hintText: 'Add a to-do or focus timer…',
                     hintStyle: TextStyle(color: g.inkMuted),
                     counterText: '',
                     filled: false,

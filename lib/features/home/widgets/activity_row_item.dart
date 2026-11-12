@@ -1,4 +1,9 @@
+import '../../../shared/widgets/ascent_press_feedback.dart';
+import '../../../shared/widgets/ascent_sheet.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
+import 'activity_timer_progress.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../shared/widgets/ascent_star_button.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import 'package:drift/drift.dart' show Value;
@@ -45,12 +50,16 @@ class ActivityRowItem extends ConsumerStatefulWidget {
   final bool compact;
   final VoidCallback? onViewCompleted;
   final bool ground;
+  final bool hubStyle;
+  final bool featured;
   const ActivityRowItem({
     super.key,
     required this.activity,
     this.compact = false,
     this.onViewCompleted,
     this.ground = false,
+    this.hubStyle = false,
+    this.featured = false,
   });
 
   @override
@@ -59,12 +68,17 @@ class ActivityRowItem extends ConsumerStatefulWidget {
 
 class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   bool _removed = false;
+  bool _timerActionBusy = false;
+  bool _completing = false;
   TodayActivityItem get activity => widget.activity;
 
   @override
   void didUpdateWidget(covariant ActivityRowItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.activity.id != activity.id) _removed = false;
+    if (oldWidget.activity.id != activity.id) {
+      _removed = false;
+      _completing = false;
+    }
   }
 
   @override
@@ -444,8 +458,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                           .labelSmall
                                           ?.copyWith(
                                             color: context.doneInk,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                   )
@@ -523,15 +537,16 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                               Expanded(
                                 child: Text(
                                   activity.title,
-                                  style:
-                                      AppTypography.thoughtContent(
-                                        color: isDone ? g.inkMuted : g.ink,
-                                      ).copyWith(
-                                        fontSize: 16,
-                                        decoration: isDone
-                                            ? TextDecoration.lineThrough
-                                            : null,
-                                      ),
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.30,
+                                    letterSpacing: -0.2,
+                                    color: isDone ? g.inkMuted : g.ink,
+                                    decoration: isDone
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -542,9 +557,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                               !sameActionText(planLabel, activity.title))
                             Text(
                               planLabel,
-                              style: AscentTextStyles.homeSecondary.copyWith(
-                                color: g.clay,
-                              ),
+                              style: AscentTextStyles.interfaceSupporting
+                                  .copyWith(color: g.clay),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -555,7 +569,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                               if (isLecture) ...[
                                 Text(
                                   _subtitleText(activity),
-                                  style: AscentTextStyles.homeSecondary
+                                  style: AscentTextStyles.interfaceSupporting
                                       .copyWith(
                                         color: isRunning ? g.clay : g.inkMuted,
                                         fontWeight: isRunning
@@ -603,7 +617,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 ],
                                 Text(
                                   _subtitleText(activity),
-                                  style: AscentTextStyles.homeSecondary
+                                  style: AscentTextStyles.interfaceSupporting
                                       .copyWith(
                                         color:
                                             (g.merlot &&
@@ -629,7 +643,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 const SizedBox(width: 6),
                                 Text(
                                   '• Overdue',
-                                  style: AscentTextStyles.homeSecondary
+                                  style: AscentTextStyles.interfaceSupporting
                                       .copyWith(color: context.stateDanger)
                                       .merge(AppTypeRoles.typeRole8),
                                 ),
@@ -841,7 +855,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
 
   Widget _compactRow(BuildContext context) {
     final g = context.glass;
+    final accessibleTitle =
+        widget.hubStyle && MediaQuery.textScalerOf(context).scale(1) >= 1.45;
     final done = activity.status == TodayActivityStatus.done;
+    final visualDone = done || _completing;
     final running = activity.status == TodayActivityStatus.inProgress;
     final paused = activity.status == TodayActivityStatus.paused;
     final lecture = activity.sourceType == 'lecture';
@@ -850,46 +867,46 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         activity.kind != ActivityKind.todo ||
         (activity.targetMinutes ?? 0) > 0;
 
-    final liveSeconds = running
-        ? ref.watch(
-            timeTrackingProvider.select(
-              (s) =>
-                  (s.isRunning &&
-                      s.activeSession?.linkedTaskId == activity.linkedTaskId)
-                  ? s.elapsedSeconds
-                  : null,
-            ),
-          )
+    final String? createdLabel = activity.createdAt != null
+        ? 'Created ${_formatActivityTimestamp(activity.createdAt!)}'
         : null;
-    final elapsedDisplay = liveSeconds != null
-        ? '${(liveSeconds ~/ 60).toString().padLeft(2, '0')}:${(liveSeconds % 60).toString().padLeft(2, '0')}'
-        : _elapsedShort(activity);
+    final String? finishedLabel = (visualDone && activity.completedAt != null)
+        ? 'Finished ${_formatActivityTimestamp(activity.completedAt!)}'
+        : null;
 
-    final status = [
-      if (activity.sourceType == 'medicine') 'Medicine',
-      if (activity.sourceType == 'medicine' && activity.plannedDate != null)
-        DateFormat('h:mm a').format(activity.plannedDate!),
-      if (lecture) 'Lecture',
-      if (running) elapsedDisplay,
-      if (paused) 'Paused',
-    ].join(' · ');
+    final status = visualDone
+        ? [
+            if (finishedLabel != null) finishedLabel else 'Completed',
+            ?createdLabel,
+          ].join(' · ')
+        : [
+            if (activity.sourceType == 'medicine') 'Medicine',
+            if (lecture) 'Lecture',
+            if (widget.hubStyle && activity.scheduledTime != null)
+              'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
+            else if (activity.sourceType == 'medicine' &&
+                activity.plannedDate != null)
+              DateFormat('h:mm a').format(activity.plannedDate!),
+            ?createdLabel,
+          ].join(' · ');
 
     final actionLabel = done
         ? 'Done'
         : timed
         ? (running
-              ? 'Stop'
+              ? 'Pause'
               : paused
               ? 'Resume'
               : 'Start')
         : 'Done';
 
     Future<void> completeTask() async {
-      if (done) return;
-      if (activity.isScheduledInFuture) {
+      final target = activity;
+      if (done || _completing) return;
+      if (target.isScheduledInFuture) {
         HapticFeedback.lightImpact();
-        final timeStr = activity.scheduledTime != null
-            ? DateFormat('h:mm a').format(activity.scheduledTime!)
+        final timeStr = target.scheduledTime != null
+            ? DateFormat('h:mm a').format(target.scheduledTime!)
             : 'later';
         AscentSnackBar.show(
           context,
@@ -898,19 +915,24 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         );
         return;
       }
-      if (activity.linkedTaskId == null) return;
+      if (target.linkedTaskId == null) return;
+      final dao = ref.read(taskDaoProvider);
+      final animate = !MediaQuery.disableAnimationsOf(context);
+      setState(() => _completing = true);
       HapticFeedback.mediumImpact();
       try {
-        final dao = ref.read(taskDaoProvider);
-        final undo = await dao.completeWithUndo(activity.linkedTaskId!);
-        final task = await dao.getTaskById(activity.linkedTaskId!);
+        if (animate) {
+          await Future<void>.delayed(const Duration(milliseconds: 180));
+        }
+        final undo = await dao.completeWithUndo(target.linkedTaskId!);
+        final task = await dao.getTaskById(target.linkedTaskId!);
         if (task?.actualCompletedDate != null && context.mounted) {
           AscentSnackBar.applaud(
             context,
-            message: activity.isDailyStanding
+            message: target.isDailyStanding
                 ? 'Bravo! Completed for today 👏'
                 : 'Bravo! Task completed! 👏',
-            subtitle: activity.isDailyStanding
+            subtitle: target.isDailyStanding
                 ? 'Resets tomorrow to keep your daily rhythm'
                 : 'One step closer to your goals ✨',
             onUndo: undo == null
@@ -948,6 +970,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             message: 'Could not complete the task. Please retry.',
           );
         }
+      } finally {
+        if (mounted) setState(() => _completing = false);
       }
     }
 
@@ -960,7 +984,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               : (running ? Icons.timer_rounded : Icons.timer_outlined),
           size: 20,
           color: running
-              ? SharedControlColors.dueRed
+              ? SharedControlColors.actionBlue
               : (paused ? g.clay : g.inkMuted),
         );
       } else if (activity.isScheduledInFuture) {
@@ -968,21 +992,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       } else {
         content = Semantics(
           button: true,
-          label: done ? 'Completed' : 'Mark complete',
+          label: _completing
+              ? 'Completing task'
+              : (done ? 'Completed' : 'Mark complete'),
           child: InkResponse(
             key: ValueKey('activity_action_${activity.id}'),
-            onTap: done ? null : completeTask,
+            onTap: visualDone ? null : completeTask,
             radius: 18,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutBack,
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: done
+                color: visualDone
                     ? SharedControlColors.actionBlue
                     : Colors.transparent,
                 border: Border.all(
-                  color: done
+                  color: visualDone
                       ? SharedControlColors.actionBlue
                       : (context.isDark
                             ? g.inkMuted.withValues(alpha: 0.6)
@@ -990,13 +1018,16 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   width: 1.6,
                 ),
               ),
-              child: done
-                  ? const Icon(
-                      Icons.check_rounded,
-                      size: 13,
-                      color: Colors.white,
-                    )
-                  : null,
+              child: AnimatedScale(
+                scale: visualDone ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.elasticOut,
+                child: const Icon(
+                  Icons.check_rounded,
+                  size: 13,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         );
@@ -1032,7 +1063,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     },
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
-                      constraints: const BoxConstraints(minHeight: 28),
+                      constraints: const BoxConstraints(minHeight: 44),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -1050,14 +1081,16 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           Icon(Icons.schedule_rounded, size: 12, color: g.clay),
                           const SizedBox(width: 4),
                           Text(
-                            activity.scheduledTime != null
+                            widget.hubStyle
+                                ? 'Scheduled'
+                                : activity.scheduledTime != null
                                 ? DateFormat(
                                     'h:mm a',
                                   ).format(activity.scheduledTime!)
                                 : '',
                             style: TextStyle(
                               color: g.ink,
-                              fontSize: 11,
+                              fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1066,71 +1099,38 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     ),
                   ),
                 )
-              : ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: 44,
-                    minWidth: 44,
-                  ),
-                  child: Center(
-                    child: OutlinedButton.icon(
-                      key: ValueKey('activity_action_${activity.id}'),
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: running
-                            ? SharedControlColors.dueRed.withValues(alpha: 0.12)
-                            : SharedControlColors.actionBlue.withValues(
-                                alpha: 0.08,
-                              ),
-                        foregroundColor: running
-                            ? SharedControlColors.dueRed
-                            : (context.isDark
-                                  ? SharedControlColors.actionBlueDark
-                                  : SharedControlColors.actionBlue),
-                        side: BorderSide(
-                          color:
-                              (running
-                                      ? SharedControlColors.dueRed
-                                      : SharedControlColors.actionBlue)
-                                  .withValues(
-                                    alpha: context.isDark ? 0.55 : 0.35,
-                                  ),
-                          width: 1.0,
-                        ),
-                        minimumSize: const Size(0, 26),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        textStyle: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: Icon(
-                        running
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        size: 13,
-                      ),
-                      label: Text(actionLabel),
-                      onPressed: () async {
-                        HapticFeedback.selectionClick();
-                        if (lecture) {
-                          if (_selectLecture(ref, activity)) {
-                            ref
-                                .read(learningHubProvider.notifier)
-                                .togglePlayPause();
-                          }
-                          return;
+              : AscentButton.primary(
+                  key: ValueKey('activity_action_${activity.id}'),
+                  label: actionLabel,
+                  icon: running
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  loading: _timerActionBusy,
+                  onPressed: () async {
+                    if (_timerActionBusy) return;
+                    setState(() => _timerActionBusy = true);
+                    try {
+                      if (lecture) {
+                        if (_selectLecture(ref, activity)) {
+                          ref
+                              .read(learningHubProvider.notifier)
+                              .togglePlayPause();
                         }
+                      } else {
                         final tracker = ref.read(timeTrackingProvider.notifier);
                         if (running) {
-                          tracker.pauseSession();
-                        } else if (paused) {
-                          tracker.resumeSession();
+                          final session = ref
+                              .read(timeTrackingProvider)
+                              .activeSession;
+                          final matches =
+                              session != null &&
+                              (activity.linkedSessionId != null
+                                  ? session.id == activity.linkedSessionId
+                                  : activity.linkedTaskId != null &&
+                                        session.linkedTaskId ==
+                                            activity.linkedTaskId);
+                          if (!matches) throw StateError('Timer changed');
+                          await tracker.pauseSession();
                         } else {
                           await tracker.switchToTask(
                             title: activity.title,
@@ -1139,9 +1139,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             autoStart: true,
                           );
                         }
-                      },
-                    ),
-                  ),
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        AscentSnackBar.error(
+                          context,
+                          message: 'Could not update this timer. Please retry.',
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _timerActionBusy = false);
+                    }
+                  },
                 ))
         : null;
 
@@ -1183,7 +1192,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           : '',
                       style: TextStyle(
                         color: g.ink,
-                        fontSize: 11,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1213,100 +1222,201 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     : Theme.of(context).colorScheme.surface));
 
     final rowContent = Padding(
-      padding: EdgeInsets.symmetric(vertical: widget.ground ? 0 : 2.5),
-      child: Material(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
+      padding: EdgeInsets.symmetric(
+        vertical: timed ? 4 : (widget.ground ? 0 : 2.5),
+      ),
+      child: AscentPressFeedback(
+        child: Material(
+          color: widget.featured
+              ? Colors.transparent
+              : timed && !done && (running || paused)
+              ? SharedControlColors.actionBlue.withValues(
+                  alpha: context.isDark ? .09 : .035,
+                )
+              : cardColor,
           borderRadius: BorderRadius.circular(14),
-          onTap: () => lecture
-              ? _openActivityLecture(context, ref, activity)
-              : _showActivityDetailDialog(context, ref, activity),
-          onLongPress: () => showActivityActions(context, ref, activity),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: widget.ground
-                  ? null
-                  : Border.all(color: softBorderColor, width: 0.65),
-            ),
-            padding: EdgeInsets.symmetric(
-              horizontal: widget.ground ? 4 : 12,
-              vertical: widget.ground ? 6 : 8.5,
-            ),
-            child: Row(
-              children: [
-                buildLeadingTarget(),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => lecture
+                ? _openActivityLecture(context, ref, activity)
+                : _showActivityDetailDialog(context, ref, activity),
+            onLongPress: () => showActivityActions(context, ref, activity),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: widget.ground
+                    ? null
+                    : Border.all(color: softBorderColor, width: 0.65),
+              ),
+              padding: EdgeInsets.symmetric(
+                horizontal: timed ? 10 : (widget.ground ? 4 : 12),
+                vertical: timed ? 10 : (widget.ground ? 6 : 8.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        activity.title,
-                        key: ValueKey('activity_title_${activity.id}'),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: done ? g.inkMuted : g.ink,
-                          fontSize: widget.ground ? 16 : 15,
-                          fontWeight: widget.ground
-                              ? (done ? FontWeight.w500 : FontWeight.w600)
-                              : FontWeight.normal,
-                          height: 1.35,
-                          decoration: done ? TextDecoration.lineThrough : null,
+                      if (!widget.featured) buildLeadingTarget(),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              activity.title,
+                              key: ValueKey('activity_title_${activity.id}'),
+                              maxLines: accessibleTitle
+                                  ? null
+                                  : (widget.featured ? 4 : 2),
+                              overflow: accessibleTitle
+                                  ? TextOverflow.visible
+                                  : TextOverflow.ellipsis,
+                              softWrap: true,
+                              style: TextStyle(
+                                color: visualDone ? g.inkMuted : g.ink,
+                                fontSize: widget.featured
+                                    ? 22
+                                    : (widget.ground ? 16 : 15),
+                                fontWeight: widget.ground
+                                    ? (done ? FontWeight.w500 : FontWeight.w600)
+                                    : FontWeight.normal,
+                                height: 1.35,
+                                decoration: visualDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            if (status.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2.5),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      visualDone
+                                          ? Icons.check_circle_outline_rounded
+                                          : (activity.scheduledTime != null
+                                                ? Icons.schedule_rounded
+                                                : Icons.access_time_rounded),
+                                      size: 11.5,
+                                      color: visualDone
+                                          ? context.doneInk
+                                          : g.inkMuted,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        status,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: visualDone
+                                              ? context.doneInk
+                                              : g.inkMuted,
+                                          fontSize: 11.5,
+                                          fontWeight: visualDone
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      if (status.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            status,
-                            style: TextStyle(color: g.inkMuted, fontSize: 11),
+                      if (activity.linkedTaskId != null && !done)
+                        // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
+                        if (timedAction == null || activity.priority == 'high')
+                          AscentStarButton(
+                            key: ValueKey('activity_priority_${activity.id}'),
+                            selected: activity.priority == 'high',
+                            onChanged: _setStar,
+                          ),
+
+                      if (scheduledBadge != null && !widget.hubStyle) ...[
+                        const SizedBox(width: 6),
+                        scheduledBadge,
+                      ],
+                      if (done && !widget.hubStyle) ...[
+                        const SizedBox(width: 6),
+                        const GlassChip(
+                          label: 'Done',
+                          icon: Icons.check_rounded,
+                          selected: true,
+                          success: true,
+                          tooltip: 'Completed',
+                        ),
+                      ],
+                      InkResponse(
+                        radius: 16,
+                        onTap: () =>
+                            showActivityActions(context, ref, activity),
+                        child: Tooltip(
+                          message: 'Activity actions',
+                          child: SizedBox(
+                            width: 32,
+                            height: 44,
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              size: 18,
+                              color: g.inkMuted,
+                            ),
                           ),
                         ),
+                      ),
                     ],
                   ),
-                ),
-                if (activity.linkedTaskId != null && !done)
-                  // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
-                  if (timedAction == null || activity.priority == 'high')
-                    AscentStarButton(
-                      key: ValueKey('activity_priority_${activity.id}'),
-                      selected: activity.priority == 'high',
-                      onChanged: _setStar,
+                  if (widget.featured &&
+                      !timed &&
+                      !done &&
+                      !activity.isScheduledInFuture) ...[
+                    const SizedBox(height: 16),
+                    AscentButton.primary(
+                      label: 'Mark complete',
+                      icon: Icons.check_rounded,
+                      loading: _completing,
+                      onPressed: completeTask,
                     ),
-                if (timedAction != null) ...[
-                  const SizedBox(width: 6),
-                  timedAction,
-                ],
-                if (scheduledBadge != null) ...[
-                  const SizedBox(width: 6),
-                  scheduledBadge,
-                ],
-                if (done) ...[
-                  const SizedBox(width: 6),
-                  const GlassChip(
-                    label: 'Done',
-                    icon: Icons.check_rounded,
-                    selected: true,
-                    success: true,
-                    tooltip: 'Completed',
-                  ),
-                ],
-                if (timedAction == null || done)
-                  InkResponse(
-                    radius: 16,
-                    onTap: () => showActivityActions(context, ref, activity),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.more_horiz_rounded,
-                        size: 18,
-                        color: g.inkMuted,
+                  ],
+                  if (timed)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        left: widget.featured ? 0 : 42,
+                        top: widget.featured ? 12 : 4,
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final progress = ActivityTimerProgress(
+                            activity: activity,
+                          );
+                          if (MediaQuery.textScalerOf(context).scale(14) > 21 ||
+                              constraints.maxWidth < 200) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                progress,
+                                if (timedAction != null) ...[
+                                  const SizedBox(height: 8),
+                                  timedAction,
+                                ],
+                              ],
+                            );
+                          }
+                          return Row(
+                            children: [
+                              Expanded(child: progress),
+                              if (timedAction != null) ...[
+                                const SizedBox(width: 14),
+                                timedAction,
+                              ],
+                            ],
+                          );
+                        },
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1315,7 +1425,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
 
     return Dismissible(
       key: ValueKey('activity_dismiss_${activity.id}'),
-      direction: done ? DismissDirection.none : DismissDirection.endToStart,
+      direction: done || _completing
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         if (activity.linkedTaskId != null) {
           final taskDao = ref.read(taskDaoProvider);
@@ -1468,7 +1580,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ],
         ),
       ),
-      child: rowContent,
+      child: IgnorePointer(
+        ignoring: _completing,
+        child: AnimatedSlide(
+          offset: _completing ? const Offset(0, -.025) : Offset.zero,
+          duration: Duration(
+            milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+          ),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: _completing ? .55 : 1,
+            duration: Duration(
+              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+            ),
+            child: rowContent,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1496,7 +1624,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               Expanded(
                 child: Text(
                   'Did you finish: ${activity.title}?',
-                  style: AscentTextStyles.bodySmall.copyWith(
+                  style: AscentTextStyles.interfaceSupporting.copyWith(
                     fontWeight: FontWeight.w600,
                     color: g.ink,
                   ),
@@ -1669,13 +1797,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     );
   }
 
-  String _elapsedShort(TodayActivityItem act) {
-    final elapsed = act.elapsedSecondsToday;
-    final m = elapsed ~/ 60;
-    final s = elapsed % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
   String _runningTimerText(TodayActivityItem act) {
     final elapsed = act.elapsedSecondsToday;
     final m = elapsed ~/ 60;
@@ -1707,6 +1828,67 @@ bool _selectLecture(WidgetRef ref, TodayActivityItem activity) {
     notifier.selectLecture(lectureId, autoPlay: false);
   }
   return true;
+}
+
+Future<void> _completeActivityWithUndo(
+  BuildContext context,
+  WidgetRef ref,
+  TodayActivityItem activity,
+) async {
+  if (activity.linkedTaskId == null || activity.sourceType == 'lecture') return;
+
+  if (activity.isScheduledInFuture) {
+    AscentSnackBar.show(
+      context,
+      message:
+          'You can complete this activity once its scheduled time arrives.',
+    );
+    return;
+  }
+  try {
+    final dao = ref.read(taskDaoProvider);
+    final undo = await dao.completeWithUndo(activity.linkedTaskId!);
+    if (!context.mounted) return;
+    if (undo == null) {
+      AscentSnackBar.show(
+        context,
+        message:
+            'This activity could not be completed. Check its steps and completion requirements.',
+      );
+    } else {
+      AscentSnackBar.applaud(
+        context,
+        message: 'Activity completed',
+        onUndo: () async {
+          try {
+            final restored = await dao.undoCompletion(undo);
+            if (!restored && context.mounted) {
+              AscentSnackBar.show(
+                context,
+                message:
+                    'This activity has changed. Undo is no longer available.',
+              );
+            }
+          } catch (_) {
+            if (context.mounted) {
+              AscentSnackBar.error(
+                context,
+                message: 'Could not undo. Please retry.',
+              );
+            }
+          }
+        },
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      AscentSnackBar.error(
+        context,
+        message: 'Could not complete the activity. Please retry.',
+      );
+    }
+  }
+  return;
 }
 
 Future<void> showActivityActions(
@@ -1767,57 +1949,7 @@ Future<void> showActivityActions(
     return;
   }
   if (action == 'done') {
-    if (activity.isScheduledInFuture) {
-      AscentSnackBar.show(
-        context,
-        message:
-            'You can complete this activity once its scheduled time arrives.',
-      );
-      return;
-    }
-    try {
-      final dao = ref.read(taskDaoProvider);
-      final undo = await dao.completeWithUndo(activity.linkedTaskId!);
-      if (!context.mounted) return;
-      if (undo == null) {
-        AscentSnackBar.show(
-          context,
-          message:
-              'This activity could not be completed. Check its steps and completion requirements.',
-        );
-      } else {
-        AscentSnackBar.applaud(
-          context,
-          message: 'Activity completed',
-          onUndo: () async {
-            try {
-              final restored = await dao.undoCompletion(undo);
-              if (!restored && context.mounted) {
-                AscentSnackBar.show(
-                  context,
-                  message:
-                      'This activity has changed. Undo is no longer available.',
-                );
-              }
-            } catch (_) {
-              if (context.mounted) {
-                AscentSnackBar.error(
-                  context,
-                  message: 'Could not undo. Please retry.',
-                );
-              }
-            }
-          },
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        AscentSnackBar.error(
-          context,
-          message: 'Could not complete the activity. Please retry.',
-        );
-      }
-    }
+    await _completeActivityWithUndo(context, ref, activity);
     return;
   }
   if (action == 'star') {
@@ -1970,38 +2102,72 @@ void _openActivityLecture(
   }
 }
 
+String _formatActivityTimestamp(DateTime dt) {
+  final now = DateTime.now();
+  final isToday =
+      dt.year == now.year && dt.month == now.month && dt.day == now.day;
+  final timeStr = DateFormat('h:mm a').format(dt);
+  if (isToday) {
+    return timeStr;
+  }
+  final yesterday = now.subtract(const Duration(days: 1));
+  final isYesterday =
+      dt.year == yesterday.year &&
+      dt.month == yesterday.month &&
+      dt.day == yesterday.day;
+  if (isYesterday) {
+    return 'yesterday, $timeStr';
+  }
+  if (dt.year == now.year) {
+    return '${DateFormat('MMM d').format(dt)}, $timeStr';
+  }
+  return '${DateFormat('MMM d, y').format(dt)}, $timeStr';
+}
+
 String _subtitleText(TodayActivityItem act) {
+  final createdStr = act.createdAt != null
+      ? ' · Created ${_formatActivityTimestamp(act.createdAt!)}'
+      : '';
+
   if (act.sourceType == 'medicine' || act.categoryTag == 'Medicine') {
     final at = act.plannedDate;
-    return 'Medicine${at == null ? '' : ' · ${DateFormat.jm().format(at)}'}';
+    return 'Medicine${at == null ? '' : ' · ${DateFormat.jm().format(at)}'}$createdStr';
+  }
+  if (act.sourceType == 'study' || act.categoryTag == 'Study') {
+    final at = act.plannedDate;
+    return 'Study${at == null ? '' : ' · ${DateFormat.jm().format(at)}'}$createdStr';
+  }
+  if (act.sourceType == 'meal' || act.categoryTag == 'Meal') {
+    final at = act.plannedDate;
+    return 'Meal${at == null ? '' : ' · ${DateFormat.jm().format(at)}'}$createdStr';
   }
 
   if (act.status == TodayActivityStatus.done) {
     if (act.isDailyStanding) {
       if (act.completedAt != null) {
-        return '✓ Done for today at ${DateFormat('h:mm a').format(act.completedAt!)} • Resets tomorrow';
+        return '✓ Done for today at ${_formatActivityTimestamp(act.completedAt!)} • Resets tomorrow$createdStr';
       }
-      return '✓ Done for today • Resets tomorrow';
+      return '✓ Done for today • Resets tomorrow$createdStr';
     }
     if (act.completedAt != null) {
-      return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';
+      return '✓ Done at ${_formatActivityTimestamp(act.completedAt!)}$createdStr';
     }
-    return '✓ Completed';
+    return '✓ Completed$createdStr';
   }
   if (act.sourceType == 'lecture') {
     if (act.status == TodayActivityStatus.inProgress) {
       return 'Lecture in progress';
     }
-    return 'Lecture';
+    return 'Lecture$createdStr';
   }
   if (act.kind == ActivityKind.todo && (act.targetMinutes ?? 0) <= 0) {
     final p = (act.priority != null && act.priority!.isNotEmpty)
         ? act.priority![0].toUpperCase() + act.priority!.substring(1)
         : 'Medium';
     if (act.isDailyStanding) {
-      return 'Daily • $p to-do';
+      return 'Daily • $p to-do$createdStr';
     }
-    return '$p • To-do';
+    return '$p • To-do$createdStr';
   }
   if (act.kind == ActivityKind.duration || (act.targetMinutes ?? 0) > 0) {
     final targetMins = act.targetMinutes ?? 30;
@@ -2009,11 +2175,11 @@ String _subtitleText(TodayActivityItem act) {
       final m = act.elapsedSecondsToday ~/ 60;
       final s = act.elapsedSecondsToday % 60;
       final timeStr = '$m:${s.toString().padLeft(2, '0')}';
-      return '$timeStr tracked / ${targetMins}m';
+      return '$timeStr tracked / ${targetMins}m$createdStr';
     }
-    return '${targetMins}m target';
+    return '${targetMins}m target$createdStr';
   }
-  return 'Flexible focus';
+  return 'Flexible focus$createdStr';
 }
 
 void _showActivityDetailDialog(
@@ -2023,383 +2189,415 @@ void _showActivityDetailDialog(
 ) {
   final g = context.glass;
   final isDone = activity.status == TodayActivityStatus.done;
-  showDialog(
+  showAscentSheet<void>(
     context: context,
-    builder: (ctx) {
-      return Dialog(
-        backgroundColor: AppPalette.transparent,
-        insetPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s24,
-          vertical: AppSpace.s24,
-        ),
-        child: AppCard(
-          padding: const EdgeInsets.all(AppSpace.s22),
-          nightDecoration: BoxDecoration(
-            color: ctx.bgSurfaceElevated,
-            borderRadius: AppGeometry.roundedr24,
-            border: Border.all(color: g.line, width: AppBorderScale.w1),
-            boxShadow: [
-              BoxShadow(
-                color: AppPalette.black.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    builder: (ctx) => SingleChildScrollView(
+      key: const ValueKey('activity_detail_sheet'),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Row(
-                children: [
-                  AppCard(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s10,
-                      vertical: AppSpace.s4,
-                    ),
-                    nightDecoration: BoxDecoration(
-                      color: g.claySoft,
-                      borderRadius: AppGeometry.roundedr12,
-                    ),
-                    child: Text(
-                      activity.kind == ActivityKind.todo
-                          ? 'To-do'
-                          : 'Focus Activity',
-                      style: AppTypography.inter12W600111(color: g.clay),
-                    ),
-                  ),
-                  if (activity.isDailyStanding) ...[
-                    const SizedBox(width: 8),
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s10,
-                        vertical: AppSpace.s4,
-                      ),
-                      nightDecoration: BoxDecoration(
-                        color: g.claySoft,
-                        borderRadius: AppGeometry.roundedr12,
-                      ),
-                      child: Text(
-                        'Daily Standing',
-                        style: AppTypography.inter12W600111(color: g.clay),
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  if ((!isDone || activity.isDailyStanding) &&
-                      activity.linkedTaskId != null)
-                    IconButton(
-                      tooltip: 'Edit activity',
-                      icon: Icon(
-                        Icons.edit_outlined,
-                        size: 20,
-                        color: g.inkMuted,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () async {
-                        Navigator.of(ctx).pop();
-                        Task? task;
-                        if (activity.linkedTaskId != null) {
-                          task = await ref
-                              .read(taskDaoProvider)
-                              .getTaskById(activity.linkedTaskId!);
-                        }
-                        if (context.mounted) {
-                          AddActivitySheet.show(
-                            context,
-                            existingTask: task,
-                            initialTitle: activity.title,
-                            initialKind: activity.kind,
-                            initialDurationMinutes: activity.targetMinutes,
-                          );
-                        }
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Text(
-                activity.title,
-                style: AppTypography.plusJakartaSans18W6004(
-                  color: g.ink,
-                  decoration: isDone ? TextDecoration.lineThrough : null,
+              AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s10,
+                  vertical: AppSpace.s4,
+                ),
+                nightDecoration: BoxDecoration(
+                  color: g.claySoft,
+                  borderRadius: AppGeometry.roundedr12,
+                ),
+                child: Text(
+                  activity.kind == ActivityKind.todo
+                      ? 'To-do'
+                      : 'Focus Activity',
+                  style: AppTypography.inter12W600111(color: g.clay),
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.info_outline_rounded, size: 14, color: g.inkMuted),
-                  const SizedBox(width: 6),
-                  Text(
-                    _subtitleText(activity),
-                    style: AppTypography.inter13Regular6(color: g.inkMuted),
+              if (activity.isDailyStanding) ...[
+                const SizedBox(width: 8),
+                AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s10,
+                    vertical: AppSpace.s4,
                   ),
-                ],
-              ),
-              if (!isDone &&
-                  activity.linkedTaskId != null &&
-                  activity.sourceType != 'lecture') ...[
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    if (activity.kind == ActivityKind.todo)
-                      TextButton.icon(
-                        icon: Icon(
-                          Icons.timer_outlined,
-                          size: 16,
-                          color: g.clay,
-                        ),
-                        label: Text(
-                          'Switch to 25m Focus Timer',
-                          style: TextStyle(
-                            color: g.clay,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          await ref
-                              .read(taskDaoProvider)
-                              .updateTask(
-                                TaskTableCompanion(
-                                  id: Value(activity.linkedTaskId!),
-                                  estimatedMinutes: const Value(25),
-                                  updatedAt: Value(DateTime.now()),
-                                ),
-                              );
-                          if (context.mounted) {
-                            AscentSnackBar.show(
-                              context,
-                              message: 'Switched to 25m Focus Timer',
-                            );
-                          }
-                        },
-                      )
-                    else if (activity.kind == ActivityKind.duration)
-                      TextButton.icon(
-                        icon: Icon(
-                          Icons.check_circle_outline_rounded,
-                          size: 16,
-                          color: g.clay,
-                        ),
-                        label: Text(
-                          'Switch to To-do Checklist',
-                          style: TextStyle(
-                            color: g.clay,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          await ref
-                              .read(taskDaoProvider)
-                              .updateTask(
-                                TaskTableCompanion(
-                                  id: Value(activity.linkedTaskId!),
-                                  estimatedMinutes: const Value(null),
-                                  updatedAt: Value(DateTime.now()),
-                                ),
-                              );
-                          if (context.mounted) {
-                            AscentSnackBar.show(
-                              context,
-                              message: 'Switched to To-do checklist',
-                            );
-                          }
-                        },
-                      ),
-                  ],
+                  nightDecoration: BoxDecoration(
+                    color: g.claySoft,
+                    borderRadius: AppGeometry.roundedr12,
+                  ),
+                  child: Text(
+                    'Daily Standing',
+                    style: AppTypography.inter12W600111(color: g.clay),
+                  ),
                 ),
               ],
-              if (!isDone &&
-                  activity.linkedTaskId != null &&
-                  activity.sourceType != 'lecture' &&
-                  (activity.targetMinutes ?? 0) > 0)
-                TextButton.icon(
-                  icon: const Icon(Icons.school_outlined),
-                  label: const Text('Send to lecture'),
+              if ((!isDone || activity.isDailyStanding) &&
+                  activity.linkedTaskId != null)
+                IconButton(
+                  tooltip: 'Edit activity',
+                  icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+                  visualDensity: VisualDensity.compact,
                   onPressed: () async {
                     Navigator.of(ctx).pop();
-                    final task = await ref
-                        .read(taskDaoProvider)
-                        .getTaskById(activity.linkedTaskId!);
-                    if (context.mounted && task != null) {
-                      await AddLectureActivitySheet.sendTask(
+                    Task? task;
+                    if (activity.linkedTaskId != null) {
+                      task = await ref
+                          .read(taskDaoProvider)
+                          .getTaskById(activity.linkedTaskId!);
+                    }
+                    if (context.mounted) {
+                      AddActivitySheet.show(
                         context,
-                        ref,
-                        task,
+                        existingTask: task,
+                        initialTitle: activity.title,
+                        initialKind: activity.kind,
+                        initialDurationMinutes: activity.targetMinutes,
                       );
                     }
                   },
                 ),
-              TextButton.icon(
-                icon: const Icon(Icons.history_rounded, size: 18),
-                label: const Text('History'),
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  context.push(
-                    Uri(
-                      path: '/history',
-                      queryParameters: {
-                        'module': activity.linkedTaskId != null
-                            ? 'tasks'
-                            : 'focus',
-                        'entity':
-                            '${activity.linkedTaskId ?? activity.linkedSessionId}',
-                      },
-                    ).toString(),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              Wrap(
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: context.surfaces.buttonStyle(
-                      TextButton.styleFrom(
-                        foregroundColor: g.inkMuted,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s16,
-                          vertical: AppSpace.s10,
-                        ),
-                      ),
-                      filled: false,
-                      icon: false,
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                  if (!isDone)
-                    activity.isScheduledInFuture
-                        ? FilledButton.icon(
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              Navigator.of(ctx).pop();
-                              final timeStr = activity.scheduledTime != null
-                                  ? DateFormat(
-                                      'h:mm a',
-                                    ).format(activity.scheduledTime!)
-                                  : 'later';
-                              AscentSnackBar.show(
-                                context,
-                                message:
-                                    'Scheduled for $timeStr. You can complete it once that time arrives.',
-                              );
-                            },
-                            icon: const Icon(Icons.schedule_rounded, size: 14),
-                            label: Text(
-                              'Scheduled · ${activity.scheduledTime != null ? DateFormat('h:mm a').format(activity.scheduledTime!) : ''}',
-                            ),
-                            style: context.surfaces.buttonStyle(
-                              FilledButton.styleFrom(
-                                backgroundColor: g.ink.withValues(alpha: 0.10),
-                                foregroundColor: g.ink,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpace.s18,
-                                  vertical: AppSpace.s10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: AppGeometry.roundedr14,
-                                ),
-                              ),
-                              filled: true,
-                              icon: false,
-                            ),
-                          )
-                        : FilledButton(
-                            onPressed: () async {
-                              HapticFeedback.mediumImpact();
-                              Navigator.of(ctx).pop();
-                              final isTimedItem =
-                                  activity.kind == ActivityKind.duration ||
-                                  (activity.targetMinutes != null &&
-                                      activity.targetMinutes! > 0) ||
-                                  activity.sourceType == 'lecture';
-                              if (isTimedItem) {
-                                if (activity.sourceType == 'lecture') {
-                                  if (!_selectLecture(ref, activity)) return;
-                                  LectureFocusPlayerSheet.show(context);
-                                } else {
-                                  await ref
-                                      .read(timeTrackingProvider.notifier)
-                                      .switchToTask(
-                                        title: activity.title,
-                                        taskId: activity.linkedTaskId,
-                                        sourceType: activity.sourceType,
-                                        autoStart: true,
-                                      );
-                                }
-                                return;
-                              }
-                              if (activity.linkedTaskId != null) {
-                                await ref
-                                    .read(taskDaoProvider)
-                                    .toggleTaskCompletion(
-                                      activity.linkedTaskId!,
-                                      true,
-                                    );
-                              }
-                            },
-                            style: context.surfaces.buttonStyle(
-                              FilledButton.styleFrom(
-                                backgroundColor: g.clay,
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimary,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpace.s18,
-                                  vertical: AppSpace.s10,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: AppGeometry.roundedr14,
-                                ),
-                              ),
-                              filled: true,
-                              icon: false,
-                            ),
-                            child: Text(
-                              (activity.kind == ActivityKind.duration ||
-                                      (activity.targetMinutes != null &&
-                                          activity.targetMinutes! > 0) ||
-                                      activity.sourceType == 'lecture')
-                                  ? 'Start Focus'
-                                  : 'Mark Done',
-                            ),
-                          )
-                  else
-                    FilledButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      style: context.surfaces.buttonStyle(
-                        FilledButton.styleFrom(
-                          backgroundColor: g.claySoft,
-                          foregroundColor: g.clay,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s18,
-                            vertical: AppSpace.s10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppGeometry.roundedr14,
-                          ),
-                        ),
-                        filled: true,
-                        icon: false,
-                      ),
-                      child: const Text('Done'),
-                    ),
-                ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            activity.title,
+            style: AppTypography.plusJakartaSans18W6004(
+              color: g.ink,
+              decoration: isDone ? TextDecoration.lineThrough : null,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 14, color: g.inkMuted),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  _subtitleText(activity),
+                  style: AppTypography.inter13Regular6(color: g.inkMuted),
+                ),
               ),
             ],
           ),
-        ),
-      );
-    },
+          if (activity.createdAt != null || activity.completedAt != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: g.fill.withValues(alpha: context.isDark ? 0.25 : 0.45),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: g.line.withValues(alpha: 0.5),
+                  width: 0.8,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (activity.createdAt != null)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline_rounded,
+                          size: 14,
+                          color: g.inkMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Created: ${DateFormat('EEE, MMM d, y · h:mm a').format(activity.createdAt!)}',
+                            style: TextStyle(
+                              color: g.inkMuted,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (activity.completedAt != null) ...[
+                    if (activity.createdAt != null) const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 14,
+                          color: context.doneInk,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Finished: ${DateFormat('EEE, MMM d, y · h:mm a').format(activity.completedAt!)}',
+                            style: TextStyle(
+                              color: context.doneInk,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+          if (!isDone &&
+              activity.linkedTaskId != null &&
+              activity.sourceType != 'lecture') ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                if (activity.kind == ActivityKind.todo)
+                  TextButton.icon(
+                    icon: Icon(Icons.timer_outlined, size: 16, color: g.clay),
+                    label: Text(
+                      'Switch to 25m Focus Timer',
+                      style: TextStyle(
+                        color: g.clay,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ref
+                          .read(taskDaoProvider)
+                          .updateTask(
+                            TaskTableCompanion(
+                              id: Value(activity.linkedTaskId!),
+                              estimatedMinutes: const Value(25),
+                              updatedAt: Value(DateTime.now()),
+                            ),
+                          );
+                      if (context.mounted) {
+                        AscentSnackBar.show(
+                          context,
+                          message: 'Switched to 25m Focus Timer',
+                        );
+                      }
+                    },
+                  )
+                else if (activity.kind == ActivityKind.duration)
+                  TextButton.icon(
+                    icon: Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 16,
+                      color: g.clay,
+                    ),
+                    label: Text(
+                      'Switch to To-do Checklist',
+                      style: TextStyle(
+                        color: g.clay,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      await ref
+                          .read(taskDaoProvider)
+                          .updateTask(
+                            TaskTableCompanion(
+                              id: Value(activity.linkedTaskId!),
+                              estimatedMinutes: const Value(null),
+                              updatedAt: Value(DateTime.now()),
+                            ),
+                          );
+                      if (context.mounted) {
+                        AscentSnackBar.show(
+                          context,
+                          message: 'Switched to To-do checklist',
+                        );
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ],
+          if (!isDone &&
+              activity.linkedTaskId != null &&
+              activity.sourceType != 'lecture' &&
+              (activity.targetMinutes ?? 0) > 0)
+            TextButton.icon(
+              icon: const Icon(Icons.school_outlined),
+              label: const Text('Send to lecture'),
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                final task = await ref
+                    .read(taskDaoProvider)
+                    .getTaskById(activity.linkedTaskId!);
+                if (context.mounted && task != null) {
+                  await AddLectureActivitySheet.sendTask(context, ref, task);
+                }
+              },
+            ),
+          TextButton.icon(
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('History'),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.push(
+                Uri(
+                  path: '/history',
+                  queryParameters: {
+                    'module': activity.linkedTaskId != null ? 'tasks' : 'focus',
+                    'entity':
+                        '${activity.linkedTaskId ?? activity.linkedSessionId}',
+                  },
+                ).toString(),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: context.surfaces.buttonStyle(
+                  TextButton.styleFrom(
+                    foregroundColor: g.inkMuted,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s16,
+                      vertical: AppSpace.s10,
+                    ),
+                  ),
+                  filled: false,
+                  icon: false,
+                ),
+                child: const Text('Cancel'),
+              ),
+              if (!isDone)
+                activity.isScheduledInFuture
+                    ? FilledButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(ctx).pop();
+                          final timeStr = activity.scheduledTime != null
+                              ? DateFormat(
+                                  'h:mm a',
+                                ).format(activity.scheduledTime!)
+                              : 'later';
+                          AscentSnackBar.show(
+                            context,
+                            message:
+                                'Scheduled for $timeStr. You can complete it once that time arrives.',
+                          );
+                        },
+                        icon: const Icon(Icons.schedule_rounded, size: 14),
+                        label: Text(
+                          'Scheduled · ${activity.scheduledTime != null ? DateFormat('h:mm a').format(activity.scheduledTime!) : ''}',
+                        ),
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.ink.withValues(alpha: 0.10),
+                            foregroundColor: g.ink,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
+                          ),
+                          filled: true,
+                          icon: false,
+                        ),
+                      )
+                    : FilledButton(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(ctx).pop();
+                          final isTimedItem =
+                              activity.kind == ActivityKind.duration ||
+                              (activity.targetMinutes != null &&
+                                  activity.targetMinutes! > 0) ||
+                              activity.sourceType == 'lecture';
+                          if (isTimedItem) {
+                            if (activity.sourceType == 'lecture') {
+                              if (!_selectLecture(ref, activity)) return;
+                              LectureFocusPlayerSheet.show(context);
+                            } else {
+                              await ref
+                                  .read(timeTrackingProvider.notifier)
+                                  .switchToTask(
+                                    title: activity.title,
+                                    taskId: activity.linkedTaskId,
+                                    sourceType: activity.sourceType,
+                                    autoStart: true,
+                                  );
+                            }
+                            return;
+                          }
+                          if (activity.linkedTaskId != null) {
+                            await _completeActivityWithUndo(
+                              context,
+                              ref,
+                              activity,
+                            );
+                          }
+                        },
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.clay,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
+                          ),
+                          filled: true,
+                          icon: false,
+                        ),
+                        child: Text(
+                          (activity.kind == ActivityKind.duration ||
+                                  (activity.targetMinutes != null &&
+                                      activity.targetMinutes! > 0) ||
+                                  activity.sourceType == 'lecture')
+                              ? 'Start Focus'
+                              : 'Mark Done',
+                        ),
+                      )
+              else
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: context.surfaces.buttonStyle(
+                    FilledButton.styleFrom(
+                      backgroundColor: g.claySoft,
+                      foregroundColor: g.clay,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s18,
+                        vertical: AppSpace.s10,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppGeometry.roundedr14,
+                      ),
+                    ),
+                    filled: true,
+                    icon: false,
+                  ),
+                  child: const Text('Done'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    ),
   );
 }

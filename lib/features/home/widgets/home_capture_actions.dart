@@ -26,11 +26,6 @@ Future<void> showHomeCaptureActions(BuildContext context) async {
     case 'commitment':
       await PromiseChatComposer.show(context);
     case 'expense':
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => const AddTransactionSheet(),
-      );
+      await AddTransactionSheet.show(context);
   }
 }

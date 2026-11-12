@@ -16,6 +16,7 @@ enum AscentButtonType {
   icon,
   fab,
   destructive,
+  navigation,
 }
 
 /// Unified, Apple-inspired button system as specified in Section 5 (C01).
@@ -31,6 +32,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   });
 
   // ── Named constructors ────────────────────────────────────────────────────
@@ -45,6 +48,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.primary;
 
   const AscentButton.secondary({
@@ -57,6 +62,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.secondary;
 
   const AscentButton.tonal({
@@ -69,6 +76,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.tonal;
 
   const AscentButton.outlined({
@@ -81,6 +90,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.outlined;
 
   const AscentButton.ghost({
@@ -93,6 +104,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.ghost;
 
   const AscentButton.icon({
@@ -102,6 +115,8 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.icon,
        label = null,
        loading = false,
@@ -113,6 +128,8 @@ class AscentButton extends StatelessWidget {
     this.onPressed,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.fab,
        label = null,
        loading = false,
@@ -129,9 +146,25 @@ class AscentButton extends StatelessWidget {
     this.compact = false,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   }) : type = AscentButtonType.destructive;
 
   // ── Fields ────────────────────────────────────────────────────────────────
+
+  const AscentButton.navigation({
+    super.key,
+    required String this.label,
+    this.icon,
+    this.onPressed,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
+    this.tooltip,
+    this.semanticLabel,
+  }) : type = AscentButtonType.navigation,
+       loading = false,
+       expanded = false,
+       compact = false;
 
   final AscentButtonType type;
   final String? label;
@@ -142,6 +175,8 @@ class AscentButton extends StatelessWidget {
   final bool compact;
   final String? tooltip;
   final String? semanticLabel;
+  final bool iconAtEnd;
+  final bool strongOutline;
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +190,8 @@ class AscentButton extends StatelessWidget {
       compact: compact,
       tooltip: tooltip,
       semanticLabel: semanticLabel,
+      iconAtEnd: iconAtEnd,
+      strongOutline: strongOutline,
     );
   }
 }
@@ -170,6 +207,8 @@ class _AscentButtonInternal extends StatefulWidget {
     required this.compact,
     this.tooltip,
     this.semanticLabel,
+    this.iconAtEnd = false,
+    this.strongOutline = false,
   });
 
   final AscentButtonType type;
@@ -181,6 +220,8 @@ class _AscentButtonInternal extends StatefulWidget {
   final bool compact;
   final String? tooltip;
   final String? semanticLabel;
+  final bool iconAtEnd;
+  final bool strongOutline;
 
   @override
   State<_AscentButtonInternal> createState() => _AscentButtonInternalState();
@@ -232,6 +273,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
     final isOutlined = widget.type == AscentButtonType.outlined;
     final isGhost = widget.type == AscentButtonType.ghost;
     final isIcon = widget.type == AscentButtonType.icon;
+    final isNavigation = widget.type == AscentButtonType.navigation;
 
     // Normal colors
     Color bg;
@@ -239,7 +281,9 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
     Border? border;
 
     if (!_isEnabled) {
-      bg = isGhost || isIcon ? Colors.transparent : g.disabledBg;
+      bg = isGhost || isIcon || isNavigation
+          ? Colors.transparent
+          : g.disabledBg;
       fg = g.disabledFg;
       border = isOutlined
           ? Border.all(
@@ -247,15 +291,24 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
               width: AscentDimensions.controlOutlineWidth,
             )
           : null;
+    } else if (isNavigation) {
+      bg = _pressed ? g.recessed : Colors.transparent;
+      fg = g.ink;
     } else if (isPrimary) {
       final blue = Theme.of(context).brightness == Brightness.dark
           ? SharedControlColors.actionBlueDark
           : SharedControlColors.actionBlue;
       bg = Color.alphaBlend(
-        blue.withValues(alpha: _pressed ? .18 : .10),
+        blue.withValues(
+          alpha: _pressed ? (g.monochrome != null ? .14 : .18) : .10,
+        ),
         Theme.of(context).colorScheme.surface,
       );
-      fg = blue;
+      fg =
+          g.monochrome != null &&
+              Theme.of(context).brightness == Brightness.light
+          ? SharedControlColors.actionBlueInkLight
+          : blue;
       border = Border.all(color: blue.withValues(alpha: .18), width: .8);
     } else if (isDestructive) {
       bg = _pressed ? g.destructivePressed : g.destructiveBg;
@@ -273,7 +326,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
           : baseBg;
       fg = g.ink;
       border = Border.all(
-        color: g.controlOutline,
+        color: widget.strongOutline ? g.ink : g.controlOutline,
         width: AscentDimensions.controlOutlineWidth,
       );
     } else if (isGhost) {
@@ -291,7 +344,9 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
         ? AscentDimensions.buttonVisualHeightCompact
         : AscentDimensions.buttonVisualHeight;
 
-    final horizontalPadding = widget.compact ? 12.0 : 14.0;
+    final horizontalPadding = isNavigation
+        ? 8.0
+        : (widget.compact ? 12.0 : 14.0);
 
     Widget buttonContent;
 
@@ -316,10 +371,12 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       );
     } else {
       // Regular button with text and optional icon / spinner
-      final textStyle = AscentTextStyles.buttonLabel.copyWith(
-        color: fg,
-        fontSize: widget.compact ? 13.5 : 14.5,
-      );
+      final textStyle = isNavigation || g.monochrome != null
+          ? AscentTextStyles.interfaceNavigation.copyWith(color: fg)
+          : AscentTextStyles.buttonLabel.copyWith(
+              color: fg,
+              fontSize: widget.compact ? 13.5 : 14.5,
+            );
 
       buttonContent = Container(
         width: widget.expanded ? double.infinity : null,
@@ -350,7 +407,7 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
                 ),
               ),
               const SizedBox(width: AscentDimensions.spaceSm),
-            ] else if (widget.icon != null) ...[
+            ] else if (widget.icon != null && !widget.iconAtEnd) ...[
               Icon(widget.icon, size: widget.compact ? 15 : 17, color: fg),
               const SizedBox(width: AscentDimensions.spaceSm),
             ],
@@ -359,10 +416,16 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
                 widget.label ?? '',
                 textAlign: TextAlign.center,
                 style: textStyle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: g.monochrome != null ? null : 2,
+                overflow: g.monochrome != null
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
               ),
             ),
+            if (!widget.loading && widget.icon != null && widget.iconAtEnd) ...[
+              const SizedBox(width: 6),
+              Icon(widget.icon, size: 16, color: fg),
+            ],
           ],
         ),
       );

@@ -240,7 +240,7 @@ class AscentTheme {
     final inputRadius = const Radius.circular(12);
     final buttonRadius = const Radius.circular(12);
     final dialogRadius = const Radius.circular(20);
-    final sheetRadius = const Radius.circular(24);
+    final sheetRadius = const Radius.circular(28);
 
     return ThemeData(
       useMaterial3: true,
@@ -466,9 +466,7 @@ class AscentTheme {
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
-          minimumSize: const WidgetStatePropertyAll(
-            Size(64, 36),
-          ),
+          minimumSize: const WidgetStatePropertyAll(Size(64, 36)),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -535,12 +533,7 @@ class AscentTheme {
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
-          minimumSize: WidgetStatePropertyAll(
-            Size(
-              64,
-              36,
-            ),
-          ),
+          minimumSize: WidgetStatePropertyAll(Size(64, 36)),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
             EdgeInsets.symmetric(horizontal: 14, vertical: 7),

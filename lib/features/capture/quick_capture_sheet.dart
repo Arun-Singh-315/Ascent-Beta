@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_sheet.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -22,19 +23,14 @@ import '../../shared/widgets/schedule_picker.dart';
 
 const _draftKey = 'ascent_quick_capture_draft_v1';
 
-Future<void> showQuickCapture(BuildContext context) =>
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (_) => const QuickCaptureSheet(),
-    );
+Future<void> showQuickCapture(BuildContext context) async {
+  await showAscentSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    framed: false,
+    builder: (_) => const QuickCaptureSheet(),
+  );
+}
 
 /// Quick capture is a three-beat flow:
 ///
@@ -664,8 +660,11 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
 
   Widget _timeChips(CaptureDraft d) {
     final routine = d.kind == CaptureKind.routine;
-    final quick = routine ? const <({String label, DateTime at})>[] : _quickTimes();
-    final matched = d.at != null && quick.any((q) => q.at.isAtSameMomentAs(d.at!));
+    final quick = routine
+        ? const <({String label, DateTime at})>[]
+        : _quickTimes();
+    final matched =
+        d.at != null && quick.any((q) => q.at.isAtSameMomentAs(d.at!));
     final custom = d.at != null && !matched;
     final optional = d.kind == CaptureKind.todo || d.kind == CaptureKind.timer;
     return _chips([
@@ -924,16 +923,14 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
               ),
           ]),
         ),
-      if (task || _isLogged(d.kind)) _field(task ? 'Day' : 'Date', _dayChips(d)),
+      if (task || _isLogged(d.kind))
+        _field(task ? 'Day' : 'Date', _dayChips(d)),
       if (_timedKinds.contains(d.kind))
-        _field(
-          switch (d.kind) {
-            CaptureKind.reminder => 'Remind me',
-            CaptureKind.routine => 'Starts',
-            _ => 'Reminder · optional',
-          },
-          _timeChips(d),
-        ),
+        _field(switch (d.kind) {
+          CaptureKind.reminder => 'Remind me',
+          CaptureKind.routine => 'Starts',
+          _ => 'Reminder · optional',
+        }, _timeChips(d)),
       if (d.kind == CaptureKind.routine) ...[
         _field(
           'Repeat',
@@ -1012,15 +1009,17 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
 
   Widget _endChips(CaptureDraft d) {
     final start = d.at == null ? null : _dayOf(d.at!);
-    DateTime? after(int days) =>
-        start == null ? null : start.add(Duration(days: days));
+    DateTime? after(int days) => start?.add(Duration(days: days));
     final options = [('1 week', 7), ('1 month', 30), ('3 months', 90)];
     return _chips([
       for (final (label, days) in options)
         _pill(
           label: label,
-          selected: d.end != null && _sameDay(d.end, after(days) ?? DateTime(0)),
-          onTap: start == null ? null : () => _update(() => d.end = after(days)),
+          selected:
+              d.end != null && _sameDay(d.end, after(days) ?? DateTime(0)),
+          onTap: start == null
+              ? null
+              : () => _update(() => d.end = after(days)),
         ),
       _pill(
         icon: Icons.event_outlined,
@@ -1195,7 +1194,9 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
                   ),
                 ),
                 Text(
-                  needs ? '${captureLabel(d.kind)} · add a detail next' : _facts(d),
+                  needs
+                      ? '${captureLabel(d.kind)} · add a detail next'
+                      : _facts(d),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -1426,7 +1427,9 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
       final n = _preview.length;
       return AscentButton.primary(
         key: const ValueKey('quick_capture_review'),
-        label: n == 0 ? 'Review capture' : 'Review $n ${n == 1 ? 'item' : 'items'}',
+        label: n == 0
+            ? 'Review capture'
+            : 'Review $n ${n == 1 ? 'item' : 'items'}',
         icon: Icons.arrow_forward_rounded,
         onPressed: _loading ? null : _prepare,
       );
@@ -1491,17 +1494,7 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
             ),
             child: Column(
               children: [
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 10, bottom: 4),
-                    width: 36,
-                    height: 4.5,
-                    decoration: BoxDecoration(
-                      color: g.ink.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(2.5),
-                    ),
-                  ),
-                ),
+                const AscentSheetHandle(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 2, 8, 4),
                   child: Row(
@@ -1541,7 +1534,9 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
                       AscentButton.icon(
                         icon: Icons.close_rounded,
                         tooltip: 'Close capture',
-                        onPressed: _saving ? null : () => Navigator.pop(context),
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.pop(context),
                       ),
                     ],
                   ),

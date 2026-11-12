@@ -151,7 +151,7 @@ void main() {
   );
 
   testWidgets(
-    'HomePromiseSection displays count badge and +N more footer when multiple commitments exist',
+    'Commitment heading stays clear while the more footer preserves navigation',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -194,8 +194,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify count badge shows 2
-      expect(find.text('2'), findsOneWidget);
+      // Counts belong to content, not the section heading.
+      expect(find.text('2'), findsNothing);
 
       // Verify +1 more commitments footer is rendered
       expect(find.text('+1 more commitments'), findsOneWidget);

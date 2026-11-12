@@ -47,6 +47,7 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
     return AscentScaffold(
       title: 'Consistency Tracker',
       subtitle: 'Daily habits & study streak',
+      backgroundColor: context.bgSurface,
       actions:const[HistoryAction(module:'consistency')],
       body: StreamBuilder<List<ConsistencyLog>>(
         stream: consistencyDao.watchAllLogs(),

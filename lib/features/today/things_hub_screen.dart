@@ -1,4 +1,4 @@
-import '../capture/quick_capture_sheet.dart';
+import '../home/widgets/activity_starter_actions.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,15 +12,13 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../../shared/widgets/ascent_segmented_control.dart';
-import '../../shared/widgets/glass_chip.dart';
+import '../../shared/widgets/ascent_action_menu.dart';
+import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../home/widgets/activity_composer.dart';
 import '../plans/widgets/home_plans_preview.dart';
-import 'models/things_intelligence.dart';
-import 'widgets/things_hero_card.dart';
-import 'widgets/things_interactive_card.dart';
+import '../home/widgets/activity_row_item.dart';
 
 class ThingsHubScreen extends ConsumerStatefulWidget {
   const ThingsHubScreen({
@@ -38,30 +36,43 @@ class ThingsHubScreen extends ConsumerStatefulWidget {
   ConsumerState<ThingsHubScreen> createState() => _ThingsHubScreenState();
 }
 
-class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
+class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
+    with SingleTickerProviderStateMixin {
   String _query = '';
-  String _type = 'all';
+  String _section = 'all';
   String _tab = 'now';
+  bool _expanded = true;
   bool _wrapupMode = false;
-  bool _showLenses = false;
-  final Set<String> _collapsedSections = <String>{};
+  bool _showSearch = false;
   final FocusNode _composerFocusNode = FocusNode();
+  final TextEditingController _searchController = TextEditingController();
+  late final AnimationController _reveal;
+
+  static const _sections = {
+    'overdue': 'Overdue',
+    'scheduled': 'Scheduled',
+    'anytime': 'Anytime',
+  };
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialTab != null &&
-        {'now', 'done', 'plans'}.contains(widget.initialTab)) {
+    _reveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+      value: 1,
+    );
+    if ({'now', 'done', 'plans'}.contains(widget.initialTab)) {
       _tab = widget.initialTab!;
     }
-    if (widget.initialMode == 'wrapup') {
-      _wrapupMode = true;
-    }
+    _wrapupMode = widget.initialMode == 'wrapup';
     _checkInitialFocus();
   }
 
   @override
   void dispose() {
+    _reveal.dispose();
+    _searchController.dispose();
     _composerFocusNode.dispose();
     super.dispose();
   }
@@ -69,18 +80,17 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   void _checkInitialFocus() {
     final focusId = widget.initialFocusId;
     if (focusId == null || focusId.isEmpty) return;
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final activities = await ref.read(todayActivitiesProvider.future);
-      final exists = activities.any(
+      if (!mounted) return;
+      if (!activities.any(
         (a) => a.id == focusId || a.linkedTaskId.toString() == focusId,
-      );
-      if (!exists && mounted) {
+      )) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'This activity is no longer pending. Here is your Dayboard.',
+              'This activity is no longer pending. Here are your Things.',
             ),
           ),
         );
@@ -88,545 +98,814 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
     });
   }
 
-  bool _matchesFilter(TodayActivityItem a, String type) {
-    switch (type) {
-      case 'all':
-        return true;
-      case 'medicine':
-        return a.sourceType == 'medicine';
-      case 'timer':
-        return a.kind != ActivityKind.todo && a.sourceType != 'medicine';
-      case 'task':
-        return a.kind == ActivityKind.todo && a.sourceType != 'medicine';
-      case 'quick_wins':
-        return ThingsEnrichmentEngine.analyze(a).smartLens ==
-            ThingsSmartLens.quickWins;
-      case 'deep_focus':
-        return ThingsEnrichmentEngine.analyze(a).smartLens ==
-            ThingsSmartLens.deepFocus;
-      case 'life_errands':
-        return ThingsEnrichmentEngine.analyze(a).smartLens ==
-            ThingsSmartLens.lifeErrands;
-      case 'wind_down':
-        return ThingsEnrichmentEngine.analyze(a).smartLens ==
-            ThingsSmartLens.windDown;
-      default:
-        return true;
+  String _sectionFor(TodayActivityItem item) => item.isOverdue
+      ? 'overdue'
+      : item.scheduledTime != null
+      ? 'scheduled'
+      : 'anytime';
+
+  Color _sectionColor(BuildContext context, String section) =>
+      switch (section) {
+        'overdue' => SharedControlColors.dueRed,
+        'scheduled' =>
+          context.glass.isDark
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue,
+        _ => context.glass.inkMuted,
+      };
+
+  void _selectSection(String section) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _expanded = _section == section ? !_expanded : true;
+      _section = section;
+    });
+    if (MediaQuery.disableAnimationsOf(context) || !_expanded) {
+      _reveal.value = 1;
+    } else {
+      _reveal.forward(from: 0);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-
-    return AscentScaffold(
-      title: 'Dayboard',
-      subtitle: 'Make room for your next step',
-      actions: [
-        IconButton(
-          key: const ValueKey('things_calendar_button'),
-          tooltip: 'Calendar & Deadlines',
-          icon: const Icon(Icons.calendar_month_rounded),
-          onPressed: () => context.push('/reminders'),
-        ),
-        IconButton(
-          tooltip: 'Quick capture',
-          icon: const Icon(Icons.add_circle_outline_rounded),
-          onPressed: () => showQuickCapture(context),
-        ),
-        IconButton(
-          tooltip: 'History',
-          icon: const Icon(Icons.history_rounded),
-          onPressed: () => context.push('/history'),
-        ),
+  Future<void> _showViews() async {
+    final view = await showAscentActionMenu<String>(
+      context: context,
+      title: 'Your things',
+      actions: const [
+        AscentAction('now', 'Today', Icons.today_outlined),
+        AscentAction('done', 'Completed', Icons.check_circle_outline_rounded),
+        AscentAction('plans', 'Plans', Icons.event_note_outlined),
+        AscentAction('history', 'All history', Icons.history_rounded),
       ],
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    );
+    if (!mounted || view == null) return;
+    if (view == 'history') {
+      context.push('/history');
+      return;
+    }
+    setState(() {
+      _tab = view;
+      _section = 'all';
+      _expanded = true;
+    });
+  }
+
+  int _compareSchedule(TodayActivityItem a, TodayActivityItem b) {
+    final first = a.scheduledTime ?? a.plannedDate;
+    final second = b.scheduledTime ?? b.plannedDate;
+    if (first == null) return second == null ? 0 : 1;
+    return second == null ? -1 : first.compareTo(second);
+  }
+
+  Widget _buildBoardHeader(BuildContext context, List<TodayActivityItem> rows) {
+    final g = context.glass;
+    final disabledMotion = MediaQuery.disableAnimationsOf(context);
+    final allOpen = _section == 'all' && _expanded;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          key: const ValueKey('things_show_all'),
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _selectSection('all'),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: _section == 'all' && _expanded
+                  ? g.line.withValues(alpha: g.isDark ? 0.12 : 0.06)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: _section == 'all' && _expanded
+                    ? g.line.withValues(alpha: g.isDark ? 0.30 : 0.18)
+                    : Colors.transparent,
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
               children: [
-                TextField(
-                  decoration: const InputDecoration(
-                    hintText: 'Search your things',
-                    prefixIcon: Icon(Icons.search_rounded),
+                Expanded(
+                  child: Text(
+                    '${_tab == 'done' ? 'Completed today' : 'All things'} · ${rows.length.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      color: g.ink,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  onChanged: (v) =>
-                      setState(() => _query = v.trim().toLowerCase()),
                 ),
-                const SizedBox(height: 10),
-                AscentSegmentedControl<String>(
-                  segments: const [
-                    AscentSegment(value: 'now', label: 'Now'),
-                    AscentSegment(value: 'done', label: 'Finished today'),
-                    AscentSegment(value: 'plans', label: 'Plans'),
-                  ],
-                  selected: _tab,
-                  onChanged: (v) => setState(() => _tab = v),
+                const SizedBox(width: 8),
+                AnimatedRotation(
+                  turns: allOpen ? .5 : 0,
+                  duration: disabledMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 180),
+                  child: Icon(
+                    Icons.expand_more_rounded,
+                    color: g.inkMuted,
+                    size: 20,
+                  ),
                 ),
-                if (_tab != 'plans') ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      for (final (typeKey, label) in [
-                        ('all', 'All activities'),
-                        ('task', 'To-dos'),
-                        ('timer', 'Timers'),
-                        ('medicine', 'Medicines'),
-                      ])
-                        GlassChip(
-                          label: label,
-                          selected: _type == typeKey,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _type = typeKey);
-                          },
-                        ),
-                      GlassChip(
-                        key: const ValueKey('things_hub_toggle_lenses'),
-                        icon: _showLenses
-                            ? Icons.expand_less_rounded
-                            : Icons.tune_rounded,
-                        label: _showLenses ? 'Less' : 'More lenses',
-                        selected: _type != 'all' &&
-                            _type != 'task' &&
-                            _type != 'timer' &&
-                            _type != 'medicine',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _showLenses = !_showLenses);
-                        },
-                      ),
-                      if (_showLenses) ...[
-                        for (final (typeKey, label) in [
-                          ('quick_wins', '⚡ Quick Wins'),
-                          ('deep_focus', '🎯 Deep Focus'),
-                          ('life_errands', '🏃 Life & Errands'),
-                          ('wind_down', '🌙 Wind-down'),
-                        ])
-                          GlassChip(
-                            label: label,
-                            selected: _type == typeKey,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _type = typeKey);
-                            },
-                          ),
-                      ],
-                    ],
-                  ),
-                  ref.watch(todayActivitiesProvider).maybeWhen(
-                    data: (items) {
-                      final total = items.length;
-                      final done = items
-                          .where((a) => a.status == TodayActivityStatus.done)
-                          .length;
-                      if (total == 0 || done == 0) {
-                        return const SizedBox.shrink();
-                      }
-                      final percent = ((done / total) * 100).round();
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            Text(
-                              '$done of $total finished · $percent%',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: g.inkMuted,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: LinearProgressIndicator(
-                                  value: (done / total).clamp(0.0, 1.0),
-                                  minHeight: 3,
-                                  backgroundColor: g.line,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation<Color>(
-                                    SharedControlColors.actionBlue,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    orElse: () => const SizedBox.shrink(),
-                  ),
-                ],
               ],
             ),
           ),
-          if (_wrapupMode && _tab == 'now')
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: GlassSurface(
-                borderRadius: BorderRadius.circular(16),
-                padding: const EdgeInsets.all(12),
-                customBorder: Border.all(
-                  color: SharedControlColors.actionBlue.withValues(alpha: 0.35),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.nightlight_round,
-                          size: 16,
-                          color: SharedControlColors.actionBlue,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Evening Wrap-up',
-                          style: TextStyle(
-                            color: g.ink,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 16),
-                          tooltip: 'Dismiss wrap-up',
-                          onPressed: () => setState(() => _wrapupMode = false),
-                        ),
-                      ],
+        ),
+        if (_tab == 'now')
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final large = MediaQuery.textScalerOf(context).scale(1) >= 1.45;
+                final headings = [
+                  for (final entry in _sections.entries)
+                    _buildSectionHeading(
+                      context,
+                      entry.key,
+                      entry.value,
+                      rows.where((a) => _sectionFor(a) == entry.key).length,
+                      large,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ready to close out today? Carry unfinished items over to tomorrow with one tap.',
-                      style: TextStyle(color: g.inkMuted, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        AscentButton.primary(
-                          compact: true,
-                          expanded: false,
-                          label: 'Carry over to tomorrow',
-                          icon: Icons.next_plan_outlined,
-                          onPressed: () async {
-                            HapticFeedback.lightImpact();
-                            final messenger = ScaffoldMessenger.of(context);
-                            final db = ref.read(databaseProvider);
-                            final tomorrow = DateTime.now().add(
-                              const Duration(days: 1),
-                            );
-                            final items = await ref.read(
-                              todayActivitiesProvider.future,
-                            );
-                            final pendingTasks = items.where(
-                              (a) =>
-                                  a.status != TodayActivityStatus.done &&
-                                  a.linkedTaskId != null,
-                            );
-                            for (final a in pendingTasks) {
-                              await db.taskDao.updateTask(
-                                TaskTableCompanion(
-                                  id: Value(a.linkedTaskId!),
-                                  plannedDate: Value(tomorrow),
+                ];
+                // Keep the full labels readable at accessibility text sizes.
+                return large
+                    ? Column(children: headings)
+                    : Row(
+                        children: [
+                          for (final heading in headings)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 2.5,
                                 ),
-                              );
-                            }
-                            if (mounted) {
-                              setState(() => _wrapupMode = false);
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Unfinished items moved to tomorrow.',
-                                  ),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          Expanded(
-            child: _tab == 'plans'
-                ? const SingleChildScrollView(
-                    padding: EdgeInsets.all(16),
-                    child: HomePlansPreview(),
-                  )
-                : ref
-                      .watch(todayActivitiesProvider)
-                      .when(
-                        skipLoadingOnReload: true,
-                        skipError: true,
-                        loading: () => ListView(
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                            SkeletonShimmer(height: 52),
-                            const SizedBox(height: 8),
-                            SkeletonShimmer(height: 52),
-                            const SizedBox(height: 8),
-                            SkeletonShimmer(height: 52),
-                          ],
-                        ),
-                        error: (_, _) => Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Unable to load activities. Your tasks and history are preserved.',
-                                  style: TextStyle(
-                                    color: g.inkMuted,
-                                    fontSize: 13,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 12),
-                                AscentButton.tonal(
-                                  label: 'Retry activities',
-                                  icon: Icons.refresh_rounded,
-                                  onPressed: () =>
-                                      ref.invalidate(todayActivitiesProvider),
-                                ),
-                              ],
+                                child: heading,
+                              ),
                             ),
-                          ),
-                        ),
-                        data: (items) {
-                          final rows = items
-                              .where(
-                                (a) =>
-                                    (a.status == TodayActivityStatus.done) ==
-                                        (_tab == 'done') &&
-                                    _matchesFilter(a, _type) &&
-                                    (_query.isEmpty ||
-                                        '${a.title} ${a.notes ?? ''}'
-                                            .toLowerCase()
-                                            .contains(_query)),
-                              )
-                              .toList();
-
-                          // For single item on "Now" tab, render focused hero compass;
-                          // for multiple items, arrange cleanly into ground sections.
-                          TodayActivityItem? heroItem;
-                          List<TodayActivityItem> nonHeroRows = rows;
-                          if (_tab == 'now' &&
-                              _query.isEmpty &&
-                              _type == 'all' &&
-                              rows.length == 1) {
-                            heroItem = rows.first;
-                            nonHeroRows = const [];
-                          }
-
-                          final groups = <String, List<TodayActivityItem>>{};
-                          for (final a in nonHeroRows) {
-                            final group = _tab == 'done'
-                                ? 'Finished today'
-                                : a.status == TodayActivityStatus.inProgress ||
-                                      a.status == TodayActivityStatus.paused
-                                ? 'In progress'
-                                : a.isOverdue ||
-                                      a.priority == 'high' ||
-                                      (a.scheduledTime != null &&
-                                          a.scheduledTime!.difference(
-                                                DateTime.now(),
-                                              ) <=
-                                              const Duration(hours: 1))
-                                ? 'Needs attention'
-                                : 'Next';
-                            groups.putIfAbsent(group, () => []).add(a);
-                          }
-
-                          return ListView(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                            children: [
-                              if (heroItem != null)
-                                ThingsHeroCard(
-                                  key: ValueKey('things_hero_${heroItem.id}'),
-                                  activity: heroItem,
-                                  onTap: () {},
-                                ),
-                              if (rows.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 48,
-                                    horizontal: 24,
-                                  ),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          width: 52,
-                                          height: 52,
-                                          decoration: BoxDecoration(
-                                            color: g.fill,
-                                            borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(
-                                              color: g.line,
-                                              width: 0.8,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              _query.isNotEmpty
-                                                  ? Icons.search_off_rounded
-                                                  : (_tab == 'done'
-                                                      ? Icons.celebration_outlined
-                                                      : Icons.spa_outlined),
-                                              size: 26,
-                                              color: g.inkMuted,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          _query.isEmpty
-                                              ? (_tab == 'done'
-                                                  ? 'No Finished Tasks Yet'
-                                                  : 'Your Space is Clear')
-                                              : 'No Matching Things',
-                                          style: TextStyle(
-                                            color: g.ink,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          _query.isEmpty
-                                              ? (_tab == 'done'
-                                                  ? 'Complete an activity today and review your achievements here.'
-                                                  : 'Nothing pending on your plate. Add one small task below to begin.')
-                                              : 'Try adjusting your search keywords.',
-                                          style: TextStyle(
-                                            color: g.inkMuted,
-                                            fontSize: 13,
-                                            height: 1.4,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        if (_tab == 'now' && _query.isEmpty) ...[
-                                          const SizedBox(height: 16),
-                                          AscentButton.tonal(
-                                            compact: true,
-                                            label: 'Add one small thing',
-                                            icon: Icons.add_rounded,
-                                            onPressed: () =>
-                                                _composerFocusNode.requestFocus(),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              for (final (name, icon, color) in [
-                                ('In progress', Icons.play_circle_outline_rounded, SharedControlColors.actionBlue),
-                                ('Needs attention', Icons.error_outline_rounded, SharedControlColors.dueRed),
-                                ('Next', Icons.playlist_play_rounded, g.ink),
-                                ('Finished today', Icons.check_circle_outline_rounded, SharedControlColors.actionBlue),
-                              ])
-                                if (groups.containsKey(name)) ...[
-                                  InkWell(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      setState(() {
-                                        if (_collapsedSections.contains(name)) {
-                                          _collapsedSections.remove(name);
-                                        } else {
-                                          _collapsedSections.add(name);
-                                        }
-                                      });
-                                    },
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        4,
-                                        16,
-                                        4,
-                                        8,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(icon, size: 16, color: color),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              '$name · ${groups[name]!.length}',
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: g.ink,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Icon(
-                                            _collapsedSections.contains(name)
-                                                ? Icons.keyboard_arrow_down_rounded
-                                                : Icons.keyboard_arrow_up_rounded,
-                                            size: 18,
-                                            color: g.inkMuted,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  if (!_collapsedSections.contains(name))
-                                    for (final activity in groups[name]!)
-                                      ThingsInteractiveCard(
-                                        key: ValueKey(
-                                          'things_interactive_${activity.id}',
-                                        ),
-                                        activity: activity,
-                                        compact: true,
-                                      ),
-                                ],
-                              if (_tab == 'done')
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  child: Center(
-                                    child: TextButton.icon(
-                                      onPressed: () => context.push('/history'),
-                                      icon: const Icon(Icons.history_rounded),
-                                      label: const Text('Browse all history'),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
+                        ],
+                      );
+              },
+            ),
           ),
-          if (_tab == 'now')
-            SafeArea(
-              top: false,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                decoration: BoxDecoration(
-                  color: g.surface,
-                  border: Border(top: BorderSide(color: g.line, width: 0.8)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Divider(
+            height: 1,
+            thickness: 0.6,
+            color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.20),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeading(
+    BuildContext context,
+    String section,
+    String label,
+    int count,
+    bool large,
+  ) {
+    final g = context.glass;
+    final color = _sectionColor(context, section);
+    final active = _section == section && _expanded;
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
+    return Semantics(
+      button: true,
+      excludeSemantics: true,
+      expanded: _expanded && (_section == section || _section == 'all'),
+      label: '$label, $count ${count == 1 ? 'thing' : 'things'}',
+      child: InkWell(
+        key: ValueKey('things_heading_$section'),
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _selectSection(section),
+        child: AnimatedContainer(
+          duration: duration,
+          decoration: BoxDecoration(
+            color: active
+                ? color.withValues(alpha: g.isDark ? .14 : .08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active
+                  ? color.withValues(alpha: g.isDark ? 0.35 : 0.22)
+                  : Colors.transparent,
+              width: 0.8,
+            ),
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: large ? 16 : 4,
+            vertical: 8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '$label - ${count.toString().padLeft(2, '0')}',
+                textAlign: large ? TextAlign.start : TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                  letterSpacing: -0.2,
                 ),
-                child: ActivityComposer(focusNode: _composerFocusNode),
+              ),
+              const SizedBox(height: 4),
+              AnimatedOpacity(
+                opacity: active ? 1 : 0,
+                duration: duration,
+                child: Center(
+                  child: Container(
+                    width: 14,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivities(BuildContext context, List<TodayActivityItem> items) {
+    final g = context.glass;
+    final rows = items
+        .where(
+          (a) =>
+              (a.status == TodayActivityStatus.done) == (_tab == 'done') &&
+              (_query.isEmpty ||
+                  '${a.title} ${a.notes ?? ''}'.toLowerCase().contains(_query)),
+        )
+        .toList();
+    final groups = <String, List<TodayActivityItem>>{};
+    for (final item in rows) {
+      final section = _sectionFor(item);
+      if (_section != 'all' && _section != section) continue;
+      groups.putIfAbsent(section, () => []).add(item);
+    }
+    final originalOrder = {
+      for (final (index, item) in rows.indexed) item.id: index,
+    };
+    for (final entry in groups.entries) {
+      entry.value.sort((a, b) {
+        final order = entry.key == 'anytime' ? 0 : _compareSchedule(a, b);
+        return order != 0
+            ? order
+            : originalOrder[a.id]!.compareTo(originalOrder[b.id]!);
+      });
+    }
+    final entries = <Widget Function()>[];
+    if (_expanded) {
+      if (groups.isEmpty) entries.add(() => _buildEmpty(context, items));
+      for (final section in _sections.keys) {
+        final group = groups[section];
+        if (group == null) continue;
+        if (_section == 'all' && _tab == 'now') {
+          entries.add(
+            () => Padding(
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: _sectionColor(context, section),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      section == 'scheduled'
+                          ? 'Scheduled today'
+                          : _sections[section]!,
+                      style: TextStyle(
+                        color: _sectionColor(context, section),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+          );
+        }
+        for (final (index, item) in group.indexed) {
+          if (index > 0) {
+            entries.add(
+              () => Divider(
+                height: 1,
+                thickness: .5,
+                indent: 46,
+                color: g.line.withValues(alpha: .6),
+              ),
+            );
+          }
+          entries.add(
+            () => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ActivityRowItem(
+                key: ValueKey('things_row_${item.id}'),
+                activity: item,
+                compact: true,
+                ground: true,
+                hubStyle: true,
+              ),
+            ),
+          );
+        }
+      }
+      entries.add(() => const SizedBox(height: 14));
+    }
+    return CustomScrollView(
+      key: ValueKey('things_list_$_tab'),
+      slivers: [
+        if (_showSearch)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: _buildSearch(),
+            ),
+          ),
+        SliverToBoxAdapter(child: _buildSummary(context, items)),
+        if (_wrapupMode && _tab == 'now')
+          SliverToBoxAdapter(child: _buildWrapup(context)),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: DecoratedSliver(
+            key: const ValueKey('things_connected_card'),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: g.line.withValues(alpha: g.isDark ? .30 : .20),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: g.shadow.withValues(alpha: g.isDark ? .14 : .05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            sliver: SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: _buildBoardHeader(context, rows),
+                    ),
+                  ),
+                  SliverFadeTransition(
+                    opacity: _reveal.drive(
+                      CurveTween(curve: Curves.easeOutCubic),
+                    ),
+                    sliver: SliverList.builder(
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) => entries[index](),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (_tab == 'done')
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: AscentButton.outlined(
+                label: 'Browse all history',
+                icon: Icons.history_rounded,
+                onPressed: () => context.push('/history'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSummary(BuildContext context, List<TodayActivityItem> items) {
+    final g = context.glass;
+    final done = items
+        .where((a) => a.status == TodayActivityStatus.done)
+        .length;
+    final total = items.length;
+    final progress = total > 0 ? (done / total).clamp(0.0, 1.0) : 0.0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _tab == 'done' ? 'Completed' : 'Today',
+            style: TextStyle(
+              color: g.ink,
+              fontSize: 30,
+              height: 1.15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -.8,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            '${items.length - done} remaining · $done completed',
+            style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.4),
+          ),
+          if (total > 0 && _tab == 'now') ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: Container(
+                height: 3.5,
+                decoration: BoxDecoration(
+                  color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.20),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progress,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: progress == 1.0
+                          ? context.doneInk
+                          : (g.isDark
+                                ? SharedControlColors.actionBlueDark
+                                : SharedControlColors.actionBlue),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
+  Widget _buildSearch() => TextField(
+    controller: _searchController,
+    autofocus: true,
+    decoration: InputDecoration(
+      hintText: 'Search your things',
+      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+      suffixIcon: _query.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.clear_rounded, size: 18),
+              tooltip: 'Clear search',
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _query = '');
+              },
+            )
+          : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: context.glass.line, width: 0.8),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: context.glass.line, width: 0.8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: context.glass.isDark
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue,
+          width: 1.4,
+        ),
+      ),
+    ),
+    onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
+  );
+
+  Widget _buildEmpty(BuildContext context, List<TodayActivityItem> items) {
+    final g = context.glass;
+    final filtered = _query.isNotEmpty || _section != 'all';
+    final IconData emptyIcon = _query.isNotEmpty
+        ? Icons.search_off_rounded
+        : _tab == 'done'
+        ? Icons.check_circle_outline_rounded
+        : _section == 'overdue'
+        ? Icons.alarm_off_rounded
+        : _section == 'scheduled'
+        ? Icons.schedule_rounded
+        : _section == 'anytime'
+        ? Icons.spa_outlined
+        : items.isEmpty
+        ? Icons.lightbulb_outline_rounded
+        : Icons.done_all_rounded;
+
+    final Color iconColor = _section == 'overdue' && _query.isEmpty
+        ? SharedControlColors.dueRed
+        : (_tab == 'done' || (!filtered && items.isNotEmpty)
+              ? context.doneInk
+              : g.inkMuted);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconColor.withValues(alpha: g.isDark ? 0.12 : 0.08),
+              ),
+              child: Icon(emptyIcon, size: 22, color: iconColor),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _query.isNotEmpty
+                  ? 'No matching things'
+                  : _tab == 'done'
+                  ? 'Nothing completed yet'
+                  : _section == 'overdue'
+                  ? 'Nothing overdue'
+                  : _section == 'scheduled'
+                  ? 'Nothing scheduled'
+                  : _section == 'anytime'
+                  ? 'No anytime things'
+                  : items.isEmpty
+                  ? 'What’s one thing for today?'
+                  : 'You’re all caught up',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: g.ink,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _query.isNotEmpty
+                  ? 'Try another search.'
+                  : _section == 'overdue'
+                  ? 'Your deadlines are up to date.'
+                  : _section == 'scheduled'
+                  ? 'Things with a time will appear here.'
+                  : _tab == 'done'
+                  ? 'Things you finish today will appear here.'
+                  : 'Add a thing whenever you’re ready.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: g.inkMuted, fontSize: 12.5, height: 1.4),
+            ),
+            if (filtered) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _query = '';
+                    _section = 'all';
+                    _expanded = true;
+                  });
+                },
+                child: const Text('Show all things'),
+              ),
+            ] else if (_tab == 'now' && items.isEmpty) ...[
+              const SizedBox(height: 16),
+              const Center(child: ActivityStarterActions()),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _usesScrollingControls(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(1) >= 1.45 ||
+      MediaQuery.sizeOf(context).height < 600;
+
+  Widget _buildWrapup(BuildContext context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(12),
+        customBorder: Border.all(
+          color: SharedControlColors.actionBlue.withValues(alpha: 0.35),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.nightlight_round,
+                  size: 16,
+                  color: SharedControlColors.actionBlue,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Evening Wrap-up',
+                    style: TextStyle(
+                      color: g.ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 16),
+                  tooltip: 'Dismiss wrap-up',
+                  onPressed: () => setState(() => _wrapupMode = false),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ready to close out today? Carry unfinished items over to tomorrow with one tap.',
+              style: TextStyle(color: g.inkMuted, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            AscentButton.primary(
+              compact: true,
+              expanded: true,
+              label: 'Carry over to tomorrow',
+              icon: Icons.next_plan_outlined,
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                final messenger = ScaffoldMessenger.of(context);
+                final db = ref.read(databaseProvider);
+                final tomorrow = DateTime.now().add(const Duration(days: 1));
+                final items = await ref.read(todayActivitiesProvider.future);
+                final pendingTasks = items.where(
+                  (a) =>
+                      a.status != TodayActivityStatus.done &&
+                      a.linkedTaskId != null,
+                );
+                for (final a in pendingTasks) {
+                  await db.taskDao.updateTask(
+                    TaskTableCompanion(
+                      id: Value(a.linkedTaskId!),
+                      plannedDate: Value(tomorrow),
+                    ),
+                  );
+                }
+                if (mounted) {
+                  setState(() => _wrapupMode = false);
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Unfinished items moved to tomorrow.'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildComposer(BuildContext context) {
+    if (!_usesScrollingControls(context)) {
+      return ActivityComposer(focusNode: _composerFocusNode);
+    }
+    return AscentButton.primary(
+      label: 'Add a thing',
+      icon: Icons.add_rounded,
+      onPressed: () => showAscentSheet<void>(
+        context: context,
+        builder: (context) => SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ActivityComposer(focusNode: _composerFocusNode),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => AscentScaffold(
+    title: 'Things',
+    backgroundColor: Theme.of(context).colorScheme.surface,
+    actions: [
+      IconButton(
+        tooltip: _showSearch ? 'Close search' : 'Search things',
+        icon: Icon(
+          _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+        ),
+        onPressed: () => setState(() {
+          _showSearch = !_showSearch;
+          if (!_showSearch) {
+            _query = '';
+            _searchController.clear();
+          }
+        }),
+      ),
+      IconButton(
+        key: const ValueKey('things_calendar_button'),
+        tooltip: 'Things calendar',
+        icon: const Icon(Icons.calendar_month_rounded),
+        onPressed: () => context.push('/calendar?scope=things'),
+      ),
+      IconButton(
+        tooltip: 'Things views',
+        icon: const Icon(Icons.more_horiz_rounded),
+        onPressed: _showViews,
+      ),
+    ],
+    body: Column(
+      children: [
+        Expanded(
+          child: _tab == 'plans'
+              ? const SingleChildScrollView(
+                  padding: EdgeInsets.all(16),
+                  child: HomePlansPreview(),
+                )
+              : ref
+                    .watch(todayActivitiesProvider)
+                    .when(
+                      skipLoadingOnReload: true,
+                      skipError: true,
+                      loading: () => ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          SkeletonShimmer(height: 160),
+                          const SizedBox(height: 12),
+                          SkeletonShimmer(height: 120),
+                        ],
+                      ),
+                      error: (_, _) => Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Unable to load your things. Your tasks and history are preserved.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: context.glass.inkMuted),
+                              ),
+                              const SizedBox(height: 12),
+                              AscentButton.tonal(
+                                label: 'Retry',
+                                icon: Icons.refresh_rounded,
+                                onPressed: () =>
+                                    ref.invalidate(todayActivitiesProvider),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      data: (items) => _buildActivities(context, items),
+                    ),
+        ),
+        if (_tab == 'now')
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(
+                  top: BorderSide(
+                    color: context.glass.line.withValues(
+                      alpha: context.glass.isDark ? 0.25 : 0.15,
+                    ),
+                    width: 0.8,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: context.glass.shadow.withValues(
+                      alpha: context.glass.isDark ? 0.12 : 0.04,
+                    ),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: _buildComposer(context),
+            ),
+          ),
+      ],
+    ),
+  );
 }

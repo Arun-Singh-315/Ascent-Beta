@@ -1,3 +1,6 @@
+import '../calendar/calendar_event_sheet.dart';
+import '../../shared/widgets/ascent_sheet.dart';
+import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
 import 'reminder_action_ui.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -7,14 +10,20 @@ import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/calendar_view_mode_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/monochrome_surfaces.dart';
+import '../../app/theme/shared_control_tokens.dart';
+import '../../shared/widgets/ascent_calendar_day.dart';
+import '../../shared/widgets/feature_guide.dart';
+import '../home/widgets/home_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -55,7 +64,18 @@ enum _ReminderRepeatMode {
 }
 
 class RemindersScreen extends ConsumerStatefulWidget {
-  const RemindersScreen({super.key, this.initialReminderId});
+  const RemindersScreen({
+    super.key,
+    this.initialReminderId,
+    this.initialCalendarDate,
+    this.openCalendar = false,
+    this.calendarOnly = false,
+    this.thingsOnly = false,
+  });
+  final DateTime? initialCalendarDate;
+  final bool openCalendar;
+  final bool calendarOnly;
+  final bool thingsOnly;
   final int? initialReminderId;
 
   @override
@@ -63,6 +83,7 @@ class RemindersScreen extends ConsumerStatefulWidget {
 }
 
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
+  int _calendarScope = 0;
   bool _notificationsEnabled = true;
   int _selectedTab = 0; // 0: Active, 1: Completed
   final Set<String> _collapsedSections = <String>{};
@@ -71,22 +92,56 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isMonthExpanded = false;
 
+  void _publishCalendarView() {
+    if (widget.calendarOnly) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref
+            .read(calendarViewModeProvider.notifier)
+            .showCalendar(_isCalendarView);
+      }
+    });
+  }
+
+  void _toggleCalendarView() {
+    setState(() => _isCalendarView = !_isCalendarView);
+    ref.read(calendarViewModeProvider.notifier).showCalendar(_isCalendarView);
+  }
+
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   @override
   void initState() {
     super.initState();
-    _checkNotificationPermission();
+    _calendarScope = widget.thingsOnly ? 1 : 0;
+    _applyCalendarTarget();
+    _publishCalendarView();
+    if (!widget.calendarOnly) _checkNotificationPermission();
     _scheduleTarget();
   }
 
   @override
   void didUpdateWidget(covariant RemindersScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialCalendarDate != widget.initialCalendarDate ||
+        oldWidget.openCalendar != widget.openCalendar) {
+      _applyCalendarTarget();
+      _publishCalendarView();
+    }
     if (oldWidget.initialReminderId != widget.initialReminderId) {
       _scheduleTarget();
     }
+  }
+
+  void _applyCalendarTarget() {
+    if (!widget.openCalendar) return;
+    final day = widget.initialCalendarDate ?? DateTime.now();
+    _isCalendarView = true;
+    _selectedTab = 0;
+    _selectedCalendarDate = DateTime(day.year, day.month, day.day);
+    _calendarMonth = DateTime(day.year, day.month);
+    _isMonthExpanded = true;
   }
 
   void _scheduleTarget() {
@@ -147,7 +202,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
   void _openAddEditReminderSheet([Reminder? existing, DateTime? initialDate]) {
     final titleController = TextEditingController(text: existing?.title ?? '');
-    DateTime scheduledDate = existing?.scheduledAt ??
+    DateTime scheduledDate =
+        existing?.scheduledAt ??
         (initialDate != null
             ? DateTime(
                 initialDate.year,
@@ -756,10 +812,111 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final activitiesAsync = ref.watch(todayActivitiesProvider);
     final allActivities = activitiesAsync.value ?? const <TodayActivityItem>[];
 
-    final g = context.glass;
+    return Theme(
+      data: _isCalendarView
+          ? HomeTheme.from(Theme.of(context))
+          : Theme.of(context),
+      child: Builder(
+        builder: (context) =>
+            _buildScreen(context, remindersAsync, allTasks, allActivities),
+      ),
+    );
+  }
 
+  Widget _buildScreen(
+    BuildContext context,
+    AsyncValue<List<Reminder>> remindersAsync,
+    List<Task> allTasks,
+    List<TodayActivityItem> allActivities,
+  ) {
+    final g = context.glass;
+    if (widget.calendarOnly) {
+      final reminders = remindersAsync.value ?? const <Reminder>[];
+      final tasksState = ref.watch(allTasksStreamProvider);
+      final activitiesState = ref.watch(todayActivitiesProvider);
+      final sources = [remindersAsync, tasksState, activitiesState];
+      return AscentScaffold(
+        title: 'Calendar',
+        subtitle: _calendarScope == 1
+            ? 'Tasks, to-dos & activities'
+            : _calendarScope == 2
+            ? 'Reminders & alerts'
+            : 'Tasks, activities & reminders',
+        showFeatureHelp: false,
+        glow1: Colors.transparent,
+        glow2: Colors.transparent,
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          children: [
+            AscentSegmentedControl<int>(
+              inline: true,
+              segments: const [
+                AscentSegment(value: 0, label: 'Everything'),
+                AscentSegment(value: 1, label: 'Things'),
+                AscentSegment(value: 2, label: 'Reminders'),
+              ],
+              selected: _calendarScope,
+              onChanged: (value) => setState(() => _calendarScope = value),
+            ),
+            const SizedBox(height: 12),
+            if (sources.any((source) => source.isLoading))
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: LinearProgressIndicator(),
+              ),
+            if (sources.any((source) => source.hasError))
+              TextButton.icon(
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Some items could not load. Retry'),
+                onPressed: () {
+                  ref.invalidate(allRemindersProvider);
+                  ref.invalidate(allTasksStreamProvider);
+                  ref.invalidate(todayActivitiesProvider);
+                },
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const ValueKey('calendar_schedule_event'),
+                icon: const Icon(Icons.event_available_outlined),
+                label: const Text('Schedule meeting or event'),
+                onPressed: () =>
+                    showCalendarEventSheet(context, _selectedCalendarDate),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildGoogleCalendarView(
+              context,
+              g,
+              _calendarScope == 1
+                  ? []
+                  : reminders
+                        .where(
+                          (r) =>
+                              r.isActive &&
+                              !r.title.startsWith('Did you do it?'),
+                        )
+                        .toList(),
+              _calendarScope == 2 ? [] : allTasks,
+              _calendarScope == 2 ? [] : allActivities,
+            ),
+          ],
+        ),
+      );
+    }
     return AscentScaffold(
       title: 'Reminders & Alerts',
+      titleWidget: _isCalendarView
+          ? Text(
+              'Calendar',
+              style: AscentTextStyles.interfaceTitle.copyWith(color: g.ink),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            )
+          : null,
+      showFeatureHelp: !_isCalendarView,
+      glow1: _isCalendarView ? Colors.transparent : null,
+      glow2: _isCalendarView ? Colors.transparent : null,
       subtitle: 'Scheduled notifications & deadlines',
       actions: [
         IconButton(
@@ -772,34 +929,73 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           ),
           onPressed: () {
             HapticFeedback.selectionClick();
-            setState(() => _isCalendarView = !_isCalendarView);
+            _toggleCalendarView();
           },
         ),
-        IconButton(
-          key: const ValueKey('calendar_dayboard_button'),
-          tooltip: 'Dayboard & Activities',
-          icon: const Icon(Icons.dashboard_customize_outlined),
-          onPressed: () => context.push('/things'),
-        ),
-        IconButton(
-          tooltip: 'Routines & Plans',
-          icon: const Icon(Icons.event_repeat_rounded),
-          onPressed: () => context.push('/plans'),
-        ),
-        IconButton(
-          tooltip: 'Sync reminder alerts',
-          icon: _syncingAlerts
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: g.clay,
-                  ),
-                )
-              : const Icon(Icons.sync_rounded),
-          onPressed: _syncingAlerts ? null : _syncAlerts,
-        ),
+        if (_isCalendarView)
+          PopupMenuButton<String>(
+            key: const ValueKey('calendar_more_actions'),
+            tooltip: 'More calendar actions',
+            icon: const Icon(Icons.more_horiz_rounded),
+            onSelected: (action) {
+              switch (action) {
+                case 'activities':
+                  context.go('/things');
+                case 'plans':
+                  context.go('/plans');
+                case 'sync':
+                  _syncAlerts();
+                case 'help':
+                  showFeatureGuide(context, 'Reminders & Alerts');
+              }
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'activities',
+                key: ValueKey('calendar_dayboard_button'),
+                child: Text('Dayboard & activities'),
+              ),
+              const PopupMenuItem(
+                value: 'plans',
+                child: Text('Routines & plans'),
+              ),
+              PopupMenuItem(
+                value: 'sync',
+                enabled: !_syncingAlerts,
+                child: Text(
+                  _syncingAlerts ? 'Syncing alerts…' : 'Sync reminder alerts',
+                ),
+              ),
+              const PopupMenuItem(value: 'help', child: Text('How this works')),
+            ],
+          )
+        else ...[
+          IconButton(
+            key: const ValueKey('calendar_dayboard_button'),
+            tooltip: 'Dayboard & Activities',
+            icon: const Icon(Icons.dashboard_customize_outlined),
+            onPressed: () => context.push('/things'),
+          ),
+          IconButton(
+            tooltip: 'Routines & Plans',
+            icon: const Icon(Icons.event_repeat_rounded),
+            onPressed: () => context.push('/plans'),
+          ),
+          IconButton(
+            tooltip: 'Sync reminder alerts',
+            icon: _syncingAlerts
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: g.clay,
+                    ),
+                  )
+                : const Icon(Icons.sync_rounded),
+            onPressed: _syncingAlerts ? null : _syncAlerts,
+          ),
+        ],
       ],
       floatingActionButton: remindersAsync.value?.isNotEmpty == true
           ? AscentButton.fab(
@@ -829,14 +1025,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       Expanded(
                         child: AscentSegmentedControl<int>(
                           segments: const [
-                            AscentSegment(
-                              value: 0,
-                              label: 'Active (0)',
-                            ),
-                            AscentSegment(
-                              value: 1,
-                              label: 'Completed (0)',
-                            ),
+                            AscentSegment(value: 0, label: 'Active (0)'),
+                            AscentSegment(value: 1, label: 'Completed (0)'),
                           ],
                           selected: _selectedTab,
                           onChanged: (val) {
@@ -984,7 +1174,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         segments: [
                           AscentSegment(
                             value: 0,
-                            label: 'Active (${reminders.where((r) => r.isActive).length})',
+                            label:
+                                'Active (${reminders.where((r) => r.isActive).length})',
                           ),
                           AscentSegment(
                             value: 1,
@@ -1001,15 +1192,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     const SizedBox(width: AppSpace.s8),
                     IconButton.filledTonal(
                       key: const ValueKey('calendar_toggle_button'),
-                      tooltip: _isCalendarView ? 'Show as List' : 'Show Calendar',
+                      tooltip: _isCalendarView
+                          ? 'Show as List'
+                          : 'Show Calendar',
                       style: IconButton.styleFrom(
                         backgroundColor: _isCalendarView
-                            ? g.clay.withValues(alpha: 0.15)
+                            ? MonochromeSurfaces.of(context).neutralSelection
                             : g.fill,
-                        foregroundColor: _isCalendarView ? g.clay : g.inkSecondary,
+                        foregroundColor: _isCalendarView
+                            ? g.ink
+                            : g.inkSecondary,
                         side: BorderSide(
                           color: _isCalendarView
-                              ? g.clay.withValues(alpha: 0.4)
+                              ? MonochromeSurfaces.of(context).controlOutline
                               : g.line,
                         ),
                         padding: const EdgeInsets.all(AppSpace.s10),
@@ -1022,7 +1217,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       ),
                       onPressed: () {
                         HapticFeedback.selectionClick();
-                        setState(() => _isCalendarView = !_isCalendarView);
+                        _toggleCalendarView();
                       },
                     ),
                   ],
@@ -1285,14 +1480,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
     final borderColor = isUpcoming
         ? (isOverdue
-            ? g.coral.withValues(alpha: 0.45)
-            : accent.withValues(alpha: 0.25))
+              ? g.coral.withValues(alpha: 0.45)
+              : accent.withValues(alpha: 0.25))
         : g.line.withValues(alpha: 0.25);
 
     final groundBg = isUpcoming
         ? (isOverdue
-            ? g.coral.withValues(alpha: g.isDark ? 0.08 : 0.04)
-            : g.fill.withValues(alpha: g.isDark ? 0.06 : 0.03))
+              ? g.coral.withValues(alpha: g.isDark ? 0.08 : 0.04)
+              : g.fill.withValues(alpha: g.isDark ? 0.06 : 0.03))
         : (g.isDark ? g.fill.withValues(alpha: 0.03) : Colors.transparent);
 
     return Dismissible(
@@ -1327,10 +1522,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         decoration: BoxDecoration(
           color: groundBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: isOverdue ? 1.1 : 0.9,
-          ),
+          border: Border.all(color: borderColor, width: isOverdue ? 1.1 : 0.9),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -1375,11 +1567,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       ),
                       child: reminder.isActive
                           ? null
-                          : Icon(
-                              Icons.check_rounded,
-                              size: 15,
-                              color: accent,
-                            ),
+                          : Icon(Icons.check_rounded, size: 15, color: accent),
                     ),
                   ),
                 ),
@@ -1396,8 +1584,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         style: TextStyle(
                           color: isUpcoming ? g.ink : g.inkMuted,
                           fontSize: 16,
-                          fontWeight:
-                              isUpcoming ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: isUpcoming
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           height: 1.35,
                           decoration: isUpcoming
                               ? null
@@ -1455,7 +1644,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                 color: g.coral,
                               ),
                             ),
-                          if (reminder.isActive && reminder.scheduledAt.isAfter(DateTime.now()))
+                          if (reminder.isActive &&
+                              reminder.scheduledAt.isAfter(DateTime.now()))
                             InkWell(
                               onTap: () => _finishReminder(reminder),
                               borderRadius: BorderRadius.circular(6),
@@ -1574,8 +1764,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     List<TodayActivityItem> allActivities = const [],
   ]) {
     final now = DateTime.now();
-    final isCurrentMonth =
-        _calendarMonth.year == now.year && _calendarMonth.month == now.month;
 
     final dayReminders =
         activeReminders
@@ -1583,336 +1771,204 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             .toList()
           ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
 
-    final dayTasks =
-        allTasks.where((t) {
-          if (t.actualCompletedDate != null) return false;
-          if (t.plannedDate != null) {
-            return _isSameDay(t.plannedDate!, _selectedCalendarDate);
-          }
-          return _isSameDay(now, _selectedCalendarDate);
-        }).toList();
+    final dayTasks = allTasks.where((t) {
+      if (t.actualCompletedDate != null) return false;
+      if (t.plannedDate != null) {
+        return _isSameDay(t.plannedDate!, _selectedCalendarDate);
+      }
+      return _isSameDay(now, _selectedCalendarDate);
+    }).toList();
 
     final dayTaskIds = dayTasks.map((t) => t.id).toSet();
-    final dayActivities =
-        allActivities.where((a) {
-          if (a.status == TodayActivityStatus.done) return false;
-          if (a.linkedTaskId != null && dayTaskIds.contains(a.linkedTaskId)) {
-            return false;
-          }
-          if (a.plannedDate != null) {
-            return _isSameDay(a.plannedDate!, _selectedCalendarDate);
-          }
-          return _isSameDay(now, _selectedCalendarDate);
-        }).toList();
+    final dayActivities = allActivities.where((a) {
+      if (a.status == TodayActivityStatus.done) return false;
+      if (a.linkedTaskId != null && dayTaskIds.contains(a.linkedTaskId)) {
+        return false;
+      }
+      if (a.plannedDate != null) {
+        return _isSameDay(a.plannedDate!, _selectedCalendarDate);
+      }
+      return _isSameDay(now, _selectedCalendarDate);
+    }).toList();
 
-    final selectedFestival =
-        FestivalService.getFestivalForDate(_selectedCalendarDate);
+    bool inMonth(DateTime date) =>
+        date.year == _calendarMonth.year && date.month == _calendarMonth.month;
+    final monthTasks = allTasks
+        .where(
+          (task) =>
+              task.actualCompletedDate == null &&
+              inMonth(task.plannedDate ?? now),
+        )
+        .length;
+    final taskIds = allTasks.map((task) => task.id).toSet();
+    final monthActivities = allActivities
+        .where(
+          (activity) =>
+              activity.status != TodayActivityStatus.done &&
+              !taskIds.contains(activity.linkedTaskId) &&
+              inMonth(activity.plannedDate ?? now),
+        )
+        .length;
+    final monthReminders = activeReminders
+        .where((reminder) => inMonth(reminder.scheduledAt))
+        .length;
 
+    final selectedFestival = FestivalService.getFestivalForDate(
+      _selectedCalendarDate,
+    );
+
+    final neutral = MonochromeSurfaces.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Google Calendar Glass Card Enclosure ────────────────────────
         Container(
           key: const ValueKey('reminders_calendar_card'),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: g.fill,
+            color: neutral.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: g.line, width: 0.8),
+            border: Border.all(
+              color: MediaQuery.highContrastOf(context)
+                  ? neutral.controlOutline
+                  : neutral.separator,
+            ),
           ),
-          padding: const EdgeInsets.all(AppSpace.s16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Calendar Month Navigation Header
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      DateFormat('MMMM yyyy').format(_calendarMonth),
-                      style: AscentTextStyles.cardTitle.copyWith(
-                        color: g.ink,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  InkWell(
-                    key: const ValueKey('calendar_today_button'),
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      setState(() {
-                        _selectedCalendarDate = DateTime.now();
-                        _calendarMonth = DateTime(now.year, now.month);
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isCurrentMonth &&
-                                    _isSameDay(_selectedCalendarDate, now)
-                                ? g.clay.withValues(alpha: 0.18)
-                                : g.fill,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color:
-                              isCurrentMonth &&
-                                      _isSameDay(_selectedCalendarDate, now)
-                                  ? g.clay.withValues(alpha: 0.4)
-                                  : g.line,
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        'Today',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.clay,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    key: const ValueKey('calendar_prev_month'),
-                    icon: const Icon(Icons.chevron_left_rounded),
-                    iconSize: 22,
-                    color: g.ink,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: 'Previous month',
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _calendarMonth = DateTime(
-                          _calendarMonth.year,
-                          _calendarMonth.month - 1,
-                        );
-                      });
-                    },
-                  ),
-                  IconButton(
-                    key: const ValueKey('calendar_next_month'),
-                    icon: const Icon(Icons.chevron_right_rounded),
-                    iconSize: 22,
-                    color: g.ink,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip: 'Next month',
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _calendarMonth = DateTime(
-                          _calendarMonth.year,
-                          _calendarMonth.month + 1,
-                        );
-                      });
-                    },
-                  ),
-                  IconButton(
-                    key: const ValueKey('calendar_expand_toggle'),
-                    icon: Icon(
-                      _isMonthExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.expand_more_rounded,
-                    ),
-                    iconSize: 22,
+              _calendarNavigation(context, g),
+              if (widget.calendarOnly) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '$monthTasks ${monthTasks == 1 ? 'task' : 'tasks'} · $monthActivities ${monthActivities == 1 ? 'activity' : 'activities'} · $monthReminders ${monthReminders == 1 ? 'reminder' : 'reminders'}',
+                  key: const ValueKey('calendar_month_summary'),
+                  style: AscentTextStyles.interfaceSupporting.copyWith(
                     color: g.inkSecondary,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                    tooltip:
-                        _isMonthExpanded
-                            ? 'Compact week view'
-                            : 'Full month view',
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _isMonthExpanded = !_isMonthExpanded);
-                    },
                   ),
-                ],
-              ),
+                ),
+              ],
               const SizedBox(height: 12),
-
-              // Weekday Names Row (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
-              const Row(
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'M',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final accessible =
+                      constraints.maxWidth < 7 * 44 ||
+                      MediaQuery.textScalerOf(context).scale(1) >= 1.45;
+                  if (accessible) {
+                    return _accessibleCalendarWeek(
+                      g,
+                      activeReminders,
+                      allTasks,
+                      allActivities,
+                    );
+                  }
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          for (final day in ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+                            Expanded(
+                              child: Center(
+                                child: Text(
+                                  day,
+                                  style: AscentTextStyles.interfaceLabel
+                                      .copyWith(color: g.inkSecondary),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'T',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
+                      const SizedBox(height: 8),
+                      AnimatedSize(
+                        duration: Duration(
+                          milliseconds: MediaQuery.disableAnimationsOf(context)
+                              ? 0
+                              : 220,
                         ),
+                        curve: Curves.easeOutCubic,
+                        child: _isMonthExpanded
+                            ? _buildMonthGrid(
+                                g,
+                                activeReminders,
+                                allTasks,
+                                allActivities,
+                              )
+                            : _buildWeekStrip(
+                                g,
+                                activeReminders,
+                                allTasks,
+                                allActivities,
+                              ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'W',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'T',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'F',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'S',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'S',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Calendar Days: either Week Strip or Full Month Grid
-              AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                child:
-                    _isMonthExpanded
-                        ? _buildMonthGrid(
-                          g,
-                          activeReminders,
-                          allTasks,
-                          allActivities,
-                        )
-                        : _buildWeekStrip(
-                          g,
-                          activeReminders,
-                          allTasks,
-                          allActivities,
-                        ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
         ),
-
-        const SizedBox(height: 16),
-
-        // ── Selected Date Agenda Section ──────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _isSameDay(_selectedCalendarDate, now)
-                        ? 'Today, ${DateFormat('MMM d').format(_selectedCalendarDate)}'
-                        : DateFormat(
-                          'EEEE, MMM d',
-                        ).format(_selectedCalendarDate),
-                    style: AscentTextStyles.cardTitle.copyWith(
-                      color: g.ink,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${dayReminders.length} reminder${dayReminders.length == 1 ? '' : 's'} • ${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}${dayActivities.isNotEmpty ? ' • ${dayActivities.length} activit${dayActivities.length == 1 ? 'y' : 'ies'}' : ''}',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: g.inkSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            AscentButton.secondary(
+        const SizedBox(height: 24),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final heading = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _isSameDay(_selectedCalendarDate, now)
+                      ? 'Today, ${DateFormat('MMM d').format(_selectedCalendarDate)}'
+                      : DateFormat('EEEE, MMM d').format(_selectedCalendarDate),
+                  style: AscentTextStyles.interfaceTitle.copyWith(color: g.ink),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    for (final count in [
+                      '${dayReminders.length} reminder${dayReminders.length == 1 ? '' : 's'}',
+                      '${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}',
+                      if (dayActivities.isNotEmpty)
+                        '${dayActivities.length} activit${dayActivities.length == 1 ? 'y' : 'ies'}',
+                    ])
+                      Text(
+                        count,
+                        style: AscentTextStyles.interfaceSupporting.copyWith(
+                          color: g.inkSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+            final add = AscentButton.primary(
               label: 'Add',
               icon: Icons.add_rounded,
               compact: true,
-              onPressed:
-                  () => _openAddEditReminderSheet(null, _selectedCalendarDate),
-            ),
-          ],
+              onPressed: () => widget.calendarOnly
+                  ? _addCalendarItem()
+                  : _openAddEditReminderSheet(null, _selectedCalendarDate),
+            );
+            if (MediaQuery.textScalerOf(context).scale(1) >= 1.45) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [heading, const SizedBox(height: 12), add],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(child: heading),
+                const SizedBox(width: 12),
+                add,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 12),
-
-        // Festival Celebration Banner if selected date is a festival
         if (selectedFestival != null)
           FestiveBannerCard(
             festival: selectedFestival,
-            onTap: () {
-              HapticFeedback.lightImpact();
-            },
+            restrained: true,
+            onTap: () => HapticFeedback.lightImpact(),
           ),
-
-        // Agenda Items
         if (dayReminders.isEmpty &&
             dayTasks.isEmpty &&
             dayActivities.isEmpty &&
@@ -1920,30 +1976,26 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
             decoration: BoxDecoration(
-              color: g.fill,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: g.line, width: 0.8),
+              color: neutral.surface,
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               children: [
                 Icon(
                   Icons.event_available_rounded,
-                  size: 36,
-                  color: g.inkMuted,
+                  size: 32,
+                  color: g.inkSecondary,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   'No events on this day',
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: g.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AscentTextStyles.interfaceBody.copyWith(color: g.ink),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text(
                   'Reminders, tasks, and activities scheduled for this day will appear here.',
                   textAlign: TextAlign.center,
-                  style: AscentTextStyles.bodySmall.copyWith(
+                  style: AscentTextStyles.interfaceSupporting.copyWith(
                     color: g.inkSecondary,
                   ),
                 ),
@@ -1952,91 +2004,260 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           )
         else ...[
           if (dayReminders.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0284C7),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'REMINDERS',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFF0284C7),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _calendarSectionLabel('Reminders', g),
             for (final reminder in dayReminders)
               _buildCalendarReminderTile(reminder, g),
             const SizedBox(height: 12),
           ],
           if (dayTasks.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFF59E0B),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'TASKS & TO-DOS',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFFF59E0B),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _calendarSectionLabel('Tasks & to-dos', g),
             for (final task in dayTasks) _buildCalendarTaskTile(task, g),
             const SizedBox(height: 12),
           ],
           if (dayActivities.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'THINGS & ACTIVITIES',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFF10B981),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _calendarSectionLabel('Things & activities', g),
             for (final activity in dayActivities)
               _buildCalendarActivityTile(activity, g),
           ],
         ],
+      ],
+    );
+  }
+
+  Future<void> _addCalendarItem() async {
+    if (_calendarScope == 1) {
+      await AddActivitySheet.show(context, initialDate: _selectedCalendarDate);
+      return;
+    }
+    if (_calendarScope == 2) {
+      _openAddEditReminderSheet(null, _selectedCalendarDate);
+      return;
+    }
+    final choice = await showAscentSheet<String>(
+      context: context,
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.check_circle_outline_rounded),
+            title: const Text('Task or activity'),
+            subtitle: Text(DateFormat.yMMMd().format(_selectedCalendarDate)),
+            onTap: () => Navigator.pop(sheetContext, 'thing'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_available_outlined),
+            title: const Text('Meeting or event'),
+            subtitle: const Text('Pick one or multiple dates'),
+            onTap: () => Navigator.pop(sheetContext, 'event'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.notifications_none_rounded),
+            title: const Text('Reminder'),
+            subtitle: const Text('Schedule a notification or alarm'),
+            onTap: () => Navigator.pop(sheetContext, 'reminder'),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'event') {
+      await showCalendarEventSheet(context, _selectedCalendarDate);
+    } else if (choice == 'thing') {
+      await AddActivitySheet.show(context, initialDate: _selectedCalendarDate);
+    } else if (choice == 'reminder') {
+      _openAddEditReminderSheet(null, _selectedCalendarDate);
+    }
+  }
+
+  Widget _calendarSectionLabel(String label, AscentGlass g) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      label,
+      style: AscentTextStyles.interfaceSupporting.copyWith(
+        color: g.inkSecondary,
+      ),
+    ),
+  );
+
+  void _selectCalendarDay(DateTime day) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _selectedCalendarDate = DateTime(day.year, day.month, day.day);
+      _calendarMonth = DateTime(day.year, day.month);
+    });
+  }
+
+  Widget _calendarNavigation(BuildContext context, AscentGlass g) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final title = Text(
+      DateFormat('MMMM yyyy').format(_calendarMonth),
+      style: AscentTextStyles.interfaceTitle.copyWith(color: g.ink),
+    );
+    final controls = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        TextButton(
+          key: const ValueKey('calendar_today_button'),
+          style: TextButton.styleFrom(
+            foregroundColor: g.ink,
+            minimumSize: const Size(48, 48),
+            textStyle: AscentTextStyles.interfaceNavigation,
+          ),
+          onPressed: () => _selectCalendarDay(DateTime.now()),
+          child: const Text('Today'),
+        ),
+        IconButton(
+          key: const ValueKey('calendar_prev_month'),
+          tooltip: 'Previous month',
+          icon: Icon(
+            rtl ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
+            size: 18,
+          ),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            setState(
+              () => _calendarMonth = DateTime(
+                _calendarMonth.year,
+                _calendarMonth.month - 1,
+              ),
+            );
+          },
+        ),
+        IconButton(
+          key: const ValueKey('calendar_next_month'),
+          tooltip: 'Next month',
+          icon: Icon(
+            rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+            size: 18,
+          ),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            setState(
+              () => _calendarMonth = DateTime(
+                _calendarMonth.year,
+                _calendarMonth.month + 1,
+              ),
+            );
+          },
+        ),
+        IconButton(
+          key: const ValueKey('calendar_expand_toggle'),
+          tooltip: _isMonthExpanded ? 'Compact week view' : 'Full month view',
+          icon: Icon(
+            _isMonthExpanded
+                ? Icons.expand_less_rounded
+                : Icons.expand_more_rounded,
+            size: 20,
+          ),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            setState(() => _isMonthExpanded = !_isMonthExpanded);
+          },
+        ),
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 430 &&
+            MediaQuery.textScalerOf(context).scale(1) < 1.45) {
+          return Row(
+            children: [
+              Expanded(child: title),
+              controls,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            title,
+            const SizedBox(height: 4),
+            Align(alignment: AlignmentDirectional.centerEnd, child: controls),
+          ],
+        );
+      },
+    );
+  }
+
+  DateTime get _calendarAnchor =>
+      _selectedCalendarDate.year == _calendarMonth.year &&
+          _selectedCalendarDate.month == _calendarMonth.month
+      ? _selectedCalendarDate
+      : _calendarMonth;
+
+  Widget _accessibleCalendarWeek(
+    AscentGlass g,
+    List<Reminder> reminders,
+    List<Task> tasks,
+    List<TodayActivityItem> activities,
+  ) {
+    // Month navigation must also move this fallback when selection is in another month.
+    final anchor = _calendarAnchor;
+    final monday = DateTime(
+      anchor.year,
+      anchor.month,
+      anchor.day - anchor.weekday + 1,
+    );
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return Column(
+      key: const ValueKey('calendar_accessible_week'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              'Week of ${DateFormat.MMMd().format(monday)}',
+              style: AscentTextStyles.interfaceSupporting.copyWith(
+                color: g.inkSecondary,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: const ValueKey('calendar_prev_week'),
+                  tooltip: 'Previous week',
+                  icon: Icon(
+                    rtl
+                        ? Icons.chevron_right_rounded
+                        : Icons.chevron_left_rounded,
+                    size: 18,
+                  ),
+                  onPressed: () => _selectCalendarDay(
+                    DateTime(anchor.year, anchor.month, anchor.day - 7),
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('calendar_next_week'),
+                  tooltip: 'Next week',
+                  icon: Icon(
+                    rtl
+                        ? Icons.chevron_left_rounded
+                        : Icons.chevron_right_rounded,
+                    size: 18,
+                  ),
+                  onPressed: () => _selectCalendarDay(
+                    DateTime(anchor.year, anchor.month, anchor.day + 7),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        for (var i = 0; i < 7; i++)
+          _buildCalendarDayCell(
+            DateTime(monday.year, monday.month, monday.day + i),
+            DateTime(monday.year, monday.month, monday.day + i).month ==
+                _calendarMonth.month,
+            reminders,
+            tasks,
+            g,
+            allActivities: activities,
+            agendaRow: true,
+          ),
       ],
     );
   }
@@ -2047,8 +2268,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     List<Task> allTasks, [
     List<TodayActivityItem> allActivities = const [],
   ]) {
-    final monday = _selectedCalendarDate.subtract(
-      Duration(days: _selectedCalendarDate.weekday - 1),
+    final anchor = _calendarAnchor;
+    final monday = DateTime(
+      anchor.year,
+      anchor.month,
+      anchor.day - anchor.weekday + 1,
     );
     final days = List.generate(
       7,
@@ -2080,8 +2304,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   ]) {
     final firstDay = DateTime(_calendarMonth.year, _calendarMonth.month, 1);
     final firstMonday = firstDay.subtract(Duration(days: firstDay.weekday - 1));
-    final daysInMonth =
-        DateTime(_calendarMonth.year, _calendarMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(
+      _calendarMonth.year,
+      _calendarMonth.month + 1,
+      0,
+    ).day;
     final totalCells = (firstDay.weekday - 1 + daysInMonth <= 35) ? 35 : 42;
     final days = List.generate(
       totalCells,
@@ -2119,6 +2346,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     List<Task> allTasks,
     AscentGlass g, {
     List<TodayActivityItem> allActivities = const [],
+    bool agendaRow = false,
   }) {
     final now = DateTime.now();
     final isSelected = _isSameDay(day, _selectedCalendarDate);
@@ -2143,200 +2371,85 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       return _isSameDay(now, day);
     });
 
-    return InkWell(
+    return AscentCalendarDay(
       key: ValueKey('calendar_day_${day.year}_${day.month}_${day.day}'),
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() {
-          _selectedCalendarDate = day;
-          if (day.month != _calendarMonth.month) {
-            _calendarMonth = DateTime(day.year, day.month);
-          }
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? g.clay.withValues(alpha: 0.22)
-                  : (isToday
-                      ? g.clay.withValues(alpha: 0.08)
-                      : (festival != null
-                          ? festival.accentColor.withValues(alpha: 0.08)
-                          : Colors.transparent)),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color:
-                isSelected
-                    ? g.clay
-                    : (isToday
-                        ? g.clay.withValues(alpha: 0.4)
-                        : (festival != null
-                            ? festival.accentColor.withValues(alpha: 0.35)
-                            : Colors.transparent)),
-            width: isSelected ? 1.4 : 0.8,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '${day.day}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight:
-                      isSelected || isToday ? FontWeight.bold : FontWeight.w500,
-                  color:
-                      isSelected
-                          ? g.clay
-                          : (isCurrentMonth
-                              ? g.ink
-                              : g.inkMuted.withValues(alpha: 0.4)),
-                ),
-              ),
-            ),
-            const SizedBox(height: 3),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (festival != null)
-                  Container(
-                    width: 5,
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: festival.accentColor,
-                    ),
-                  ),
-                if (hasReminders)
-                  Container(
-                    width: 4.5,
-                    height: 4.5,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0284C7),
-                    ),
-                  ),
-                if (hasTasks)
-                  Container(
-                    width: 4.5,
-                    height: 4.5,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFFF59E0B),
-                    ),
-                  ),
-                if (hasActivities && !hasTasks)
-                  Container(
-                    width: 4.5,
-                    height: 4.5,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF10B981),
-                    ),
-                  ),
-                if (festival == null &&
-                    !hasReminders &&
-                    !hasTasks &&
-                    !hasActivities)
-                  const SizedBox(height: 5),
-              ],
-            ),
-          ],
-        ),
-      ),
+      date: day,
+      today: isToday,
+      selected: isSelected,
+      outsideMonth: !isCurrentMonth,
+      hasScheduledItems: hasReminders || hasTasks || hasActivities,
+      semanticLabel:
+          '${DateFormat.yMMMMEEEEd().format(day)}${festival == null ? '' : ', ${festival.name}'}',
+      agendaRow: agendaRow,
+      compact: widget.calendarOnly && !agendaRow,
+      onTap: () => _selectCalendarDay(day),
     );
   }
 
   Widget _buildCalendarReminderTile(Reminder reminder, AscentGlass g) {
-    final formatTime = DateFormat('h:mm a').format(reminder.scheduledAt);
-    return Container(
-      key: ValueKey('calendar_reminder_tile_${reminder.id}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    final overdue =
+        reminder.isActive && reminder.scheduledAt.isBefore(DateTime.now());
+    final red = g.isDark
+        ? SharedControlColors.dueRedDark
+        : SharedControlColors.dueRed;
+    final time = Text(
+      '${overdue ? 'Overdue · ' : ''}${DateFormat('h:mm a').format(reminder.scheduledAt)}',
+      style: AscentTextStyles.interfaceSupporting.copyWith(
+        color: overdue ? red : g.inkSecondary,
+      ),
+    );
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          reminder.title,
+          style: AscentTextStyles.interfaceBody.copyWith(color: g.ink),
+        ),
+        if (reminder.alarmEnabled) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Alarm active',
+            style: AscentTextStyles.interfaceSupporting.copyWith(
+              color: g.inkSecondary,
+            ),
+          ),
+        ],
+      ],
+    );
+    final complete = IconButton(
+      key: ValueKey('calendar_reminder_complete_${reminder.id}'),
+      tooltip: 'Complete reminder',
+      icon: Icon(Icons.circle_outlined, size: 22, color: g.clay),
+      onPressed: () {
+        HapticFeedback.mediumImpact();
+        _finishReminder(reminder);
+      },
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        key: ValueKey('calendar_reminder_tile_${reminder.id}'),
         color: g.fill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: g.line, width: 0.8),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _openAddEditReminderSheet(reminder),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.3),
-                    width: 0.7,
-                  ),
-                ),
-                child: Text(
-                  formatTime,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0284C7),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openAddEditReminderSheet(reminder),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                time,
+                const SizedBox(height: 8),
+                Row(
                   children: [
-                    Text(
-                      reminder.title,
-                      style: AscentTextStyles.bodyMedium.copyWith(
-                        color: g.ink,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (reminder.alarmEnabled) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.alarm_rounded, size: 12, color: g.coral),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Alarm active',
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: g.coral,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    Expanded(child: details),
+                    const SizedBox(width: 8),
+                    complete,
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                key: ValueKey('calendar_reminder_complete_${reminder.id}'),
-                tooltip: 'Complete reminder',
-                icon: Icon(Icons.circle_outlined, size: 22, color: g.clay),
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  _finishReminder(reminder);
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2350,7 +2463,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       decoration: BoxDecoration(
         color: g.fill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: g.line, width: 0.8),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -2359,17 +2471,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.14),
+                color: MonochromeSurfaces.of(context).groupedFill,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                  width: 0.8,
-                ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_box_outlined,
                 size: 15,
-                color: Color(0xFFF59E0B),
+                color: g.inkSecondary,
               ),
             ),
             const SizedBox(width: 12),
@@ -2379,9 +2487,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 children: [
                   Text(
                     task.title,
-                    style: AscentTextStyles.bodyMedium.copyWith(
+                    style: AscentTextStyles.interfaceBody.copyWith(
                       color: g.ink,
-                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -2390,9 +2497,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     const SizedBox(height: 2),
                     Text(
                       task.notes!,
-                      style: AscentTextStyles.bodySmall.copyWith(
+                      style: AscentTextStyles.interfaceSupporting.copyWith(
                         color: g.inkSecondary,
-                        fontSize: 11,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2405,11 +2511,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             IconButton(
               key: ValueKey('calendar_task_complete_${task.id}'),
               tooltip: 'Complete task',
-              icon: const Icon(
-                Icons.circle_outlined,
-                size: 22,
-                color: Color(0xFFF59E0B),
-              ),
+              icon: Icon(Icons.circle_outlined, size: 22, color: g.clay),
               onPressed: () async {
                 HapticFeedback.mediumImpact();
                 final undo = await ref
@@ -2420,9 +2522,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     context,
                     message: 'Task completed: ${task.title}',
                     onUndo: () async {
-                      await ref
-                          .read(taskDaoProvider)
-                          .undoCompletion(undo);
+                      await ref.read(taskDaoProvider).undoCompletion(undo);
                     },
                   );
                 }
@@ -2435,13 +2535,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   }
 
   Widget _buildCalendarActivityTile(TodayActivityItem activity, AscentGlass g) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final isTimer = activity.kind != ActivityKind.todo;
     final isMedicine = activity.sourceType == 'medicine';
-    final accent =
-        isMedicine
-            ? const Color(0xFFEC4899)
-            : (isTimer ? const Color(0xFF10B981) : const Color(0xFF3B82F6));
 
     return Container(
       key: ValueKey('calendar_activity_tile_${activity.id}'),
@@ -2449,7 +2544,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       decoration: BoxDecoration(
         color: g.fill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: g.line, width: 0.8),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -2464,21 +2558,17 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               Container(
                 padding: const EdgeInsets.all(7),
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: dark ? 0.22 : 0.14),
+                  color: MonochromeSurfaces.of(context).groupedFill,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: accent.withValues(alpha: 0.35),
-                    width: 0.8,
-                  ),
                 ),
                 child: Icon(
                   isMedicine
                       ? Icons.medication_rounded
                       : (isTimer
-                          ? Icons.timer_outlined
-                          : Icons.check_circle_outline_rounded),
+                            ? Icons.timer_outlined
+                            : Icons.check_circle_outline_rounded),
                   size: 15,
-                  color: accent,
+                  color: g.inkSecondary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -2488,9 +2578,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   children: [
                     Text(
                       activity.title,
-                      style: AscentTextStyles.bodyMedium.copyWith(
+                      style: AscentTextStyles.interfaceBody.copyWith(
                         color: g.ink,
-                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -2500,9 +2589,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       activity.categoryTag.isNotEmpty
                           ? '${activity.categoryTag} · Dayboard'
                           : 'Dayboard Activity',
-                      style: AscentTextStyles.bodySmall.copyWith(
+                      style: AscentTextStyles.interfaceSupporting.copyWith(
                         color: g.inkSecondary,
-                        fontSize: 11,
                       ),
                     ),
                   ],

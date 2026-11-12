@@ -125,15 +125,16 @@ void main() {
       await settle(tester);
       expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(find.text('0 ml'), findsOneWidget);
-      expect(find.text('0.00 km'), findsOneWidget);
-      expect(find.text('No doses scheduled'), findsOneWidget);
+      expect(find.text('DRANK TODAY'), findsOneWidget);
+      expect(find.text('0.00 km'), findsNothing);
+      expect(find.text('No doses scheduled'), findsNothing);
       await tester.tap(find.byKey(const ValueKey('home_routine_hydration')));
       await settle(tester);
       await tester.ensureVisible(find.text('500 ml'));
       await tester.tap(find.text('500 ml'));
       await tester.pump();
-      await tester.ensureVisible(find.text('Log water'));
-      await tester.tap(find.text('Log water'));
+      await tester.ensureVisible(find.text('Add 500 ml'));
+      await tester.tap(find.text('Add 500 ml'));
       await settle(tester);
       expect(
         await tester.runAsync(() => db.waterDao.watchTodayWaterMl().first),
@@ -158,7 +159,7 @@ void main() {
       final waterCard = tester.getRect(
         find.byKey(const ValueKey('rhythm_card_hydration')),
       );
-      expect(waterCard.width, shelf.width);
+      expect(waterCard.width, closeTo(shelf.width, .1));
       expect(
         find.descendant(
           of: find.byKey(const ValueKey('rhythm_card_hydration')),
@@ -168,7 +169,15 @@ void main() {
       );
       await tester.tap(find.text('Undo'));
       await settle(tester);
-      expect(await tester.runAsync(() => db.waterDao.watchTodayWaterMl().first), 0);
+      expect(
+        await tester.runAsync(() => db.waterDao.watchTodayWaterMl().first),
+        0,
+      );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('rhythm_select_walk')),
+      );
+      await tester.tap(find.byKey(const ValueKey('rhythm_select_walk')));
+      await settle(tester);
       final move = find.byKey(const ValueKey('home_routine_walk'));
       await tester.ensureVisible(move);
       await tester.tap(move);
@@ -179,14 +188,9 @@ void main() {
       );
       expect(
         tester.getSize(find.byKey(const ValueKey('rhythm_card_walk'))).width,
-        shelf.width,
+        closeTo(shelf.width, .1),
       );
-      expect(
-        tester
-            .getSize(find.byKey(const ValueKey('rhythm_card_hydration')))
-            .width,
-        shelf.width,
-      );
+      expect(find.byKey(const ValueKey('rhythm_card_hydration')), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     },

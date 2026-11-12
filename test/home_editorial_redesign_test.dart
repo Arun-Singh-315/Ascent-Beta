@@ -198,9 +198,16 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('TODAY’S EXECUTION'), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byType(ActivityHubCard),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.ensureVisible(find.byType(ActivityHubCard));
+      await settle(tester);
       expect(
         tester.getTopLeft(find.byType(ActivityHubCard)).dy,
-        greaterThan(tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy),
+        lessThan(tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy),
       );
       await capture(tester, key, 'home-light-empty');
       await tester.scrollUntilVisible(
@@ -209,19 +216,35 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       await settle(tester);
-      expect(
-        find.byKey(const ValueKey('home_routine_medicine')),
-        findsOneWidget,
-      );
-      expect(find.byKey(const ValueKey('home_routine_momentum')), findsOneWidget);
       final waterCard = find.byKey(const ValueKey('home_routine_hydration'));
+      await tester.ensureVisible(waterCard);
       final initialX = tester.getTopLeft(waterCard).dx;
       await tester.drag(waterCard, const Offset(-220, 0));
       await settle(tester);
+      final moveCard = find.byKey(const ValueKey('home_routine_walk'));
+      expect(moveCard, findsOneWidget);
       expect(tester.takeException(), isNull);
-      expect(tester.getTopLeft(waterCard).dx, closeTo(initialX, 1));
       await capture(tester, key, 'home-life-shelf');
-      await tester.drag(waterCard, const Offset(300, 0));
+      final group = find.byKey(const ValueKey('home_growth_commitments_group'));
+      expect(
+        find.descendant(
+          of: group,
+          matching: find.byKey(const ValueKey('home_learning_card')),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: group,
+          matching: find.byKey(const ValueKey('home_promise_empty_card')),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Pick your next course'), findsNothing);
+      expect(find.text('Small rituals, at your pace.'), findsNothing);
+      expect(find.text('Dayboard'), findsNothing);
+
+      await tester.drag(moveCard, const Offset(220, 0));
       await settle(tester);
       expect(tester.getTopLeft(waterCard).dx, closeTo(initialX, 1));
       await unmount(tester);
@@ -292,51 +315,34 @@ void main() {
         expect(tester.takeException(), isNull);
         await capture(tester, key, 'home-${dark ? 'dark' : 'light'}-$scale');
         if (scale == 1) {
-          await tester.scrollUntilVisible(
-            find.descendant(
-              of: find.byType(ActivityHubCard),
-              matching: find.text('Done'),
-            ),
-            200,
-            scrollable: find.byType(Scrollable).first,
-          );
-          await tester.ensureVisible(
-            find.descendant(
-              of: find.byType(ActivityHubCard),
-              matching: find.text('Done'),
-            ),
-          );
-          await tester.pumpAndSettle();
-          await tester.tap(
-            find.descendant(
-              of: find.byType(ActivityHubCard),
-              matching: find.text('Done'),
-            ),
-          );
-          await settle(tester);
+          Future<void> tapTab(String label) async {
+            final tab = find.descendant(
+              of: find.byKey(const ValueKey('activity_hub_tabs')),
+              matching: find.text(label),
+            );
+            await tester.scrollUntilVisible(
+              tab,
+              160,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await Scrollable.ensureVisible(tester.element(tab), alignment: .25);
+            await settle(tester);
+            await tester.tap(tab);
+            await settle(tester);
+          }
+
+          await tapTab('Done');
           expect(
             find.byKey(const ValueKey('activity_quick_input')),
             findsNothing,
           );
           expect(find.text('Read a chapter of Atomic Habits'), findsNothing);
-          await tester.tap(
-            find.descendant(
-              of: find.byType(ActivityHubCard),
-              matching: find.text('Plans'),
-            ),
-          );
-          await settle(tester);
+          await tapTab('Plans');
           expect(
             find.byKey(const ValueKey('activity_quick_input')),
             findsNothing,
           );
-          await tester.tap(
-            find.descendant(
-              of: find.byType(ActivityHubCard),
-              matching: find.text('Today'),
-            ),
-          );
-          await settle(tester);
+          await tapTab('Today');
           expect(find.text('Read a chapter of Atomic Habits'), findsOneWidget);
         }
         await tester.scrollUntilVisible(

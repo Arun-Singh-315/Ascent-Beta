@@ -112,10 +112,7 @@ class AscentTextStyles {
 
   /// Helper to apply tabular figures to any style for money/statistics
   static TextStyle tabular(TextStyle base) => base.copyWith(
-    fontFeatures: [
-      ...?base.fontFeatures,
-      const FontFeature.tabularFigures(),
-    ],
+    fontFeatures: [...?base.fontFeatures, const FontFeature.tabularFigures()],
   );
 
   // ── Existing Roles (Mapped to Section 4 Type System) ───────────────────────
@@ -236,7 +233,53 @@ class AscentTextStyles {
 
   // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
 
-  /// Display 32 / 38 · 700 (Plus Jakarta Sans) — Dynamic luxury personal signature
+  // Scoped monochrome interface roles; legacy recipes remain unchanged.
+  static TextStyle get interfaceDisplay => GoogleFonts.dmSans(
+    fontSize: 32,
+    fontWeight: FontWeight.w600,
+    height: 1.12,
+    letterSpacing: -.6,
+  );
+  static TextStyle get homeSection => GoogleFonts.dmSans(
+    fontSize: 24,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+    letterSpacing: -.6,
+  );
+  static TextStyle get interfaceSection => GoogleFonts.dmSans(
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    height: 1.2,
+    letterSpacing: -.3,
+  );
+  static TextStyle get interfaceTitle => GoogleFonts.dmSans(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 1.25,
+    letterSpacing: -.2,
+  );
+  static TextStyle get interfaceBody => GoogleFonts.dmSans(
+    fontSize: 17,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
+  static TextStyle get interfaceNavigation => GoogleFonts.dmSans(
+    fontSize: 17,
+    fontWeight: FontWeight.w600,
+    height: 1.2,
+  );
+  static TextStyle get interfaceSupporting => GoogleFonts.dmSans(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    height: 1.35,
+  );
+  static TextStyle get interfaceLabel => GoogleFonts.dmSans(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+  );
+
+  /// Legacy display role retained for existing consumers.
   static TextStyle get homeDisplay => GoogleFonts.plusJakartaSans(
     fontSize: 32,
     fontWeight: FontWeight.w700,

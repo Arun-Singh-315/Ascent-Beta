@@ -5,7 +5,6 @@ import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -297,15 +296,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr28),
-      child: AppSurfaceBlur(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+      child: Material(
+        color: g.elevated,
         child: AppCard(
           nightDecoration: BoxDecoration(
-            color:
-                (context.isDark
-                        ? AppPalette.colorFF1D1610
-                        : AppPalette.colorFFF8FAFC)
-                    .withValues(alpha: 0.90),
+            color: g.elevated,
             borderRadius: const BorderRadius.vertical(
               top: AppGeometry.radiusr28,
             ),
@@ -518,9 +513,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                     ? 'Saving…'
                     : widget.existingThought != null
                     ? 'Save Changes'
-                    : (_isPinned
-                          ? 'Pin to Wall (Pinned)'
-                          : 'Pin to Mindspace'),
+                    : (_isPinned ? 'Pin to Wall (Pinned)' : 'Pin to Mindspace'),
                 expanded: true,
                 icon: widget.existingThought != null
                     ? Icons.check_rounded

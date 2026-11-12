@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/monochrome_surfaces.dart';
+import '../../../app/theme/home_design.dart';
 
 /// Shared atmosphere for Home's header, working surface and quieter lower area.
 class HomeDayDesign {
@@ -18,49 +20,54 @@ class HomeDayDesign {
       >= 5 && < 12 => const HomeDayDesign(
         'Good morning,',
         'A little space to begin.',
-        Color(0xFFDDEDF8),
-        Color(0xFFFFF2DE),
+        Color(0xFFADDDF8),
+        Color(0xFFFFE8B5),
         .58,
       ),
       >= 12 && < 17 => const HomeDayDesign(
         'Good afternoon,',
         'Make room for a little reset.',
-        Color(0xFFE5F0F5),
-        Color(0xFFF8F0DF),
+        Color(0xFF9EDBF3),
+        Color(0xFFFFF0C7),
         .85,
       ),
       >= 17 && < 21 => const HomeDayDesign(
         'Good evening,',
         'Close the day at your pace.',
-        Color(0xFFE6E1F3),
-        Color(0xFFFBE7DF),
+        Color(0xFFC8B5F1),
+        Color(0xFFFFCDB5),
         .14,
       ),
       _ => const HomeDayDesign(
         'Good night,',
         'Keep a little room for tomorrow.',
-        Color(0xFFE3E7F1),
-        Color(0xFFF1ECF7),
+        Color(0xFFB7C7EE),
+        Color(0xFFD9CEF5),
         .05,
       ),
     };
     if (!dark) return design;
+    final (sky, light) = switch (now.hour) {
+      >= 5 && < 12 => (const Color(0xFF284F75), const Color(0xFF65533F)),
+      >= 12 && < 17 => (const Color(0xFF215B79), const Color(0xFF476477)),
+      >= 17 && < 21 => (const Color(0xFF55416F), const Color(0xFF79534E)),
+      _ => (const Color(0xFF304B78), const Color(0xFF524876)),
+    };
     return HomeDayDesign(
       design.greeting,
       design.cue,
-      Color.lerp(const Color(0xFF141A24), design.sky, .10)!,
-      Color.lerp(const Color(0xFF1B202B), design.light, .07)!,
+      sky,
+      light,
       design.sunHeight,
     );
   }
 
-  static Color canvas(bool dark) =>
-      dark ? const Color(0xFF171C24) : const Color(0xFFFFFCF8);
-  static Color ink(bool dark) =>
-      dark ? const Color(0xFFF1F3F7) : const Color(0xFF20232A);
-  static Color secondary(bool dark) =>
-      dark ? const Color(0xFFBCC4D0) : const Color(0xFF5D626A);
-  static Color line(bool dark) => ink(dark).withValues(alpha: dark ? .18 : .16);
+  static MonochromeSurfaces _neutral(bool dark) =>
+      dark ? const MonochromeSurfaces.dark() : const MonochromeSurfaces.light();
+  static Color canvas(bool dark) => dark ? _neutral(dark).canvas : Colors.white;
+  static Color ink(bool dark) => _neutral(dark).primaryText;
+  static Color secondary(bool dark) => _neutral(dark).secondaryText;
+  static Color line(bool dark) => _neutral(dark).separator;
 }
 
 class HomeDayBackground extends StatelessWidget {
@@ -68,21 +75,8 @@ class HomeDayBackground extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: dark
-              ? [HomeDayDesign.canvas(true), const Color(0xFF1C222B)]
-              : [
-                  HomeDayDesign.canvas(false),
-                  const Color(0xFFF8F6F1),
-                  const Color(0xFFF2F6F3),
-                ],
-        ),
-      ),
+      decoration: BoxDecoration(color: HomeDesign.of(context).canvas),
       child: child,
     );
   }

@@ -101,6 +101,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     return AscentScaffold(
       title: 'Tasks & Today',
       subtitle: 'Actionable to-dos & study tasks',
+      backgroundColor: context.bgSurface,
       actions: [
         const HistoryAction(module:'tasks'),
         PopupMenuButton<String>(
@@ -416,6 +417,28 @@ class _SectionHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+String _formatTaskTimestamp(DateTime dt) {
+  final now = DateTime.now();
+  final isToday =
+      dt.year == now.year && dt.month == now.month && dt.day == now.day;
+  final timeStr = DateFormat('h:mm a').format(dt);
+  if (isToday) {
+    return timeStr;
+  }
+  final yesterday = now.subtract(const Duration(days: 1));
+  final isYesterday =
+      dt.year == yesterday.year &&
+      dt.month == yesterday.month &&
+      dt.day == yesterday.day;
+  if (isYesterday) {
+    return 'yesterday, $timeStr';
+  }
+  if (dt.year == now.year) {
+    return '${DateFormat('MMM d').format(dt)}, $timeStr';
+  }
+  return '${DateFormat('MMM d, y').format(dt)}, $timeStr';
 }
 
 class _TaskItemTile extends ConsumerWidget {
@@ -838,71 +861,93 @@ class _TaskItemTile extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        if (task.plannedDate != null || isDone) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              if (task.plannedDate != null) ...[
-                                Icon(
-                                  Icons.event_outlined,
-                                  size: 13,
-                                  color: status == TaskComputedStatus.lagging
-                                      ? context.stateDanger
-                                      : context.textMuted,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  DateFormat('MMM d').format(task.plannedDate!),
-                                  style:
-                                      AppStateTypography.stateType3(
-                                        state0:
-                                            status ==
-                                            TaskComputedStatus.lagging,
-                                      ).copyWith(
-                                        color:
-                                            status == TaskComputedStatus.lagging
-                                            ? context.stateDanger
-                                            : context.textMuted,
-                                      ),
-                                ),
-                              ],
-                              if (task.isDailyStanding) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (task.plannedDate != null) ...[
+                              Icon(
+                                Icons.event_outlined,
+                                size: 13,
+                                color: status == TaskComputedStatus.lagging
+                                    ? context.stateDanger
+                                    : context.textMuted,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                DateFormat('MMM d').format(task.plannedDate!),
+                                style:
+                                    AppStateTypography.stateType3(
+                                      state0:
+                                          status ==
+                                          TaskComputedStatus.lagging,
+                                    ).copyWith(
+                                      color:
+                                          status == TaskComputedStatus.lagging
+                                          ? context.stateDanger
+                                          : context.textMuted,
+                                    ),
+                              ),
+                            ],
+                            if (task.isDailyStanding) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.repeat_rounded,
+                                size: 13,
+                                color: isDone
+                                    ? context.textMuted
+                                    : context.accentPrimary,
+                              ),
+                            ],
+                            if (hasReminder) ...[
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.alarm_rounded,
+                                size: 13,
+                                color: isDone
+                                    ? context.textMuted
+                                    : context.accentPrimary,
+                              ),
+                            ],
+                            if (isDone) ...[
+                              if (task.plannedDate != null)
                                 const SizedBox(width: 8),
-                                Icon(
-                                  Icons.repeat_rounded,
-                                  size: 13,
-                                  color: isDone
-                                      ? context.textMuted
-                                      : context.accentPrimary,
-                                ),
-                              ],
-                              if (hasReminder) ...[
-                                const SizedBox(width: 8),
-                                Icon(
-                                  Icons.alarm_rounded,
-                                  size: 13,
-                                  color: isDone
-                                      ? context.textMuted
-                                      : context.accentPrimary,
-                                ),
-                              ],
-                              if (isDone) ...[
-                                if (task.plannedDate != null)
-                                  const SizedBox(width: 8),
-                                Text(
+                              Expanded(
+                                child: Text(
                                   task.actualCompletedDate != null
                                       ? (task.isDailyStanding
-                                            ? '✓ Done for today • Resets tomorrow'
-                                            : '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}')
-                                      : '✓ Completed',
+                                            ? '✓ Done for today • Resets tomorrow · Created ${_formatTaskTimestamp(task.createdAt)}'
+                                            : '✓ Finished ${_formatTaskTimestamp(task.actualCompletedDate!)} · Created ${_formatTaskTimestamp(task.createdAt)}')
+                                      : '✓ Completed · Created ${_formatTaskTimestamp(task.createdAt)}',
                                   style: AppTypeRoles.typeRole16.copyWith(
                                     color: context.accentPrimary,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
+                              ),
+                            ] else ...[
+                              if (task.plannedDate != null)
+                                const SizedBox(width: 8),
+                              Icon(
+                                Icons.access_time_rounded,
+                                size: 12,
+                                color: context.textMuted,
+                              ),
+                              const SizedBox(width: 3.5),
+                              Expanded(
+                                child: Text(
+                                  'Created ${_formatTaskTimestamp(task.createdAt)}',
+                                  style: AscentTextStyles.bodySmall.copyWith(
+                                    color: context.textMuted,
+                                    fontSize: 11.5,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -1214,6 +1259,71 @@ class _TaskItemTile extends ConsumerWidget {
                       ],
                     ),
                   ],
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ctx.bgSurface.withValues(
+                        alpha: context.isDark ? 0.35 : 0.6,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: g.line.withValues(alpha: 0.5),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.add_circle_outline_rounded,
+                              size: 14,
+                              color: g.inkMuted,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Created: ${DateFormat('EEE, MMM d, y · h:mm a').format(task.createdAt)}',
+                                style: TextStyle(
+                                  color: g.inkMuted,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (task.actualCompletedDate != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline_rounded,
+                                size: 14,
+                                color: context.doneInk,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Finished: ${DateFormat('EEE, MMM d, y · h:mm a').format(task.actualCompletedDate!)}',
+                                  style: TextStyle(
+                                    color: context.doneInk,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Wrap(
                     alignment: WrapAlignment.end,

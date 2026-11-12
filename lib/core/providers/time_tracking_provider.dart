@@ -761,7 +761,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       String categoryTag = 'Task';
-      if (task.priority == 'high') {
+      final taskNotes = task.notes ?? '';
+      if (taskNotes.contains('[Category: study]') ||
+          taskNotes.contains('[study]') ||
+          (taskNotes.contains('Study Plan') && !taskNotes.contains('Meal'))) {
+        categoryTag = 'Study';
+      } else if (taskNotes.contains('[Category: meal]') ||
+          taskNotes.contains('[meal]') ||
+          taskNotes.contains('Meal Plan')) {
+        categoryTag = 'Meal';
+      } else if (task.priority == 'high') {
         categoryTag = 'High Priority';
       }
 
@@ -817,7 +826,11 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
         TodayActivityItem(
           id: 'task_${task.id}',
           title: task.title,
-          sourceType: medicineDose != null ? 'medicine' : 'task',
+          sourceType: medicineDose != null
+              ? 'medicine'
+              : (categoryTag == 'Study'
+                  ? 'study'
+                  : (categoryTag == 'Meal' ? 'meal' : 'task')),
           status: status,
           elapsedSecondsToday: taskElapsedSeconds,
           linkedTaskId: task.id,
@@ -832,6 +845,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
+          createdAt: task.createdAt,
           completedAt: isTaskDoneToday ? task.actualCompletedDate : null,
           medicineId: medicineDose?.medicineId,
           timeSlot: medicineDose?.timeSlot,
@@ -900,6 +914,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           targetMinutes: targetMinutes,
           plannedDate: session.startedAt,
           isOverdue: false,
+          createdAt: session.startedAt,
           completedAt: session.status == 'completed' ? session.endedAt : null,
         ),
       );
@@ -952,6 +967,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             kind: ActivityKind.duration,
             targetMinutes: null,
             plannedDate: planned ?? lec.lastPlayedAt,
+            createdAt: linkedTask?.createdAt ?? planned,
             completedAt: lec.isCompleted ? lec.lastPlayedAt : null,
           ),
         );
