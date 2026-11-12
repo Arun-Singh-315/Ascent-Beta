@@ -24,7 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-  String _versionString = 'v1.0.2';
+  String _versionString = 'Production v1';
 
   @override
   void initState() {

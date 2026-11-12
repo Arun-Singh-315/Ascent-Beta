@@ -12,12 +12,14 @@ class HomeSectionHeading extends StatelessWidget {
     this.leading,
     this.trailing,
     this.cutout = false,
+    this.dotColor,
   });
   final String title;
   final String? subtitle;
   final bool centered;
   final bool cutout;
   final Widget? leading, trailing;
+  final Color? dotColor;
   @override
   Widget build(BuildContext context) {
     final design = HomeDesign.of(context);
@@ -31,14 +33,32 @@ class HomeSectionHeading extends StatelessWidget {
       ),
     );
 
-    // For non-centered headings, add a 3×16 accent bar to the left of title
+    // Accent indicator to the left of title
+    final effectiveDotColor = dotColor ?? context.accentPrimary;
     final labelContent = Column(
       crossAxisAlignment: centered
           ? CrossAxisAlignment.center
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!centered)
+        if (!centered && leading == null && dotColor != null)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: effectiveDotColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Flexible(child: titleWidget),
+            ],
+          )
+        else if (!centered && leading == null)
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,

@@ -225,7 +225,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HomeSectionHeading(title: 'Daily rhythm'),
+              const HomeSectionHeading(
+                title: 'Daily rhythm',
+                dotColor: Color(0xFF2E8B75),
+              ),
               const SizedBox(height: 14),
               AscentSegmentedControl<String>(
                 key: const ValueKey('rhythm_tool_selector'),

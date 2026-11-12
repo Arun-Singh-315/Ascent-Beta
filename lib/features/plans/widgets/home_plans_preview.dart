@@ -108,64 +108,115 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
           data: (all) {
             final plans = all.where((p) => p.status == 'active').toList();
             if (plans.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppSpace.s24,
-                  horizontal: AppSpace.s16,
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: g.fill,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: g.line, width: 0.8),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.calendar_month_outlined,
-                            size: 26,
-                            color: g.inkMuted,
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpace.s24,
+                      horizontal: AppSpace.s16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: g.fill.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFC67D32).withValues(alpha: 0.35),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFC67D32).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFC67D32).withValues(alpha: 0.3),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.calendar_month_outlined,
+                              size: 26,
+                              color: Color(0xFFC67D32),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpace.s16),
-                      Text(
-                        'No Recurring Plans Yet',
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                        const SizedBox(height: AppSpace.s16),
+                        Text(
+                          'No Recurring Plans Yet',
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpace.s6),
-                      Text(
-                        'Design routines, weekly rhythms, and habits that organize your days automatically.',
-                        style: TextStyle(
-                          color: g.inkMuted,
-                          fontSize: 13,
-                          height: 1.4,
+                        const SizedBox(height: AppSpace.s6),
+                        Text(
+                          'Design routines, weekly rhythms, and habits that organize your days automatically.',
+                          style: TextStyle(
+                            color: g.inkMuted,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpace.s16),
-                      AscentButton.tonal(
-                        compact: true,
-                        label: 'Create a plan',
-                        icon: Icons.add_rounded,
-                        onPressed: () => showPlanCollectionEditor(context),
-                      ),
-                      const SizedBox(height: AppSpace.s16),
-                      _buildQuickStarters(compact: true),
-                    ],
+                        const SizedBox(height: AppSpace.s16),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(24),
+                            onTap: () => showPlanCollectionEditor(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 22,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : Colors.black,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add_rounded,
+                                    size: 18,
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.black
+                                        : Colors.white,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Create a plan',
+                                    style: TextStyle(
+                                      color: Theme.of(context).brightness == Brightness.dark
+                                          ? Colors.black
+                                          : Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: AppSpace.s14),
+                  _buildQuickStarters(compact: true),
+                ],
               );
             }
 
@@ -235,14 +286,28 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
                     ),
                   )
                 else
-                  for (final p in filtered.take(_visibleLimit))
-                    _PlanCard(
-                      plan: p,
-                      kind: _classify(p),
-                      onTap: () => showPlanCollectionDetail(context, p.id),
-                      onLongPress: () => showPlanActionMenu(context, p),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final p in filtered.take(_visibleLimit)) ...[
+                          SizedBox(
+                            width: filtered.length == 1 ? 320 : 275,
+                            child: _PlanCard(
+                              plan: p,
+                              kind: _classify(p),
+                              onTap: () => showPlanCollectionDetail(context, p.id),
+                              onLongPress: () => showPlanActionMenu(context, p),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                      ],
                     ),
-                const SizedBox(height: AppSpace.s6),
+                  ),
+                const SizedBox(height: AppSpace.s10),
                 _buildQuickStarters(compact: false),
                 const SizedBox(height: AppSpace.s10),
                 Wrap(
@@ -271,13 +336,11 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
   }
 
   Widget _buildQuickStarters({required bool compact}) {
-    final g = context.glass;
-
     final studyCard = _QuickPlannerCard(
       title: 'Plan Study',
       subtitle: 'Syllabus, DSA & Targets',
       icon: Icons.school_rounded,
-      accentColor: g.clay,
+      accentColor: const Color(0xFF4A7097),
       onTap: _openStudyPlanner,
     );
 
@@ -285,32 +348,17 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
       title: 'Plan Meals',
       subtitle: 'Macros, Diet & Timings',
       icon: Icons.restaurant_rounded,
-      accentColor: g.sage,
+      accentColor: const Color(0xFF2E8B75),
       onTap: _openMealPlanner,
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 360 ||
-            MediaQuery.textScalerOf(context).scale(14) > 18;
-        if (isNarrow) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              studyCard,
-              const SizedBox(height: 8),
-              mealCard,
-            ],
-          );
-        }
-        return Row(
-          children: [
-            Expanded(child: studyCard),
-            const SizedBox(width: 8),
-            Expanded(child: mealCard),
-          ],
-        );
-      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        studyCard,
+        const SizedBox(height: 10),
+        mealCard,
+      ],
     );
   }
 }

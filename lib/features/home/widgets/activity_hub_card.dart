@@ -115,43 +115,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           HomeSectionHeading(
             title: 'Things',
             cutout: false,
-            trailing: IconButton(
-              tooltip: 'Open Things',
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                context.push('/things');
-              },
-              icon: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: CircularProgressIndicator(
-                      value: totalCount > 0
-                          ? (doneCount / totalCount).clamp(0.0, 1.0)
-                          : 0.0,
-                      semanticsLabel:
-                          'Today progress, $doneCount of $totalCount tasks complete',
-                      strokeWidth: 2.8,
-                      backgroundColor: HomeDesign.of(context).groupedFill,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).brightness == Brightness.dark
-                            ? SharedControlColors.actionBlueDark
-                            : SharedControlColors.actionBlue,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    doneCount > 0 && doneCount == totalCount
-                        ? Icons.check_rounded
-                        : Icons.arrow_forward_rounded,
-                    size: 13,
-                    color: g.inkSecondary,
-                  ),
-                ],
-              ),
-            ),
+            dotColor: SharedControlColors.actionBlue,
           ),
           const SizedBox(height: 4),
           HomeContentTransition(
@@ -162,15 +126,102 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HubTabs(
-                    key: const ValueKey('activity_hub_tabs'),
-                    labels: const ['Today', 'Done', 'Plans'],
-                    selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
-                    onSelected: (i) => setState(() {
-                      _showCompleted = i == 1;
-                      _showPlans = i == 2;
-                      _showAll = false;
-                    }),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 340 ||
+                          MediaQuery.textScalerOf(context).scale(14) > 20;
+                      if (isNarrow) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                key: const ValueKey('view_all_things_btn'),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  context.push('/things');
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                child: Text(
+                                  'View all ›',
+                                  style: TextStyle(
+                                    color: g.inkSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            _HubTabs(
+                              key: const ValueKey('activity_hub_tabs'),
+                              labels: const ['Today', 'Done', 'Plans'],
+                              selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
+                              onSelected: (i) => setState(() {
+                                _showCompleted = i == 1;
+                                _showPlans = i == 2;
+                                _showAll = false;
+                              }),
+                            ),
+                          ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _HubTabs(
+                              key: const ValueKey('activity_hub_tabs'),
+                              labels: const ['Today', 'Done', 'Plans'],
+                              selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
+                              onSelected: (i) => setState(() {
+                                _showCompleted = i == 1;
+                                _showPlans = i == 2;
+                                _showAll = false;
+                              }),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            key: const ValueKey('view_all_things_btn'),
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              context.push('/things');
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View all',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.inkSecondary,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: g.inkSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   if (!_showPlans && totalCount > 0 && doneCount > 0)
                     Padding(

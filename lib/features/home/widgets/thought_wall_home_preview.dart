@@ -1247,6 +1247,7 @@ class _ThoughtWallHomePreviewState
           children: [
             HomeSectionHeading(
               title: 'Mindspace',
+              dotColor: const Color(0xFF7C5CB7),
               centered: false,
               trailing: IconButton(
                 tooltip: 'Open Mindspace',
@@ -1307,25 +1308,26 @@ class _ThoughtWallHomePreviewState
                         ),
                       ),
                     ),
-                    IconButton.outlined(
+                    IconButton.filled(
                       tooltip: 'Send capture',
                       onPressed: _saving || _controller.text.trim().isEmpty
                           ? null
                           : _send,
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: context.isDark
-                            ? SharedControlColors.actionBlueDark
-                            : SharedControlColors.actionBlue,
-                        disabledBackgroundColor: Colors.transparent,
-                        side: BorderSide(
-                          color: g.ink.withValues(alpha: .16),
-                          width: .8,
-                        ),
-                        disabledForegroundColor: g.inkMuted,
-                        minimumSize: const Size(48, 48),
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Colors.black,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.black
+                            : Colors.white,
+                        disabledBackgroundColor: (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Colors.black)
+                            .withValues(alpha: 0.3),
+                        disabledForegroundColor: Colors.grey,
+                        minimumSize: const Size(40, 40),
                       ),
-                      icon: const Icon(Icons.arrow_upward_rounded, size: 22),
+                      icon: const Icon(Icons.arrow_upward_rounded, size: 20),
                     ),
                   ],
                 ),
