@@ -4,6 +4,7 @@ import '../../../app/theme/home_design.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'home_shortcut_summary.dart';
 import 'home_rhythm_artwork.dart';
+import 'home_progress_meter.dart';
 import 'home_outline_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -219,21 +220,25 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         alignment: Alignment.topCenter,
         child: HomeOutlineSurface(
           surfaceKey: const ValueKey('home_life_shelf_enclosure'),
-          frameless: true,
+          frameless: false,
+          decoration: HomeSurfaceStyle.wellness(context),
           radius: 30,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const HomeSectionHeading(
+              HomeSectionHeading(
                 title: 'Daily rhythm',
-                dotColor: Color(0xFF2E8B75),
+                dotColor: HomeDesign.of(context).wellnessInk,
+                titleColor: HomeDesign.of(context).wellnessInk,
               ),
               const SizedBox(height: 14),
               AscentSegmentedControl<String>(
                 key: const ValueKey('rhythm_tool_selector'),
                 accented: true,
                 inline: true,
+                pill: true,
+                selectionColor: HomeDesign.of(context).wellnessInk,
                 segments: [
                   for (final tool in tools)
                     AscentSegment(
@@ -267,12 +272,12 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                      Padding(
-                        padding: EdgeInsets.zero,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: ColoredBox(
-                            color: Colors.transparent,
+                    Padding(
+                      padding: EdgeInsets.zero,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: ColoredBox(
+                          color: Colors.transparent,
                           child: AnimatedSwitcher(
                             duration: duration,
                             switchInCurve: Curves.easeOutCubic,
@@ -329,11 +334,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         : SharedControlColors.actionBlue;
 
     double? progress;
-    if (tool.id == 'hydration' &&
-        goal != null &&
-        goal > 0 &&
-        water != null &&
-        water > 0) {
+    if (tool.id == 'hydration' && goal != null && goal > 0 && water != null) {
       progress = (water / goal).clamp(0.0, 1.0);
     }
 
@@ -368,8 +369,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
       ),
     );
     return Container(
-      decoration: HomeSurfaceStyle.wellness(context),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
@@ -395,15 +395,17 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                           final details = Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                tool.title,
-                                style: HomeType.section.copyWith(
-                                  color: design.wellnessInk,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
+                              if (tool.id != 'hydration')
+                                Text(
+                                  tool.title,
+                                  style: HomeType.section.copyWith(
+                                    color: design.wellnessInk,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 18),
+                              if (tool.id != 'hydration')
+                                const SizedBox(height: 18),
                               if (tool.id == 'hydration') ...[
                                 Text(
                                   'DRANK TODAY',
@@ -426,13 +428,30 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                                   summary.length < 20) ...[
                                 const SizedBox(width: 12),
                                 ExcludeSemantics(
-                                  child: CustomPaint(
-                                    size: const Size(108, 116),
-                                    painter: HomeRhythmArtwork(
-                                      id: tool.id,
-                                      dark: dark,
-                                      tint: design.wellnessInk,
+                                  child: Container(
+                                    width: 76,
+                                    height: 76,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: design.wellnessEdge,
+                                      ),
                                     ),
+                                    alignment: Alignment.center,
+                                    child: tool.id == 'hydration'
+                                        ? Icon(
+                                            Icons.water_drop_outlined,
+                                            color: design.wellnessInk,
+                                            size: 28,
+                                          )
+                                        : CustomPaint(
+                                            size: const Size(54, 58),
+                                            painter: HomeRhythmArtwork(
+                                              id: tool.id,
+                                              dark: dark,
+                                              tint: design.wellnessInk,
+                                            ),
+                                          ),
                                   ),
                                 ),
                               ],
@@ -441,6 +460,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                         },
                       ),
                       const SizedBox(height: 12),
+                      if (progress != null && !selected) ...[
+                        HomeProgressMeter(value: progress),
+                        const SizedBox(height: 8),
+                      ],
                       Text(switch (tool.id) {
                         'hydration' =>
                           goal != null && goal > 0 && water != null
@@ -458,18 +481,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                               : 'One step at a time. Open your challenge for the next action.',
                         _ => tool.detail,
                       }, style: HomeType.supporting.copyWith(color: g.inkSecondary)),
-                      if (progress != null && !selected) ...[
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 4,
-                            backgroundColor: g.line.withValues(alpha: 0.25),
-                            valueColor: AlwaysStoppedAnimation<Color>(blue),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -481,7 +492,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: AscentButton.primary(
+                      child: AscentButton.outlined(
                         label: '+250 ml',
                         compact: true,
                         onPressed: _saving ? null : () => _quickLogWater(250),
@@ -489,7 +500,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: AscentButton.primary(
+                      child: AscentButton.outlined(
                         label: '+500 ml',
                         compact: true,
                         onPressed: _saving ? null : () => _quickLogWater(500),
@@ -497,7 +508,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: AscentButton.secondary(
+                      child: AscentButton.ghost(
                         label: 'Custom',
                         compact: true,
                         onPressed: _saving ? null : () => _toggle(tool.id),
@@ -640,9 +651,9 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                   ],
                 ),
               ),
-            ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
   }
 }

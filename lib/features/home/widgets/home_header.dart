@@ -57,11 +57,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
     final secondary = design.secondaryText;
     final name = widget.profile?.name.trim() ?? '';
     final dob = widget.profile?.dateOfBirth;
-    final sign = widget.profile == null
+    final sign = dob == null
         ? null
-        : (dob == null
-            ? const CosmicProfileService().getZodiac(DateTime(2000, 6, 1))
-            : const CosmicProfileService().getZodiac(dob));
+        : const CosmicProfileService().getZodiac(dob);
     final streak = math.max(
       ref.watch(studyStreakProvider).displayStreakDays,
       ref.watch(currentStreakStreamProvider).value ?? 0,
@@ -126,7 +124,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: dark ? const Color(0xFFF3F4F6) : const Color(0xFF0F172A),
+                  color: dark
+                      ? const Color(0xFFF3F4F6)
+                      : const Color(0xFF0F172A),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.12),
@@ -272,7 +272,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                             child: SizedBox(
                               width: 68,
                               height: 68,
-                              child: FittedBox(child: HomeCelestialMark(now: now)),
+                              child: FittedBox(
+                                child: HomeCelestialMark(now: now),
+                              ),
                             ),
                           ),
                         );
@@ -358,7 +360,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                 color: design.surface.withValues(alpha: .55),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: design.separator.withValues(alpha: 0.9),
+                                  color: design.separator.withValues(
+                                    alpha: 0.9,
+                                  ),
                                   width: 1.1,
                                 ),
                               ),
@@ -374,7 +378,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: dark
-                                            ? Colors.white.withValues(alpha: 0.18)
+                                            ? Colors.white.withValues(
+                                                alpha: 0.18,
+                                              )
                                             : const Color(0xFF4A3E36),
                                       ),
                                       child: Text(
@@ -391,11 +397,12 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                                     const SizedBox(width: 8),
                                     Text(
                                       '${sign.name} · ${sign.vedicRashi} · ${sign.element.label}',
-                                      style: AscentTextStyles.bodyMedium.copyWith(
-                                        color: ink,
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
+                                      style: AscentTextStyles.bodyMedium
+                                          .copyWith(
+                                            color: ink,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
                                     ),
                                   ],
                                 ),

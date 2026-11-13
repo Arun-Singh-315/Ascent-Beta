@@ -1,3 +1,4 @@
+import '../../home/widgets/home_dashed_outline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +98,9 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
   Widget build(BuildContext context) {
     final g = context.glass;
 
-    return ref.watch(planCollectionsProvider).when(
+    return ref
+        .watch(planCollectionsProvider)
+        .when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => AscentButton.ghost(
             compact: true,
@@ -112,106 +115,95 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpace.s24,
-                      horizontal: AppSpace.s16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.fill.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFC67D32).withValues(alpha: 0.35),
-                        width: 1.0,
+                  HomeDashedOutline(
+                    color: HomeDesign.of(
+                      context,
+                    ).learningInk.withValues(alpha: .65),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 24,
+                        horizontal: 20,
                       ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFC67D32).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFFC67D32).withValues(alpha: 0.3),
-                              width: 0.8,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_month_outlined,
+                            size: 28,
+                            color: HomeDesign.of(context).learningInk,
+                          ),
+                          const SizedBox(height: AppSpace.s16),
+                          Text(
+                            'No Recurring Plans Yet',
+                            style: TextStyle(
+                              color: g.ink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.calendar_month_outlined,
-                              size: 26,
-                              color: Color(0xFFC67D32),
+                          const SizedBox(height: AppSpace.s6),
+                          Text(
+                            'Design routines, weekly rhythms, and habits that organize your days automatically.',
+                            style: TextStyle(
+                              color: g.inkMuted,
+                              fontSize: 13,
+                              height: 1.4,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                        const SizedBox(height: AppSpace.s16),
-                        Text(
-                          'No Recurring Plans Yet',
-                          style: TextStyle(
-                            color: g.ink,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppSpace.s6),
-                        Text(
-                          'Design routines, weekly rhythms, and habits that organize your days automatically.',
-                          style: TextStyle(
-                            color: g.inkMuted,
-                            fontSize: 13,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: AppSpace.s16),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(24),
-                            onTap: () => showPlanCollectionEditor(context),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white
-                                    : Colors.black,
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add_rounded,
-                                    size: 18,
-                                    color: Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.black
-                                        : Colors.white,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Create a plan',
-                                    style: TextStyle(
-                                      color: Theme.of(context).brightness == Brightness.dark
+                          const SizedBox(height: AppSpace.s16),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(24),
+                              onTap: () => showPlanCollectionEditor(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 22,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : Colors.black,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 18,
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
                                           ? Colors.black
                                           : Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Create a plan',
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.black
+                                            : Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpace.s14),
@@ -222,8 +214,9 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
 
             final studyCount = plans.where(_isStudyPlan).length;
             final mealCount = plans.where(_isMealPlan).length;
-            final routineCount =
-                plans.where((p) => !_isStudyPlan(p) && !_isMealPlan(p)).length;
+            final routineCount = plans
+                .where((p) => !_isStudyPlan(p) && !_isMealPlan(p))
+                .length;
 
             final filtered = _selectedFilter == _PlanFilter.all
                 ? plans
@@ -240,9 +233,8 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
                         _FilterChip(
                           label: 'All (${plans.length})',
                           isSelected: _selectedFilter == _PlanFilter.all,
-                          onTap: () => setState(
-                            () => _selectedFilter = _PlanFilter.all,
-                          ),
+                          onTap: () =>
+                              setState(() => _selectedFilter = _PlanFilter.all),
                         ),
                         const SizedBox(width: 6),
                         _FilterChip(
@@ -298,7 +290,8 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
                             child: _PlanCard(
                               plan: p,
                               kind: _classify(p),
-                              onTap: () => showPlanCollectionDetail(context, p.id),
+                              onTap: () =>
+                                  showPlanCollectionDetail(context, p.id),
                               onLongPress: () => showPlanActionMenu(context, p),
                             ),
                           ),
@@ -354,11 +347,7 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        studyCard,
-        const SizedBox(height: 10),
-        mealCard,
-      ],
+      children: [studyCard, const SizedBox(height: 10), mealCard],
     );
   }
 }
@@ -480,11 +469,7 @@ class _PlanCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: Icon(
-                      kind.icon,
-                      size: 20,
-                      color: accentColor,
-                    ),
+                    child: Icon(kind.icon, size: 20, color: accentColor),
                   ),
                 ),
                 const SizedBox(width: AppSpace.s12),
@@ -593,11 +578,7 @@ class _PlanCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: g.inkMuted,
-                ),
+                Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
               ],
             ),
           ),
@@ -629,30 +610,30 @@ class _QuickPlannerCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.s12,
             vertical: AppSpace.s10,
           ),
           decoration: BoxDecoration(
-            color: accentColor.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(14),
+            color: HomeDesign.of(context).canvas,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: accentColor.withValues(alpha: 0.24),
+              color: HomeDesign.of(context).separator,
               width: 0.8,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, size: 18, color: accentColor),
+                child: Icon(icon, size: 22, color: accentColor),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -665,7 +646,7 @@ class _QuickPlannerCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: g.ink,
                       ),
@@ -674,10 +655,7 @@ class _QuickPlannerCard extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: g.inkSecondary,
-                      ),
+                      style: TextStyle(fontSize: 12, color: g.inkSecondary),
                     ),
                   ],
                 ),

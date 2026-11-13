@@ -19,17 +19,17 @@ class HomeDesign extends ThemeExtension<HomeDesign> {
 
   Color _tone(int day, int night) =>
       Color.lerp(Color(day), Color(night), darkness)!;
-  Color get canvas => _tone(0xFFF3F5F7, 0xFF101923);
-  Color get surface => _tone(0xFFFCFDFE, 0xFF192737);
-  Color get elevated => _tone(0xFFFFFFFF, 0xFF223246);
-  Color get primaryText => _tone(0xFF192A3B, 0xFFEAF0F7);
-  Color get secondaryText => _tone(0xFF596A7B, 0xFFA5B6C8);
+  Color get canvas => _tone(0xFFFFFFFF, 0xFF111418);
+  Color get surface => _tone(0xFFFFFFFF, 0xFF111418);
+  Color get elevated => _tone(0xFFFFFFFF, 0xFF1C2027);
+  Color get primaryText => _tone(0xFF101318, 0xFFF1F3F7);
+  Color get secondaryText => _tone(0xFF657080, 0xFFA9B1BF);
   Color get tertiaryText => _tone(0xFF6B7B8B, 0xFF8CA0B5);
   Color get separator => _tone(0xFFD9E1E8, 0xFF34465A);
   Color get controlOutline => _tone(0xFF7A8998, 0xFF829AB2);
   Color get groupedFill => _tone(0xFFE8EDF2, 0xFF26384B);
-  Color get heroStart => _tone(0xFFE6EDF5, 0xFF1A2E44);
-  Color get heroEnd => _tone(0xFFF1F0F7, 0xFF1C2539);
+  Color get heroStart => canvas;
+  Color get heroEnd => canvas;
   Color get workTint => _tone(0xFFEAF2FD, 0xFF203A53);
   Color get workEdge => _tone(0xFFB7CEE8, 0xFF3A5878);
   Color get mindTint => _tone(0xFFEEEBF7, 0xFF28283E);
@@ -40,6 +40,9 @@ class HomeDesign extends ThemeExtension<HomeDesign> {
   Color get wellnessEdge => _tone(0xFFB2D5CE, 0xFF3D6665);
   Color get learningTint => _tone(0xFFF5EDDF, 0xFF352F29);
   Color get learningInk => _tone(0xFF86643D, 0xFFD5B68A);
+  Color get mindInk => _tone(0xFF7050B6, 0xFFC2A5F5);
+  Color get strongSurface => _tone(0xFF101318, 0xFFF1F3F7);
+  Color get onStrong => _tone(0xFFFFFFFF, 0xFF111418);
   Color get shadow => _tone(0x0A1B344D, 0x24000000);
   Color get moonStart => _tone(0xFF627FA9, 0xFFF2F6FF);
   Color get moonEnd => _tone(0xFF9AB3D2, 0xFFB7D2F4);
@@ -135,7 +138,7 @@ abstract final class HomeType {
     letterSpacing: -.8,
   );
   static TextStyle get section => AscentTextStyles.interfaceTitle.copyWith(
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: FontWeight.w600,
     letterSpacing: -.4,
   );

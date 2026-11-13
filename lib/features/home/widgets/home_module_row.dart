@@ -22,9 +22,7 @@ class HomeModuleRow extends StatelessWidget {
     final colors = HomeDesign.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Softer, less saturated calm slate-blue tone that avoids eye-strain
-    final blue = isDark
-        ? const Color(0xFF7BA0C6)
-        : const Color(0xFF4A7097);
+    final blue = isDark ? const Color(0xFF7BA0C6) : const Color(0xFF4A7097);
     return Semantics(
       button: true,
       child: Container(
@@ -106,13 +104,6 @@ class HomeModuleGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     key: const ValueKey('home_growth_commitments_group'),
-    decoration: BoxDecoration(
-      color: HomeDesign.of(context).surface.withValues(alpha: .65),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(
-        color: HomeDesign.of(context).separator.withValues(alpha: .6),
-      ),
-    ),
     padding: const EdgeInsets.symmetric(horizontal: 16),
     clipBehavior: Clip.antiAlias,
     child: HomeModuleGroupScope(

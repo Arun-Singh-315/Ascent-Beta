@@ -1,3 +1,4 @@
+import '../../app/theme/home_design.dart';
 import 'widgets/home_section_heading.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
@@ -338,26 +339,20 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               children: [
                                 HomeSectionHeading(
                                   title: 'Plans & Routines',
-                                  dotColor: const Color(0xFFC67D32),
+                                  dotColor: HomeDesign.of(context).learningInk,
+                                  titleColor: HomeDesign.of(
+                                    context,
+                                  ).learningInk,
                                   trailing: HomeSectionArrowButton(
                                     tooltip: 'Open all plans',
-                                    color: const Color(0xFFC67D32),
+                                    framed: false,
+                                    color: HomeDesign.of(context).learningInk,
                                     onTap: () => context.push('/plans'),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                Container(
-                                  key: const ValueKey('home_plans_big_card'),
-                                  decoration: BoxDecoration(
-                                    color: g.fill,
-                                    borderRadius: BorderRadius.circular(24),
-                                    border: Border.all(
-                                      color: g.line,
-                                      width: 0.9,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(16),
-                                  child: const HomePlansPreview(),
+                                const HomePlansPreview(
+                                  key: ValueKey('home_plans_big_card'),
                                 ),
                               ],
                             ),

@@ -44,6 +44,8 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     this.restrained = false,
     this.vertical = false,
     this.inline = false,
+    this.pill = false,
+    this.selectionColor,
   });
 
   final List<AscentSegment<T>> segments;
@@ -58,6 +60,8 @@ class AscentSegmentedControl<T> extends StatelessWidget {
 
   /// Open tabs with a sliding accent rule, without nested selection boxes.
   final bool inline;
+  final bool pill;
+  final Color? selectionColor;
 
   void _handleSelect(T value) {
     if (!enabled) return;
@@ -113,6 +117,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
 
     if (inline) {
       final stacked = isLargeText || vertical;
+      final activeInk = selectionColor ?? accentColor;
       Widget option(AscentSegment<T> segment) {
         final active = segment.value == selected;
         return Semantics(
@@ -130,7 +135,13 @@ class AscentSegmentedControl<T> extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               decoration: BoxDecoration(
-                border: stacked
+                color: pill && active
+                    ? activeInk.withValues(alpha: dark ? .18 : .09)
+                    : Colors.transparent,
+                borderRadius: pill ? BorderRadius.circular(28) : null,
+                border: pill
+                    ? null
+                    : stacked
                     ? BorderDirectional(
                         start: BorderSide(
                           color: active ? accentColor : Colors.transparent,
@@ -153,7 +164,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                     Icon(
                       segment.icon,
                       size: 17,
-                      color: active ? accentColor : neutral.secondaryText,
+                      color: active ? activeInk : neutral.secondaryText,
                     ),
                     const SizedBox(width: 6),
                   ],
@@ -165,7 +176,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                         color: !enabled
                             ? neutral.secondaryText
                             : active
-                            ? accentColor
+                            ? activeInk
                             : neutral.secondaryText,
                         fontWeight: active ? FontWeight.w600 : FontWeight.w500,
                       ),

@@ -1224,17 +1224,20 @@ class _ThoughtWallHomePreviewState
     return HomeContentTransition(
       child: Container(
         key: const ValueKey('home_thought_studio'),
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 18),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         decoration: HomeSurfaceStyle.mind(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             HomeSectionHeading(
               title: 'Mindspace',
-              dotColor: const Color(0xFF7C5CB7),
+              dotColor: HomeDesign.of(context).mindInk,
+              titleColor: HomeDesign.of(context).mindInk,
               centered: false,
               trailing: HomeSectionArrowButton(
                 tooltip: 'Open Mindspace',
+                framed: false,
+                diagonal: true,
                 color: const Color(0xFF7C5CB7),
                 onTap: () => context.push('/thought-wall'),
               ),
@@ -1244,14 +1247,12 @@ class _ThoughtWallHomePreviewState
               Container(
                 decoration: BoxDecoration(
                   color: HomeDesign.of(context).surface.withValues(alpha: .55),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(32),
                   border: Border.all(
                     color: _focusNode.hasFocus
                         ? SharedControlColors.actionBlue
-                        : HomeDesign.of(
-                            context,
-                          ).mindEdge.withValues(alpha: .55),
-                    width: _focusNode.hasFocus ? 1.5 : .75,
+                        : HomeDesign.of(context).mindEdge,
+                    width: _focusNode.hasFocus ? 1.5 : 1.2,
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
@@ -1298,17 +1299,15 @@ class _ThoughtWallHomePreviewState
                           ? null
                           : _send,
                       style: IconButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : Colors.black,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.black
-                            : Colors.white,
-                        disabledBackgroundColor: (Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white
-                                : Colors.black)
-                            .withValues(alpha: 0.3),
-                        disabledForegroundColor: Colors.grey,
+                        backgroundColor: HomeDesign.of(context).strongSurface,
+                        foregroundColor: HomeDesign.of(context).onStrong,
+                        disabledBackgroundColor: HomeDesign.of(
+                          context,
+                        ).strongSurface,
+                        disabledForegroundColor: HomeDesign.of(
+                          context,
+                        ).onStrong.withValues(alpha: .5),
+                        shape: const CircleBorder(),
                         minimumSize: const Size(40, 40),
                       ),
                       icon: const Icon(Icons.arrow_upward_rounded, size: 20),
@@ -1579,25 +1578,24 @@ class _ThoughtWallHomePreviewState
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(28),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: g.fill,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: g.line, width: 0.8),
+            color: HomeDesign.of(context).mindTint.withValues(alpha: .55),
+            borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: g.clay),
+              Icon(icon, size: 16, color: HomeDesign.of(context).mindInk),
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: g.ink,
+                  color: HomeDesign.of(context).mindInk,
                 ),
               ),
             ],

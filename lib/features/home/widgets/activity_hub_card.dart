@@ -1,3 +1,4 @@
+import '../../../app/theme/home_design.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 import 'activity_starter_actions.dart';
 import 'home_section_heading.dart';
@@ -112,10 +113,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           // ── SECTION HEADING ──────────────────────────────────────────
           HomeSectionHeading(
             title: 'Things',
-            cutout: false,
-            dotColor: SharedControlColors.actionBlue,
-            titleColor: SharedControlColors.actionBlue,
-            showDivider: true,
+            cutout: true,
+            dotColor: HomeDesign.of(context).action,
+            titleColor: HomeDesign.of(context).action,
+            showDivider: false,
             trailing: HomeSectionArrowButton(
               key: const ValueKey('view_all_things_btn'),
               tooltip: 'Open Things',
@@ -526,8 +527,8 @@ class _HubTabs extends StatelessWidget {
                       color: selected == index
                           ? blue
                           : (dark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B)),
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B)),
                       fontSize: 14,
                       fontWeight: selected == index
                           ? FontWeight.w700

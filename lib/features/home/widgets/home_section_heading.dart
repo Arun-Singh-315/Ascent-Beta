@@ -37,8 +37,8 @@ class HomeSectionHeading extends StatelessWidget {
       textAlign: centered ? TextAlign.center : TextAlign.start,
       style: AscentTextStyles.homeTitle.copyWith(
         color: titleColor ?? design.primaryText,
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
       ),
     );
 
@@ -91,9 +91,7 @@ class HomeSectionHeading extends StatelessWidget {
           Text(
             subtitle!,
             textAlign: centered ? TextAlign.center : TextAlign.start,
-            style: HomeType.supporting.copyWith(
-              color: design.secondaryText,
-            ),
+            style: HomeType.supporting.copyWith(color: design.secondaryText),
           ),
         ],
       ],
@@ -122,7 +120,20 @@ class HomeSectionHeading extends StatelessWidget {
             ),
             const SizedBox(width: 12),
           ] else
-            Expanded(child: labelContent),
+            Expanded(
+              child: cutout
+                  ? Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: ColoredBox(
+                        color: design.canvas,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: labelContent,
+                        ),
+                      ),
+                    )
+                  : labelContent,
+            ),
           if (centered)
             ConstrainedBox(
               constraints: const BoxConstraints(minWidth: 48),
@@ -144,16 +155,20 @@ class HomeSectionArrowButton extends StatelessWidget {
     required this.onTap,
     this.tooltip = 'Open',
     this.color,
+    this.framed = true,
+    this.diagonal = false,
   });
 
   final VoidCallback onTap;
   final String tooltip;
   final Color? color;
+  final bool framed, diagonal;
 
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final arrowColor = color ??
+    final arrowColor =
+        color ??
         (dark
             ? SharedControlColors.actionBlueDark
             : SharedControlColors.actionBlue);
@@ -170,28 +185,23 @@ class HomeSectionArrowButton extends StatelessWidget {
             onTap();
           },
           child: Container(
-            width: 38,
-            height: 38,
+            width: 48,
+            height: 48,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: dark
-                  ? const Color(0xFF1E293B).withValues(alpha: 0.7)
-                  : Colors.white.withValues(alpha: 0.85),
-              border: Border.all(
-                color: arrowColor.withValues(alpha: dark ? 0.5 : 0.4),
-                width: 1.1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: dark ? 0.2 : 0.04),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+              color: framed
+                  ? HomeDesign.of(context).canvas
+                  : Colors.transparent,
+              border: framed
+                  ? Border.all(
+                      color: arrowColor.withValues(alpha: dark ? 0.5 : 0.4),
+                      width: 1.1,
+                    )
+                  : null,
             ),
             child: Icon(
-              Icons.arrow_forward_rounded,
+              diagonal ? Icons.north_east_rounded : Icons.arrow_forward_rounded,
               size: 20,
               color: arrowColor,
             ),

@@ -13,6 +13,7 @@ class HomeOutlineSurface extends StatelessWidget {
     this.showOutline = true,
     this.frameless = false,
     this.framed = false,
+    this.decoration,
   });
 
   final Widget child;
@@ -22,6 +23,7 @@ class HomeOutlineSurface extends StatelessWidget {
   final bool showOutline;
   final bool frameless;
   final bool framed;
+  final BoxDecoration? decoration;
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +32,14 @@ class HomeOutlineSurface extends StatelessWidget {
         : Container(
             key: surfaceKey,
             padding: padding,
-            decoration: framed
-                ? HomeSurfaceStyle.frame(context, radius: radius)
-                : HomeSurfaceStyle.decoration(context, outlined: showOutline),
+            decoration:
+                decoration ??
+                (framed
+                    ? HomeSurfaceStyle.frame(context, radius: radius)
+                    : HomeSurfaceStyle.decoration(
+                        context,
+                        outlined: showOutline,
+                      )),
             child: child,
           );
   }
@@ -54,14 +61,7 @@ abstract final class HomeSurfaceStyle {
   static BoxDecoration work(BuildContext context) {
     final design = HomeDesign.of(context);
     return BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          design.surface,
-          Color.lerp(design.surface, design.workTint, .24)!,
-        ],
-      ),
+      color: design.canvas,
       borderRadius: BorderRadius.circular(24),
       border: Border.all(
         color: MediaQuery.highContrastOf(context)
@@ -72,24 +72,13 @@ abstract final class HomeSurfaceStyle {
   }
 
   static BoxDecoration mind(BuildContext context) {
-    final design = HomeDesign.of(context);
-    return BoxDecoration(
-      gradient: LinearGradient(
-        begin: AlignmentDirectional.centerStart,
-        end: AlignmentDirectional.centerEnd,
-        colors: [design.mindTint, design.mindTint.withValues(alpha: .25)],
-      ),
-      borderRadius: const BorderRadius.only(
-        topRight: Radius.circular(28),
-        bottomRight: Radius.circular(28),
-      ),
-    );
+    return const BoxDecoration();
   }
 
   static BoxDecoration wellness(BuildContext context) {
     final design = HomeDesign.of(context);
     return BoxDecoration(
-      gradient: design.wellness,
+      color: design.canvas,
       borderRadius: BorderRadius.circular(24),
       border: Border.all(
         color: MediaQuery.highContrastOf(context)
@@ -134,9 +123,13 @@ class HomeBorderSection extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: HomeSurfaceStyle.work(context),
-    padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
-    child: child,
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Positioned.fill(
+        top: 36,
+        child: DecoratedBox(decoration: HomeSurfaceStyle.work(context)),
+      ),
+      Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 18), child: child),
+    ],
   );
 }

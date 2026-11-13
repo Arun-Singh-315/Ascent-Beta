@@ -1,3 +1,4 @@
+import '../../../app/theme/home_design.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
@@ -527,7 +528,11 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         Container(
           decoration: BoxDecoration(
             color: Colors.transparent,
-            border: Border(top: BorderSide(color: g.line, width: .75)),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: HomeDesign.of(context).controlOutline,
+              width: 1.2,
+            ),
           ),
           padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
           child: Row(
@@ -589,19 +594,18 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   ),
                 ),
               ),
-              IconButton.outlined(
+              IconButton.filled(
                 tooltip: 'Add activity',
                 onPressed: _saving || !hasText ? null : _send,
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor:
-                      Theme.of(context).brightness == Brightness.dark
-                      ? SharedControlColors.actionBlueDark
-                      : SharedControlColors.actionBlue,
-                  disabledBackgroundColor: Colors.transparent,
-                  side: BorderSide(color: g.line, width: .8),
+                  backgroundColor: HomeDesign.of(context).strongSurface,
+                  foregroundColor: HomeDesign.of(context).onStrong,
+                  disabledBackgroundColor: HomeDesign.of(context).strongSurface,
+                  disabledForegroundColor: HomeDesign.of(
+                    context,
+                  ).onStrong.withValues(alpha: .5),
+                  shape: const CircleBorder(),
                   minimumSize: const Size(44, 44),
-                  disabledForegroundColor: g.inkMuted,
                 ),
                 icon: _saving
                     ? const SizedBox(
