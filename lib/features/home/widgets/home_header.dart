@@ -197,7 +197,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
         flat: true,
         now: now,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 18),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

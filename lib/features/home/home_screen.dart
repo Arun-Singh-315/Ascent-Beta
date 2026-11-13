@@ -289,6 +289,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           bottom: AppSpace.s96,
                         ),
                         children: [
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              MediaQuery.sizeOf(context).width < 360 ? 8 : 12,
+                              8,
+                              MediaQuery.sizeOf(context).width < 360 ? 8 : 12,
+                              0,
+                            ),
+                            child: _HomeOneCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                           HomeHeader(key: _headerKey, profile: profile),
                           const SizedBox(height: 12),
                           Padding(
@@ -382,6 +393,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               actionLabel: 'Open tools',
                               onAction: () => context.push('/more'),
                             ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -482,6 +497,32 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       );
     }
     return modules;
+  }
+}
+
+/// One continuous surface for every Home section: a fine outline, no shadow,
+/// and sections separated by space and their own coloured outlines.
+class _HomeOneCard extends StatelessWidget {
+  const _HomeOneCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final design = HomeDesign.of(context);
+    return Container(
+      key: const ValueKey('home_one_card'),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: design.canvas,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: MediaQuery.highContrastOf(context)
+              ? design.controlOutline
+              : design.separator,
+        ),
+      ),
+      child: child,
+    );
   }
 }
 
