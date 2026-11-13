@@ -1,6 +1,9 @@
+import 'package:go_router/go_router.dart';
+import '../../app/router.dart';
 import '../../shared/widgets/history_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -57,6 +60,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
 
     return AscentScaffold(
       title: 'Plans',
+      backgroundColor: context.bgSurface,
       actions:const[HistoryAction(module:'routines')],
       body: Column(
         children: [
@@ -64,13 +68,22 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () => showPlanCollectionEditor(context),
-                    icon: const Icon(Icons.add),
-                    label: const Text('New plan'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () => showPlanCollectionEditor(context),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('New plan'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      onPressed: () => context.push(AscentRoutes.studyPlan),
+                      icon: const Icon(Icons.school_rounded, size: 16),
+                      label: const Text('Study Hub'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -120,6 +133,20 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                   itemCount: list.length,
                   itemBuilder: (context, n) {
                     final p = list[n];
+                    final isStudy = p.description.toLowerCase().contains('study') ||
+                        p.title.toLowerCase().contains('study') ||
+                        p.title.toLowerCase().contains('dsa');
+                    final isMeal = p.description.toLowerCase().contains('meal') ||
+                        p.title.toLowerCase().contains('meal');
+                    final icon = isStudy
+                        ? Icons.school_rounded
+                        : (isMeal
+                            ? Icons.restaurant_rounded
+                            : (p.routines > 0 ? Icons.event_repeat : Icons.checklist));
+                    final badgeColor = isStudy
+                        ? context.accentPrimary
+                        : (isMeal ? g.sage : g.clay);
+
                     return AppCard(
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
@@ -130,19 +157,30 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  p.routines > 0
-                                      ? Icons.event_repeat
-                                      : Icons.checklist,
-                                  color: g.clay,
-                                ),
+                                Icon(icon, color: badgeColor),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                  child: Text(
-                                    p.title,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p.title,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleMedium,
+                                      ),
+                                      if (isStudy || isMeal) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          isStudy ? 'Study Plan' : 'Meal Plan',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: badgeColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                                 const Icon(Icons.chevron_right),

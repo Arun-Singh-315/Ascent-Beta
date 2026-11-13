@@ -1,3 +1,4 @@
+import 'workspace_lifecycle.dart';
 import '../core/notifications/things_check_ins_provider.dart';
 import '../core/notifications/promise_check_ins_provider.dart';
 import '../core/security/app_lock_gate.dart';
@@ -33,8 +34,9 @@ class AscentApp extends ConsumerWidget {
 
       // Router
       routerConfig: ascentRouter,
-      builder: (context, child) =>
-          AppLockGate(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) => WorkspaceLifecycle(
+        child: AppLockGate(child: child ?? const SizedBox.shrink()),
+      ),
     );
   }
 }

@@ -6,12 +6,12 @@ import '../streak/study_streak_provider.dart';
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
   'streak': 'Study streak',
-  'promises': 'Promises',
+  'promises': 'Commitments',
   'reminders': 'Upcoming reminders',
   'today': 'Today',
-  'learning': 'Learning',
-  'life': 'Life & Health',
-  'mind': 'Thought Wall',
+  'learning': 'Growth',
+  'life': 'Daily rhythm',
+  'mind': 'Mindspace',
   'money': 'Quick expense',
   'checkin': 'Daily check-in',
   'vault': 'Ascent Vault',
@@ -19,23 +19,24 @@ const homeSections = <String, String>{
 const homeTools = <String, String>{
   'medicine': 'Medicine',
   'hydration': 'Water',
-  'walk': 'Walk',
-  'momentum': 'Challenges',
-  'chai-break': 'Breaks',
+  'walk': 'Move',
+  'momentum': 'Momentum',
+  'chai-break': 'Chai',
 };
 const homeShortcutRoutes = <String, String>{
-  'promises': 'Promises',
+  'assistant': 'Assistant',
+  'promises': 'Commitments',
   'today': 'Today',
-  'thought-wall': 'Thought Wall',
-  'learning': 'Learning',
+  'thought-wall': 'Mindspace',
+  'learning': 'Growth',
   'reminders': 'Reminders',
   'money': 'Money',
   'focus': 'Focus',
   'medicine': 'Medicine',
   'hydration': 'Water',
-  'walk': 'Walk',
-  'chai-break': 'Breaks',
-  'momentum': 'Challenges',
+  'walk': 'Move',
+  'chai-break': 'Chai',
+  'momentum': 'Momentum',
   'vault': 'Vault',
 };
 
@@ -74,7 +75,7 @@ class HomeLayout {
       'vault',
     },
     tools: homeTools.keys.toSet(),
-    shortcuts: const ['thought-wall', 'hydration', 'momentum', 'vault'],
+    shortcuts: const ['focus', 'hydration', 'assistant', 'vault'],
   );
   HomeLayout copyWith({
     List<String>? order,
@@ -130,7 +131,7 @@ class HomeLayout {
 
     final rawShortcuts = json['shortcuts'];
     final parsedShortcuts = (rawShortcuts == null)
-        ? const ['thought-wall', 'hydration', 'momentum', 'vault']
+        ? const ['focus', 'hydration', 'assistant', 'vault']
         : known(rawShortcuts, homeShortcutRoutes).take(4).toList();
 
     return HomeLayout(

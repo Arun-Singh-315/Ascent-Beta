@@ -9,7 +9,7 @@ import '../../../app/theme/color_tokens.dart';
 /// A short-lived greeting for returning users.
 ///
 /// It is meant to be placed in a [Stack] above the scrolling home content so it
-/// never pushes the Things hub down. It slides in, stays for [visibleFor], then
+/// never pushes the Dayboard down. It slides in, stays for [visibleFor], then
 /// slides out and calls [onDismissed]. Tapping it dismisses it early.
 class WelcomeBackBanner extends StatefulWidget {
   const WelcomeBackBanner({

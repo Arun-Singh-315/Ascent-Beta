@@ -10,6 +10,7 @@ import 'dart:async';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
+import '../../core/services/festival_service.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/message_composer.dart';
@@ -46,7 +47,7 @@ String formatThoughtForShare(Thought thought) {
     buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
   }
   buffer.writeln('"${thought.content.trim()}"');
-  buffer.writeln('\n— Mind Space · Ascent');
+  buffer.writeln('\n— Mindspace · Ascent');
   return buffer.toString();
 }
 
@@ -73,7 +74,7 @@ String formatMultipleThoughtsForShare(List<Thought> thoughts) {
     buffer.writeln('"${t.content.trim()}"');
     buffer.writeln();
   }
-  buffer.writeln('— Shared from Mind Space · Ascent');
+  buffer.writeln('— Shared from Mindspace · Ascent');
   return buffer.toString().trim();
 }
 
@@ -82,7 +83,7 @@ Future<void> shareThought(Thought thought) async {
   HapticFeedback.lightImpact();
   final text = formatThoughtForShare(thought);
   await SharePlus.instance.share(
-    ShareParams(text: text, subject: 'Mind Space Reflection'),
+    ShareParams(text: text, subject: 'Mindspace Reflection'),
   );
 }
 
@@ -94,7 +95,7 @@ Future<void> shareMultipleThoughts(List<Thought> thoughts) async {
   await SharePlus.instance.share(
     ShareParams(
       text: text,
-      subject: 'Mind Space Reflections (${thoughts.length} notes)',
+      subject: 'Mindspace Reflections (${thoughts.length} notes)',
     ),
   );
 }
@@ -107,7 +108,7 @@ int compareWallThoughts(Thought a, Thought b) {
   return date != 0 ? date : b.id.compareTo(a.id);
 }
 
-/// Thought Wall / Mind Space Screen ("Me to Me")
+/// Mindspace / Mindspace Screen ("Me to Me")
 /// An aesthetic spatial wall for unfiltered self-talk, sparks of inspiration,
 /// daily wins, and letters to your future self.
 class ThoughtWallScreen extends ConsumerStatefulWidget {
@@ -166,7 +167,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     'general': ('General', Icons.notes_rounded),
     'suggestions': ('Suggestions', Icons.lightbulb_outline_rounded),
     'life_goals': ('Life Goals', Icons.flag_outlined),
-    'promise': ('Promises', Icons.handshake_rounded),
+    'promise': ('Commitments', Icons.handshake_rounded),
     'pinned': ('Pinned', Icons.push_pin_rounded),
     'archived': ('Archived', Icons.archive_outlined),
   };
@@ -1153,7 +1154,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       child: AscentScaffold(
         title: _isSelectionMode
             ? '${_selectedIds.length} Selected'
-            : 'Thought Wall',
+            : 'Mindspace',
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
@@ -1224,7 +1225,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 else
                   TextButton.icon(
                     icon: const Icon(Icons.handshake_rounded, size: 17),
-                    label: const Text('Promises'),
+                    label: const Text('Commitments'),
                     onPressed: () => context.push('/promises'),
                   ),
                 IconButton(
@@ -1447,19 +1448,26 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   }
 
                   if (filtered.isEmpty) {
+                    final todayFestival = ref.watch(todayFestivalProvider);
                     return SingleChildScrollView(
                       child: EmptyState(
                         title: _categoryFilter == 'archived'
                             ? 'No archived reflections'
                             : (_viewToggle == 'today'
-                                  ? 'No thoughts logged today'
+                                  ? (todayFestival != null
+                                        ? '${todayFestival.emoji} Happy ${todayFestival.name}'
+                                        : 'No thoughts logged today')
                                   : 'No past or archived reflections'),
                         subtitle: _categoryFilter == 'archived'
                             ? 'Reflections you archive from the wall will be safely stored here.'
-                            : 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
+                            : (todayFestival != null
+                                  ? todayFestival.thought
+                                  : 'Drop an unfiltered reflection, spark of idea, or note to yourself.'),
                         icon: _categoryFilter == 'archived'
                             ? Icons.archive_outlined
-                            : Icons.bubble_chart_rounded,
+                            : (todayFestival != null
+                                  ? Icons.auto_awesome_rounded
+                                  : Icons.bubble_chart_rounded),
                         actionLabel: 'Drop a Thought',
                         onAction: () => _focusNode.requestFocus(),
                       ),
@@ -1664,53 +1672,48 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
   Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
     final dao = ref.read(thoughtDaoProvider);
-    final messenger = ScaffoldMessenger.of(context);
+    // The card leaves the tree after deletion; feedback belongs to the page.
+    final feedbackContext = Scaffold.of(context).context;
     void failure(String message) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(SnackBar(content: Text(message)));
+      if (feedbackContext.mounted) {
+        AscentSnackBar.error(feedbackContext, message: message);
+      }
     }
-
     try {
       final snapshot = await dao.deleteThoughtForUndo(thought.id);
       if (snapshot == null) {
-        if (messenger.mounted) failure('This thought is no longer available.');
+        failure('This thought is no longer available.');
         return false;
       }
       Future<void> restore() async {
         try {
-          if (!await dao.restoreThoughtDeletion(snapshot) &&
-              messenger.mounted) {
+          if (!await dao.restoreThoughtDeletion(snapshot)) {
             failure('Undo is no longer available. Newer changes were kept.');
           }
         } catch (_) {
-          if (messenger.mounted) {
-            messenger.hideCurrentSnackBar();
-            messenger.showSnackBar(
-              SnackBar(
-                content: const Text('Could not restore the thought.'),
-                action: SnackBarAction(label: 'Retry', onPressed: restore),
-              ),
+          if (feedbackContext.mounted) {
+            AscentSnackBar.show(
+              feedbackContext,
+              message: 'Could not restore the thought.',
+              isError: true,
+              icon: Icons.error_outline_rounded,
+              duration: const Duration(seconds: 8),
+              actionLabel: 'Retry',
+              onAction: restore,
             );
           }
         }
       }
-
-      if (messenger.mounted) {
-        messenger.hideCurrentSnackBar();
-        messenger.showSnackBar(
-          SnackBar(
-            persist: false,
-            content: const Text('Thought removed'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(label: 'Undo', onPressed: restore),
-          ),
+      if (feedbackContext.mounted) {
+        AscentSnackBar.undo(
+          feedbackContext,
+          message: 'Thought removed',
+          onUndo: restore,
         );
       }
       return true;
     } catch (_) {
-      if (messenger.mounted) {
-        failure('Could not delete the thought. Please try again.');
-      }
+      failure('Could not delete the thought. Please try again.');
       return false;
     }
   }

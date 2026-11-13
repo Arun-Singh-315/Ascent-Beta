@@ -52,7 +52,7 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
     }).toList();
 
     return AscentScaffold(
-      title: 'Learning Hub',
+      title: 'Growth',
       subtitle: '${courses.length} courses · Choose your next step',
       glow2: g.slate,
       actions: [

@@ -7,6 +7,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/notifications/notification_service.dart';
+import '../../core/streak/study_streak_provider.dart';
+
+enum ChaiBreakMode {
+  mindfulPause,
+  studyWithMe,
+  brewWithMe,
+}
 
 enum SoundscapePreset {
   tapriCafeRain(
@@ -93,6 +100,10 @@ class ChaiBreakState {
   final String? customAudioPath;
   final String? customAudioName;
   final double volume;
+  final ChaiBreakMode mode;
+  final int? linkedTaskId;
+  final String? linkedTaskTitle;
+  final int? activeStudySessionId;
 
   const ChaiBreakState({
     this.totalDurationSeconds = 600, // 10 minutes default
@@ -106,6 +117,10 @@ class ChaiBreakState {
     this.customAudioPath,
     this.customAudioName,
     this.volume = 0.85,
+    this.mode = ChaiBreakMode.mindfulPause,
+    this.linkedTaskId,
+    this.linkedTaskTitle,
+    this.activeStudySessionId,
   });
 
   bool get isPlayingCustomAudio =>
@@ -138,6 +153,12 @@ class ChaiBreakState {
     String? customAudioPath,
     String? customAudioName,
     double? volume,
+    ChaiBreakMode? mode,
+    int? linkedTaskId,
+    String? linkedTaskTitle,
+    int? activeStudySessionId,
+    bool clearLinkedTask = false,
+    bool clearActiveStudySessionId = false,
   }) {
     return ChaiBreakState(
       totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
@@ -152,6 +173,12 @@ class ChaiBreakState {
       customAudioPath: customAudioPath ?? this.customAudioPath,
       customAudioName: customAudioName ?? this.customAudioName,
       volume: volume ?? this.volume,
+      mode: mode ?? this.mode,
+      linkedTaskId: clearLinkedTask ? null : (linkedTaskId ?? this.linkedTaskId),
+      linkedTaskTitle: clearLinkedTask ? null : (linkedTaskTitle ?? this.linkedTaskTitle),
+      activeStudySessionId: clearActiveStudySessionId
+          ? null
+          : (activeStudySessionId ?? this.activeStudySessionId),
     );
   }
 }
@@ -162,18 +189,107 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   int _breathTick = 0;
   AudioPlayer? _player;
   String? _historySession;
+  int? _activeStudySessionId;
+
+  Future<void> _startStudySessionIfNeeded() async {
+    if (!ref.mounted) return;
+    if (state.mode != ChaiBreakMode.studyWithMe || _activeStudySessionId != null) return;
+    try {
+      final dao = ref.read(timeSessionDaoProvider);
+      final categories = await dao.getAllCategories();
+      final categoryId = categories.isNotEmpty ? categories.first.id : 1;
+      final label = state.linkedTaskTitle != null && state.linkedTaskTitle!.isNotEmpty
+          ? 'Chai Study: ${state.linkedTaskTitle}'
+          : 'Chai Study & Flow';
+      _activeStudySessionId = await dao.startSession(
+        label: label,
+        categoryId: categoryId,
+        activityType: 'study',
+        linkedTaskId: state.linkedTaskId,
+        activityRefType: 'chai_session',
+      );
+      if (ref.mounted) {
+        state = state.copyWith(activeStudySessionId: _activeStudySessionId);
+      }
+    } catch (e) {
+      debugPrint('Chai study session start deferred: $e');
+    }
+  }
+
+  Future<void> _completeStudySessionIfNeeded() async {
+    final sessionId = _activeStudySessionId ?? state.activeStudySessionId;
+    if (sessionId == null) return;
+    _activeStudySessionId = null;
+    try {
+      if (!ref.mounted) return;
+      final dao = ref.read(timeSessionDaoProvider);
+      await dao.completeSession(sessionId);
+      if (ref.mounted) {
+        ref.invalidate(homeQuickStatsProvider);
+        ref.invalidate(todayTasksStreamProvider);
+      }
+    } catch (e) {
+      debugPrint('Chai study session complete deferred: $e');
+    }
+    if (ref.mounted) {
+      state = state.copyWith(clearActiveStudySessionId: true);
+    }
+  }
+
+  void setMode(ChaiBreakMode newMode) {
+    if (state.mode == newMode) return;
+    if (state.isRunning) {
+      stop();
+    }
+    final int defaultSeconds = (newMode == ChaiBreakMode.studyWithMe) ? 1500 : 600;
+    state = state.copyWith(
+      mode: newMode,
+      totalDurationSeconds: defaultSeconds,
+      remainingSeconds: defaultSeconds,
+      isRunning: false,
+      hasStarted: false,
+    );
+  }
+
+  void linkTask(int taskId, String taskTitle) {
+    state = state.copyWith(
+      linkedTaskId: taskId,
+      linkedTaskTitle: taskTitle,
+    );
+  }
+
+  void unlinkTask() {
+    state = state.copyWith(
+      clearLinkedTask: true,
+    );
+  }
+
+  void stop() {
+    if (state.hasStarted) _record('cancelled');
+    _finish();
+  }
+
   void _record(String action) {
     _historySession ??= DateTime.now().microsecondsSinceEpoch.toString();
     final now = DateTime.now();
     final db = ref.read(databaseProvider);
+    final title = state.mode == ChaiBreakMode.studyWithMe
+        ? (state.linkedTaskTitle != null && state.linkedTaskTitle!.isNotEmpty
+            ? 'Chai Study: ${state.linkedTaskTitle}'
+            : 'Chai Study & Flow')
+        : state.selectedSoundscape.title;
+    final totalMins = state.totalDurationSeconds ~/ 60;
+    final elapsedSecs = state.totalDurationSeconds - state.remainingSeconds;
     final entry = HistoryEventTableCompanion.insert(
       id: 'break:$_historySession:$action:${now.microsecondsSinceEpoch}',
-      module: 'breaks',
+      module: state.mode == ChaiBreakMode.studyWithMe ? 'study' : 'breaks',
       entityId: _historySession!,
       action: action,
-      title: state.selectedSoundscape.title,
+      title: title,
       detail: Value(
-        '${state.totalDurationSeconds - state.remainingSeconds} seconds of a ${state.totalDurationSeconds ~/ 60}-minute break',
+        state.mode == ChaiBreakMode.studyWithMe
+            ? '$elapsedSecs seconds of a $totalMins-minute study session'
+            : '$elapsedSecs seconds of a $totalMins-minute break',
       ),
       occurredAt: now,
     );
@@ -181,6 +297,10 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       db.into(db.historyEventTable).insert(entry).then<void>((_) {
         if (ref.mounted) {
           ref.invalidate(todayBreaksProvider);
+          if (state.mode == ChaiBreakMode.studyWithMe) {
+            ref.invalidate(homeQuickStatsProvider);
+            ref.invalidate(todayTasksStreamProvider);
+          }
         }
       }).catchError(
         (Object error) {
@@ -302,6 +422,11 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       if (state.remainingSeconds > 0) {
         final remaining = state.remainingSeconds - 1;
         state = state.copyWith(remainingSeconds: remaining);
+        if (state.mode == ChaiBreakMode.studyWithMe) {
+          try {
+            ref.read(studyStreakProvider.notifier).creditActiveSecond(DateTime.now());
+          } catch (_) {}
+        }
         if (remaining == 0) {
           _finish();
           return;
@@ -322,6 +447,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
 
   void _finish() {
     if (state.hasStarted) _record('completed');
+    _completeStudySessionIfNeeded();
     _historySession = null;
     _timer?.cancel();
     _breathTimer?.cancel();
@@ -354,6 +480,7 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
 
   void setPresetMinutes(int minutes) {
     if (state.hasStarted) _record('cancelled');
+    _completeStudySessionIfNeeded();
     _historySession = null;
     final seconds = minutes * 60;
     state = state.copyWith(
@@ -363,6 +490,9 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       hasStarted: true,
     );
     _record('started');
+    if (state.mode == ChaiBreakMode.studyWithMe) {
+      _startStudySessionIfNeeded();
+    }
     _initAudioPlayerIfNeeded();
     _startTimer();
     _startBreathCycle();
@@ -403,6 +533,9 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       state = state.copyWith(remainingSeconds: state.totalDurationSeconds);
     }
     state = state.copyWith(isRunning: true, hasStarted: true);
+    if (state.mode == ChaiBreakMode.studyWithMe) {
+      _startStudySessionIfNeeded();
+    }
     _initAudioPlayerIfNeeded();
     _startTimer();
     _startBreathCycle();

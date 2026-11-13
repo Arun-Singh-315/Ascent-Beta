@@ -111,8 +111,8 @@ final thingsCheckInsProvider = Provider<void>((ref) {
                 ? 'ascent_things_wrapup_v1'
                 : 'ascent_things_check_ins_v1',
             channelName: isWrapup
-                ? 'Things hub evening wrap-up'
-                : 'Things hub check-ins',
+                ? 'Dayboard evening wrap-up'
+                : 'Dayboard check-ins',
             actions: actions.isNotEmpty ? actions : null,
           );
         }

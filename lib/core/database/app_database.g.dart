@@ -20529,6 +20529,1012 @@ class ChallengeAmendmentTableCompanion
   }
 }
 
+class $CarePlanTableTable extends CarePlanTable
+    with TableInfo<$CarePlanTableTable, CarePlan> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CarePlanTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _personMeta = const VerificationMeta('person');
+  @override
+  late final GeneratedColumn<String> person = GeneratedColumn<String>(
+    'person',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('My care'),
+  );
+  static const VerificationMeta _clinicianMeta = const VerificationMeta(
+    'clinician',
+  );
+  @override
+  late final GeneratedColumn<String> clinician = GeneratedColumn<String>(
+    'clinician',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _nextVisitMeta = const VerificationMeta(
+    'nextVisit',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextVisit = GeneratedColumn<DateTime>(
+    'next_visit',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    person,
+    clinician,
+    notes,
+    nextVisit,
+    isArchived,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'care_plans';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CarePlan> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('person')) {
+      context.handle(
+        _personMeta,
+        person.isAcceptableOrUnknown(data['person']!, _personMeta),
+      );
+    }
+    if (data.containsKey('clinician')) {
+      context.handle(
+        _clinicianMeta,
+        clinician.isAcceptableOrUnknown(data['clinician']!, _clinicianMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('next_visit')) {
+      context.handle(
+        _nextVisitMeta,
+        nextVisit.isAcceptableOrUnknown(data['next_visit']!, _nextVisitMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CarePlan map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CarePlan(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      person: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}person'],
+      )!,
+      clinician: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}clinician'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+      nextVisit: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_visit'],
+      ),
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CarePlanTableTable createAlias(String alias) {
+    return $CarePlanTableTable(attachedDatabase, alias);
+  }
+}
+
+class CarePlan extends DataClass implements Insertable<CarePlan> {
+  final int id;
+  final String title;
+  final String person;
+  final String clinician;
+  final String notes;
+  final DateTime? nextVisit;
+  final bool isArchived;
+  final DateTime createdAt;
+  const CarePlan({
+    required this.id,
+    required this.title,
+    required this.person,
+    required this.clinician,
+    required this.notes,
+    this.nextVisit,
+    required this.isArchived,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['person'] = Variable<String>(person);
+    map['clinician'] = Variable<String>(clinician);
+    map['notes'] = Variable<String>(notes);
+    if (!nullToAbsent || nextVisit != null) {
+      map['next_visit'] = Variable<DateTime>(nextVisit);
+    }
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CarePlanTableCompanion toCompanion(bool nullToAbsent) {
+    return CarePlanTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      person: Value(person),
+      clinician: Value(clinician),
+      notes: Value(notes),
+      nextVisit: nextVisit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextVisit),
+      isArchived: Value(isArchived),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CarePlan.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CarePlan(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      person: serializer.fromJson<String>(json['person']),
+      clinician: serializer.fromJson<String>(json['clinician']),
+      notes: serializer.fromJson<String>(json['notes']),
+      nextVisit: serializer.fromJson<DateTime?>(json['nextVisit']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'person': serializer.toJson<String>(person),
+      'clinician': serializer.toJson<String>(clinician),
+      'notes': serializer.toJson<String>(notes),
+      'nextVisit': serializer.toJson<DateTime?>(nextVisit),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CarePlan copyWith({
+    int? id,
+    String? title,
+    String? person,
+    String? clinician,
+    String? notes,
+    Value<DateTime?> nextVisit = const Value.absent(),
+    bool? isArchived,
+    DateTime? createdAt,
+  }) => CarePlan(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    person: person ?? this.person,
+    clinician: clinician ?? this.clinician,
+    notes: notes ?? this.notes,
+    nextVisit: nextVisit.present ? nextVisit.value : this.nextVisit,
+    isArchived: isArchived ?? this.isArchived,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CarePlan copyWithCompanion(CarePlanTableCompanion data) {
+    return CarePlan(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      person: data.person.present ? data.person.value : this.person,
+      clinician: data.clinician.present ? data.clinician.value : this.clinician,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      nextVisit: data.nextVisit.present ? data.nextVisit.value : this.nextVisit,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CarePlan(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('person: $person, ')
+          ..write('clinician: $clinician, ')
+          ..write('notes: $notes, ')
+          ..write('nextVisit: $nextVisit, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    person,
+    clinician,
+    notes,
+    nextVisit,
+    isArchived,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CarePlan &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.person == this.person &&
+          other.clinician == this.clinician &&
+          other.notes == this.notes &&
+          other.nextVisit == this.nextVisit &&
+          other.isArchived == this.isArchived &&
+          other.createdAt == this.createdAt);
+}
+
+class CarePlanTableCompanion extends UpdateCompanion<CarePlan> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String> person;
+  final Value<String> clinician;
+  final Value<String> notes;
+  final Value<DateTime?> nextVisit;
+  final Value<bool> isArchived;
+  final Value<DateTime> createdAt;
+  const CarePlanTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.person = const Value.absent(),
+    this.clinician = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.nextVisit = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CarePlanTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    this.person = const Value.absent(),
+    this.clinician = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.nextVisit = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : title = Value(title);
+  static Insertable<CarePlan> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? person,
+    Expression<String>? clinician,
+    Expression<String>? notes,
+    Expression<DateTime>? nextVisit,
+    Expression<bool>? isArchived,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (person != null) 'person': person,
+      if (clinician != null) 'clinician': clinician,
+      if (notes != null) 'notes': notes,
+      if (nextVisit != null) 'next_visit': nextVisit,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CarePlanTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<String>? person,
+    Value<String>? clinician,
+    Value<String>? notes,
+    Value<DateTime?>? nextVisit,
+    Value<bool>? isArchived,
+    Value<DateTime>? createdAt,
+  }) {
+    return CarePlanTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      person: person ?? this.person,
+      clinician: clinician ?? this.clinician,
+      notes: notes ?? this.notes,
+      nextVisit: nextVisit ?? this.nextVisit,
+      isArchived: isArchived ?? this.isArchived,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (person.present) {
+      map['person'] = Variable<String>(person.value);
+    }
+    if (clinician.present) {
+      map['clinician'] = Variable<String>(clinician.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (nextVisit.present) {
+      map['next_visit'] = Variable<DateTime>(nextVisit.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CarePlanTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('person: $person, ')
+          ..write('clinician: $clinician, ')
+          ..write('notes: $notes, ')
+          ..write('nextVisit: $nextVisit, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CareRecordTableTable extends CareRecordTable
+    with TableInfo<$CareRecordTableTable, CareRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CareRecordTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _carePlanIdMeta = const VerificationMeta(
+    'carePlanId',
+  );
+  @override
+  late final GeneratedColumn<int> carePlanId = GeneratedColumn<int>(
+    'care_plan_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES care_plans (id)',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    carePlanId,
+    title,
+    notes,
+    recordedAt,
+    filePath,
+    fileName,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'care_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CareRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('care_plan_id')) {
+      context.handle(
+        _carePlanIdMeta,
+        carePlanId.isAcceptableOrUnknown(
+          data['care_plan_id']!,
+          _carePlanIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_carePlanIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CareRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CareRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      carePlanId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}care_plan_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      ),
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CareRecordTableTable createAlias(String alias) {
+    return $CareRecordTableTable(attachedDatabase, alias);
+  }
+}
+
+class CareRecord extends DataClass implements Insertable<CareRecord> {
+  final int id;
+  final int carePlanId;
+  final String title;
+  final String notes;
+  final DateTime recordedAt;
+  final String? filePath;
+  final String? fileName;
+  final DateTime createdAt;
+  const CareRecord({
+    required this.id,
+    required this.carePlanId,
+    required this.title,
+    required this.notes,
+    required this.recordedAt,
+    this.filePath,
+    this.fileName,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['care_plan_id'] = Variable<int>(carePlanId);
+    map['title'] = Variable<String>(title);
+    map['notes'] = Variable<String>(notes);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
+    if (!nullToAbsent || fileName != null) {
+      map['file_name'] = Variable<String>(fileName);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CareRecordTableCompanion toCompanion(bool nullToAbsent) {
+    return CareRecordTableCompanion(
+      id: Value(id),
+      carePlanId: Value(carePlanId),
+      title: Value(title),
+      notes: Value(notes),
+      recordedAt: Value(recordedAt),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
+      fileName: fileName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileName),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CareRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CareRecord(
+      id: serializer.fromJson<int>(json['id']),
+      carePlanId: serializer.fromJson<int>(json['carePlanId']),
+      title: serializer.fromJson<String>(json['title']),
+      notes: serializer.fromJson<String>(json['notes']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
+      fileName: serializer.fromJson<String?>(json['fileName']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'carePlanId': serializer.toJson<int>(carePlanId),
+      'title': serializer.toJson<String>(title),
+      'notes': serializer.toJson<String>(notes),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'filePath': serializer.toJson<String?>(filePath),
+      'fileName': serializer.toJson<String?>(fileName),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CareRecord copyWith({
+    int? id,
+    int? carePlanId,
+    String? title,
+    String? notes,
+    DateTime? recordedAt,
+    Value<String?> filePath = const Value.absent(),
+    Value<String?> fileName = const Value.absent(),
+    DateTime? createdAt,
+  }) => CareRecord(
+    id: id ?? this.id,
+    carePlanId: carePlanId ?? this.carePlanId,
+    title: title ?? this.title,
+    notes: notes ?? this.notes,
+    recordedAt: recordedAt ?? this.recordedAt,
+    filePath: filePath.present ? filePath.value : this.filePath,
+    fileName: fileName.present ? fileName.value : this.fileName,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CareRecord copyWithCompanion(CareRecordTableCompanion data) {
+    return CareRecord(
+      id: data.id.present ? data.id.value : this.id,
+      carePlanId: data.carePlanId.present
+          ? data.carePlanId.value
+          : this.carePlanId,
+      title: data.title.present ? data.title.value : this.title,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CareRecord(')
+          ..write('id: $id, ')
+          ..write('carePlanId: $carePlanId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    carePlanId,
+    title,
+    notes,
+    recordedAt,
+    filePath,
+    fileName,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CareRecord &&
+          other.id == this.id &&
+          other.carePlanId == this.carePlanId &&
+          other.title == this.title &&
+          other.notes == this.notes &&
+          other.recordedAt == this.recordedAt &&
+          other.filePath == this.filePath &&
+          other.fileName == this.fileName &&
+          other.createdAt == this.createdAt);
+}
+
+class CareRecordTableCompanion extends UpdateCompanion<CareRecord> {
+  final Value<int> id;
+  final Value<int> carePlanId;
+  final Value<String> title;
+  final Value<String> notes;
+  final Value<DateTime> recordedAt;
+  final Value<String?> filePath;
+  final Value<String?> fileName;
+  final Value<DateTime> createdAt;
+  const CareRecordTableCompanion({
+    this.id = const Value.absent(),
+    this.carePlanId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CareRecordTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int carePlanId,
+    required String title,
+    this.notes = const Value.absent(),
+    required DateTime recordedAt,
+    this.filePath = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : carePlanId = Value(carePlanId),
+       title = Value(title),
+       recordedAt = Value(recordedAt);
+  static Insertable<CareRecord> custom({
+    Expression<int>? id,
+    Expression<int>? carePlanId,
+    Expression<String>? title,
+    Expression<String>? notes,
+    Expression<DateTime>? recordedAt,
+    Expression<String>? filePath,
+    Expression<String>? fileName,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (carePlanId != null) 'care_plan_id': carePlanId,
+      if (title != null) 'title': title,
+      if (notes != null) 'notes': notes,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (filePath != null) 'file_path': filePath,
+      if (fileName != null) 'file_name': fileName,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CareRecordTableCompanion copyWith({
+    Value<int>? id,
+    Value<int>? carePlanId,
+    Value<String>? title,
+    Value<String>? notes,
+    Value<DateTime>? recordedAt,
+    Value<String?>? filePath,
+    Value<String?>? fileName,
+    Value<DateTime>? createdAt,
+  }) {
+    return CareRecordTableCompanion(
+      id: id ?? this.id,
+      carePlanId: carePlanId ?? this.carePlanId,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      recordedAt: recordedAt ?? this.recordedAt,
+      filePath: filePath ?? this.filePath,
+      fileName: fileName ?? this.fileName,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (carePlanId.present) {
+      map['care_plan_id'] = Variable<int>(carePlanId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CareRecordTableCompanion(')
+          ..write('id: $id, ')
+          ..write('carePlanId: $carePlanId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('filePath: $filePath, ')
+          ..write('fileName: $fileName, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MedicineTableTable extends MedicineTable
     with TableInfo<$MedicineTableTable, Medicine> {
   @override
@@ -20560,6 +21566,32 @@ class $MedicineTableTable extends MedicineTable
     ),
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _carePlanIdMeta = const VerificationMeta(
+    'carePlanId',
+  );
+  @override
+  late final GeneratedColumn<int> carePlanId = GeneratedColumn<int>(
+    'care_plan_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES care_plans (id)',
+    ),
+  );
+  static const VerificationMeta _purposeMeta = const VerificationMeta(
+    'purpose',
+  );
+  @override
+  late final GeneratedColumn<String> purpose = GeneratedColumn<String>(
+    'purpose',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _dosageMeta = const VerificationMeta('dosage');
   @override
@@ -20661,6 +21693,8 @@ class $MedicineTableTable extends MedicineTable
   List<GeneratedColumn> get $columns => [
     id,
     name,
+    carePlanId,
+    purpose,
     dosage,
     scheduledTimes,
     durationDays,
@@ -20692,6 +21726,21 @@ class $MedicineTableTable extends MedicineTable
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('care_plan_id')) {
+      context.handle(
+        _carePlanIdMeta,
+        carePlanId.isAcceptableOrUnknown(
+          data['care_plan_id']!,
+          _carePlanIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('purpose')) {
+      context.handle(
+        _purposeMeta,
+        purpose.isAcceptableOrUnknown(data['purpose']!, _purposeMeta),
+      );
     }
     if (data.containsKey('dosage')) {
       context.handle(
@@ -20773,6 +21822,14 @@ class $MedicineTableTable extends MedicineTable
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      carePlanId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}care_plan_id'],
+      ),
+      purpose: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}purpose'],
+      )!,
       dosage: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}dosage'],
@@ -20820,6 +21877,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   /// Medicine name (e.g. 'Paracetamol 500mg', 'Vitamin D3', 'Amoxicillin')
   final String name;
 
+  /// Optional personal treatment context; old schedules remain ungrouped.
+  final int? carePlanId;
+  final String purpose;
+
   /// Dosage description (e.g. '1 Tablet', '5 ml', '1 Capsule')
   final String dosage;
 
@@ -20844,6 +21905,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   const Medicine({
     required this.id,
     required this.name,
+    this.carePlanId,
+    required this.purpose,
     required this.dosage,
     required this.scheduledTimes,
     required this.durationDays,
@@ -20858,6 +21921,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || carePlanId != null) {
+      map['care_plan_id'] = Variable<int>(carePlanId);
+    }
+    map['purpose'] = Variable<String>(purpose);
     map['dosage'] = Variable<String>(dosage);
     map['scheduled_times'] = Variable<String>(scheduledTimes);
     map['duration_days'] = Variable<int>(durationDays);
@@ -20873,6 +21940,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     return MedicineTableCompanion(
       id: Value(id),
       name: Value(name),
+      carePlanId: carePlanId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(carePlanId),
+      purpose: Value(purpose),
       dosage: Value(dosage),
       scheduledTimes: Value(scheduledTimes),
       durationDays: Value(durationDays),
@@ -20892,6 +21963,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     return Medicine(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      carePlanId: serializer.fromJson<int?>(json['carePlanId']),
+      purpose: serializer.fromJson<String>(json['purpose']),
       dosage: serializer.fromJson<String>(json['dosage']),
       scheduledTimes: serializer.fromJson<String>(json['scheduledTimes']),
       durationDays: serializer.fromJson<int>(json['durationDays']),
@@ -20908,6 +21981,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'carePlanId': serializer.toJson<int?>(carePlanId),
+      'purpose': serializer.toJson<String>(purpose),
       'dosage': serializer.toJson<String>(dosage),
       'scheduledTimes': serializer.toJson<String>(scheduledTimes),
       'durationDays': serializer.toJson<int>(durationDays),
@@ -20922,6 +21997,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   Medicine copyWith({
     int? id,
     String? name,
+    Value<int?> carePlanId = const Value.absent(),
+    String? purpose,
     String? dosage,
     String? scheduledTimes,
     int? durationDays,
@@ -20933,6 +22010,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   }) => Medicine(
     id: id ?? this.id,
     name: name ?? this.name,
+    carePlanId: carePlanId.present ? carePlanId.value : this.carePlanId,
+    purpose: purpose ?? this.purpose,
     dosage: dosage ?? this.dosage,
     scheduledTimes: scheduledTimes ?? this.scheduledTimes,
     durationDays: durationDays ?? this.durationDays,
@@ -20946,6 +22025,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     return Medicine(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      carePlanId: data.carePlanId.present
+          ? data.carePlanId.value
+          : this.carePlanId,
+      purpose: data.purpose.present ? data.purpose.value : this.purpose,
       dosage: data.dosage.present ? data.dosage.value : this.dosage,
       scheduledTimes: data.scheduledTimes.present
           ? data.scheduledTimes.value
@@ -20968,6 +22051,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     return (StringBuffer('Medicine(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('carePlanId: $carePlanId, ')
+          ..write('purpose: $purpose, ')
           ..write('dosage: $dosage, ')
           ..write('scheduledTimes: $scheduledTimes, ')
           ..write('durationDays: $durationDays, ')
@@ -20984,6 +22069,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   int get hashCode => Object.hash(
     id,
     name,
+    carePlanId,
+    purpose,
     dosage,
     scheduledTimes,
     durationDays,
@@ -20999,6 +22086,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       (other is Medicine &&
           other.id == this.id &&
           other.name == this.name &&
+          other.carePlanId == this.carePlanId &&
+          other.purpose == this.purpose &&
           other.dosage == this.dosage &&
           other.scheduledTimes == this.scheduledTimes &&
           other.durationDays == this.durationDays &&
@@ -21012,6 +22101,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
 class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   final Value<int> id;
   final Value<String> name;
+  final Value<int?> carePlanId;
+  final Value<String> purpose;
   final Value<String> dosage;
   final Value<String> scheduledTimes;
   final Value<int> durationDays;
@@ -21023,6 +22114,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   const MedicineTableCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.carePlanId = const Value.absent(),
+    this.purpose = const Value.absent(),
     this.dosage = const Value.absent(),
     this.scheduledTimes = const Value.absent(),
     this.durationDays = const Value.absent(),
@@ -21035,6 +22128,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   MedicineTableCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.carePlanId = const Value.absent(),
+    this.purpose = const Value.absent(),
     required String dosage,
     required String scheduledTimes,
     this.durationDays = const Value.absent(),
@@ -21050,6 +22145,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   static Insertable<Medicine> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<int>? carePlanId,
+    Expression<String>? purpose,
     Expression<String>? dosage,
     Expression<String>? scheduledTimes,
     Expression<int>? durationDays,
@@ -21062,6 +22159,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (carePlanId != null) 'care_plan_id': carePlanId,
+      if (purpose != null) 'purpose': purpose,
       if (dosage != null) 'dosage': dosage,
       if (scheduledTimes != null) 'scheduled_times': scheduledTimes,
       if (durationDays != null) 'duration_days': durationDays,
@@ -21076,6 +22175,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   MedicineTableCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
+    Value<int?>? carePlanId,
+    Value<String>? purpose,
     Value<String>? dosage,
     Value<String>? scheduledTimes,
     Value<int>? durationDays,
@@ -21088,6 +22189,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     return MedicineTableCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      carePlanId: carePlanId ?? this.carePlanId,
+      purpose: purpose ?? this.purpose,
       dosage: dosage ?? this.dosage,
       scheduledTimes: scheduledTimes ?? this.scheduledTimes,
       durationDays: durationDays ?? this.durationDays,
@@ -21107,6 +22210,12 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (carePlanId.present) {
+      map['care_plan_id'] = Variable<int>(carePlanId.value);
+    }
+    if (purpose.present) {
+      map['purpose'] = Variable<String>(purpose.value);
     }
     if (dosage.present) {
       map['dosage'] = Variable<String>(dosage.value);
@@ -21140,6 +22249,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     return (StringBuffer('MedicineTableCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('carePlanId: $carePlanId, ')
+          ..write('purpose: $purpose, ')
           ..write('dosage: $dosage, ')
           ..write('scheduledTimes: $scheduledTimes, ')
           ..write('durationDays: $durationDays, ')
@@ -25305,6 +26416,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ChallengeProofEventTableTable(this);
   late final $ChallengeAmendmentTableTable challengeAmendmentTable =
       $ChallengeAmendmentTableTable(this);
+  late final $CarePlanTableTable carePlanTable = $CarePlanTableTable(this);
+  late final $CareRecordTableTable careRecordTable = $CareRecordTableTable(
+    this,
+  );
   late final $MedicineTableTable medicineTable = $MedicineTableTable(this);
   late final $MedicineLogTableTable medicineLogTable = $MedicineLogTableTable(
     this,
@@ -25401,6 +26516,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     challengeLinkTable,
     challengeProofEventTable,
     challengeAmendmentTable,
+    carePlanTable,
+    careRecordTable,
     medicineTable,
     medicineLogTable,
     planDefinitionTable,
@@ -41080,10 +42197,849 @@ typedef $$ChallengeAmendmentTableTableProcessedTableManager =
       ChallengeAmendment,
       PrefetchHooks Function({bool challengeId})
     >;
+typedef $$CarePlanTableTableCreateCompanionBuilder =
+    CarePlanTableCompanion Function({
+      Value<int> id,
+      required String title,
+      Value<String> person,
+      Value<String> clinician,
+      Value<String> notes,
+      Value<DateTime?> nextVisit,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+typedef $$CarePlanTableTableUpdateCompanionBuilder =
+    CarePlanTableCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<String> person,
+      Value<String> clinician,
+      Value<String> notes,
+      Value<DateTime?> nextVisit,
+      Value<bool> isArchived,
+      Value<DateTime> createdAt,
+    });
+
+final class $$CarePlanTableTableReferences
+    extends BaseReferences<_$AppDatabase, $CarePlanTableTable, CarePlan> {
+  $$CarePlanTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$CareRecordTableTable, List<CareRecord>>
+  _careRecordTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.careRecordTable,
+    aliasName: 'care_plans__id__care_records__care_plan_id',
+  );
+
+  $$CareRecordTableTableProcessedTableManager get careRecordTableRefs {
+    final manager = $$CareRecordTableTableTableManager(
+      $_db,
+      $_db.careRecordTable,
+    ).filter((f) => f.carePlanId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _careRecordTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$MedicineTableTable, List<Medicine>>
+  _medicineTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.medicineTable,
+    aliasName: 'care_plans__id__medicines__care_plan_id',
+  );
+
+  $$MedicineTableTableProcessedTableManager get medicineTableRefs {
+    final manager = $$MedicineTableTableTableManager(
+      $_db,
+      $_db.medicineTable,
+    ).filter((f) => f.carePlanId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_medicineTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CarePlanTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CarePlanTableTable> {
+  $$CarePlanTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get person => $composableBuilder(
+    column: $table.person,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clinician => $composableBuilder(
+    column: $table.clinician,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextVisit => $composableBuilder(
+    column: $table.nextVisit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> careRecordTableRefs(
+    Expression<bool> Function($$CareRecordTableTableFilterComposer f) f,
+  ) {
+    final $$CareRecordTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.careRecordTable,
+      getReferencedColumn: (t) => t.carePlanId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CareRecordTableTableFilterComposer(
+            $db: $db,
+            $table: $db.careRecordTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> medicineTableRefs(
+    Expression<bool> Function($$MedicineTableTableFilterComposer f) f,
+  ) {
+    final $$MedicineTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.medicineTable,
+      getReferencedColumn: (t) => t.carePlanId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MedicineTableTableFilterComposer(
+            $db: $db,
+            $table: $db.medicineTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CarePlanTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CarePlanTableTable> {
+  $$CarePlanTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get person => $composableBuilder(
+    column: $table.person,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clinician => $composableBuilder(
+    column: $table.clinician,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextVisit => $composableBuilder(
+    column: $table.nextVisit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CarePlanTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CarePlanTableTable> {
+  $$CarePlanTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get person =>
+      $composableBuilder(column: $table.person, builder: (column) => column);
+
+  GeneratedColumn<String> get clinician =>
+      $composableBuilder(column: $table.clinician, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get nextVisit =>
+      $composableBuilder(column: $table.nextVisit, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> careRecordTableRefs<T extends Object>(
+    Expression<T> Function($$CareRecordTableTableAnnotationComposer a) f,
+  ) {
+    final $$CareRecordTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.careRecordTable,
+      getReferencedColumn: (t) => t.carePlanId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CareRecordTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.careRecordTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> medicineTableRefs<T extends Object>(
+    Expression<T> Function($$MedicineTableTableAnnotationComposer a) f,
+  ) {
+    final $$MedicineTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.medicineTable,
+      getReferencedColumn: (t) => t.carePlanId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MedicineTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.medicineTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CarePlanTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CarePlanTableTable,
+          CarePlan,
+          $$CarePlanTableTableFilterComposer,
+          $$CarePlanTableTableOrderingComposer,
+          $$CarePlanTableTableAnnotationComposer,
+          $$CarePlanTableTableCreateCompanionBuilder,
+          $$CarePlanTableTableUpdateCompanionBuilder,
+          (CarePlan, $$CarePlanTableTableReferences),
+          CarePlan,
+          PrefetchHooks Function({
+            bool careRecordTableRefs,
+            bool medicineTableRefs,
+          })
+        > {
+  $$CarePlanTableTableTableManager(_$AppDatabase db, $CarePlanTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CarePlanTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CarePlanTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CarePlanTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> person = const Value.absent(),
+                Value<String> clinician = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<DateTime?> nextVisit = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CarePlanTableCompanion(
+                id: id,
+                title: title,
+                person: person,
+                clinician: clinician,
+                notes: notes,
+                nextVisit: nextVisit,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                Value<String> person = const Value.absent(),
+                Value<String> clinician = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<DateTime?> nextVisit = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CarePlanTableCompanion.insert(
+                id: id,
+                title: title,
+                person: person,
+                clinician: clinician,
+                notes: notes,
+                nextVisit: nextVisit,
+                isArchived: isArchived,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CarePlanTableTable, CarePlan>(table),
+                  $$CarePlanTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({careRecordTableRefs = false, medicineTableRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (careRecordTableRefs) db.careRecordTable,
+                    if (medicineTableRefs) db.medicineTable,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (careRecordTableRefs)
+                        await $_getPrefetchedData<
+                          CarePlan,
+                          $CarePlanTableTable,
+                          CareRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CarePlanTableTableReferences
+                              ._careRecordTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CarePlanTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).careRecordTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.carePlanId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (medicineTableRefs)
+                        await $_getPrefetchedData<
+                          CarePlan,
+                          $CarePlanTableTable,
+                          Medicine
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CarePlanTableTableReferences
+                              ._medicineTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CarePlanTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).medicineTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.carePlanId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CarePlanTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CarePlanTableTable,
+      CarePlan,
+      $$CarePlanTableTableFilterComposer,
+      $$CarePlanTableTableOrderingComposer,
+      $$CarePlanTableTableAnnotationComposer,
+      $$CarePlanTableTableCreateCompanionBuilder,
+      $$CarePlanTableTableUpdateCompanionBuilder,
+      (CarePlan, $$CarePlanTableTableReferences),
+      CarePlan,
+      PrefetchHooks Function({bool careRecordTableRefs, bool medicineTableRefs})
+    >;
+typedef $$CareRecordTableTableCreateCompanionBuilder =
+    CareRecordTableCompanion Function({
+      Value<int> id,
+      required int carePlanId,
+      required String title,
+      Value<String> notes,
+      required DateTime recordedAt,
+      Value<String?> filePath,
+      Value<String?> fileName,
+      Value<DateTime> createdAt,
+    });
+typedef $$CareRecordTableTableUpdateCompanionBuilder =
+    CareRecordTableCompanion Function({
+      Value<int> id,
+      Value<int> carePlanId,
+      Value<String> title,
+      Value<String> notes,
+      Value<DateTime> recordedAt,
+      Value<String?> filePath,
+      Value<String?> fileName,
+      Value<DateTime> createdAt,
+    });
+
+final class $$CareRecordTableTableReferences
+    extends BaseReferences<_$AppDatabase, $CareRecordTableTable, CareRecord> {
+  $$CareRecordTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CarePlanTableTable _carePlanIdTable(_$AppDatabase db) => db
+      .carePlanTable
+      .createAlias('care_records__care_plan_id__care_plans__id');
+
+  $$CarePlanTableTableProcessedTableManager get carePlanId {
+    final $_column = $_itemColumn<int>('care_plan_id')!;
+
+    final manager = $$CarePlanTableTableTableManager(
+      $_db,
+      $_db.carePlanTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_carePlanIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CareRecordTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CareRecordTableTable> {
+  $$CareRecordTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CarePlanTableTableFilterComposer get carePlanId {
+    final $$CarePlanTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableFilterComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CareRecordTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CareRecordTableTable> {
+  $$CareRecordTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CarePlanTableTableOrderingComposer get carePlanId {
+    final $$CarePlanTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CareRecordTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CareRecordTableTable> {
+  $$CareRecordTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$CarePlanTableTableAnnotationComposer get carePlanId {
+    final $$CarePlanTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CareRecordTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CareRecordTableTable,
+          CareRecord,
+          $$CareRecordTableTableFilterComposer,
+          $$CareRecordTableTableOrderingComposer,
+          $$CareRecordTableTableAnnotationComposer,
+          $$CareRecordTableTableCreateCompanionBuilder,
+          $$CareRecordTableTableUpdateCompanionBuilder,
+          (CareRecord, $$CareRecordTableTableReferences),
+          CareRecord,
+          PrefetchHooks Function({bool carePlanId})
+        > {
+  $$CareRecordTableTableTableManager(
+    _$AppDatabase db,
+    $CareRecordTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CareRecordTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CareRecordTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CareRecordTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> carePlanId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> fileName = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CareRecordTableCompanion(
+                id: id,
+                carePlanId: carePlanId,
+                title: title,
+                notes: notes,
+                recordedAt: recordedAt,
+                filePath: filePath,
+                fileName: fileName,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int carePlanId,
+                required String title,
+                Value<String> notes = const Value.absent(),
+                required DateTime recordedAt,
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> fileName = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CareRecordTableCompanion.insert(
+                id: id,
+                carePlanId: carePlanId,
+                title: title,
+                notes: notes,
+                recordedAt: recordedAt,
+                filePath: filePath,
+                fileName: fileName,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CareRecordTableTable, CareRecord>(table),
+                  $$CareRecordTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({carePlanId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (carePlanId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.carePlanId,
+                                referencedTable:
+                                    $$CareRecordTableTableReferences
+                                        ._carePlanIdTable(db),
+                                referencedColumn:
+                                    $$CareRecordTableTableReferences
+                                        ._carePlanIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CareRecordTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CareRecordTableTable,
+      CareRecord,
+      $$CareRecordTableTableFilterComposer,
+      $$CareRecordTableTableOrderingComposer,
+      $$CareRecordTableTableAnnotationComposer,
+      $$CareRecordTableTableCreateCompanionBuilder,
+      $$CareRecordTableTableUpdateCompanionBuilder,
+      (CareRecord, $$CareRecordTableTableReferences),
+      CareRecord,
+      PrefetchHooks Function({bool carePlanId})
+    >;
 typedef $$MedicineTableTableCreateCompanionBuilder =
     MedicineTableCompanion Function({
       Value<int> id,
       required String name,
+      Value<int?> carePlanId,
+      Value<String> purpose,
       required String dosage,
       required String scheduledTimes,
       Value<int> durationDays,
@@ -41097,6 +43053,8 @@ typedef $$MedicineTableTableUpdateCompanionBuilder =
     MedicineTableCompanion Function({
       Value<int> id,
       Value<String> name,
+      Value<int?> carePlanId,
+      Value<String> purpose,
       Value<String> dosage,
       Value<String> scheduledTimes,
       Value<int> durationDays,
@@ -41114,6 +43072,23 @@ final class $$MedicineTableTableReferences
     super.$_table,
     super.$_typedResult,
   );
+
+  static $CarePlanTableTable _carePlanIdTable(_$AppDatabase db) =>
+      db.carePlanTable.createAlias('medicines__care_plan_id__care_plans__id');
+
+  $$CarePlanTableTableProcessedTableManager? get carePlanId {
+    final $_column = $_itemColumn<int>('care_plan_id');
+    if ($_column == null) return null;
+    final manager = $$CarePlanTableTableTableManager(
+      $_db,
+      $_db.carePlanTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_carePlanIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$MedicineLogTableTable, List<MedicineLog>>
   _medicineLogTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -41152,6 +43127,11 @@ class $$MedicineTableTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get purpose => $composableBuilder(
+    column: $table.purpose,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -41194,6 +43174,29 @@ class $$MedicineTableTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$CarePlanTableTableFilterComposer get carePlanId {
+    final $$CarePlanTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableFilterComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> medicineLogTableRefs(
     Expression<bool> Function($$MedicineLogTableTableFilterComposer f) f,
@@ -41240,6 +43243,11 @@ class $$MedicineTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get purpose => $composableBuilder(
+    column: $table.purpose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get dosage => $composableBuilder(
     column: $table.dosage,
     builder: (column) => ColumnOrderings(column),
@@ -41279,6 +43287,29 @@ class $$MedicineTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$CarePlanTableTableOrderingComposer get carePlanId {
+    final $$CarePlanTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$MedicineTableTableAnnotationComposer
@@ -41295,6 +43326,9 @@ class $$MedicineTableTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get purpose =>
+      $composableBuilder(column: $table.purpose, builder: (column) => column);
 
   GeneratedColumn<String> get dosage =>
       $composableBuilder(column: $table.dosage, builder: (column) => column);
@@ -41325,6 +43359,29 @@ class $$MedicineTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$CarePlanTableTableAnnotationComposer get carePlanId {
+    final $$CarePlanTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.carePlanId,
+      referencedTable: $db.carePlanTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CarePlanTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.carePlanTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> medicineLogTableRefs<T extends Object>(
     Expression<T> Function($$MedicineLogTableTableAnnotationComposer a) f,
@@ -41365,7 +43422,7 @@ class $$MedicineTableTableTableManager
           $$MedicineTableTableUpdateCompanionBuilder,
           (Medicine, $$MedicineTableTableReferences),
           Medicine,
-          PrefetchHooks Function({bool medicineLogTableRefs})
+          PrefetchHooks Function({bool carePlanId, bool medicineLogTableRefs})
         > {
   $$MedicineTableTableTableManager(_$AppDatabase db, $MedicineTableTable table)
     : super(
@@ -41382,6 +43439,8 @@ class $$MedicineTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<int?> carePlanId = const Value.absent(),
+                Value<String> purpose = const Value.absent(),
                 Value<String> dosage = const Value.absent(),
                 Value<String> scheduledTimes = const Value.absent(),
                 Value<int> durationDays = const Value.absent(),
@@ -41393,6 +43452,8 @@ class $$MedicineTableTableTableManager
               }) => MedicineTableCompanion(
                 id: id,
                 name: name,
+                carePlanId: carePlanId,
+                purpose: purpose,
                 dosage: dosage,
                 scheduledTimes: scheduledTimes,
                 durationDays: durationDays,
@@ -41406,6 +43467,8 @@ class $$MedicineTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
+                Value<int?> carePlanId = const Value.absent(),
+                Value<String> purpose = const Value.absent(),
                 required String dosage,
                 required String scheduledTimes,
                 Value<int> durationDays = const Value.absent(),
@@ -41417,6 +43480,8 @@ class $$MedicineTableTableTableManager
               }) => MedicineTableCompanion.insert(
                 id: id,
                 name: name,
+                carePlanId: carePlanId,
+                purpose: purpose,
                 dosage: dosage,
                 scheduledTimes: scheduledTimes,
                 durationDays: durationDays,
@@ -41434,38 +43499,74 @@ class $$MedicineTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({medicineLogTableRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (medicineLogTableRefs) db.medicineLogTable,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (medicineLogTableRefs)
-                    await $_getPrefetchedData<
-                      Medicine,
-                      $MedicineTableTable,
-                      MedicineLog
-                    >(
-                      currentTable: table,
-                      referencedTable: $$MedicineTableTableReferences
-                          ._medicineLogTableRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$MedicineTableTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).medicineLogTableRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.medicineId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({carePlanId = false, medicineLogTableRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (medicineLogTableRefs) db.medicineLogTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (carePlanId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.carePlanId,
+                                    referencedTable:
+                                        $$MedicineTableTableReferences
+                                            ._carePlanIdTable(db),
+                                    referencedColumn:
+                                        $$MedicineTableTableReferences
+                                            ._carePlanIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (medicineLogTableRefs)
+                        await $_getPrefetchedData<
+                          Medicine,
+                          $MedicineTableTable,
+                          MedicineLog
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MedicineTableTableReferences
+                              ._medicineLogTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MedicineTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).medicineLogTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.medicineId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -41482,7 +43583,7 @@ typedef $$MedicineTableTableProcessedTableManager =
       $$MedicineTableTableUpdateCompanionBuilder,
       (Medicine, $$MedicineTableTableReferences),
       Medicine,
-      PrefetchHooks Function({bool medicineLogTableRefs})
+      PrefetchHooks Function({bool carePlanId, bool medicineLogTableRefs})
     >;
 typedef $$MedicineLogTableTableCreateCompanionBuilder =
     MedicineLogTableCompanion Function({
@@ -45376,6 +47477,10 @@ class $AppDatabaseManager {
         _db,
         _db.challengeAmendmentTable,
       );
+  $$CarePlanTableTableTableManager get carePlanTable =>
+      $$CarePlanTableTableTableManager(_db, _db.carePlanTable);
+  $$CareRecordTableTableTableManager get careRecordTable =>
+      $$CareRecordTableTableTableManager(_db, _db.careRecordTable);
   $$MedicineTableTableTableManager get medicineTable =>
       $$MedicineTableTableTableManager(_db, _db.medicineTable);
   $$MedicineLogTableTableTableManager get medicineLogTable =>
@@ -45890,6 +47995,7 @@ class ChallengeDaoManager {
 }
 
 mixin _$MedicineDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CarePlanTableTable get carePlanTable => attachedDatabase.carePlanTable;
   $MedicineTableTable get medicineTable => attachedDatabase.medicineTable;
   $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
@@ -45906,6 +48012,8 @@ mixin _$MedicineDaoMixin on DatabaseAccessor<AppDatabase> {
 class MedicineDaoManager {
   final _$MedicineDaoMixin _db;
   MedicineDaoManager(this._db);
+  $$CarePlanTableTableTableManager get carePlanTable =>
+      $$CarePlanTableTableTableManager(_db.attachedDatabase, _db.carePlanTable);
   $$MedicineTableTableTableManager get medicineTable =>
       $$MedicineTableTableTableManager(_db.attachedDatabase, _db.medicineTable);
   $$ThoughtTableTableTableManager get thoughtTable =>

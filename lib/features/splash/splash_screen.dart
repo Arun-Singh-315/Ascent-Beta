@@ -10,6 +10,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_logo.dart';
+import '../../app/theme/shared_control_tokens.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -23,7 +24,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-  String _versionString = 'v1.0.2';
+  String _versionString = 'Production v1';
 
   @override
   void initState() {
@@ -32,10 +33,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 1200),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.94, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.88, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
 
@@ -101,6 +102,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _animController.value = 1;
+  }
+
+  @override
   void dispose() {
     _animController.dispose();
     super.dispose();
@@ -120,59 +127,103 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           builder: (context, child) {
             return FadeTransition(
               opacity: _fadeAnimation,
-              child: Transform.scale(
-                scale: _scaleAnimation.value,
+              child: Transform.translate(
+                offset: Offset(0, 12 * (1 - _animController.value)),
                 child: child,
               ),
             );
           },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Official Ascent Logo Mark
-              const AscentLogo(size: 84),
-              const SizedBox(height: 24),
-
-              // Title
-              Text(
-                'Ascent',
-                style: AscentTextStyles.displayLarge
-                    .copyWith(color: textPrimary, letterSpacing: -0.5)
-                    .merge(AppTypeRoles.typeRole25),
-              ),
-              const SizedBox(height: 6),
-
-              // Subtitle Tagline
-              Text(
-                'Personal Clarity, Focus & Rhythm',
-                style: AscentTextStyles.bodyMedium
-                    .copyWith(color: textMuted)
-                    .merge(AppTypeRoles.typeRole26),
-              ),
-              const SizedBox(height: 14),
-
-              // Subtle version badge
-              AppCard(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s10,
-                  vertical: AppSpace.s3,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedBuilder(
+                  animation: _animController,
+                  builder: (context, _) {
+                    final progress = Curves.easeOutCubic.transform(
+                      _animController.value,
+                    );
+                    return SizedBox(
+                      width: 184,
+                      height: 184,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Transform.scale(
+                            scale: .65 + .35 * progress,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    SharedControlColors.actionBlue.withValues(
+                                      alpha: .13 * progress,
+                                    ),
+                                    SharedControlColors.actionBlue.withValues(
+                                      alpha: 0,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: const AscentLogo(
+                              size: 96,
+                              showShadow: false,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                nightDecoration: BoxDecoration(
-                  color: context.bgSurfaceElevated,
-                  borderRadius: AppGeometry.roundedr20,
-                  border: Border.all(
-                    color: divider,
-                    width: AppBorderScale.w0point8,
+                const SizedBox(height: 4),
+
+                // Title
+                Text(
+                  'Ascent',
+                  style: AscentTextStyles.displayLarge
+                      .copyWith(color: textPrimary, letterSpacing: -0.5)
+                      .merge(AppTypeRoles.typeRole25),
+                ),
+                const SizedBox(height: 6),
+
+                // Subtitle Tagline
+                Text(
+                  'Personal Clarity, Focus & Rhythm',
+                  textAlign: TextAlign.center,
+                  style: AscentTextStyles.bodyMedium
+                      .copyWith(color: textMuted)
+                      .merge(AppTypeRoles.typeRole26),
+                ),
+                const SizedBox(height: 14),
+
+                // Subtle version badge
+                AppCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s10,
+                    vertical: AppSpace.s3,
+                  ),
+                  nightDecoration: BoxDecoration(
+                    color: context.bgSurfaceElevated,
+                    borderRadius: AppGeometry.roundedr20,
+                    border: Border.all(
+                      color: divider,
+                      width: AppBorderScale.w0point8,
+                    ),
+                  ),
+                  child: Text(
+                    'Production · v1.0',
+                    style: AscentTextStyles.monoCode
+                        .copyWith(color: textMuted)
+                        .merge(AppTypeRoles.typeRole16),
                   ),
                 ),
-                child: Text(
-                  'BETA · $_versionString',
-                  style: AscentTextStyles.monoCode
-                      .copyWith(color: textMuted)
-                      .merge(AppTypeRoles.typeRole16),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

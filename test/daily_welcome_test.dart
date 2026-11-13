@@ -38,17 +38,26 @@ void main() {
 
     test('first open ever, and first open on a new day, show it', () async {
       var prefs = await prefsWith({});
-      expect(shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true), isTrue);
+      expect(
+        shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true),
+        isTrue,
+      );
       prefs = await prefsWith({
         dailyWelcomeSeenKey: DateTime(2026, 11, 2).toIso8601String(),
       });
-      expect(shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true), isTrue);
+      expect(
+        shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true),
+        isTrue,
+      );
     });
 
     test('never twice on the same day, even late at night', () async {
       final prefs = await prefsWith({});
       await markDailyWelcomeSeen(prefs, now);
-      expect(shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true), isFalse);
+      expect(
+        shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true),
+        isFalse,
+      );
       expect(
         shouldShowDailyWelcome(
           prefs: prefs,
@@ -71,16 +80,31 @@ void main() {
       final prefs = await prefsWith({
         dailyWelcomeSeenKey: DateTime(2026, 11, 9).toIso8601String(),
       });
-      expect(shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true), isFalse);
+      expect(
+        shouldShowDailyWelcome(prefs: prefs, now: now, autoOpen: true),
+        isFalse,
+      );
       final fresh = await prefsWith({});
-      expect(shouldShowDailyWelcome(prefs: fresh, now: now, autoOpen: false), isFalse);
+      expect(
+        shouldShowDailyWelcome(prefs: fresh, now: now, autoOpen: false),
+        isFalse,
+      );
     });
   });
 
   group('written summary', () {
     test('describes progress in words and never says zero', () {
-      final b = _briefing(completed: 4, minutes: 80, due: 2, overdue: 1, next: 'Send proposal');
-      expect(b.yesterdayStory, 'Yesterday you finished 4 tasks and spent 1h 20m in focus.');
+      final b = _briefing(
+        completed: 4,
+        minutes: 80,
+        due: 2,
+        overdue: 1,
+        next: 'Send proposal',
+      );
+      expect(
+        b.yesterdayStory,
+        'Yesterday you finished 4 tasks and spent 1h 20m in focus.',
+      );
       expect(
         b.todayStory,
         'You have 2 things due today and 1 task carried over. A good place to begin: “Send proposal”.',
@@ -101,7 +125,9 @@ void main() {
     });
   });
 
-  testWidgets('centred card with swipeable pages and a close button', (t) async {
+  testWidgets('centred card with swipeable pages and a close button', (
+    t,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final day = DateTime(2026, 11, 3);
@@ -110,7 +136,8 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           dailyBriefingProvider.overrideWith(
-            (ref, d) async => _briefing(completed: 2, due: 1, next: 'Write report'),
+            (ref, d) async =>
+                _briefing(completed: 2, due: 1, next: 'Write report'),
           ),
         ],
         child: MaterialApp(
@@ -131,7 +158,7 @@ void main() {
     await t.pump();
     await t.pump(const Duration(milliseconds: 500));
     expect(find.textContaining('Arun.'), findsOneWidget);
-    expect(find.text('Yesterday you finished 2 tasks.'), findsOneWidget);
+    expect(find.text('Tasks due today'), findsOneWidget);
 
     await t.drag(find.byType(PageView), const Offset(-400, 0));
     await t.pump(const Duration(milliseconds: 500));
@@ -140,6 +167,7 @@ void main() {
     await t.drag(find.byType(PageView), const Offset(-400, 0));
     await t.pump(const Duration(milliseconds: 500));
     expect(find.text('Capture something'), findsOneWidget);
+    expect(find.text('Yesterday you finished 2 tasks.'), findsOneWidget);
 
     await t.tap(find.byTooltip('Dismiss daily briefing'));
     await t.pump();

@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/ascent_star_button.dart';
 import '../../shared/widgets/schedule_picker.dart';
 import '../../shared/widgets/note_list_button.dart';
@@ -32,6 +33,7 @@ import '../plans/widgets/plan_detail_sheet.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
+  final DateTime? initialDate;
   final Task? existingTask;
   final String? initialTitle;
   final ActivityKind? initialKind;
@@ -43,6 +45,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
   const AddActivitySheet({
     super.key,
     this.existingTask,
+    this.initialDate,
     this.initialTitle,
     this.initialKind,
     this.initialDurationMinutes,
@@ -54,17 +57,18 @@ class AddActivitySheet extends ConsumerStatefulWidget {
   static Future<void> show(
     BuildContext context, {
     Task? existingTask,
+    DateTime? initialDate,
     String? initialTitle,
     ActivityKind? initialKind,
     int? initialDurationMinutes,
     int? parentTaskId,
     int? prefilledApplicationId,
-  }) {
-    return showAscentCenteredForm<void>(
+  }) async {
+    await showAscentSheet<void>(
       context: context,
-      maxWidth: 560,
       builder: (ctx) => AddActivitySheet(
         existingTask: existingTask,
+        initialDate: initialDate,
         initialTitle: initialTitle,
         initialKind: initialKind,
         initialDurationMinutes: initialDurationMinutes,
@@ -107,6 +111,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     super.initState();
     _kind = widget.initialKind ?? ActivityKind.todo;
 
+    if (widget.initialDate != null) _selectedDate = widget.initialDate!;
     if (widget.initialTitle != null) {
       _titleController.text = widget.initialTitle!;
     }

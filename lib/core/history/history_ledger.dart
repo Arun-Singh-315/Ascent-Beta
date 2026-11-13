@@ -145,6 +145,23 @@ class HistoryLedger {
 
   static final _specs = <_Spec>[
     _Spec(
+      'care_plans',
+      'care_plans',
+      '@.title',
+      "@.person||char(10)||@.clinician||char(10)||@.notes||CASE WHEN @.next_visit IS NULL THEN '' ELSE char(10)||'Next visit: '||date(@.next_visit,'unixepoch','localtime') END",
+      ['title', 'person', 'clinician', 'notes', 'next_visit', 'is_archived'],
+      action:
+          "CASE WHEN NEW.is_archived!=OLD.is_archived THEN CASE WHEN NEW.is_archived=1 THEN 'archived' ELSE 'restored' END ELSE 'edited' END",
+    ),
+    _Spec(
+      'care_records',
+      'care_records',
+      '@.title',
+      "@.notes||char(10)||'Record date: '||date(@.recorded_at,'unixepoch','localtime')||CASE WHEN @.file_name IS NULL THEN '' ELSE char(10)||'Report: '||@.file_name END",
+      ['title', 'notes', 'recorded_at', 'file_path'],
+      timestamp: 'source.recorded_at',
+    ),
+    _Spec(
       'plan_collections',
       'plans',
       '@.title',
@@ -219,8 +236,19 @@ class HistoryLedger {
       'medicines',
       'medicines',
       '@.name',
-      "@.dosage||' · '||@.instructions",
-      ['name', 'dosage', 'scheduled_times', 'is_active'],
+      "@.dosage||' · '||@.instructions||char(10)||'Form: '||@.type||char(10)||'Purpose: '||@.purpose||char(10)||'Course: '||date(@.start_date,'unixepoch','localtime')||' · '||@.duration_days||' days'||char(10)||'Times: '||@.scheduled_times||COALESCE((SELECT char(10)||person||' · '||title FROM care_plans WHERE id=@.care_plan_id),'')",
+      [
+        'name',
+        'dosage',
+        'scheduled_times',
+        'is_active',
+        'instructions',
+        'duration_days',
+        'start_date',
+        'type',
+        'purpose',
+        'care_plan_id',
+      ],
       action:
           "CASE WHEN NEW.is_active!=OLD.is_active THEN CASE WHEN NEW.is_active=0 THEN 'archived' ELSE 'restored' END ELSE 'edited' END",
     ),

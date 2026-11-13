@@ -3,6 +3,7 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/glass_theme.dart';
+import 'widgets/home_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -18,7 +19,10 @@ Future<void> showHomeCustomization(BuildContext context) =>
       isDismissible: false,
       enableDrag: false,
       backgroundColor: AppPalette.transparent,
-      builder: (_) => const HomeCustomizationSheet(),
+      builder: (_) => Theme(
+        data: HomeTheme.from(Theme.of(context)),
+        child: const HomeCustomizationSheet(),
+      ),
     );
 
 class HomeCustomizationSheet extends ConsumerStatefulWidget {
@@ -62,7 +66,7 @@ class _HomeCustomizationSheetState
               : AppSpace.s16,
         ),
         decoration: BoxDecoration(
-          color: g.bg,
+          color: g.elevated,
           borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
           border: Border.all(color: g.edge),
         ),
@@ -73,12 +77,14 @@ class _HomeCustomizationSheetState
             children: [
               Text(
                 'Your Home',
-                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+                style: AscentTextStyles.interfaceDisplay.copyWith(color: g.ink),
               ),
               const SizedBox(height: 6),
               Text(
                 'Choose what appears. Hiding a card keeps its records, alerts and timers intact.',
-                style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                style: AscentTextStyles.interfaceSupporting.copyWith(
+                  color: g.inkMuted,
+                ),
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -92,8 +98,8 @@ class _HomeCustomizationSheetState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Things Hub leads your day. Supporting cards appear when relevant; hidden tools remain available from More.',
-                      style: AscentTextStyles.bodySmall.copyWith(
+                      'Dayboard leads your day. Supporting cards appear when relevant; hidden tools remain available from More.',
+                      style: AscentTextStyles.interfaceSupporting.copyWith(
                         color: g.inkMuted,
                       ),
                     ),
@@ -127,10 +133,11 @@ class _HomeCustomizationSheetState
                                 Expanded(
                                   child: Text(
                                     homeSections[_draft.order[i]]!,
-                                    style: AscentTextStyles.bodyMedium.copyWith(
-                                      color: g.ink,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AscentTextStyles.interfaceBody
+                                        .copyWith(
+                                          color: g.ink,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ),
                               ],
@@ -168,7 +175,7 @@ class _HomeCustomizationSheetState
                       ),
                     const SizedBox(height: 18),
                     Text(
-                      'Life & Health tools',
+                      'Daily rhythm tools',
                       style: AscentTextStyles.labelMedium.copyWith(
                         color: g.ink,
                       ),
@@ -222,7 +229,9 @@ class _HomeCustomizationSheetState
               if (_error != null)
                 Text(
                   _error!,
-                  style: AscentTextStyles.bodySmall.copyWith(color: g.coral),
+                  style: AscentTextStyles.interfaceSupporting.copyWith(
+                    color: g.coral,
+                  ),
                 ),
               const SizedBox(height: 10),
               AscentButton.primary(

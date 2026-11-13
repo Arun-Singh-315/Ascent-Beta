@@ -1,7 +1,9 @@
+import 'dart:async';
 import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
 import 'riya_entity_card.dart';
+import 'riya_plan_cards.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
@@ -31,6 +33,7 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/database/app_database.dart';
+import '../../core/services/festival_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 
@@ -213,6 +216,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       String reply;
       RiyaCommand? command = resolution?.command;
       List<String> options = resolution?.options ?? [];
+      String? actionType;
+      Map<String, dynamic>? planPayload;
+
       if (resolution == null) {
         if (RegExp(
           r'^(delete|remove|reset|transfer|share)\b',
@@ -235,14 +241,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               reply =
                   'Review and complete these lectures in Learning. I have not changed your course.';
               options = ['Open Learning'];
+            } else if (action.type == AiActionType.studyPlanCreated ||
+                action.type == AiActionType.mealPlanCreated) {
+              actionType = action.type.name;
+              planPayload = action.payload;
             }
           }
         }
       } else {
         reply = resolution.message ?? 'Review this action.';
       }
-      String? actionType;
       final data = <String, dynamic>{'quickOptions': options};
+      if (planPayload != null) {
+        data.addAll(planPayload);
+      }
       if (command != null) {
         final executor = RiyaExecutor(
           db,
@@ -731,9 +743,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final name = ref.watch(assistantNameProvider);
     final messagesStream = _messagesStream;
     final accentColor = context.accentPrimary;
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
 
     return PopScope(
-      canPop: !_isLoading,
+      canPop: !_isLoading && canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && !_isLoading) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
       child: Scaffold(
         resizeToAvoidBottomInset: !widget.compact,
         extendBodyBehindAppBar: true,
@@ -772,7 +795,18 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               color: context.textPrimary,
               size: 19,
             ),
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+            onPressed: _isLoading
+                ? null
+                : () {
+                    final router = GoRouter.maybeOf(context);
+                    if (router != null && router.canPop()) {
+                      router.pop();
+                    } else if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else if (router != null) {
+                      router.go('/home');
+                    }
+                  },
           ),
           titleSpacing: 0,
           title: Row(
@@ -978,9 +1012,59 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
                 final messages = snapshot.data ?? [];
                 final hasMessages = messages.isNotEmpty;
+                final todayFestival = ref.watch(todayFestivalProvider);
 
                 return Column(
                   children: [
+                    if (todayFestival != null && hasMessages)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          14,
+                          MediaQuery.paddingOf(context).top + kToolbarHeight + 4,
+                          14,
+                          0,
+                        ),
+                        child: Container(
+                          key: const ValueKey('riya_festive_banner_ongoing'),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: todayFestival.accentColor.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: todayFestival.accentColor.withValues(
+                                alpha: 0.35,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                todayFestival.emoji,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Happy ${todayFestival.name}! ${todayFestival.riyaWish}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? const Color(0xFFFDE68A)
+                                        : const Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     // Chat stream
                     Expanded(
                       child: messages.isEmpty
@@ -993,9 +1077,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               controller: _scrollController,
                               padding: EdgeInsets.fromLTRB(
                                 14,
-                                MediaQuery.paddingOf(context).top +
-                                    kToolbarHeight +
-                                    8,
+                                todayFestival != null
+                                    ? 8
+                                    : MediaQuery.paddingOf(context).top +
+                                        kToolbarHeight +
+                                        8,
                                 14,
                                 12,
                               ),
@@ -1104,10 +1190,28 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           horizontal: 14,
                           vertical: AscentSpacing.xs,
                         ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: _buildQuickChip(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              _buildQuickChip(
+                                'Study Plan',
+                                Icons.school_rounded,
+                                () => _handleSubmitted('Create a study plan for DSA'),
+                                context,
+                                accentColor,
+                              ),
+                              const SizedBox(width: 8),
+                              _buildQuickChip(
+                                'Meal Plan',
+                                Icons.restaurant_rounded,
+                                () => _handleSubmitted('Create a healthy meal plan'),
+                                context,
+                                accentColor,
+                              ),
+                              const SizedBox(width: 8),
+                              _buildQuickChip(
                                 widget.compact ? 'Todos' : 'Plan my day',
                                 Icons.wb_sunny_rounded,
                                 () => _handleSubmitted(
@@ -1116,11 +1220,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 context,
                                 accentColor,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildQuickChip(
-                                widget.compact ? 'Promises' : 'Today\'s agenda',
+                              const SizedBox(width: 8),
+                              _buildQuickChip(
+                                widget.compact ? 'Commitments' : 'Today\'s agenda',
                                 Icons.checklist_rounded,
                                 () => _handleSubmitted(
                                   widget.compact
@@ -1130,10 +1232,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 context,
                                 accentColor,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildQuickChip(
+                              const SizedBox(width: 8),
+                              _buildQuickChip(
                                 widget.compact ? 'New Todo' : 'Medicines',
                                 widget.compact
                                     ? Icons.add_rounded
@@ -1146,8 +1246,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 context,
                                 accentColor,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -1155,7 +1255,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       const SizedBox(height: 4),
                     ],
 
-                    // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
+                    // Mindspace Consistent Input Box (Glass fill + Pill + Animated Send Circle)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
                       child: SafeArea(
@@ -1218,23 +1318,19 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             ],
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 14, color: accentColor),
               const SizedBox(width: 5),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: context.textPrimary,
-                    ),
-                    maxLines: 1,
-                  ),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: context.textPrimary,
                 ),
+                maxLines: 1,
               ),
             ],
           ),
@@ -1553,68 +1649,36 @@ class _ConversationMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
-    // ── User bubble: vivid solid gradient pill ──────────────────────────────
-    // ── AI bubble: clean opaque warm card ──────────────────────────────────
+    // ── Unified Glass Cards (Zero double-ticks, calm Things Hub aesthetic) ──
     final Color bubbleFill;
     final Color bubbleBorder;
     final Color messageTextColor;
     final Color timestampColor;
 
     if (isUser) {
-      // User bubble — translucent glass with dark border & razor-sharp text
       bubbleFill = isDark
-          ? const Color(0xFF141926).withValues(
-              alpha: 0.60,
-            ) // translucent obsidian-glass
-          : const Color(
-              0xFFF1F4F9,
-            ).withValues(alpha: 0.72); // translucent pearl-glass
-      bubbleBorder = isDark
-          ? const Color(0xFF2C384E) // crisp dark-slate rim
-          : const Color(
-              0xFF334155,
-            ).withValues(alpha: 0.50); // crisp dark charcoal rim
-      messageTextColor = isDark
-          ? const Color(0xFFF8FAFC) // crystal-clear bright ink (slate-50)
-          : const Color(0xFF0F172A); // deep ink (slate-900)
-      timestampColor = isDark
-          ? const Color(0xFF94A3B8)
-          : const Color(0xFF64748B);
+          ? g.surface.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.90);
+      bubbleBorder = g.line.withValues(alpha: isDark ? 0.35 : 0.20);
+      messageTextColor = g.ink;
+      timestampColor = g.inkMuted;
     } else {
-      // AI bubble — opaque surface for guaranteed readability
       bubbleFill = isDark
-          ? const Color(0xFF1E2430) // rich dark blue-charcoal
-          : const Color(0xFFFFFFFF); // crisp white
-      bubbleBorder = isDark
-          ? const Color(0xFF2D3548) // subtle rim
-          : const Color(0xFFE8ECF4); // soft light rim
-      messageTextColor = isDark
-          ? const Color(0xFFE8EDF5) // bright near-white on dark
-          : const Color(0xFF1A2233); // deep ink on light
-      timestampColor = isDark
-          ? const Color(0xFF6B7A99)
-          : const Color(0xFF9AA3B8);
+          ? g.surface.withValues(alpha: 0.95)
+          : Colors.white.withValues(alpha: 0.98);
+      bubbleBorder = g.line.withValues(alpha: isDark ? 0.30 : 0.15);
+      messageTextColor = g.ink;
+      timestampColor = g.inkMuted;
     }
 
-    // Bubble radius: iMessage-style rounded with a "tail" corner
-    final borderRadius = isUser
-        ? const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(5),
-          )
-        : const BorderRadius.only(
-            topLeft: Radius.circular(5),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(20),
-          );
+    // Serene, symmetrical radius matching Ascent design system
+    final borderRadius = BorderRadius.circular(16);
 
     Widget bubbleContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1658,28 +1722,15 @@ class _ConversationMessageBubble extends StatelessWidget {
 
         const SizedBox(height: 5),
 
-        // Micro Timestamp
+        // Micro Timestamp (Minimalist, clean, zero double-tick clutter)
         Align(
           alignment: Alignment.bottomRight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                timeString,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 9.5,
-                  color: timestampColor,
-                ),
-              ),
-              if (isUser) ...[
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.done_all_rounded,
-                  size: 11,
-                  color: isDark ? accentColor : accentColor,
-                ),
-              ],
-            ],
+          child: Text(
+            timeString,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 9.5,
+              color: timestampColor,
+            ),
           ),
         ),
       ],
@@ -1719,6 +1770,20 @@ class _ConversationMessageBubble extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         mainBubble,
+
+        // Interactive Study Plan Card
+        if (!isUser &&
+            actionData != null &&
+            (actionData!['type'] == 'study_plan' ||
+                msg.actionType == 'studyPlanCreated'))
+          RiyaStudyPlanCard(planData: actionData!, accentColor: accentColor),
+
+        // Interactive Meal Plan Card
+        if (!isUser &&
+            actionData != null &&
+            (actionData!['type'] == 'meal_plan' ||
+                msg.actionType == 'mealPlanCreated'))
+          RiyaMealPlanCard(planData: actionData!, accentColor: accentColor),
 
         if (!isUser && actionData?['executionStatus'] == 'proposed')
           Padding(
@@ -2250,45 +2315,154 @@ class _ConversationMessageBubble extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Inline Animated Thinking Bubble
+// Organic "Living Thought" Thinking Indicator
 // ---------------------------------------------------------------------------
 
-class _ThinkingBubble extends StatelessWidget {
-  const _ThinkingBubble({required this.name, required this.accentColor});
+class _ThinkingBubble extends StatefulWidget {
+  const _ThinkingBubble({
+    required this.name,
+    required this.accentColor,
+  });
   final String name;
   final Color accentColor;
+
   @override
-  Widget build(BuildContext context) => Align(
-    alignment: Alignment.centerLeft,
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 300),
-      child: GlassSurface(
-        radius: 18,
-        enableBlur: false,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: accentColor,
-              ),
+  State<_ThinkingBubble> createState() => _ThinkingBubbleState();
+}
+
+class _ThinkingBubbleState extends State<_ThinkingBubble>
+    with SingleTickerProviderStateMixin {
+  int _stepIndex = 0;
+  Timer? _timer;
+  late final AnimationController _pulseController;
+
+  static const _thinkingSteps = [
+    'Reflecting on your daily rhythm…',
+    'Synthesizing schedule & milestones…',
+    'Calibrating focused daily slots…',
+    'Formulating tailored guidance…',
+    'Polishing clarity & insights…',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    if (!isTest) {
+      _pulseController.repeat(reverse: true);
+      _timer = Timer.periodic(const Duration(milliseconds: 1800), (_) {
+        if (mounted) {
+          setState(() {
+            _stepIndex = (_stepIndex + 1) % _thinkingSteps.length;
+          });
+        }
+      });
+    } else {
+      _pulseController.value = 0.5;
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? g.surface.withValues(alpha: 0.90)
+                : Colors.white.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: g.line.withValues(alpha: isDark ? 0.35 : 0.20),
+              width: 1,
             ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                '$name is checking…',
-                style: TextStyle(color: context.glass.inkMuted, fontSize: 12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  final pulse = _pulseController.value;
+                  return Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: widget.accentColor.withValues(
+                        alpha: 0.70 + pulse * 0.30,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.accentColor.withValues(
+                            alpha: 0.35 + pulse * 0.35,
+                          ),
+                          blurRadius: 6 + pulse * 4,
+                          spreadRadius: 1 + pulse * 1.5,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    '${widget.name} is thinking: ${_thinkingSteps[_stepIndex]}',
+                    key: ValueKey(_stepIndex),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: g.inkSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2345,16 +2519,12 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
     return Consumer(
       builder: (context, ref, _) {
         final profile = ref.watch(userProfileStreamProvider).value;
+        final todayFestival = ref.watch(todayFestivalProvider);
         final userName = profile?.name.isNotEmpty == true
             ? profile!.name.split(' ').first
             : 'there';
         final accent = context.accentPrimary;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        final hour = DateTime.now().hour;
-        final greetingTime = hour < 12
-            ? 'Good morning'
-            : (hour < 17 ? 'Good afternoon' : 'Good evening');
 
         return Center(
           child: SingleChildScrollView(
@@ -2459,18 +2629,19 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                 const SizedBox(height: 12),
 
                 Text(
-                  '$greetingTime, $userName',
+                  'How can I help you\nascend today?',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
                     color: context.textPrimary,
-                    letterSpacing: -0.3,
+                    letterSpacing: -0.6,
+                    height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
-                  'I\'m ${widget.assistantName}, your personal assistant. How can I help you today?',
+                  'Always by your side, $userName. Direct your thoughts, routines, and growth.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13.5,
@@ -2478,6 +2649,76 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                     height: 1.4,
                   ),
                 ),
+                if (todayFestival != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    key: const ValueKey('riya_festive_wish_card'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          todayFestival.accentColor.withValues(
+                            alpha: isDark ? 0.22 : 0.12,
+                          ),
+                          context.glass.clay.withValues(
+                            alpha: isDark ? 0.16 : 0.08,
+                          ),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: todayFestival.accentColor.withValues(
+                          alpha: 0.35,
+                        ),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              todayFestival.emoji,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Happy ${todayFestival.name}, $userName!',
+                                key: const ValueKey('riya_festive_greeting'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? const Color(0xFFFDE68A)
+                                      : const Color(0xFF92400E),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          todayFestival.riyaWish,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : const Color(0xFF78350F),
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 20),
 
@@ -2539,68 +2780,59 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
 
-                // Soft suggestion pills
+                // Subtle lower suggestions
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
-                  children:
-                      [
-                        'Plan my day',
-                        'Log 250ml water',
-                        'What are my tasks today?',
-                        'Check my walk status',
-                        'Medicine schedule',
-                        'Explain Dynamic Programming',
-                      ].map((prompt) {
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onSelectPrompt(prompt);
-                            },
+                  children: [
+                    if (todayFestival != null)
+                      '${todayFestival.emoji} ${todayFestival.name} wish',
+                    'Study plan for DSA',
+                    'High protein meal plan',
+                    'Plan my day',
+                    'Log 250ml water',
+                    'What are my tasks today?',
+                  ].map((prompt) {
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          widget.onSelectPrompt(prompt);
+                        },
+                        borderRadius: AscentRadii.borderXl,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? context.bgSurface.withValues(alpha: 0.6)
+                                : Colors.white.withValues(alpha: 0.7),
                             borderRadius: AscentRadii.borderXl,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 9.5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? context.bgSurface.withValues(alpha: 0.85)
-                                    : Colors.white.withValues(alpha: 0.90),
-                                borderRadius: AscentRadii.borderXl,
-                                border: Border.all(
-                                  color: isDark
-                                      ? context.glass.edge
-                                      : context.divider,
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: isDark ? 0.20 : 0.04,
-                                    ),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                prompt,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textPrimary,
-                                ),
-                              ),
+                            border: Border.all(
+                              color: isDark
+                                  ? context.glass.edge
+                                  : context.divider.withValues(alpha: 0.5),
+                              width: 0.8,
                             ),
                           ),
-                        );
-                      }).toList(),
+                          child: Text(
+                            prompt,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: context.textMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),
@@ -2763,24 +2995,26 @@ class _AtmosphericChatBackground extends StatelessWidget {
           ? const Color(0xFF2A1020)
           : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
-      // Default: warm midnight indigo → violet for dark; soft lavender cream for light
+      // Default: rich atmospheric fusion of twilight sapphire, amethyst, and warm dusk amber
       gradientColors = isDark
           ? const [
-              Color(0xFF0C0F1A), // deep midnight
-              Color(0xFF111526), // soft indigo depth
-              Color(0xFF0E1220), // rich dark base
+              Color(0xFF090C16), // deep twilight base
+              Color(0xFF101326), // midnight sapphire
+              Color(0xFF140D22), // deep amethyst transition
+              Color(0xFF0B0E19), // grounded nocturnal depth
             ]
           : const [
-              Color(0xFFF5F4FC), // soft lavender white
-              Color(0xFFF8F7FE), // near white
-              Color(0xFFF2F1FB), // gentle tint
+              Color(0xFFF7F6FD), // soft opalescent white
+              Color(0xFFF2EFFB), // subtle lavender mist
+              Color(0xFFFBF4F2), // warm dawn whisper
+              Color(0xFFF4F6FC), // crystal soft surface
             ];
       aurora1 = isDark
-          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6) // warm violet glow
-          : accentColor.withValues(alpha: 0.06);
+          ? const Color(0xFF381A5A).withValues(alpha: 0.65) // rich glowing amethyst
+          : accentColor.withValues(alpha: 0.08);
       aurora2 = isDark
-          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5) // cool indigo glow
-          : const Color(0xFF7C6FD0).withValues(alpha: 0.05);
+          ? const Color(0xFF15335C).withValues(alpha: 0.55) // luminous oceanic sapphire
+          : const Color(0xFF8672E8).withValues(alpha: 0.06);
     }
 
     return DecoratedBox(

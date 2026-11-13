@@ -624,7 +624,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               _Divider(color: g.line),
 
               AscentSwitchRow(
-                title: 'Things hub check-ins',
+                title: 'Dayboard check-ins',
                 helper:
                     'Up to two brief bundles a day, at 11:30 and 18:30. Includes to-dos without reminders; stays quiet near scheduled alerts.',
                 value: ref.watch(thingsCheckInsEnabledProvider),

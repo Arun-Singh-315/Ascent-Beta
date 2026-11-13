@@ -1,3 +1,4 @@
+import 'ascent_press_feedback.dart';
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -148,20 +149,22 @@ class AppCard extends StatelessWidget {
       child: child,
     );
     if (onTap != null || onLongPress != null) {
-      content = Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: decoration.borderRadius?.resolve(
-            Directionality.of(context),
+      content = AscentPressFeedback(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: decoration.borderRadius?.resolve(
+              Directionality.of(context),
+            ),
+            onTap: onTap == null
+                ? null
+                : () {
+                    HapticFeedback.lightImpact();
+                    onTap!();
+                  },
+            onLongPress: onLongPress,
+            child: content,
           ),
-          onTap: onTap == null
-              ? null
-              : () {
-                  HapticFeedback.lightImpact();
-                  onTap!();
-                },
-          onLongPress: onLongPress,
-          child: content,
         ),
       );
     }
@@ -657,22 +660,25 @@ class AppTapArea extends StatelessWidget {
   final ShapeBorder? customBorder;
   final Color? splashColor, highlightColor;
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    onLongPress: onLongPress,
-    borderRadius: borderRadius,
-    customBorder: customBorder,
-    splashColor: splashColor,
-    highlightColor: highlightColor,
-    child: (onTap != null || onLongPress != null)
-        ? ConstrainedBox(
-            constraints: BoxConstraints(
-              minWidth: context.surfaces.minTapTarget,
-              minHeight: context.surfaces.minTapTarget,
-            ),
-            child: Center(widthFactor: 1, heightFactor: 1, child: child),
-          )
-        : child,
+  Widget build(BuildContext context) => AscentPressFeedback(
+    enabled: onTap != null || onLongPress != null,
+    child: InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      borderRadius: borderRadius,
+      customBorder: customBorder,
+      splashColor: splashColor,
+      highlightColor: highlightColor,
+      child: (onTap != null || onLongPress != null)
+          ? ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: context.surfaces.minTapTarget,
+                minHeight: context.surfaces.minTapTarget,
+              ),
+              child: Center(widthFactor: 1, heightFactor: 1, child: child),
+            )
+          : child,
+    ),
   );
 }
 

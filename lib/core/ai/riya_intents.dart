@@ -209,10 +209,10 @@ class RiyaIntentResolver {
             .toList(),
       );
     }
-    if (lower.contains('thought wall') &&
+    if ((lower.contains('thought wall') || lower.contains('mindspace')) &&
         (lower.contains('use') || lower.contains('help'))) {
       return const RiyaResolution(
-        command: RiyaCommand('help.feature', {'feature': 'Thought Wall'}),
+        command: RiyaCommand('help.feature', {'feature': 'Mindspace'}),
       );
     }
     const routes = {
@@ -220,6 +220,13 @@ class RiyaIntentResolver {
       'focus': '/focus',
       'interview prep': '/interview-prep',
       'thought wall': '/thought-wall',
+      'mindspace': '/thought-wall',
+      'dayboard': '/things',
+      'commitments': '/promises',
+      'growth': '/learning',
+      'pause': '/chai-break',
+      'move': '/walk',
+      'momentum': '/momentum',
       'money': '/money',
       'tasks': '/today',
       'todos': '/today',

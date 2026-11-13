@@ -1,131 +1,33 @@
+import 'dart:math' as math;
+import '../../../shared/widgets/ascent_press_feedback.dart';
+import 'home_section_heading.dart';
+import '../../../app/theme/home_design.dart';
+import 'home_capture_actions.dart';
+import '../../../core/providers/local_day_provider.dart';
+import '../../../core/learning_hub/learning_hub_provider.dart';
+import 'home_shortcut_summary.dart';
+import 'home_record_actions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../app/theme/glass_theme.dart';
-import 'home_shortcut_editor.dart';
-import '../../../app/theme/dimension_tokens.dart';
-import '../../../core/providers/database_provider.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../app/theme/shared_control_tokens.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../../core/database/app_database.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../promises/providers/promise_providers.dart';
+import 'home_shortcut_editor.dart';
+import 'home_shortcut_icon.dart';
+import 'home_shortcuts.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_switch.dart';
+export 'home_shortcuts.dart';
 
-class HomeShortcutItem {
-  final String id;
-  final String label;
-  final IconData icon;
-  final String route;
-
-  const HomeShortcutItem({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.route,
-  });
-}
-
-const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
-  'promises': HomeShortcutItem(
-    id: 'promises',
-    label: 'Promises',
-    icon: Icons.bookmark_added_outlined,
-    route: '/promises',
-  ),
-  'today': HomeShortcutItem(
-    id: 'today',
-    label: 'Today',
-    icon: Icons.calendar_today_rounded,
-    route: '/today',
-  ),
-  'thought-wall': HomeShortcutItem(
-    id: 'thought-wall',
-    label: 'Mind Space',
-    icon: Icons.lightbulb_outline_rounded,
-    route: '/thought-wall',
-  ),
-  'mind': HomeShortcutItem(
-    id: 'thought-wall',
-    label: 'Mind Space',
-    icon: Icons.lightbulb_outline_rounded,
-    route: '/thought-wall',
-  ),
-  'learning': HomeShortcutItem(
-    id: 'learning',
-    label: 'Learning',
-    icon: Icons.school_outlined,
-    route: '/learning',
-  ),
-  'reminders': HomeShortcutItem(
-    id: 'reminders',
-    label: 'Reminders',
-    icon: Icons.notifications_none_rounded,
-    route: '/reminders',
-  ),
-  'money': HomeShortcutItem(
-    id: 'money',
-    label: 'Money',
-    icon: Icons.account_balance_wallet_outlined,
-    route: '/money',
-  ),
-  'focus': HomeShortcutItem(
-    id: 'focus',
-    label: 'Focus',
-    icon: Icons.timer_outlined,
-    route: '/focus',
-  ),
-  'medicine': HomeShortcutItem(
-    id: 'medicine',
-    label: 'Medicine',
-    icon: Icons.medication_outlined,
-    route: '/medicine',
-  ),
-  'hydration': HomeShortcutItem(
-    id: 'hydration',
-    label: 'Water',
-    icon: Icons.water_drop_outlined,
-    route: '/hydration',
-  ),
-  'health': HomeShortcutItem(
-    id: 'hydration',
-    label: 'Water',
-    icon: Icons.water_drop_outlined,
-    route: '/hydration',
-  ),
-  'walk': HomeShortcutItem(
-    id: 'walk',
-    label: 'Walk',
-    icon: Icons.directions_walk_rounded,
-    route: '/walk',
-  ),
-  'chai-break': HomeShortcutItem(
-    id: 'chai-break',
-    label: 'Breaks',
-    icon: Icons.coffee_outlined,
-    route: '/chai-break',
-  ),
-  'momentum': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Challenges',
-    icon: Icons.flag_outlined,
-    route: '/momentum',
-  ),
-  'challenge': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Challenges',
-    icon: Icons.flag_outlined,
-    route: '/momentum',
-  ),
-  'vault': HomeShortcutItem(
-    id: 'vault',
-    label: 'Vault',
-    icon: Icons.shield_outlined,
-    route: '/vault',
-  ),
-};
-
-/// Dynamic top shortcut bar on Home (up to four user-customized shortcuts)
-/// featuring live glanceable count badges for tasks, thoughts, and reminders.
-class HomeShortcutPanel extends ConsumerWidget {
+/// Four personal doorways and immediately visible reminder context.
+class HomeShortcutPanel extends ConsumerStatefulWidget {
   const HomeShortcutPanel({
     super.key,
     this.shortcuts,
@@ -133,327 +35,769 @@ class HomeShortcutPanel extends ConsumerWidget {
     this.badgeCounts,
     this.activeShortcutId,
     this.onSelectShortcut,
+    this.showReminders = false,
+    this.reminders,
   });
-
-  /// The list of shortcut IDs configured by user (e.g. from HomeLayout.shortcuts).
   final List<String>? shortcuts;
-
-  /// Optional direct items override (e.g. for testing).
   final List<HomeShortcutItem>? shortcutItems;
-
-  /// Optional manual badge count override map for testing or explicit mocking.
   final Map<String, int>? badgeCounts;
-
-  /// Currently selected shortcut ID (if any) filtering the Home feed below.
   final String? activeShortcutId;
-
-  /// Callback when a shortcut is tapped to filter Home or toggle back to home.
   final ValueChanged<String?>? onSelectShortcut;
+  final bool showReminders;
+  final List<Reminder>? reminders;
+
+  @override
+  ConsumerState<HomeShortcutPanel> createState() => _HomeShortcutPanelState();
+}
+
+class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
+  bool _showYesterdayReport = false;
 
   List<HomeShortcutItem> _resolveItems() {
-    if (shortcutItems != null) {
-      return shortcutItems!.take(4).toList();
+    if (widget.shortcutItems != null) {
+      return widget.shortcutItems!.take(4).toList();
     }
-    final raw =
-        shortcuts ?? const ['thought-wall', 'hydration', 'momentum', 'vault'];
-    final items = <HomeShortcutItem>[];
-    for (final id in raw) {
+    final raw = widget.shortcuts;
+    final list = (raw == null || raw.contains('chai-break'))
+        ? const ['focus', 'hydration', 'assistant', 'vault']
+        : raw;
+    final result = <HomeShortcutItem>[];
+    for (final id in list) {
       final item = kRegisteredShortcuts[id];
-      if (item != null && !items.any((e) => e.route == item.route)) {
-        items.add(item);
+      if (item != null && !result.any((other) => other.route == item.route)) {
+        result.add(item);
       }
-      if (items.length >= 4) break;
+      if (result.length == 4) break;
     }
-    return items;
+    return result;
   }
 
-  int _resolveBadgeCount(WidgetRef ref, String id) {
-    if (badgeCounts != null && badgeCounts!.containsKey(id)) {
-      return badgeCounts![id] ?? 0;
+  String _compactBadgeValue(String summary, int? explicitCount) {
+    if (explicitCount != null) return '$explicitCount';
+    final trimmed = summary.trim();
+    if (trimmed.isEmpty || trimmed == '…') return '';
+    final match = RegExp(
+      r'^(\d+(?:\.\d+)?(?:\/\d+)?|\₹\S+)',
+    ).firstMatch(trimmed);
+    if (match != null) {
+      final val = match.group(1)!;
+      if (val == '0' || val == '0/0') return '';
+      return val;
     }
-    switch (id) {
-      case 'today':
-        return ref
-                .watch(todayActivitiesProvider)
-                .value
-                ?.where(
-                  (a) =>
-                      a.status != TodayActivityStatus.done &&
-                      a.completedAt == null,
-                )
-                .length ??
-            0;
-      case 'thought-wall':
-      case 'mind':
-        return ref.watch(todayThoughtsCountStreamProvider).value ?? 0;
-      case 'reminders':
-        return ref
-                .watch(allRemindersProvider)
-                .value
-                ?.where((r) => r.isActive)
-                .length ??
-            0;
-      case 'promises':
-        return ref.watch(activePromisesStreamProvider).value?.length ?? 0;
-      case 'hydration':
-      case 'health':
-        final ml = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-        return ml > 0 ? (ml ~/ 250) : 0;
-      case 'medicine':
-        return ref.watch(todayMedicineLogsStreamProvider).value?.length ?? 0;
-      default:
-        return 0;
-    }
-  }
-
-  static Color _getMineralColor(String id, bool isDark) {
-    switch (id) {
-      case 'thought-wall':
-      case 'mind':
-        return isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1); // Twilight Indigo
-      case 'hydration':
-      case 'health':
-        return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7); // Glacial Sky
-      case 'momentum':
-      case 'challenge':
-        return isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706); // Solar Amber
-      case 'promises':
-        return isDark ? const Color(0xFFFB7185) : const Color(0xFFE11D48); // Champagne Rose
-      case 'today':
-        return isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C); // Warm Tangerine
-      case 'chai-break':
-        return isDark ? const Color(0xFFF59E0B) : const Color(0xFFB45309); // Honeyed Cinnamon
-      case 'medicine':
-        return isDark ? const Color(0xFF34D399) : const Color(0xFF059669); // Glacial Eucalyptus
-      case 'money':
-        return isDark ? const Color(0xFFFACC15) : const Color(0xFFCA8A04); // Matte Brass
-      case 'focus':
-        return isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED); // Muted Lavender
-      case 'learning':
-        return isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB); // Deep Iris
-      case 'reminders':
-        return isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626); // Sunset Coral
-      case 'vault':
-      default:
-        return isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B); // Titanium Slate
-    }
+    if (trimmed.toLowerCase() == 'locked') return '';
+    if (trimmed.toLowerCase() == 'not started') return '';
+    if (trimmed.length <= 4 && trimmed != '0') return trimmed;
+    return '';
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = HomeDesign.of(context).primaryText;
+    final accentColor = dark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
     final items = _resolveItems();
+    final List<Reminder> upcoming = widget.showReminders
+        ? (widget.reminders ??
+              ref.watch<List<Reminder>>(homeVisibleRemindersProvider))
+        : <Reminder>[];
+    final day = ref.watch(localDayProvider);
+    final older = upcoming.where((r) => r.scheduledAt.isBefore(day)).toList();
+    final today = upcoming.where((r) => !r.scheduledAt.isBefore(day)).toList();
+    final assistant = items.any((item) => item.id == 'assistant')
+        ? ref.watch(assistantNameProvider)
+        : 'Riya';
 
-    if (items.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    SharedPreferences? prefs;
+    try {
+      prefs = ref.watch(sharedPreferencesProvider);
+    } catch (_) {}
+    final todayKey = DateFormat('yyyy-MM-dd').format(day);
+    final isPinned = prefs?.getBool('ascent_yesterday_report_pinned') ?? false;
 
-    return Padding(
-      key: const ValueKey('home_shortcut_panel'),
-      padding: const EdgeInsets.only(top: 10, bottom: 6),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
-                width: 1.2,
-              ),
-              color: Colors.transparent,
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              AscentDimensions.spaceSm,
-              42,
-              AscentDimensions.spaceSm,
-              10,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: items.map((item) {
-                final count = _resolveBadgeCount(ref, item.id);
-                final isSelected = activeShortcutId == item.id;
-                final mineral = _getMineralColor(item.id, isDark);
-                return Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      key: ValueKey('shortcut_${item.id}'),
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        if (onSelectShortcut != null) {
-                          onSelectShortcut!(isSelected ? null : item.id);
-                        } else {
-                          context.push(item.route);
-                        }
-                      },
+    return Stack(
+      children: [
+        Container(
+          key: const ValueKey('home_shortcut_panel'),
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HomeSectionHeading(
+                title: 'Your space',
+                showIndicator: false,
+                leading: null,
+                trailing: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    key: const ValueKey('home_add'),
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      showHomeCaptureActions(context);
+                    },
+                    child: CustomPaint(
+                      painter: _DashedCircleBorderPainter(
+                        color: g.line.withValues(alpha: dark ? 0.7 : 0.8),
+                        strokeWidth: 1.2,
+                        dashes: 18,
+                      ),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: isSelected
-                            ? BoxDecoration(
-                                color: mineral.withValues(
-                                  alpha: isDark ? 0.20 : 0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: mineral.withValues(alpha: 0.5),
-                                  width: 1.0,
-                                ),
-                              )
-                            : null,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Stack(
-                              clipBehavior: Clip.none,
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isSelected
-                                        ? mineral.withValues(
-                                            alpha: isDark ? 0.25 : 0.16,
-                                          )
-                                        : mineral.withValues(
-                                            alpha: isDark ? 0.10 : 0.07,
-                                          ),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? mineral.withValues(alpha: 0.7)
-                                          : mineral.withValues(
-                                              alpha: isDark ? 0.22 : 0.15,
-                                            ),
-                                      width: 1.0,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      item.icon,
-                                      size: 19,
-                                      color: isSelected
-                                          ? mineral
-                                          : (isDark
-                                              ? mineral.withValues(alpha: 0.95)
-                                              : mineral),
-                                    ),
-                                  ),
-                                ),
-                                if (count > 0)
-                                  Positioned(
-                                    top: -5,
-                                    right: -8,
-                                    child: Container(
-                                      key: ValueKey(
-                                        'shortcut_badge_${item.id}',
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1.5,
-                                      ),
-                                      constraints: const BoxConstraints(
-                                        minWidth: 16,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: mineral.withValues(
-                                          alpha: isDark ? 0.35 : 0.22,
-                                        ),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: mineral.withValues(alpha: 0.45),
-                                          width: 1.0,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          child: Text(
-                                            count > 99 ? '99+' : '$count',
-                                            style: TextStyle(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w700,
-                                              color: g.ink,
-                                              height: 1.1,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              item.label,
-                              style: TextStyle(
-                                color: g.inkSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.1,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.add_rounded,
+                          size: 20,
+                          color: g.ink,
                         ),
                       ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-          ),
-          Positioned(
-            right: 6,
-            top: 0,
-            child: IconButton(
-              key: const ValueKey('edit_home_shortcuts'),
-              tooltip: 'Add or remove shortcuts',
-              onPressed: () => showHomeShortcutEditor(context),
-              icon: const Icon(Icons.add_rounded, size: 20),
-            ),
-          ),
-          Positioned(
-            top: -9,
-            left: 20,
-            child: Container(
-              key: const ValueKey('shortcut_legend_title'),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF161618)
-                    : const Color(0xFFF2F2F7),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFF1C1C1E),
-                  width: 1.0,
                 ),
               ),
+              AnimatedSize(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 320),
+            curve: Curves.easeInOutCubic,
+            child: _showYesterdayReport
+                ? Container(
+                    key: const ValueKey('yesterday_report_card'),
+                    margin: const EdgeInsets.only(top: 8, bottom: 14),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: HomeDesign.of(context).separator,
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: g.clay.withValues(alpha: 0.12),
+                              ),
+                              child: Icon(
+                                Icons.auto_stories_rounded,
+                                size: 16,
+                                color: g.clay,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Yesterday’s Reflection',
+                                    style: TextStyle(
+                                      color: ink,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  Text(
+                                    'A thoughtful recap of your day',
+                                    style: TextStyle(
+                                      color: HomeDesign.of(
+                                        context,
+                                      ).secondaryText,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: ink,
+                              ),
+                              tooltip: 'Close reflection',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () =>
+                                  setState(() => _showYesterdayReport = false),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Focus & Rhythm',
+                          style: TextStyle(
+                            color: ink,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'A steady and composed rhythm guided your morning into evening. Intentions received deliberate attention without haste, fostering mental balance.',
+                          style: TextStyle(
+                            color: HomeDesign.of(context).secondaryText,
+                            fontSize: 13,
+                            height: 1.45,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Mind & Recovery',
+                          style: TextStyle(
+                            color: ink,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Pauses between milestones provided clarity. Important thoughts were safeguarded gently, allowing a restful wrap-up in preparation for today.',
+                          style: TextStyle(
+                            color: HomeDesign.of(context).secondaryText,
+                            fontSize: 13,
+                            height: 1.45,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(
+                            height: 1,
+                            thickness: 0.6,
+                            color: HomeDesign.of(context).separator,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Keep report in Your Space',
+                                style: TextStyle(
+                                  color: ink,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            AscentSwitch(
+                              key: const ValueKey(
+                                'keep_yesterday_report_toggle',
+                              ),
+                              value: isPinned,
+                              onChanged: (val) {
+                                prefs?.setBool(
+                                  'ascent_yesterday_report_pinned',
+                                  val,
+                                );
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+          if (items.isEmpty)
+            AscentButton.ghost(
+              label: 'Choose shortcuts',
+              icon: Icons.add_rounded,
+              onPressed: () => showHomeShortcutEditor(context),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final large =
+                    MediaQuery.textScalerOf(context).scale(14) > 21 ||
+                    constraints.maxWidth < 250;
+
+                // Build the shortcut tiles as a Row with Expanded children
+                Widget buildTile(HomeShortcutItem item) {
+                  return Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: widget.activeShortcutId == item.id
+                            ? accentColor.withValues(alpha: .06)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        border: widget.activeShortcutId == item.id
+                            ? Border.all(color: accentColor, width: 1.2)
+                            : null,
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
+                        child: AscentPressFeedback(
+                          child: InkWell(
+                            key: ValueKey('shortcut_${item.id}'),
+                            overlayColor: WidgetStatePropertyAll(
+                              ink.withValues(alpha: .06),
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              if (widget.onSelectShortcut != null) {
+                                widget.onSelectShortcut!(
+                                  widget.activeShortcutId == item.id
+                                      ? null
+                                      : item.id,
+                                );
+                              } else {
+                                final route =
+                                    item.id == 'learning' &&
+                                        !ref
+                                            .read(learningHubProvider)
+                                            .hasStartedLearning
+                                    ? '/study-plan'
+                                    : item.route;
+                                context.push(route);
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 4,
+                              ),
+                              child: Builder(
+                                builder: (context) {
+                                  final summary =
+                                      widget.badgeCounts?.containsKey(
+                                            item.id,
+                                          ) ==
+                                          true
+                                      ? '${widget.badgeCounts![item.id]} today'
+                                      : ref.watch(
+                                          homeShortcutSummaryProvider(item.id),
+                                        );
+                                  final badge = _compactBadgeValue(
+                                    summary,
+                                    widget.badgeCounts?[item.id],
+                                  );
+                                  final tintInk = HomeShortcutIcon.inkFor(
+                                    item.id,
+                                    context,
+                                  );
+
+                                  return Column(
+                                    children: [
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        alignment: Alignment.center,
+                                        children: [
+                                          HomeShortcutIcon(
+                                            key: ValueKey(
+                                              'shortcut_icon_${item.id}',
+                                            ),
+                                            icon: item.icon,
+                                            identity: item.id,
+                                            framed: true,
+                                            selected:
+                                                widget.activeShortcutId ==
+                                                item.id,
+                                            size: 54,
+                                          ),
+                                          if (badge.isNotEmpty)
+                                            Positioned(
+                                              top: -4,
+                                              right: -4,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 1.5,
+                                                    ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 18,
+                                                      minHeight: 18,
+                                                    ),
+                                                alignment: Alignment.center,
+                                                decoration: BoxDecoration(
+                                                  color: tintInk.withValues(
+                                                    alpha: dark ? 0.25 : 0.14,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: tintInk.withValues(
+                                                      alpha: 0.35,
+                                                    ),
+                                                    width: .8,
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                  badge,
+                                                  key: ValueKey(
+                                                    'shortcut_badge_${item.id}',
+                                                  ),
+                                                  style: TextStyle(
+                                                    color: tintInk,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontFeatures: const [
+                                                      FontFeature.tabularFigures(),
+                                                    ],
+                                                    height: 1.1,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        item.id == 'assistant'
+                                            ? assistant
+                                            : item.label,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AscentTextStyles.interfaceLabel
+                                            .copyWith(
+                                              color: tintInk,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      Semantics(
+                                        key: ValueKey(
+                                          'shortcut_summary_${item.id}',
+                                        ),
+                                        label: summary,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 3,
+                                          ),
+                                          child: Text(
+                                            () {
+                                              final raw = badge.isNotEmpty &&
+                                                      summary.startsWith(badge)
+                                                  ? summary
+                                                        .substring(badge.length)
+                                                        .trim()
+                                                  : summary;
+                                              var clean = raw.replaceAll(' today', '').trim();
+                                              if (item.id == 'assistant' &&
+                                                  (clean.isEmpty || clean == '0' || clean == '…')) {
+                                                clean = '0 msgs';
+                                              } else if (item.id == 'vault' &&
+                                                  (clean.isEmpty || clean == '0' || clean == '…')) {
+                                                clean = 'Locked';
+                                              }
+                                              return clean;
+                                            }(),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.center,
+                                            style: HomeType.supporting.copyWith(
+                                              fontSize: 11,
+                                              color: HomeDesign.of(
+                                                context,
+                                              ).secondaryText,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                if (large) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (int i = 0; i < (items.length > 2 ? 2 : items.length); i++) ...[
+                              if (i > 0) const SizedBox(width: 6),
+                              buildTile(items[i]),
+                            ],
+                          ],
+                        ),
+                        if (items.length > 2) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (int i = 2; i < items.length; i++) ...[
+                                if (i > 2) const SizedBox(width: 6),
+                                buildTile(items[i]),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int i = 0; i < items.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 4),
+                        buildTile(items[i]),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          if (upcoming.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            if (older.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: AscentButton.tonal(
+                  label: '${older.length} earlier overdue',
+                  icon: Icons.history_rounded,
+                  compact: true,
+                  onPressed: () => context.push('/reminders'),
+                ),
+              ),
+            for (final reminder in today.take(2))
+              _ReminderPreview(reminder: reminder),
+            if (upcoming.length > 2)
+              Align(
+                alignment: Alignment.centerRight,
+                child: AscentButton.ghost(
+                  label: 'View all ${upcoming.length}',
+                  compact: true,
+                  onPressed: () => context.push('/reminders'),
+                ),
+              ),
+          ],
+        ],
+      ),
+    ),
+    Positioned(
+      left: 0,
+      top: 0,
+      child: Opacity(
+        opacity: 0.001,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('yesterday_report_button'),
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  setState(() {
+                    _showYesterdayReport = !_showYesterdayReport;
+                  });
+                  if (_showYesterdayReport) {
+                    prefs?.setString(
+                      'ascent_yesterday_report_seen_day',
+                      todayKey,
+                    );
+                  }
+                },
+                icon: const Icon(Icons.auto_stories_outlined),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('edit_home_shortcuts'),
+                padding: EdgeInsets.zero,
+                onPressed: () => showHomeShortcutEditor(context),
+                icon: const Icon(Icons.tune_rounded),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: IconButton(
+                key: const ValueKey('home_space_actions'),
+                padding: EdgeInsets.zero,
+                onPressed: () => showHomeCaptureActions(context),
+                icon: const Icon(Icons.more_horiz_rounded),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ],
+);
+  }
+}
+
+class _ReminderPreview extends ConsumerWidget {
+  const _ReminderPreview({required this.reminder});
+  final Reminder reminder;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final design = HomeDesign.of(context);
+    final now = DateTime.now();
+    final time = reminder.scheduledAt;
+    final overdue = time.isBefore(now);
+    final today = DateUtils.isSameDay(now, time);
+    final tomorrow = DateUtils.isSameDay(
+      now.add(const Duration(days: 1)),
+      time,
+    );
+    final day = today
+        ? 'Today'
+        : tomorrow
+        ? 'Tomorrow'
+        : DateFormat('d MMM').format(time);
+    final accentColor = overdue
+        ? (dark ? SharedControlColors.dueRedDark : SharedControlColors.dueRed)
+        : (dark
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          key: ValueKey('hub_reminder_${reminder.id}'),
+          borderRadius: BorderRadius.circular(14),
+          onLongPress: () => showHomeReminderActions(context, ref, reminder),
+          onTap: () => context.push('/reminders?reminder=${reminder.id}'),
+          child: Container(
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: dark ? 0.1 : 0.06),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: accentColor.withValues(alpha: dark ? 0.25 : 0.18),
+                width: 0.8,
+              ),
+            ),
+            child: IntrinsicHeight(
               child: Row(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.bolt_rounded, size: 11, color: g.clay),
-                  const SizedBox(width: 4),
-                  Text(
-                    'QUICK ACTIONS',
-                    style: TextStyle(
-                      color: g.inkMuted,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
+                  Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(14),
+                        bottomLeft: Radius.circular(14),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  reminder.title,
+                                  style: AscentTextStyles.listRowTitle.copyWith(
+                                    color: design.primaryText,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
+                                  style: AscentTextStyles.interfaceLabel.copyWith(
+                                    color: accentColor,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 20,
+                            color: accentColor.withValues(alpha: 0.7),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _DashedCircleBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final int dashes;
+
+  const _DashedCircleBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0,
+    this.dashes = 18,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final radius = size.width / 2;
+    final center = Offset(radius, radius);
+    final circumference = 2 * math.pi * radius;
+    final dashLength = circumference / (dashes * 2);
+    final dashAngle = dashLength / radius;
+
+    for (int i = 0; i < dashes; i++) {
+      final startAngle = i * 2 * dashAngle;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
+        startAngle,
+        dashAngle,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

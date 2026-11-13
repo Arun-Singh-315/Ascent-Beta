@@ -1,3 +1,6 @@
+import '../../../app/theme/home_design.dart';
+import '../../../core/services/note_draft_binding.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_star_button.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
@@ -28,6 +31,7 @@ class ActivityComposer extends ConsumerStatefulWidget {
 
 class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   final _text = TextEditingController();
+  NoteDraftBinding? _draft;
   FocusNode? _internalFocus;
   FocusNode get _effectiveFocus =>
       widget.focusNode ?? (_internalFocus ??= FocusNode());
@@ -43,7 +47,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void initState() {
     super.initState();
-    _text.text = widget.initialTitle ?? '';
+    if (widget.initialTitle == null) {
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        _draft = NoteDraftBinding(_text, prefs, 'home_activity');
+      } catch (_) {}
+    } else {
+      _text.text = widget.initialTitle!;
+    }
     _text.addListener(_changed);
     _effectiveFocus.addListener(_changed);
   }
@@ -54,6 +65,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
 
   @override
   void dispose() {
+    _draft?.dispose();
     _text.removeListener(_changed);
     _effectiveFocus.removeListener(_changed);
     _internalFocus?.dispose();
@@ -515,9 +527,12 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: g.line, width: .75),
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: HomeDesign.of(context).controlOutline,
+              width: 1.2,
+            ),
           ),
           padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
           child: Row(
@@ -540,7 +555,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   textCapitalization: TextCapitalization.sentences,
                   style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
                   decoration: InputDecoration(
-                    hintText: 'Add a thing…',
+                    hintText: 'Add a to-do or focus timer…',
                     hintStyle: TextStyle(color: g.inkMuted),
                     counterText: '',
                     filled: false,
@@ -583,19 +598,20 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                 tooltip: 'Add activity',
                 onPressed: _saving || !hasText ? null : _send,
                 style: IconButton.styleFrom(
-                  backgroundColor: SharedControlColors.actionBlue,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: g.ink.withValues(alpha: .08),
-                  disabledForegroundColor: g.inkMuted,
+                  backgroundColor: HomeDesign.of(context).strongSurface,
+                  foregroundColor: HomeDesign.of(context).onStrong,
+                  disabledBackgroundColor: HomeDesign.of(context).strongSurface,
+                  disabledForegroundColor: HomeDesign.of(
+                    context,
+                  ).onStrong.withValues(alpha: .5),
+                  shape: const CircleBorder(),
+                  minimumSize: const Size(44, 44),
                 ),
                 icon: _saving
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.arrow_upward_rounded, size: 20),
               ),

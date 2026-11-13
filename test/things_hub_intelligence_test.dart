@@ -8,7 +8,6 @@ import 'package:ascent/features/today/models/things_intelligence.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/features/today/widgets/things_hero_card.dart';
 import 'package:ascent/features/today/widgets/things_interactive_card.dart';
-import 'package:ascent/shared/widgets/glass_chip.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +25,8 @@ TodayActivityItem makeActivity({
   String sourceType = 'task',
   String priority = 'normal',
   int? linkedTaskId,
+  bool isOverdue = false,
+  DateTime? scheduledTime,
 }) =>
     TodayActivityItem(
       id: id,
@@ -39,6 +40,8 @@ TodayActivityItem makeActivity({
       targetMinutes: targetMinutes,
       priority: priority,
       linkedTaskId: linkedTaskId,
+      isOverdue: isOverdue,
+      scheduledTime: scheduledTime,
     );
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -240,118 +243,119 @@ void main() {
     });
   });
 
-  group('ThingsHubScreen Smart Cognitive Lenses Filtering', () {
-    testWidgets('Filters tasks across cognitive lenses: Quick Wins, Deep Focus, Life & Errands', (
-      tester,
-    ) async {
-      final taskQuick = makeActivity(
-        id: 'act_quick',
-        title: 'Call doctor for prescription refill',
-      );
-      final taskFocus = makeActivity(
-        id: 'act_focus',
-        title: 'Solve Leetcode Hard Dynamic Programming',
-        kind: ActivityKind.duration,
-        targetMinutes: 60,
-      );
-      final taskErrand = makeActivity(
-        id: 'act_errand',
-        title: 'Buy groceries and milk',
-      );
+  group('ThingsHubScreen activity filtering', () {
+    testWidgets(
+      'Status headings filter scheduled and anytime things',
+      (tester) async {
+        final taskQuick = makeActivity(
+          id: 'act_quick',
+          title: 'Call doctor for prescription refill',
+        );
+        final taskFocus = makeActivity(
+          id: 'act_focus',
+          title: 'Solve Leetcode Hard Dynamic Programming',
+          scheduledTime: DateTime.now().add(const Duration(hours: 1)),
+          kind: ActivityKind.duration,
+          targetMinutes: 60,
+        );
+        final taskErrand = makeActivity(
+          id: 'act_errand',
+          title: 'Buy groceries and milk',
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayActivitiesProvider.overrideWith(
-            (ref) => Stream.value([taskQuick, taskFocus, taskErrand]),
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(
+              () => _FakeTimeTrackingNotifier(),
+            ),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            todayActivitiesProvider.overrideWith(
+              (ref) => Stream.value([taskQuick, taskFocus, taskErrand]),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const ThingsHubScreen(),
+            ),
           ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const ThingsHubScreen(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Expand lenses if collapsed
-      final toggleLenses = find.byKey(const ValueKey('things_hub_toggle_lenses'));
-      if (find.widgetWithText(GlassChip, '⚡ Quick Wins').evaluate().isEmpty) {
-        await tester.tap(toggleLenses);
+        );
         await tester.pumpAndSettle();
-      }
-
-      // All chips rendered
-      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '🎯 Deep Focus'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '🏃 Life & Errands'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '🌙 Wind-down'), findsOneWidget);
-
-      // Tap '🎯 Deep Focus' filter chip
-      await tester.tap(find.widgetWithText(GlassChip, '🎯 Deep Focus'));
-      await tester.pumpAndSettle();
-
-      // Only Deep Focus item matches
-      expect(find.text('Solve Leetcode Hard Dynamic Programming'), findsOneWidget);
-      expect(find.text('Buy groceries and milk'), findsNothing);
-
-      // Tap '🏃 Life & Errands' filter chip
-      await tester.tap(find.widgetWithText(GlassChip, '🏃 Life & Errands'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Buy groceries and milk'), findsOneWidget);
-      expect(find.text('Solve Leetcode Hard Dynamic Programming'), findsNothing);
-    });
-
-    testWidgets('Day progress line shows completion percentage and bar in Things Hub', (
-      tester,
-    ) async {
-      final doneTask = makeActivity(
-        id: 'done_progress_1',
-        title: 'Completed morning routine',
-        status: TodayActivityStatus.done,
-      );
-      final pendingTask = makeActivity(
-        id: 'pending_progress_2',
-        title: 'Draft roadmap',
-        status: TodayActivityStatus.notStarted,
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayActivitiesProvider.overrideWith(
-            (ref) => Stream.value([doneTask, pendingTask]),
+        await tester.tap(find.byKey(const ValueKey('things_heading_scheduled')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Solve Leetcode Hard Dynamic Programming'),
+          findsOneWidget,
+        );
+        expect(find.text('Buy groceries and milk'), findsNothing);
+        await tester.tap(find.byKey(const ValueKey('things_heading_anytime')));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Buy groceries and milk'),
+          100,
+          scrollable: find.descendant(
+            of: find.byKey(const ValueKey('things_list_now')),
+            matching: find.byType(Scrollable),
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+        );
+        expect(find.text('Buy groceries and milk'), findsOneWidget);
+        expect(
+          find.text('Solve Leetcode Hard Dynamic Programming'),
+          findsNothing,
+        );
+      },
+    );
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const ThingsHubScreen(),
+    testWidgets(
+      'Day summary shows remaining and completed totals in Things Hub',
+      (tester) async {
+        final doneTask = makeActivity(
+          id: 'done_progress_1',
+          title: 'Completed morning routine',
+          status: TodayActivityStatus.done,
+        );
+        final pendingTask = makeActivity(
+          id: 'pending_progress_2',
+          title: 'Draft roadmap',
+          status: TodayActivityStatus.notStarted,
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(
+              () => _FakeTimeTrackingNotifier(),
+            ),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            todayActivitiesProvider.overrideWith(
+              (ref) => Stream.value([doneTask, pendingTask]),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const ThingsHubScreen(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Day progress line: "1 of 2 finished · 50%"
-      expect(find.text('1 of 2 finished · 50%'), findsOneWidget);
-    });
+        // Day totals stay clear without repeating a percentage.
+        expect(find.text('1 remaining · 1 completed'), findsOneWidget);
+      },
+    );
   });
 }

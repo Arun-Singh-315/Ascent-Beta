@@ -63,7 +63,7 @@ void main() {
       expect(find.text('Swipe'), findsNothing);
 
       // Confirm interactive 'Next' button is present
-      final nextButton = find.widgetWithText(TextButton, 'Next');
+      final nextButton = find.text('Next');
       expect(nextButton, findsOneWidget);
 
       // Confirm Honest Numbers: does not display raw '0m' or '0' counters in pulse items
@@ -75,15 +75,15 @@ void main() {
       await tester.pumpAndSettle();
 
       // On Page 2, Next button is still present
-      expect(find.widgetWithText(TextButton, 'Next'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
 
       // Tap Next button to advance to Page 3 (Launchpad)
-      await tester.tap(find.widgetWithText(TextButton, 'Next'));
+      await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
       // On Page 3 (final page), 'Next' is replaced by 'Done'
-      expect(find.widgetWithText(TextButton, 'Next'), findsNothing);
-      expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
+      expect(find.text('Next'), findsNothing);
+      expect(find.text('Done'), findsOneWidget);
     });
   });
 
@@ -109,8 +109,7 @@ void main() {
 
       expect(find.textContaining('🚀'), findsNothing);
       expect(find.textContaining('👍'), findsNothing);
-      expect(find.text('Add First Activity'), findsOneWidget);
-      expect(find.text('Got it'), findsOneWidget);
+      expect(find.text('Choose your first small step'), findsOneWidget);
     });
   });
 

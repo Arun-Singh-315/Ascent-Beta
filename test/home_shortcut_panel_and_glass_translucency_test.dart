@@ -1,11 +1,8 @@
+import 'package:ascent/features/home/widgets/home_shortcut_summary.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/merlot_palette.dart';
-import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:ascent/shared/widgets/ascent_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +12,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late SharedPreferences shortcutPrefs;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    shortcutPrefs = await SharedPreferences.getInstance();
+  });
   Widget buildTestApp(
     Widget child, {
     double width = 390,
@@ -22,6 +24,10 @@ void main() {
     double textScale = 1.0,
   }) {
     return ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(shortcutPrefs),
+        homeShortcutSummaryProvider.overrideWith((ref, id) => '0 today'),
+      ],
       child: MediaQuery(
         data: MediaQueryData(
           size: Size(width, height),
@@ -43,9 +49,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
-      expect(find.text('Mind Space'), findsOneWidget);
+      expect(find.text('Focus'), findsOneWidget);
       expect(find.text('Water'), findsOneWidget);
-      expect(find.text('Challenges'), findsOneWidget);
+      expect(find.text('Riya'), findsOneWidget);
       expect(find.text('Vault'), findsOneWidget);
     });
 
@@ -59,7 +65,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Growth'), findsOneWidget);
       expect(find.text('Mind Space'), findsNothing);
       expect(find.text('Vault'), findsNothing);
     });
@@ -78,19 +84,21 @@ void main() {
 
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Growth'), findsOneWidget);
       expect(find.text('Money'), findsOneWidget);
       expect(find.text('Focus'), findsOneWidget);
       expect(find.text('Walk'), findsNothing);
     });
 
-    testWidgets('hides panel when empty list provided', (tester) async {
+    testWidgets('empty shortcuts retain an editing entry point', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(const HomeShortcutPanel(shortcuts: [])),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('home_shortcut_panel')), findsNothing);
+      expect(find.text('Choose shortcuts'), findsOneWidget);
     });
 
     testWidgets('immune to overflow at 320px width with 2.0x text scale', (
@@ -112,7 +120,7 @@ void main() {
     });
 
     testWidgets(
-      'renders badge counters for active counts and hides when zero',
+      'counts appear above shortcut icons without duplicate summaries',
       (tester) async {
         await tester.pumpWidget(
           buildTestApp(
@@ -129,34 +137,30 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Badges for positive counts should appear
-        expect(
-          find.byKey(const ValueKey('shortcut_badge_today')),
-          findsOneWidget,
-        );
-        expect(find.text('5'), findsOneWidget);
-
-        expect(
-          find.byKey(const ValueKey('shortcut_badge_thought-wall')),
-          findsOneWidget,
-        );
-        expect(find.text('3'), findsOneWidget);
-
-        expect(
-          find.byKey(const ValueKey('shortcut_badge_promises')),
-          findsOneWidget,
-        );
-        expect(find.text('12'), findsOneWidget);
-
-        // Badge for 0 count should NOT appear
-        expect(
-          find.byKey(const ValueKey('shortcut_badge_reminders')),
-          findsNothing,
-        );
+        for (final (id, count) in [
+          ('today', '5'),
+          ('thought-wall', '3'),
+          ('promises', '12'),
+          ('reminders', '0'),
+        ]) {
+          final badge = find.byKey(ValueKey('shortcut_badge_$id'));
+          expect(badge, findsOneWidget);
+          expect(tester.widget<Text>(badge).data, count);
+          final icon = find.byKey(ValueKey('shortcut_icon_$id'));
+          expect(
+            tester.getTopLeft(badge).dy,
+            lessThan(tester.getTopLeft(icon).dy),
+          );
+          expect(
+            tester.getCenter(badge).dx,
+            greaterThan(tester.getCenter(icon).dx),
+          );
+          expect(find.text('$count today'), findsNothing);
+        }
       },
     );
 
-    testWidgets('caps badge counter at 99+ when count exceeds 99', (
+    testWidgets('large counts remain visible as shortcut badges', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -173,36 +177,33 @@ void main() {
         find.byKey(const ValueKey('shortcut_badge_today')),
         findsOneWidget,
       );
-      expect(find.text('99+'), findsOneWidget);
+      expect(find.text('99+'), findsNothing);
     });
 
-    testWidgets(
-      'badges remain immune to overflow at 320px width with 2.0x text scale',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestApp(
-            const HomeShortcutPanel(
-              shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
-              badgeCounts: {
-                'today': 24,
-                'thought-wall': 18,
-                'reminders': 9,
-                'promises': 150,
-              },
-            ),
-            width: 320,
-            textScale: 2.0,
+    testWidgets('shortcut values remain visible at large text', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const HomeShortcutPanel(
+            shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
+            badgeCounts: {
+              'today': 24,
+              'thought-wall': 18,
+              'reminders': 9,
+              'promises': 150,
+            },
           ),
-        );
-        await tester.pumpAndSettle();
+          width: 320,
+          textScale: 2.0,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
-        expect(find.text('24'), findsOneWidget);
-        expect(find.text('18'), findsOneWidget);
-        expect(find.text('9'), findsOneWidget);
-        expect(find.text('99+'), findsOneWidget);
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(find.text('24'), findsOneWidget);
+      expect(find.text('18'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('99+'), findsNothing);
+    });
   });
 
   group('Glass Translucency Selection UI Tests', () {

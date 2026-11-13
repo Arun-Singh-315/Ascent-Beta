@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
-import '../../../shared/widgets/ascent_dialog.dart';
-import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../models/promise_model.dart';
@@ -155,85 +153,10 @@ class PromiseCard extends ConsumerWidget {
                     ],
                   ),
                 ),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_horiz_rounded,
-                    color: g.inkMuted,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  onSelected: (val) async {
-                    if (val == 'lock') {
-                      HapticFeedback.lightImpact();
-                      ref
-                          .read(unlockedPromiseIdsProvider.notifier)
-                          .lock(promise.id);
-                      return;
-                    }
-                    final messenger = ScaffoldMessenger.of(context);
-                    try {
-                      final repo = ref.read(promiseRepositoryProvider);
-                      if (val == 'toggle_pause') {
-                        final newStatus = promise.isPaused
-                            ? PromiseStatus.active
-                            : PromiseStatus.paused;
-                        await repo.setPromiseStatus(promise.id, newStatus);
-                      } else if (val == 'delete') {
-                        final confirmed = await AscentDialog.confirm(
-                          context: context,
-                          title: 'Delete this promise?',
-                          content:
-                              'Are you sure you want to delete "${promise.title}"? Its progress history will also be archived.',
-                          confirmLabel: 'Delete',
-                          cancelLabel: 'Keep',
-                          isDestructive: true,
-                          icon: Icons.delete_outline_rounded,
-                        );
-                        if (confirmed == true) {
-                          await repo.deletePromise(promise.id);
-                          if (context.mounted) {
-                            AscentSnackBar.show(
-                              context,
-                              message: 'Promise deleted',
-                            );
-                          }
-                        }
-                      }
-                    } catch (_) {
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Could not save this change. Please try again.',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    if (promise.isPrivate && !isLocked)
-                      const PopupMenuItem(
-                        value: 'lock',
-                        child: Row(
-                          children: [
-                            Icon(Icons.lock_outline_rounded, size: 16),
-                            SizedBox(width: 8),
-                            Text('Lock commitment'),
-                          ],
-                        ),
-                      ),
-                    if (!promise.isCompleted)
-                      PopupMenuItem(
-                        value: 'toggle_pause',
-                        child: Text(promise.isPaused ? 'Resume' : 'Pause'),
-                      ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
+                IconButton(
+                  tooltip: 'Commitment actions',
+                  icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted, size: 20),
+                  onPressed: () => showPromiseActionMenu(context, promise, locked: isLocked),
                 ),
               ],
             ),

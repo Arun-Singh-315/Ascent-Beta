@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import 'database_provider.dart';
 import 'settings_provider.dart';
+import 'local_day_provider.dart';
 
 DateTime briefingDay(DateTime date) =>
     DateTime(date.year, date.month, date.day);
@@ -22,10 +23,14 @@ final dailyBriefingProvider = FutureProvider.autoDispose
     .family<DailyBriefing, DateTime>((ref, day) async {
       final tasks = await ref.watch(_briefingTasksProvider.future);
       final sessions = await ref.watch(_briefingSessionsProvider(day).future);
+      final reminders = await ref.watch(allRemindersProvider.future);
+      final now = ref.watch(localClockProvider);
       return DailyBriefing.fromRecords(
         day: day,
         tasks: tasks,
         sessions: sessions,
+        reminders: reminders,
+        now: now,
       );
     });
 
@@ -40,6 +45,12 @@ class DailyBriefing {
     required this.overdue,
     required this.unscheduled,
     this.nextTask,
+    this.nextTaskId,
+    this.firstOverdueTaskId,
+    this.firstUnscheduledTaskId,
+    this.focusTasks = const [],
+    this.remindersToday = 0,
+    this.nextReminder,
   });
 
   final int completedYesterday;
@@ -50,30 +61,67 @@ class DailyBriefing {
   final int overdue;
   final int unscheduled;
   final String? nextTask;
+  final int? nextTaskId, firstOverdueTaskId, firstUnscheduledTaskId;
+  final List<Task> focusTasks;
+  final int remindersToday;
+  final Reminder? nextReminder;
 
   factory DailyBriefing.fromRecords({
     required DateTime day,
     required List<Task> tasks,
     required List<TimeSession> sessions,
+    List<Reminder> reminders = const [],
+    DateTime? now,
   }) {
     final today = briefingDay(day);
     final yesterday = DateTime(today.year, today.month, today.day - 1);
     bool yesterdayDate(DateTime? date) =>
         date != null && !date.isBefore(yesterday) && date.isBefore(today);
-    final planned = tasks.where((t) => yesterdayDate(t.plannedDate));
-    final pending = tasks.where((t) => t.actualCompletedDate == null);
+    final visibleTasks = tasks.where((t) => !t.isArchived).toList();
+    final planned = visibleTasks.where((t) => yesterdayDate(t.plannedDate));
+    final pending = visibleTasks.where((t) => t.actualCompletedDate == null);
     final due = pending
         .where(
-          (t) => t.plannedDate != null && briefingDay(t.plannedDate!) == today,
+          (t) =>
+              t.isDailyStanding ||
+              (t.plannedDate != null && briefingDay(t.plannedDate!) == today),
         )
         .toList();
     final overdue = pending
-        .where((t) => t.plannedDate != null && t.plannedDate!.isBefore(today))
+        .where(
+          (t) =>
+              !t.isDailyStanding &&
+              t.plannedDate != null &&
+              t.plannedDate!.isBefore(today),
+        )
         .toList();
-    final unscheduled = pending.where((t) => t.plannedDate == null).toList();
+    final unscheduled = pending
+        .where((t) => !t.isDailyStanding && t.plannedDate == null)
+        .toList();
+    int order(Task a, Task b) {
+      final dateOrder = (a.plannedDate ?? a.createdAt).compareTo(
+        b.plannedDate ?? b.createdAt,
+      );
+      if (dateOrder != 0) return dateOrder;
+      final createdOrder = a.createdAt.compareTo(b.createdAt);
+      return createdOrder != 0 ? createdOrder : a.id.compareTo(b.id);
+    }
+
+    due.sort(order);
+    overdue.sort(order);
+    unscheduled.sort(order);
     final candidates = [...due, ...overdue, ...unscheduled];
+    final todayReminders =
+        reminders
+            .where((r) => r.isActive && briefingDay(r.scheduledAt) == today)
+            .toList()
+          ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final clock = now ?? DateTime.now();
+    final upcoming = todayReminders
+        .where((r) => !r.scheduledAt.isBefore(clock))
+        .toList();
     return DailyBriefing(
-      completedYesterday: tasks
+      completedYesterday: visibleTasks
           .where((t) => yesterdayDate(t.actualCompletedDate))
           .length,
       plannedYesterday: planned.length,
@@ -95,6 +143,12 @@ class DailyBriefing {
       overdue: overdue.length,
       unscheduled: unscheduled.length,
       nextTask: candidates.isEmpty ? null : candidates.first.title,
+      nextTaskId: candidates.isEmpty ? null : candidates.first.id,
+      firstOverdueTaskId: overdue.isEmpty ? null : overdue.first.id,
+      firstUnscheduledTaskId: unscheduled.isEmpty ? null : unscheduled.first.id,
+      focusTasks: List.unmodifiable(candidates.take(3)),
+      remindersToday: todayReminders.length,
+      nextReminder: upcoming.isEmpty ? null : upcoming.first,
     );
   }
 
@@ -138,7 +192,9 @@ class DailyBriefing {
       if (dueToday > 0) '${_plural(dueToday, 'thing')} due today',
       if (overdue > 0) '${_plural(overdue, 'task')} carried over',
     ];
-    final start = nextTask == null ? '' : ' A good place to begin: “$nextTask”.';
+    final start = nextTask == null
+        ? ''
+        : ' A good place to begin: “$nextTask”.';
     if (parts.isEmpty && nextTask == null) {
       return 'Your day is wide open. Capture what is on your mind, or pick one small thing to begin.';
     }

@@ -15,29 +15,26 @@ import 'package:ascent/features/onboarding/onboarding_shell.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test(
-    'quick start survives restart without invented profile or pipeline records',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          databaseProvider.overrideWithValue(db),
-        ],
-      );
-      expect(
-        await container.read(onboardingProvider.notifier).startWithoutSetup(),
-        isTrue,
-      );
-      expect(prefs.getBool('ascent_quick_start_v1'), isTrue);
-      expect(await db.userProfileDao.getProfile(), isNull);
-      expect(await db.applicationDao.watchAllApplications().first, isEmpty);
-      container.dispose();
-      await db.close();
-    },
-  );
+  test('onboarding cannot bypass mandatory identity details', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        databaseProvider.overrideWithValue(db),
+      ],
+    );
+    expect(
+      await container.read(onboardingProvider.notifier).startWithoutSetup(),
+      isFalse,
+    );
+    expect(prefs.getBool('ascent_quick_start_v1'), isNull);
+    expect(await db.userProfileDao.getProfile(), isNull);
+    expect(await db.applicationDao.watchAllApplications().first, isEmpty);
+    container.dispose();
+    await db.close();
+  });
   test(
     'note drafts persist Unicode, restore on reopening and clear only after a saved note',
     () async {
@@ -59,7 +56,7 @@ void main() {
       reopened.dispose();
     },
   );
-  testWidgets('Quick Start reaches daily tools with no profile values', (
+  testWidgets('Required details keep incomplete setup out of daily tools', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -91,8 +88,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('onboarding_next')));
     await tester.pumpAndSettle();
-    expect(find.text('Daily tools ready'), findsOneWidget);
-    expect(canEnterWorkspace(null, prefs), isTrue);
+    expect(find.text('Daily tools ready'), findsNothing);
+    expect(canEnterWorkspace(null, prefs), isFalse);
     await tester.pumpWidget(const SizedBox());
     router.dispose();
   });

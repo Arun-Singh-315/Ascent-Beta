@@ -1,3 +1,8 @@
+import 'home_section_heading.dart';
+import '../../../app/theme/home_design.dart';
+import 'home_content_transition.dart';
+import 'home_record_actions.dart';
+import 'home_capture_entrance.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import 'home_outline_surface.dart';
@@ -29,11 +34,12 @@ import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
 import '../../thought_wall/thought_wall_appearance_sheet.dart';
+import '../../../core/services/festival_service.dart';
 import 'dart:convert';
 
-/// Level 3 · Supporting: Mind Space
+/// Level 3 · Supporting: Mindspace
 /// Redesigned according to Ascent Home Redesign spec:
-/// - Prominent capture field and a permanent doorway to Thought Wall.
+/// - Prominent capture field and a permanent doorway to Mindspace.
 /// - Glass thought bubble for latest reflection.
 /// - 44dp hit targets.
 class ThoughtWallHomePreview extends ConsumerStatefulWidget {
@@ -56,6 +62,7 @@ class _ThoughtWallHomePreviewState
     extends ConsumerState<ThoughtWallHomePreview> {
   final _controller = TextEditingController();
   bool _saving = false;
+  int? _lastSentThoughtId;
   final Set<int> _seenThoughtIds = <int>{};
   bool _listSeen = false;
 
@@ -107,7 +114,7 @@ class _ThoughtWallHomePreviewState
     if (content.isEmpty || _saving) return;
     setState(() => _saving = true);
     try {
-      await ref
+      final createdId = await ref
           .read(thoughtDaoProvider)
           .insertThought(
             ThoughtTableCompanion.insert(
@@ -116,7 +123,10 @@ class _ThoughtWallHomePreviewState
             ),
           );
       if (mounted) {
-        setState(() => _saving = false);
+        setState(() {
+          _saving = false;
+          _lastSentThoughtId = createdId;
+        });
         if (_controller.text.trim() == content) _controller.clear();
         FocusScope.of(context).unfocus();
       }
@@ -280,10 +290,12 @@ class _ThoughtWallHomePreviewState
   }
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: ThoughtTheme.from(Theme.of(context)),
-    child: Builder(builder: _buildThoughtSpace),
-  );
+  Widget build(BuildContext context) => widget.compact
+      ? _compactHome(context)
+      : Theme(
+          data: ThoughtTheme.from(Theme.of(context)),
+          child: Builder(builder: _buildThoughtSpace),
+        );
 
   Widget _buildThoughtSpace(BuildContext context) {
     if (widget.compact) return _compactHome(context);
@@ -472,51 +484,131 @@ class _ThoughtWallHomePreviewState
                   ),
                 );
               }
+              final todayFestival = ref.watch(todayFestivalProvider);
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSparkChip(
-                      icon: Icons.lightbulb_outline_rounded,
-                      label: 'Spark an idea',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '💡 ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.emoji_events_outlined,
-                      label: 'Log a win',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '🎯 Win: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.edit_note_rounded,
-                      label: 'Reflect',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = 'Reflecting on: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
+                    if (todayFestival != null) ...[
+                      Container(
+                        key: const ValueKey('festival_default_thought_card'),
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: todayFestival.accentColor.withValues(
+                            alpha: 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: todayFestival.accentColor.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  todayFestival.emoji,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    '${todayFestival.name} Reflection',
+                                    style: AscentTextStyles.labelMedium
+                                        .copyWith(
+                                          color: context.isDark
+                                              ? const Color(0xFFFDE68A)
+                                              : const Color(0xFF92400E),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              todayFestival.thought,
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: g.ink.withValues(alpha: 0.85),
+                                fontStyle: FontStyle.italic,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (!widget.compact)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (todayFestival != null)
+                            _buildSparkChip(
+                              icon: Icons.auto_awesome_rounded,
+                              label:
+                                  '${todayFestival.emoji} ${todayFestival.name}',
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                _controller.text =
+                                    '${todayFestival.emoji} ${todayFestival.name}: ';
+                                _controller
+                                    .selection = TextSelection.fromPosition(
+                                  TextPosition(offset: _controller.text.length),
+                                );
+                                _focusNode.requestFocus();
+                              },
+                              g: g,
+                            ),
+                          _buildSparkChip(
+                            icon: Icons.lightbulb_outline_rounded,
+                            label: 'Spark an idea',
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _controller.text = '💡 ';
+                              _controller
+                                  .selection = TextSelection.fromPosition(
+                                TextPosition(offset: _controller.text.length),
+                              );
+                              _focusNode.requestFocus();
+                            },
+                            g: g,
+                          ),
+                          _buildSparkChip(
+                            icon: Icons.emoji_events_outlined,
+                            label: 'Log a win',
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _controller.text = '🎯 Win: ';
+                              _controller
+                                  .selection = TextSelection.fromPosition(
+                                TextPosition(offset: _controller.text.length),
+                              );
+                              _focusNode.requestFocus();
+                            },
+                            g: g,
+                          ),
+                          _buildSparkChip(
+                            icon: Icons.edit_note_rounded,
+                            label: 'Reflect',
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              _controller.text = 'Reflecting on: ';
+                              _controller
+                                  .selection = TextSelection.fromPosition(
+                                TextPosition(offset: _controller.text.length),
+                              );
+                              _focusNode.requestFocus();
+                            },
+                            g: g,
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               );
@@ -561,7 +653,6 @@ class _ThoughtWallHomePreviewState
             }
 
             final titleColor = g.inkMuted;
-            final actionAccentColor = g.clay;
             final thoughtTextColor = g.ink;
             final thoughtTextMutedColor = g.inkMuted;
             final bubbleAccentColor = g.clay;
@@ -653,7 +744,7 @@ class _ThoughtWallHomePreviewState
                           0.4,
                         );
 
-                  return _ThoughtEntrance(
+                  return HomeCaptureEntrance(
                     key: ValueKey('home_thought_entrance_${thought.id}'),
                     animate: isNew,
                     child: Padding(
@@ -1009,20 +1100,6 @@ class _ThoughtWallHomePreviewState
                       child: _draftActions(pendingDraft),
                     ),
                   ),
-                if (!widget.compact)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: actionAccentColor,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        context.push('/thought-wall');
-                      },
-                      child: const Text('View ›'),
-                    ),
-                  ),
               ],
             );
 
@@ -1055,14 +1132,16 @@ class _ThoughtWallHomePreviewState
       );
     }
 
+    final todayFestival = ref.watch(todayFestivalProvider);
     final hasThoughts =
         (recentThoughtsAsync.value?.isNotEmpty ?? false) ||
-        pendingDraft != null;
+        pendingDraft != null ||
+        todayFestival != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // "Mind palace" heading + doorway to the Thought Wall sit above the card.
+        // "Mind palace" heading + doorway to the Mindspace sit above the card.
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 6),
           child: LayoutBuilder(
@@ -1088,12 +1167,11 @@ class _ThoughtWallHomePreviewState
                     ),
                     onPressed: () => _showBubbleStyleSheet(context),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      context.push('/thought-wall');
-                    },
-                    child: const Text('View ›'),
+                  const SizedBox(width: 4),
+                  HomeSectionArrowButton(
+                    tooltip: 'Open Mindspace',
+                    color: const Color(0xFF7C5CB7),
+                    onTap: () => context.push('/thought-wall'),
                   ),
                 ],
               );
@@ -1143,353 +1221,349 @@ class _ThoughtWallHomePreviewState
         !unlocked.contains(latest.id) &&
         (privateIds.contains(latest.id) ||
             !ref.watch(allPromisesStreamProvider).hasValue);
-    return Container(
-      key: const ValueKey('home_thought_studio'),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: g.ink.withValues(alpha: .035),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: g.ink.withValues(alpha: .09)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Thought Wall',
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Open Thought Wall',
-                onPressed: () => context.push('/thought-wall'),
-                icon: Icon(Icons.north_east_rounded, size: 21, color: g.ink),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (widget.showComposer)
-            Container(
-              decoration: BoxDecoration(
-                color: context.isDark
-                    ? Theme.of(context).colorScheme.surface
-                    : (g.merlot
-                          ? MerlotPalette.surface
-                          : (g.frozen
-                                ? const Color(0xFFFBFDFF)
-                                : const Color(0xFFFFFDFB))),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: _focusNode.hasFocus
-                      ? SharedControlColors.actionBlue
-                      : g.ink.withValues(alpha: .10),
-                  width: _focusNode.hasFocus ? 1.5 : .75,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (_focusNode.hasFocus ? g.clay : Colors.black)
-                        .withValues(alpha: context.isDark ? 0.18 : 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
-              child: Row(
-                children: [
-                  InlineListAddButton(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    enabled: !_saving,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: TextField(
-                      key: _fieldKey,
-                      controller: _controller,
-                      focusNode: _focusNode,
-                      minLines: 1,
-                      maxLines: 3,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: AppTypography.plusJakartaSans14W60080(
-                        color: g.ink,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'What’s on your mind?',
-                        hintStyle: TextStyle(
-                          color: g.inkMuted,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        filled: false,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton.filled(
-                    tooltip: 'Send capture',
-                    onPressed: _saving || _controller.text.trim().isEmpty
-                        ? null
-                        : _send,
-                    style: IconButton.styleFrom(
-                      backgroundColor: SharedControlColors.actionBlue,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: g.ink.withValues(alpha: .08),
-                      disabledForegroundColor: g.inkMuted,
-                      minimumSize: const Size(44, 44),
-                    ),
-                    icon: const Icon(Icons.arrow_upward_rounded, size: 19),
-                  ),
-                ],
+    return HomeContentTransition(
+      child: Container(
+        key: const ValueKey('home_thought_studio'),
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        decoration: HomeSurfaceStyle.mind(context),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            HomeSectionHeading(
+              title: 'Mindspace',
+              dotColor: HomeDesign.of(context).mindInk,
+              titleColor: HomeDesign.of(context).mindInk,
+              centered: false,
+              trailing: HomeSectionArrowButton(
+                tooltip: 'Open Mindspace',
+                framed: false,
+                diagonal: true,
+                color: const Color(0xFF7C5CB7),
+                onTap: () => context.push('/thought-wall'),
               ),
             ),
-          if (latest != null)
-            Padding(
-              padding: EdgeInsets.only(
-                top: widget.showComposer ? 12.0 : 0.0,
-                right: 0,
+            const SizedBox(height: 12),
+            if (widget.showComposer)
+              Container(
+                decoration: BoxDecoration(
+                  color: HomeDesign.of(context).surface.withValues(alpha: .55),
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(
+                    color: _focusNode.hasFocus
+                        ? SharedControlColors.actionBlue
+                        : HomeDesign.of(context).mindEdge,
+                    width: _focusNode.hasFocus ? 1.5 : 1.2,
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
+                child: Row(
+                  children: [
+                    InlineListAddButton(
+                      controller: _controller,
+                      focusNode: _focusNode,
+                      enabled: !_saving,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: TextField(
+                        key: _fieldKey,
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        minLines: 1,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: AscentTextStyles.interfaceBody.copyWith(
+                          color: g.ink,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'What’s on your mind?',
+                          hintStyle: TextStyle(
+                            color: g.inkMuted,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          filled: false,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton.filled(
+                      tooltip: 'Send capture',
+                      onPressed: _saving || _controller.text.trim().isEmpty
+                          ? null
+                          : _send,
+                      style: IconButton.styleFrom(
+                        backgroundColor: HomeDesign.of(context).strongSurface,
+                        foregroundColor: HomeDesign.of(context).onStrong,
+                        disabledBackgroundColor: HomeDesign.of(
+                          context,
+                        ).strongSurface,
+                        disabledForegroundColor: HomeDesign.of(
+                          context,
+                        ).onStrong.withValues(alpha: .5),
+                        shape: const CircleBorder(),
+                        minimumSize: const Size(40, 40),
+                      ),
+                      icon: const Icon(Icons.arrow_upward_rounded, size: 20),
+                    ),
+                  ],
+                ),
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Dismissible(
-                  key: ValueKey('home_thought_dismiss_${latest.id}'),
-                  direction: DismissDirection.endToStart,
-                  confirmDismiss: (direction) async {
-                    HapticFeedback.mediumImpact();
-                    final thoughtDao = ref.read(thoughtDaoProvider);
-                    final messenger = ScaffoldMessenger.of(context);
-                    final snapshot = await thoughtDao.deleteThoughtForUndo(
-                      latest.id,
-                    );
-                    if (snapshot == null) return false;
-
-                    Future<void> restore() async {
-                      try {
-                        if (!await thoughtDao.restoreThoughtDeletion(
-                              snapshot,
-                            ) &&
-                            messenger.mounted) {
-                          messenger.hideCurrentSnackBar();
-                          messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Undo is no longer available.'),
-                            ),
-                          );
+            if (latest != null)
+              HomeCaptureEntrance(
+                key: ValueKey('home_recent_entrance_${latest.id}'),
+                animate: latest.id == _lastSentThoughtId,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: widget.showComposer ? 12.0 : 0.0,
+                    right: 0,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Dismissible(
+                      key: ValueKey('home_thought_dismiss_${latest.id}'),
+                      direction: locked
+                          ? DismissDirection.none
+                          : DismissDirection.endToStart,
+                      confirmDismiss: (direction) async {
+                        if (!await confirmHomeThoughtDeletion(context) ||
+                            !context.mounted) {
+                          return false;
                         }
-                      } catch (_) {
+                        HapticFeedback.mediumImpact();
+                        final thoughtDao = ref.read(thoughtDaoProvider);
+                        final messenger = ScaffoldMessenger.of(context);
+                        final snapshot = await thoughtDao.deleteThoughtForUndo(
+                          latest.id,
+                        );
+                        if (snapshot == null) return false;
+
+                        Future<void> restore() async {
+                          try {
+                            if (!await thoughtDao.restoreThoughtDeletion(
+                                  snapshot,
+                                ) &&
+                                messenger.mounted) {
+                              messenger.hideCurrentSnackBar();
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Undo is no longer available.'),
+                                ),
+                              );
+                            }
+                          } catch (_) {
+                            if (messenger.mounted) {
+                              messenger.hideCurrentSnackBar();
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Could not restore the thought.',
+                                  ),
+                                  action: SnackBarAction(
+                                    label: 'Retry',
+                                    onPressed: restore,
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        }
+
                         if (messenger.mounted) {
                           messenger.hideCurrentSnackBar();
                           messenger.showSnackBar(
                             SnackBar(
-                              content: const Text(
-                                'Could not restore the thought.',
-                              ),
+                              content: const Text('Thought deleted'),
+                              duration: const Duration(seconds: 4),
+                              behavior: SnackBarBehavior.floating,
                               action: SnackBarAction(
-                                label: 'Retry',
+                                label: 'Undo',
                                 onPressed: restore,
                               ),
                             ),
                           );
                         }
-                      }
-                    }
-
-                    if (messenger.mounted) {
-                      messenger.hideCurrentSnackBar();
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: const Text('Thought deleted'),
-                          duration: const Duration(seconds: 4),
-                          behavior: SnackBarBehavior.floating,
-                          action: SnackBarAction(
-                            label: 'Undo',
-                            onPressed: restore,
-                          ),
-                        ),
-                      );
-                    }
-                    return true;
-                  },
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 14),
-                    decoration: BoxDecoration(
-                      color: SharedControlColors.errorSoftBg(context.isDark),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Delete',
-                          style: TextStyle(
-                            color: SharedControlColors.errorInk(context.isDark),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.delete_outline_rounded,
-                          color: SharedControlColors.errorInk(context.isDark),
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      key: const ValueKey('home_latest_thought_bubble'),
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () =>
-                          context.push('/thought-wall?thought=${latest.id}'),
-                      child: Container(
+                        return true;
+                      },
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 14),
                         decoration: BoxDecoration(
-                          color: context.isDark
-                              ? Theme.of(context).colorScheme.surface
-                              : (g.merlot
-                                    ? MerlotPalette.surface
-                                    : (g.frozen
-                                          ? const Color(0xFFF4F7FB)
-                                          : const Color(0xFFFBF9F5))),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: g.ink.withValues(alpha: .10),
-                            width: 1.0,
+                          color: SharedControlColors.errorSoftBg(
+                            context.isDark,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: (context.isDark ? Colors.black : g.clay)
-                                  .withValues(
-                                    alpha: context.isDark ? 0.2 : 0.04,
-                                  ),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 3,
-                              height: 20,
-                              margin: const EdgeInsets.only(right: 10),
-                              decoration: BoxDecoration(
-                                color: g.clay,
-                                borderRadius: BorderRadius.circular(2),
+                            Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: SharedControlColors.errorInk(
+                                  context.isDark,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.5,
                               ),
                             ),
-                            if (locked)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 7),
-                                child: Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 15,
-                                  color: g.ink,
-                                ),
-                              ),
-                            Flexible(
-                              child: Text(
-                                locked
-                                    ? 'Private thought'
-                                    : ThoughtExcerpt.displayContent(
-                                        latest.content,
-                                      ),
-                                key: const ValueKey('home_latest_thought_text'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.sourceSerif4(
-                                  color: g.ink,
-                                  fontSize: 17,
-                                  fontStyle: FontStyle.italic,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 15,
-                              color: g.inkMuted,
+                              Icons.delete_outline_rounded,
+                              color: SharedControlColors.errorInk(
+                                context.isDark,
+                              ),
+                              size: 18,
                             ),
                           ],
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          key: const ValueKey('home_latest_thought_bubble'),
+                          borderRadius: BorderRadius.circular(16),
+                          onLongPress: () => showHomeThoughtActions(
+                            context,
+                            ref,
+                            latest,
+                            locked: locked,
+                          ),
+                          onTap: () => context.push(
+                            '/thought-wall?thought=${latest.id}',
+                          ),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.transparent,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 10,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 3,
+                                  height: 20,
+                                  margin: const EdgeInsets.only(right: 10),
+                                  decoration: BoxDecoration(
+                                    color: SharedControlColors.actionBlue,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                if (locked)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 7),
+                                    child: Icon(
+                                      Icons.lock_outline_rounded,
+                                      size: 15,
+                                      color: g.ink,
+                                    ),
+                                  ),
+                                Flexible(
+                                  child: Text(
+                                    locked
+                                        ? 'Private thought'
+                                        : ThoughtExcerpt.displayContent(
+                                            latest.content,
+                                          ),
+                                    key: const ValueKey(
+                                      'home_latest_thought_text',
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.sourceSerif4(
+                                      color: g.ink,
+                                      fontSize: 17,
+                                      fontStyle: FontStyle.italic,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  tooltip: 'Thought actions',
+                                  icon: Icon(
+                                    Icons.more_horiz_rounded,
+                                    size: 20,
+                                    color: g.inkMuted,
+                                  ),
+                                  onPressed: () => showHomeThoughtActions(
+                                    context,
+                                    ref,
+                                    latest,
+                                    locked: locked,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _buildSparkChip(
+                      icon: Icons.lightbulb_outline_rounded,
+                      label: 'Spark an idea',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = '💡 ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                    _buildSparkChip(
+                      icon: Icons.emoji_events_outlined,
+                      label: 'Log a win',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = '🎯 Win: ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                    _buildSparkChip(
+                      icon: Icons.edit_note_rounded,
+                      label: 'Reflect',
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        _controller.text = 'Reflecting on: ';
+                        _controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _controller.text.length),
+                        );
+                        _focusNode.requestFocus();
+                      },
+                      g: g,
+                    ),
+                  ],
+                ),
               ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  _buildSparkChip(
-                    icon: Icons.lightbulb_outline_rounded,
-                    label: 'Spark an idea',
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _controller.text = '💡 ';
-                      _controller.selection = TextSelection.fromPosition(
-                        TextPosition(offset: _controller.text.length),
-                      );
-                      _focusNode.requestFocus();
-                    },
-                    g: g,
-                  ),
-                  _buildSparkChip(
-                    icon: Icons.emoji_events_outlined,
-                    label: 'Log a win',
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _controller.text = '🎯 Win: ';
-                      _controller.selection = TextSelection.fromPosition(
-                        TextPosition(offset: _controller.text.length),
-                      );
-                      _focusNode.requestFocus();
-                    },
-                    g: g,
-                  ),
-                  _buildSparkChip(
-                    icon: Icons.edit_note_rounded,
-                    label: 'Reflect',
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _controller.text = 'Reflecting on: ';
-                      _controller.selection = TextSelection.fromPosition(
-                        TextPosition(offset: _controller.text.length),
-                      );
-                      _focusNode.requestFocus();
-                    },
-                    g: g,
-                  ),
-                ],
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1504,25 +1578,24 @@ class _ThoughtWallHomePreviewState
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(28),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: g.fill,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: g.line, width: 0.8),
+            color: HomeDesign.of(context).mindTint.withValues(alpha: .55),
+            borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: g.clay),
+              Icon(icon, size: 16, color: HomeDesign.of(context).mindInk),
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: g.ink,
+                  color: HomeDesign.of(context).mindInk,
                 ),
               ),
             ],
@@ -1556,66 +1629,3 @@ class _ThoughtWallHomePreviewState
 /// Drops a freshly saved thought in from the composer: it slides down, settles
 /// with a soft overshoot and fades in. Thoughts already on screen (first load,
 /// reorders) are shown instantly. Honors the system "reduce motion" setting.
-class _ThoughtEntrance extends StatefulWidget {
-  const _ThoughtEntrance({
-    super.key,
-    required this.animate,
-    required this.child,
-  });
-
-  final bool animate;
-  final Widget child;
-
-  @override
-  State<_ThoughtEntrance> createState() => _ThoughtEntranceState();
-}
-
-class _ThoughtEntranceState extends State<_ThoughtEntrance>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 650),
-    value: widget.animate ? 0 : 1,
-  );
-  bool _started = false;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (!widget.animate) return;
-    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
-      _controller.value = 1;
-    } else {
-      _controller.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _controller,
-    child: widget.child,
-    builder: (context, child) {
-      final fade = Curves.easeOutCubic.transform(_controller.value);
-      final settle = Curves.easeOutBack.transform(_controller.value);
-      return Opacity(
-        opacity: fade.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, -28 * (1 - settle)),
-          child: Transform.scale(
-            scale: 0.94 + 0.06 * settle,
-            alignment: Alignment.topCenter,
-            child: child,
-          ),
-        ),
-      );
-    },
-  );
-}

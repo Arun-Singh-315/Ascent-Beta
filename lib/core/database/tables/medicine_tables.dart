@@ -13,6 +13,11 @@ class MedicineTable extends Table {
   /// Medicine name (e.g. 'Paracetamol 500mg', 'Vitamin D3', 'Amoxicillin')
   TextColumn get name => text().withLength(min: 1, max: 200)();
 
+  /// Optional personal treatment context; old schedules remain ungrouped.
+  IntColumn get carePlanId =>
+      integer().nullable().references(CarePlanTable, #id)();
+  TextColumn get purpose => text().withDefault(const Constant(''))();
+
   /// Dosage description (e.g. '1 Tablet', '5 ml', '1 Capsule')
   TextColumn get dosage => text().withLength(min: 1, max: 100)();
 
@@ -35,8 +40,7 @@ class MedicineTable extends Table {
   /// Whether this medication schedule is currently active
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// Table tracking daily dose compliance and completions.
@@ -70,6 +74,35 @@ class MedicineLogTable extends Table {
   /// Timestamp when dose was taken
   DateTimeColumn get takenAt => dateTime().nullable()();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A personal folder for one health concern. Archiving never stops medicines.
+@DataClassName('CarePlan')
+class CarePlanTable extends Table {
+  @override
+  String get tableName => 'care_plans';
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get title => text().withLength(min: 1, max: 200)();
+  TextColumn get person => text().withDefault(const Constant('My care'))();
+  TextColumn get clinician => text().withDefault(const Constant(''))();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get nextVisit => dateTime().nullable()();
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Dated, user-entered evidence; attachments are copied into app-private storage.
+@DataClassName('CareRecord')
+class CareRecordTable extends Table {
+  @override
+  String get tableName => 'care_records';
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get carePlanId => integer().references(CarePlanTable, #id)();
+  TextColumn get title => text().withLength(min: 1, max: 200)();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get recordedAt => dateTime()();
+  TextColumn get filePath => text().nullable()();
+  TextColumn get fileName => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

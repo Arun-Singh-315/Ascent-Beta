@@ -1,9 +1,13 @@
+import '../../app/theme/home_design.dart';
+import 'widgets/home_section_heading.dart';
+import '../plans/widgets/home_plans_preview.dart';
+import 'widgets/home_module_row.dart';
+import 'widgets/home_content_transition.dart';
+import '../../core/providers/local_day_provider.dart';
 import 'widgets/home_promise_section.dart';
-import '../reminders/reminder_action_ui.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../app/theme/surface_tokens.dart';
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,15 +27,15 @@ import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/daily_welcome_dialog.dart';
 import '../../core/services/daily_welcome_service.dart';
 import '../../core/providers/daily_briefing_provider.dart';
-import 'widgets/home_atmosphere.dart';
+import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
-import '../promises/providers/promise_providers.dart';
-import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
-import 'widgets/ascent_dynamic_island.dart';
+import 'widgets/home_compact_header.dart';
+import 'widgets/home_calendar.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
+import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/smart_catch_up_banner.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/thought_wall_home_preview.dart';
@@ -45,7 +49,11 @@ class HomeScreen extends StatelessWidget {
   final Uri? notificationUri;
 
   @override
-  Widget build(BuildContext context) => Theme(
+  Widget build(BuildContext context) => AnimatedTheme(
+    duration: Duration(
+      milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 320,
+    ),
+    curve: Curves.easeInOutCubic,
     data: HomeTheme.from(Theme.of(context)),
     child: _HomeContent(notificationUri: notificationUri),
   );
@@ -65,8 +73,33 @@ bool _welcomeBackShownThisLaunch = false;
 
 class _HomeScreenState extends ConsumerState<_HomeContent>
     with WidgetsBindingObserver {
-  DateTime _briefingDate = briefingDay(DateTime.now());
-  Timer? _dayTimer;
+  final _homeScroll = ScrollController();
+  final _headerKey = GlobalKey();
+  final _headerCollapse = ValueNotifier<double>(0);
+  double _expandedHeaderHeight = 280;
+
+  void _updateCompactHeader() {
+    final render = _headerKey.currentContext?.findRenderObject();
+    if (render is RenderBox && render.hasSize) {
+      _expandedHeaderHeight = render.size.height;
+    }
+    if (!_homeScroll.hasClients) return;
+    final start = (_expandedHeaderHeight - 76).clamp(0.0, double.infinity);
+    final value = ((_homeScroll.offset - start) / 64).clamp(0.0, 1.0);
+    if (_headerCollapse.value != value) _headerCollapse.value = value;
+  }
+
+  void _returnToTop() {
+    if (!_homeScroll.hasClients) return;
+    _homeScroll.animateTo(
+      0,
+      duration: Duration(
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 1 : 280,
+      ),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
   bool _entryDialogsReady = false;
@@ -75,7 +108,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _scheduleDayChange();
+    _homeScroll.addListener(_updateCompactHeader);
     final daysAway = ref.read(daysSinceLastOpenProvider);
     if (!_welcomeBackShownThisLaunch && daysAway >= 3 && daysAway < 999) {
       _welcomeBackShownThisLaunch = true;
@@ -118,10 +151,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
           );
           await markDailyWelcomeSeen(preferences, DateTime.now());
           if (!mounted) return;
-          await DayOneTutorialDialog.show(
-            context,
-            userName: profile?.name ?? '',
-          );
+          // First capture lives in Home, with no blocking welcome overlay.
           return;
         }
 
@@ -155,34 +185,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _dayTimer?.cancel();
+    _homeScroll.removeListener(_updateCompactHeader);
+    _homeScroll.dispose();
+    _headerCollapse.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _refreshBriefingDay();
-    }
-  }
-
-  void _refreshBriefingDay() {
-    final day = briefingDay(DateTime.now());
-    if (mounted && day != _briefingDate) {
-      setState(() {
-        _briefingDate = day;
-      });
-    }
-    _scheduleDayChange();
-  }
-
-  void _scheduleDayChange() {
-    _dayTimer?.cancel();
-    final now = DateTime.now();
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    _dayTimer = Timer(tomorrow.difference(now), () {
-      _refreshBriefingDay();
-    });
   }
 
   @override
@@ -190,7 +196,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final g = context.glass;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateCompactHeader();
+    });
     final layout = ref.watch(homeLayoutProvider);
+    ref.watch(localHourProvider);
     ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
@@ -210,11 +220,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     return Scaffold(
       backgroundColor: g.bg,
       body: SafeArea(
-        child: HomeAtmosphereBackground(
+        child: HomeDayBackground(
           child: Stack(
             children: [
               Positioned.fill(
                 child: profileAsync.when(
+                  skipLoadingOnReload: true,
+                  skipLoadingOnRefresh: true,
+                  skipError: true,
                   loading: () => const _HomeLoadingView(),
                   error: (err, _) {
                     debugPrint('Home profile load failed: $err');
@@ -266,53 +279,100 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                       },
                       color: g.clay,
                       child: ListView(
+                        key: const ValueKey('home_scroll'),
+                        controller: _homeScroll,
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(
-                          left: AppSpace.s24,
-                          right: AppSpace.s24,
-                          top: AppSpace.s16,
+                          left: 0,
+                          right: 0,
+                          top: 0,
                           bottom: AppSpace.s96,
                         ),
                         children: [
-                          HomeHeader(profile: profile),
-                          const AnimatedSize(
-                            duration: Duration(milliseconds: 260),
-                            curve: Curves.easeOutCubic,
-                            alignment: Alignment.topCenter,
-                            child: AscentDynamicIsland(),
+                          HomeHeader(key: _headerKey, profile: profile),
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
+                              0,
+                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
+                              16,
+                            ),
+                            child: HomeShortcutPanel(
+                              shortcuts: layout.shortcuts,
+                              showReminders: layout.visible.contains(
+                                'reminders',
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: _sectionPadding(context),
+                            child: HomeCalendar(),
                           ),
                           if (layout.visible.contains('today'))
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 28),
+                              padding: _sectionPadding(context),
                               child: ActivityHubCard(
                                 previewLimit: layout.compact.contains('today')
-                                    ? 2
-                                    : 3,
+                                    ? 3
+                                    : 6,
                               ),
                             ),
                           if (layout.visible.contains('mind'))
-                            const Padding(
-                              padding: EdgeInsets.only(bottom: 28),
+                            Padding(
+                              padding: _sectionPadding(context),
                               child: ThoughtWallHomePreview(
                                 previewLimit: 1,
                                 compact: true,
                               ),
                             ),
+                          if (layout.visible.contains('life') &&
+                              layout.tools.isNotEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              child: HomeLifeShelf(),
+                            ),
+                          Padding(
+                            padding: _sectionPadding(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                HomeSectionHeading(
+                                  title: 'Plans & Routines',
+                                  dotColor: HomeDesign.of(context).learningInk,
+                                  titleColor: HomeDesign.of(
+                                    context,
+                                  ).learningInk,
+                                  trailing: HomeSectionArrowButton(
+                                    tooltip: 'Open all plans',
+                                    framed: false,
+                                    color: HomeDesign.of(context).learningInk,
+                                    onTap: () => context.push('/plans'),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const HomePlansPreview(
+                                  key: ValueKey('home_plans_big_card'),
+                                ),
+                              ],
+                            ),
+                          ),
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
                           ),
-                          ..._buildContextualModules(context, layout),
-                          if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty)
-                            const HomeLifeShelf(),
-                          // Favorites navigate to their own space instead of
-                          // replacing the feed with another copy of its cards.
-                          HomeShortcutPanel(shortcuts: layout.shortcuts),
+                          ..._buildContextualModules(context, layout).map(
+                            (module) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: module,
+                            ),
+                          ),
                           if (_entryDialogsReady &&
                               ref
                                       .read(sharedPreferencesProvider)
                                       .getString('ascent_first_home_day_v1') !=
-                                  _briefingDate.toIso8601String())
+                                  ref.watch(localDayProvider).toIso8601String())
                             const SmartCatchUpBanner(),
                           if (layout.visible.isEmpty)
                             EmptyState(
@@ -328,8 +388,37 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                   },
                 ),
               ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _headerCollapse,
+                  builder: (context, value, _) {
+                    if (value <= 0 || profileAsync.value == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return IgnorePointer(
+                      ignoring: value < .8,
+                      child: ExcludeSemantics(
+                        excluding: value < .8,
+                        child: Opacity(
+                          opacity: value,
+                          child: Transform.translate(
+                            offset: Offset(0, -8 * (1 - value)),
+                            child: HomeCompactHeader(
+                              name: profileAsync.value?.name ?? '',
+                              onReturnToTop: _returnToTop,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
               // Return-user greeting: floats at the top for a few seconds and
-              // never pushes the Things hub down, positioned below header controls.
+              // never pushes the Dayboard down, positioned below header controls.
               if (_welcomeBackDays != null)
                 Positioned(
                   top: 96,
@@ -350,64 +439,35 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     );
   }
 
+  EdgeInsets _sectionPadding(BuildContext context) {
+    final margin = MediaQuery.sizeOf(context).width < 360 ? 16.0 : 20.0;
+    return EdgeInsets.fromLTRB(margin, 0, margin, 24);
+  }
+
   List<Widget> _buildContextualModules(
     BuildContext context,
     HomeLayout layout,
   ) {
     final modules = <Widget>[];
-    Widget spaced(Widget child) =>
-        Padding(padding: const EdgeInsets.only(bottom: 28), child: child);
-    // Reminders have a single home. Do not repeat them in a top glance.
-    if (layout.visible.contains('reminders')) {
-      final reminders = ref.watch(homeVisibleRemindersProvider);
-      if (reminders.isNotEmpty) {
-        modules.add(
-          spaced(
-            HomeDismissibleRemindersSection(
-              reminders: reminders,
-              onAddReminder: () => context.push('/reminders'),
-              onViewAll: () => context.push('/reminders'),
-              onDismissReminder: (r) =>
-                  runReminderAction(context, ref, r, ReminderRowAction.delete),
-              onCompleteReminder: (r) =>
-                  runReminderAction(context, ref, r, ReminderRowAction.done),
-              onSnoozeReminder: (r) =>
-                  runReminderAction(context, ref, r, ReminderRowAction.snooze),
-            ),
-          ),
-        );
-      }
-    }
+    Widget spaced(Widget child) => Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: HomeContentTransition(child: child),
+    );
     if (!_heavierModulesReady) return modules;
-    if (layout.visible.contains('learning')) {
-      final learning = ref.watch(learningHubProvider);
-      if (learning.hasStartedLearning && learning.courses.isNotEmpty) {
-        modules.add(spaced(const LearningHubCard()));
-      }
+    final growthModules = <Widget>[
+      if (layout.visible.contains('learning')) const LearningHubCard(),
+      if (layout.visible.contains('promises')) const HomePromiseSection(),
+    ];
+    if (growthModules.isNotEmpty) {
+      modules.add(spaced(HomeModuleGroup(children: growthModules)));
     }
-    if (layout.visible.contains('promises') &&
-        ref.watch(priorityPromiseProvider) != null) {
-      modules.add(spaced(const HomePromiseSection()));
-    }
-    if (layout.visible.contains('checkin') && DateTime.now().hour >= 17) {
+    if (layout.visible.contains('checkin') &&
+        ref.watch(localHourProvider) >= 17) {
       modules.add(spaced(const DailyCheckInCard()));
     }
     if (layout.visible.contains('vault') &&
         !layout.shortcuts.contains('vault')) {
-      modules.add(
-        spaced(
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              Icons.shield_outlined,
-              color: context.glass.inkSecondary,
-            ),
-            title: const Text('Your private vault'),
-            trailing: const Icon(Icons.arrow_forward_rounded, size: 20),
-            onTap: () => context.push('/vault'),
-          ),
-        ),
-      );
+      modules.add(spaced(const VaultHomePreview()));
     }
     if (layout.visible.contains('money')) {
       modules.add(
@@ -416,12 +476,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             leading: const Icon(Icons.account_balance_wallet_outlined),
             title: const Text('Quick expense'),
             trailing: const Icon(Icons.add_rounded),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const AddTransactionSheet(),
-            ),
+            onTap: () => AddTransactionSheet.show(context),
           ),
         ),
       );
@@ -438,11 +493,13 @@ class _HomeLoadingView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpace.s24),
       children: [
-        SkeletonShimmer.card(height: 50),
+        SkeletonShimmer.card(
+          height: MediaQuery.textScalerOf(context).scale(14) > 21 ? 420 : 260,
+        ),
         const SizedBox(height: 20),
-        SkeletonShimmer.card(height: 120),
+        SkeletonShimmer.card(height: 180),
         const SizedBox(height: 20),
-        SkeletonShimmer.card(height: 72),
+        SkeletonShimmer.card(height: 132),
         const SizedBox(height: 24),
         SkeletonShimmer.card(height: 180),
         const SizedBox(height: 24),

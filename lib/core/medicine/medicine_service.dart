@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../history/history_ledger.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
@@ -37,6 +38,19 @@ class MedicineService {
       throw ArgumentError(
         'Use a name, dosage, 1–366 days and unique times in HH:mm format',
       );
+    }
+  }
+
+  Future<void> _validateCare(int? planId, String purpose) async {
+    if (purpose.length > 1000) {
+      throw ArgumentError('Purpose is limited to 1000 characters');
+    }
+    if (planId != null &&
+        await (db.select(
+              db.carePlanTable,
+            )..where((p) => p.id.equals(planId))).getSingleOrNull() ==
+            null) {
+      throw StateError('Care plan no longer exists');
     }
   }
 
@@ -122,12 +136,17 @@ class MedicineService {
     required DateTime startDate,
     String instructions = 'After food',
     String type = 'tablet',
+    int? carePlanId,
+    String purpose = '',
   }) async {
     _validate(name, dosage, scheduledTimes, durationDays, instructions, type);
     final times = [...scheduledTimes]..sort();
     final id = await db.transaction(() async {
+      await _validateCare(carePlanId, purpose);
       final id = await db.medicineDao.insertMedicine(
         MedicineTableCompanion.insert(
+          carePlanId: Value(carePlanId),
+          purpose: Value(purpose.trim()),
           name: name.trim(),
           dosage: dosage.trim(),
           scheduledTimes: jsonEncode(times),
@@ -165,12 +184,18 @@ class MedicineService {
     String? instructions,
     String? type,
     bool? active,
+    Value<int?> carePlanId = const Value.absent(),
+    String? purpose,
   }) async {
     await db.transaction(() async {
       final old = await db.medicineDao.getMedicineById(id);
       if (old == null) {
         throw StateError('This medicine schedule no longer exists');
       }
+      await _validateCare(
+        carePlanId.present ? carePlanId.value : old.carePlanId,
+        purpose ?? old.purpose,
+      );
       final nextName = name?.trim() ?? old.name,
           nextDosage = dosage?.trim() ?? old.dosage;
       final times =
@@ -251,6 +276,10 @@ class MedicineService {
       await db.medicineDao.updateMedicine(
         MedicineTableCompanion(
           id: Value(id),
+          carePlanId: carePlanId,
+          purpose: purpose == null
+              ? const Value.absent()
+              : Value(purpose.trim()),
           name: Value(nextName),
           dosage: Value(nextDosage),
           scheduledTimes: Value(jsonEncode(sorted)),
@@ -287,6 +316,128 @@ class MedicineService {
   Future<void> deleteMedicine(int id) async {
     await db.medicineDao.deleteMedicine(id);
     await _alerts();
+  }
+
+  /// A one-use receipt keeps exact IDs and original dose evidence during Undo.
+  /// A workspace restore invalidates it so old records cannot enter a new workspace.
+  Future<Future<void> Function()> removeWithUndo(int id) async {
+    final revision = db.workspaceRevision;
+    late Medicine medicine;
+    late List<MedicineLog> logs;
+    late List<Task> tasks;
+    late List<Reminder> reminders;
+    late List<ThoughtReminderLink> thoughtLinks;
+    late List<TimeSession> sessions;
+    late List<HistoryEvent> history;
+    await db.transaction(() async {
+      final row = await db.medicineDao.getMedicineById(id);
+      if (row == null) throw StateError('Medicine no longer exists');
+      medicine = row;
+      logs = await db.medicineDao.watchLogsForMedicine(id).first;
+      tasks =
+          await (db.select(db.taskTable)..where(
+                (t) =>
+                    t.id.isIn(logs.map((l) => l.linkedTaskId).whereType<int>()),
+              ))
+              .get();
+      // Dose tasks can acquire descendants, extra reminders or focus history.
+      // Capture the entire connected tree instead of relying on bounded DAO caches.
+      tasks = [...tasks];
+      final taskIds = tasks.map((t) => t.id).toSet();
+      var frontier = taskIds.toList();
+      while (frontier.isNotEmpty) {
+        final children = await (db.select(
+          db.taskTable,
+        )..where((t) => t.parentTaskId.isIn(frontier))).get();
+        final fresh = children.where((t) => taskIds.add(t.id)).toList();
+        tasks.addAll(fresh);
+        frontier = fresh.map((t) => t.id).toList();
+      }
+      reminders =
+          await (db.select(db.reminderTable)..where(
+                (r) =>
+                    r.linkedTaskId.isIn(taskIds) |
+                    r.id.isIn(
+                      logs.map((l) => l.linkedReminderId).whereType<int>(),
+                    ),
+              ))
+              .get();
+      thoughtLinks = await (db.select(
+        db.thoughtReminderLinkTable,
+      )..where((l) => l.reminderId.isIn(reminders.map((r) => r.id)))).get();
+      sessions = await (db.select(
+        db.timeSessionTable,
+      )..where((s) => s.linkedTaskId.isIn(taskIds))).get();
+      history =
+          await (db.select(db.historyEventTable)..where(
+                (e) =>
+                    (e.module.equals('medicines') & e.entityId.equals('$id')) |
+                    (e.module.equals('medicine_doses') &
+                        e.entityId.isIn(logs.map((l) => '${l.id}'))) |
+                    (e.module.equals('tasks') &
+                        e.entityId.isIn(tasks.map((t) => '${t.id}'))),
+              ))
+              .get();
+      await db.medicineDao.deleteMedicine(id);
+      await (db.delete(db.historyEventTable)..where(
+            (e) =>
+                e.module.equals('tasks') &
+                e.entityId.isIn(taskIds.map((id) => '$id')),
+          ))
+          .go();
+    });
+    await _alerts();
+    var restored = false;
+    return () async {
+      if (restored) return;
+      if (revision != db.workspaceRevision) {
+        throw StateError('Workspace changed');
+      }
+      await db.transaction(() async {
+        await HistoryLedger.capture(db, false);
+        await db.into(db.medicineTable).insert(medicine.toCompanion(true));
+        for (final task in tasks) {
+          await db.into(db.taskTable).insert(task.toCompanion(true));
+        }
+        for (final reminder in reminders) {
+          await db
+              .into(db.reminderTable)
+              .insert(
+                reminder
+                    .toCompanion(true)
+                    .copyWith(alertSyncPending: const Value(true)),
+              );
+        }
+        for (final log in logs) {
+          await db.into(db.medicineLogTable).insert(log.toCompanion(true));
+        }
+        for (final link in thoughtLinks) {
+          if (await db.thoughtDao.getThoughtById(link.thoughtId) != null) {
+            await db
+                .into(db.thoughtReminderLinkTable)
+                .insert(link.toCompanion(true));
+          }
+        }
+        for (final session in sessions) {
+          await (db.update(db.timeSessionTable)..where(
+                (s) => s.id.equals(session.id) & s.linkedTaskId.isNull(),
+              ))
+              .write(
+                TimeSessionTableCompanion(
+                  linkedTaskId: Value(session.linkedTaskId),
+                ),
+              );
+        }
+        for (final event in history) {
+          await db
+              .into(db.historyEventTable)
+              .insert(event.toCompanion(true), mode: InsertMode.insertOrIgnore);
+        }
+        await HistoryLedger.capture(db, true);
+      });
+      restored = true;
+      await _alerts();
+    };
   }
 
   static String formatTimeSlot(String timeSlot) {

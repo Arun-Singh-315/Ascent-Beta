@@ -1,3 +1,4 @@
+import 'widgets/home_section_heading.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,7 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/services/note_draft_binding.dart';
-import '../../shared/widgets/ascent_card.dart';
+import 'widgets/home_outline_surface.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import '../money/add_transaction_sheet.dart';
 
@@ -62,7 +63,7 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
                 children: [
                   Text(
                     'Your optional check-in',
-                    style: AscentTextStyles.displaySmall.copyWith(
+                    style: AscentTextStyles.interfaceSection.copyWith(
                       color: context.glass.ink,
                     ),
                   ),
@@ -93,9 +94,8 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
                     helper: 'Otherwise shown daily',
                     value: settings.weekly,
                     enabled: !saving,
-                    onChanged: (v) => update(
-                      () => settings = settings.copyWith(weekly: v),
-                    ),
+                    onChanged: (v) =>
+                        update(() => settings = settings.copyWith(weekly: v)),
                   ),
                   DropdownButtonFormField<int>(
                     initialValue: settings.afterHour,
@@ -176,18 +176,12 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
     final period = settings.period(now);
     final waterSaved = ref.watch(checkInWaterSavedProvider(period));
     if (!settings.enabled) {
-      return AscentCard(
+      return HomeOutlineSurface(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Daily check-in',
-              style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Choose details you would like to log, when it suits you.',
-            ),
+            const HomeSectionHeading(title: 'Daily check-in', centered: false),
             TextButton(
               onPressed: _configure,
               child: const Text('Choose what to log'),
@@ -205,19 +199,12 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
         ),
       );
     }
-    return AscentCard(
+    return HomeOutlineSurface(
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'A quick check-in',
-            style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Fill only what you want. Skipping does not create a record.',
-            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-          ),
+          const HomeSectionHeading(title: 'A quick check-in', centered: false),
           if (settings.spending &&
               settings.spendingPeriod != settings.period(now))
             TextButton.icon(
@@ -303,7 +290,9 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
           if (_error != null)
             Text(
               _error!,
-              style: AscentTextStyles.bodySmall.copyWith(color: g.coral),
+              style: AscentTextStyles.interfaceSupporting.copyWith(
+                color: g.coral,
+              ),
             ),
           Wrap(
             spacing: 8,

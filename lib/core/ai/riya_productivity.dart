@@ -151,7 +151,7 @@ class RiyaPromiseActions {
       );
     }
     if (p.isPrivate && command.id != 'promises.read') {
-      throw StateError('Open Promises to manage this private commitment.');
+      throw StateError('Open Commitments to manage this private commitment.');
     }
     if (a['expectedTitle'] != null && a['expectedTitle'] != p.title) {
       throw StateError('This Promise changed. Choose it again before saving.');
@@ -598,7 +598,7 @@ class RiyaProductivityIntents {
       ).getPromiseById(id);
       if (promise?.isPrivate == true) {
         return const RiyaResolution(
-          message: 'This is a private Promise. Open Promises to manage it.',
+          message: 'This is a private Promise. Open Commitments to manage it.',
           options: ['Open promises'],
         );
       }

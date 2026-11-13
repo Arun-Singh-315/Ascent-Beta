@@ -1,7 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/services/plan_collection_service.dart';
 import 'package:ascent/features/home/widgets/home_promise_section.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
@@ -45,13 +44,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Promises'), findsOneWidget);
-      expect(find.text('No active promises'), findsOneWidget);
-      expect(
-        find.text('Make a realistic commitment to yourself'),
-        findsOneWidget,
-      );
-      expect(find.text('+ Promise'), findsNothing);
+      expect(find.text('Add commitment'), findsOneWidget);
     },
   );
 
@@ -167,7 +160,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('No active promises'), findsOneWidget);
+      expect(find.text('Add commitment'), findsOneWidget);
       expect(find.text('No Recurring Plans Yet'), findsOneWidget);
     },
   );

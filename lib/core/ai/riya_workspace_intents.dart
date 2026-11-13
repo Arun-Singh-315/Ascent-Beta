@@ -554,7 +554,7 @@ class RiyaWorkspaceIntents {
       if (rows.length > 100) {
         return const RiyaResolution(
           message:
-              'There are more than 100 completed notes. Select a smaller batch in Mind Space.',
+              'There are more than 100 completed notes. Select a smaller batch in Mindspace.',
         );
       }
       return RiyaResolution(

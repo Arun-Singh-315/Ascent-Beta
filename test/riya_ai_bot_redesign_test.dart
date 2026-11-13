@@ -279,7 +279,7 @@ void main() {
 
         // WhatsApp style input bar: send button present, interior brain icon removed
         expect(find.byIcon(Icons.psychology_rounded), findsNothing);
-        expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+        expect(find.byTooltip('Send message'), findsOneWidget);
 
         // Quick chips row (3 equal chips without horizontal scroll)
         expect(find.text('Plan my day'), findsWidgets);
@@ -322,7 +322,7 @@ void main() {
 
         expect(find.text('Riya'), findsWidgets);
         expect(find.byIcon(Icons.psychology_rounded), findsNothing);
-        expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+        expect(find.byTooltip('Send message'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         // Clean unmount to drain Drift stream timers
@@ -397,7 +397,7 @@ void main() {
 
         // Hint, text field, and upward send arrow
         expect(find.text('Message Riya...'), findsOneWidget);
-        expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+        expect(find.byTooltip('Send message'), findsOneWidget);
 
         // Typing in input pill
         await tester.enterText(find.byType(TextField), 'Plan my day');

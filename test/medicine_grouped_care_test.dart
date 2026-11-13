@@ -6,7 +6,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/medicine/medicine_screen.dart';
-import 'package:ascent/shared/widgets/glass_chip.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -162,6 +161,7 @@ void main() {
         await flush();
         expect(find.byTooltip('Mark taken'), findsNWidgets(2));
         await t.ensureVisible(find.byTooltip('Mark taken').first);
+        await t.pumpAndSettle();
         await t.tap(find.byTooltip('Mark taken').first);
         await flush();
         expect(
@@ -170,11 +170,13 @@ void main() {
           ))!.where((l) => l.isTaken),
           hasLength(1),
         );
-        await t.ensureVisible(find.widgetWithText(GlassChip, '1 taken'));
-        await t.tap(find.widgetWithText(GlassChip, '1 taken'));
+        await t.ensureVisible(find.text('1 taken'));
+        await t.pumpAndSettle();
+        await t.tap(find.text('1 taken'));
         await flush();
         expect(find.byTooltip('Undo taken dose'), findsOneWidget);
         await t.ensureVisible(find.byTooltip('Undo taken dose'));
+        await t.pumpAndSettle();
         await t.tap(find.byTooltip('Undo taken dose'));
         await flush();
         expect(

@@ -25,6 +25,10 @@ Future<T?> showAscentFrostedDialog<T>({
   final effectiveBarrierColor =
       barrierColor ?? Color.fromRGBO(0, 0, 0, isDark ? 0.40 : 0.18);
 
+  final capturedThemes = InheritedTheme.capture(
+    from: context,
+    to: Navigator.of(context, rootNavigator: useRootNavigator).context,
+  );
   return showGeneralDialog<T>(
     context: context,
     useRootNavigator: useRootNavigator,
@@ -35,7 +39,7 @@ Future<T?> showAscentFrostedDialog<T>({
         ? Duration.zero
         : transitionDuration,
     pageBuilder: (dialogContext, animation, secondaryAnimation) =>
-        builder(dialogContext),
+        capturedThemes.wrap(Builder(builder: builder)),
     transitionBuilder: (dialogContext, anim, secondaryAnim, child) {
       final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
       return AnimatedBuilder(
@@ -237,7 +241,7 @@ class AscentDialog extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: g.elevated,
-          borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
+          borderRadius: BorderRadius.circular(30),
           border: Border.all(
             color: g.line,
             width: AscentDimensions.contentOutlineWidth,

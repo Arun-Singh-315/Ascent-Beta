@@ -1,16 +1,15 @@
-import 'package:ascent/app/theme/text_styles.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import 'home_section_heading.dart';
+import 'home_module_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/frozen_palette.dart';
-import '../../../app/theme/merlot_palette.dart';
+import '../../../app/theme/home_design.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
-import 'home_outline_surface.dart';
 import '../../study_plan/lecture_focus_player_sheet.dart';
-import '../../study_plan/study_plan_screen.dart';
 
 /// A glanceable learning summary; full titles and details live in the player.
 class LearningHubCard extends ConsumerWidget {
@@ -27,7 +26,6 @@ class LearningHubCard extends ConsumerWidget {
         .toList();
     final hasStarted = state.hasStartedLearning && lectures.isNotEmpty;
     final position = lectures.indexWhere((lecture) => lecture.id == active.id);
-    final dark = Theme.of(context).brightness == Brightness.dark;
 
     void openPlayer() {
       HapticFeedback.lightImpact();
@@ -49,225 +47,118 @@ class LearningHubCard extends ConsumerWidget {
       }
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 16,
-            runSpacing: 4,
-            children: [
-              Text(
-                'Learning',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.push('/study-plan'),
-                child: Text(hasStarted ? 'Switch course' : 'Catalog'),
-              ),
-            ],
+    if (!hasStarted) {
+      return HomeModuleRow(
+        key: const ValueKey('home_learning_card'),
+        title: 'Start learning',
+        subtitle: 'Choose a course · Track lessons and resume here',
+        icon: Icons.auto_stories_outlined,
+        onTap: openPlayer,
+      );
+    }
+
+    return Padding(
+      key: const ValueKey('home_learning_card'),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          HomeSectionHeading(
+            title: 'Learning',
+            trailing: IconButton(
+              tooltip: 'Switch course',
+              icon: const Icon(Icons.swap_horiz_rounded),
+              onPressed: () => context.push('/study-plan'),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        HomeOutlineSurface(
-          radius: 22,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Tooltip(
-                message: hasStarted ? active.title : 'Explore learning courses',
-                child: InkWell(
-                  onTap: openPlayer,
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: double.infinity,
+          InkWell(
+            onTap: openPlayer,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.auto_stories_outlined,
+                    color: HomeDesign.of(context).learningInk,
+                    size: 28,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                hasStarted
-                                    ? course.title
-                                    : 'Pick your next course',
-                                key: const ValueKey('home_learning_course'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: g.inkSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            if (hasStarted) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                '${position + 1}/${lectures.length}',
-                                key: const ValueKey('home_learning_position'),
-                                style: TextStyle(
-                                  color: g.clay,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ],
+                        Text(
+                          active.title,
+                          key: const ValueKey('home_learning_title'),
+                          style: HomeType.section.copyWith(
+                            fontSize: 17,
+                            color: g.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          course.title,
+                          key: const ValueKey('home_learning_course'),
+                          style: HomeType.supporting.copyWith(
+                            color: g.inkSecondary,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          hasStarted ? active.title : 'Start learning',
-                          key: const ValueKey('home_learning_title'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: g.ink,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                          'Lesson ${position + 1} of ${lectures.length} · ${course.completedLectures} completed',
+                          key: const ValueKey('home_learning_position'),
+                          style: HomeType.supporting.copyWith(
+                            color: g.inkSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
-              if (hasStarted) ...[
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: g.track,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: g.line.withValues(alpha: 0.5),
-                        width: 0.5,
-                      ),
-                    ),
-                    child: LinearProgressIndicator(
-                      value: state.progressFraction.clamp(0.0, 1.0),
-                      minHeight: 6,
-                      color: g.clay,
-                      backgroundColor: Colors.transparent,
-                      semanticsLabel: 'Lecture progress',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      state.formattedElapsed,
-                      style: TextStyle(
-                        color: g.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    Text(
-                      active.isCompleted
-                          ? 'Completed'
-                          : '${(state.remainingSeconds / 60).ceil()} min left',
-                      style: TextStyle(color: g.inkMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: resume,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: dark
-                            ? g.clay
-                            : (g.merlot
-                                  ? MerlotPalette.pillSoft
-                                  : (g.frozen
-                                        ? FrozenPalette.pillSoft
-                                        : g.claySoft)),
-                        foregroundColor: dark
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : (g.merlot
-                                  ? MerlotPalette.action
-                                  : (g.frozen ? FrozenPalette.action : g.clay)),
-                        side: dark
-                            ? BorderSide.none
-                            : BorderSide(
-                                color: g.merlot
-                                    ? MerlotPalette.lineSubtle
-                                    : (g.frozen
-                                          ? FrozenPalette.lineSubtle
-                                          : g.line),
-                                width: 0.75,
-                              ),
-                        minimumSize: const Size(0, 44),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        !hasStarted
-                            ? 'Explore'
-                            : active.isCompleted
-                            ? 'Review'
-                            : state.isPlaying
-                            ? 'Pause'
-                            : 'Resume',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (hasStarted) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'View Syllabus',
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                StudyPlanScreen(courseId: course.id),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.format_list_bulleted_rounded,
-                        color: g.inkSecondary,
-                        size: 21,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 44,
-                        minHeight: 44,
-                      ),
-                    ),
-                  ],
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          LinearProgressIndicator(
+            value: state.progressFraction.clamp(0.0, 1.0),
+            minHeight: 3,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF7BA0C6)
+                : const Color(0xFF4A7097),
+            backgroundColor: g.track,
+            semanticsLabel: 'Lecture progress',
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                active.isCompleted
+                    ? 'Lesson completed'
+                    : '${state.formattedElapsed} studied · ${(state.remainingSeconds / 60).ceil()} min left',
+                style: HomeType.supporting.copyWith(color: g.inkSecondary),
+              ),
+              AscentButton.tonal(
+                compact: true,
+                onPressed: resume,
+                icon: state.isPlaying
+                    ? Icons.pause_rounded
+                    : Icons.play_arrow_rounded,
+                label: active.isCompleted
+                    ? 'Review'
+                    : state.isPlaying
+                    ? 'Pause'
+                    : 'Resume',
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

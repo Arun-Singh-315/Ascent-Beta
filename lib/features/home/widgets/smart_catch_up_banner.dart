@@ -114,6 +114,7 @@ class _SmartCatchUpBannerState extends ConsumerState<SmartCatchUpBanner> {
           orElse: () => Medicine(
             id: firstDose.medicineId,
             name: 'Medicine',
+            purpose: '',
             dosage: '1 Dose',
             scheduledTimes: '["08:00"]',
             durationDays: 7,
@@ -465,7 +466,9 @@ class _CatchUpDialogState extends State<_CatchUpDialog> {
                     onPressed: _saving
                         ? null
                         : () {
-                            if (widget.items.any((i) => i.domain == CatchUpDomain.hydration)) {
+                            if (widget.items.any(
+                              (i) => i.domain == CatchUpDomain.hydration,
+                            )) {
                               widget.onLog(
                                 const CatchUpItem(
                                   domain: CatchUpDomain.hydration,

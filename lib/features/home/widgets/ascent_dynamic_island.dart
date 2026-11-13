@@ -356,7 +356,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
               lectureSession.learningCourseId == learning.activeCourseId))
         _IslandActivity(
           id: 'learning',
-          label: learning.isPlaying ? 'Learning' : 'Learning paused',
+          label: learning.isPlaying ? 'Growth' : 'Learning paused',
           title: learning.activeLecture.title,
           detail: '${learning.course.title} · time remaining',
           metric: learning.formattedRemaining,

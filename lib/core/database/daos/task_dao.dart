@@ -8,6 +8,21 @@ class _DeletedTaskTree {
   final List<TimeSession> sessions;
 }
 
+/// A single-use receipt for reversing only the completion that created it.
+class TaskCompletionUndo {
+  TaskCompletionUndo._(
+    this.task,
+    this.completedAt,
+    this.reminders,
+    this.occurrence,
+  );
+  final Task task;
+  final DateTime completedAt;
+  final List<Reminder> reminders;
+  final PlanOccurrence? occurrence;
+  bool _used = false;
+}
+
 @DriftAccessor(tables: [TaskTable])
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
@@ -232,7 +247,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<Task?> getTaskById(int id) =>
       (select(taskTable)..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  /// Returns the Todo created for a Thought Wall Promise, if it still exists.
+  /// Returns the Todo created for a Mindspace Promise, if it still exists.
   Future<Task?> getTaskLinkedToThought(int thoughtId) =>
       (select(taskTable)
             ..where((t) => t.linkedThoughtId.equals(thoughtId))
@@ -385,7 +400,8 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       if (task.isDailyStanding) {
         final now = DateTime.now();
         final comp = task.actualCompletedDate!;
-        final doneToday = comp.year == now.year &&
+        final doneToday =
+            comp.year == now.year &&
             comp.month == now.month &&
             comp.day == now.day;
         if (doneToday) return true;
@@ -502,6 +518,154 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       );
     }
   }
+
+  /// Completes through the normal proof checks and returns a brief Undo receipt.
+  Future<TaskCompletionUndo?> completeWithUndo(int id) =>
+      db.transaction(() async {
+        final before = await getTaskById(id);
+        if (before == null ||
+            before.learningCourseId != null ||
+            _isTimeBound(before)) {
+          return null;
+        }
+        if (before.actualCompletedDate != null && !before.isDailyStanding) {
+          return null;
+        }
+        final reminders = await db.reminderDao.getRemindersByTaskId(id);
+        final occurrence = await db.planDao.getOccurrenceByTaskId(id);
+        await toggleTaskCompletion(id, true);
+        final after = await getTaskById(id);
+        if (after?.actualCompletedDate == null ||
+            after!.actualCompletedDate == before.actualCompletedDate) {
+          return null;
+        }
+        return TaskCompletionUndo._(
+          before,
+          after.actualCompletedDate!,
+          reminders,
+          occurrence,
+        );
+      });
+
+  Future<bool> undoCompletion(TaskCompletionUndo receipt) =>
+      db.transaction(() async {
+        if (receipt._used ||
+            DateTime.now().difference(receipt.completedAt) >
+                const Duration(seconds: 15)) {
+          return false;
+        }
+        final task = await getTaskById(receipt.task.id);
+        if (task == null ||
+            task.actualCompletedDate != receipt.completedAt ||
+            task.isArchived ||
+            task.learningCourseId != null ||
+            _isTimeBound(task)) {
+          return false;
+        }
+        if (task.parentTaskId != null) {
+          final parent = await getTaskById(task.parentTaskId!);
+          if (parent?.actualCompletedDate != null) return false;
+        }
+        await _writeIncompleteTask(task);
+        // A daily standing task may have had a previous day's completion.
+        if (receipt.task.actualCompletedDate != null) {
+          await (update(taskTable)..where((t) => t.id.equals(task.id))).write(
+            TaskTableCompanion(
+              actualCompletedDate: Value(receipt.task.actualCompletedDate),
+            ),
+          );
+        }
+        await db.medicineDao.syncDoseFromTask(task.id, false);
+        final occurrence = await db.planDao.getOccurrenceByTaskId(task.id);
+        if (occurrence != null) {
+          await db.planDao.updateOccurrence(
+            PlanOccurrenceTableCompanion(
+              id: Value(occurrence.id),
+              outcome: Value(receipt.occurrence?.outcome ?? 'scheduled'),
+              completedAt: Value(receipt.occurrence?.completedAt),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+        }
+        for (final original in receipt.reminders.where((r) => r.isActive)) {
+          final current = await db.reminderDao.getReminderById(original.id);
+          if (current == null ||
+              current.isActive ||
+              current.title != original.title ||
+              current.scheduledAt != original.scheduledAt ||
+              current.alarmEnabled != original.alarmEnabled) {
+            continue;
+          }
+          await (db.update(
+            db.reminderTable,
+          )..where((r) => r.id.equals(original.id))).write(
+            const ReminderTableCompanion(
+              isActive: Value(true),
+              alertSyncPending: Value(true),
+            ),
+          );
+        }
+        receipt._used = true;
+        return true;
+      });
+
+  /// Moves a standalone activity and its active linked alerts atomically.
+  /// Device effects are retried by the existing pending-reminder synchronizer.
+  Future<bool> moveToDay(int id, DateTime day) => db.transaction(() async {
+    final task = await getTaskById(id);
+    if (task == null ||
+        task.isArchived ||
+        task.actualCompletedDate != null ||
+        await getTaskProtection(id) != null) {
+      return false;
+    }
+    final old = task.plannedDate;
+    final planned = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      old?.hour ?? 0,
+      old?.minute ?? 0,
+    );
+    final changed = await updateTask(
+      TaskTableCompanion(
+        id: Value(id),
+        plannedDate: Value(planned),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    if (!changed) return false;
+    final reminders = await db.reminderDao.getRemindersByTaskId(id);
+    for (final reminder in reminders.where((r) => r.isActive)) {
+      final at = reminder.scheduledAt;
+      final anchor = old ?? at;
+      final offset = DateTime.utc(
+        at.year,
+        at.month,
+        at.day,
+      ).difference(DateTime.utc(anchor.year, anchor.month, anchor.day)).inDays;
+      await (db.update(
+        db.reminderTable,
+      )..where((r) => r.id.equals(reminder.id))).write(
+        ReminderTableCompanion(
+          scheduledAt: Value(
+            DateTime(
+              day.year,
+              day.month,
+              day.day + offset,
+              at.hour,
+              at.minute,
+              at.second,
+              at.millisecond,
+              at.microsecond,
+            ),
+          ),
+          alertSyncPending: const Value(true),
+        ),
+      );
+    }
+    return true;
+  });
 
   /// Completed tasks stay sealed; use the explicit medicine-dose sync method
   /// for the linked medical task lifecycle.

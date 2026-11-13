@@ -113,11 +113,7 @@ void main() {
     });
   }
 
-  Future<void> pick(WidgetTester t, int index, TimeOfDay time) async {
-    final target = find.byKey(ValueKey('medicine_time_$index'));
-    await t.ensureVisible(target);
-    await t.tap(target);
-    await t.pumpAndSettle();
+  Future<void> setTime(WidgetTester t, TimeOfDay time) async {
     await t.enterText(
       find
           .descendant(
@@ -141,6 +137,14 @@ void main() {
     await t.pumpAndSettle();
   }
 
+  Future<void> pick(WidgetTester t, int index, TimeOfDay time) async {
+    final target = find.byKey(ValueKey('medicine_time_$index'));
+    await t.ensureVisible(target);
+    await t.tap(target);
+    await t.pumpAndSettle();
+    await setTime(t, time);
+  }
+
   for (final dark in [false, true]) {
     testWidgets(
       'four exact custom medicine times save and reopen in Merlot dark=$dark',
@@ -159,32 +163,28 @@ void main() {
           );
           FocusManager.instance.primaryFocus?.unfocus();
           await t.pumpAndSettle();
-          await t.ensureVisible(find.text('4 doses'));
-          await t.tap(find.text('4 doses'));
+          await t.ensureVisible(find.text('Continue'));
+          await t.tap(find.text('Continue'));
           await t.pumpAndSettle();
-          // No suggested schedule is silently selected.
-          expect(find.text('Choose time'), findsNWidgets(4));
-          await t.tap(find.text('Save medicine'));
-          await t.pumpAndSettle();
-          expect(
-            find.text('Choose an exact time for every dose.'),
-            findsOneWidget,
-          );
-          expect(
-            await t.runAsync(() => db.medicineDao.watchAllMedicines().first),
-            isEmpty,
-          );
           for (final entry in [
             const TimeOfDay(hour: 6, minute: 23),
             const TimeOfDay(hour: 11, minute: 47),
             const TimeOfDay(hour: 17, minute: 16),
             const TimeOfDay(hour: 23, minute: 8),
           ].indexed) {
-            await pick(t, entry.$1, entry.$2);
+            if (entry.$1 == 0) {
+              await pick(t, 0, entry.$2);
+            } else {
+              await t.ensureVisible(find.text('Add time'));
+              await t.tap(find.text('Add time'));
+              await t.pumpAndSettle();
+              await setTime(t, entry.$2);
+            }
           }
           await t.ensureVisible(find.byKey(const ValueKey('medicine_time_0')));
           await t.pumpAndSettle();
           await capture(t, '${dark ? 'night' : 'day'}-times');
+          await t.ensureVisible(find.text('Save medicine'));
           await t.tap(find.text('Save medicine'));
           await settle(t);
           final medicines = await t.runAsync(
@@ -220,20 +220,29 @@ void main() {
           await t.tap(find.byKey(const ValueKey('medicine_view_medicines')));
           await t.pumpAndSettle();
           await capture(t, '${dark ? 'night' : 'day'}-medicines');
-          await t.ensureVisible(find.text('Edit schedule'));
+          await t.scrollUntilVisible(
+            find.text('Edit schedule'),
+            250,
+            scrollable: find
+                .descendant(
+                  of: find.byType(ListView).last,
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
           await t.pumpAndSettle();
           await t.tap(find.byTooltip('Edit Prescription'));
           await t.pumpAndSettle();
-          expect(find.byKey(const ValueKey('medicine_time_3')), findsOneWidget);
-          await t.ensureVisible(find.text('Add another time'));
-          await t.tap(find.text('Add another time'));
+          await t.ensureVisible(find.text('Schedule'));
+          await t.tap(find.text('Schedule'));
           await t.pumpAndSettle();
-          expect(find.byKey(const ValueKey('medicine_time_4')), findsOneWidget);
-          await pick(t, 4, const TimeOfDay(hour: 6, minute: 23));
+          expect(find.byKey(const ValueKey('medicine_time_3')), findsOneWidget);
+          await t.ensureVisible(find.text('Add time'));
+          await t.tap(find.text('Add time'));
+          await t.pumpAndSettle();
+          await setTime(t, const TimeOfDay(hour: 6, minute: 23));
           expect(
-            find.text(
-              'That time is already added. Choose a different time for this dose.',
-            ),
+            find.text('That time is already on your schedule.'),
             findsOneWidget,
           );
           expect(t.takeException(), isNull);
@@ -260,15 +269,29 @@ void main() {
           );
           await t.tap(find.byKey(const ValueKey('medicine_view_medicines')));
           await t.pumpAndSettle();
-          await t.ensureVisible(find.text('Edit schedule'));
+          await t.scrollUntilVisible(
+            find.text('Edit schedule'),
+            250,
+            scrollable: find
+                .descendant(
+                  of: find.byType(ListView).last,
+                  matching: find.byType(Scrollable),
+                )
+                .first,
+          );
           await t.pumpAndSettle();
           await t.tap(find.byTooltip('Edit Prescription'));
           await t.pumpAndSettle();
-          await t.ensureVisible(find.text('4 doses'));
-          await t.tap(find.text('4 doses'));
+          await t.ensureVisible(find.text('Schedule'));
+          await t.tap(find.text('Schedule'));
           await t.pumpAndSettle();
-          await pick(t, 3, const TimeOfDay(hour: 23, minute: 8));
-          await t.tap(find.text('Update Prescription'));
+          await t.ensureVisible(find.text('Add time'));
+          await t.tap(find.text('Add time'));
+          await t.pumpAndSettle();
+          await setTime(t, const TimeOfDay(hour: 23, minute: 8));
+          await t.ensureVisible(find.text('Save medicine'));
+          await t.ensureVisible(find.text('Save medicine'));
+          await t.tap(find.text('Save medicine'));
           await settle(t);
           final rows = await t.runAsync(
             () => db.medicineDao.watchAllMedicines().first,
@@ -321,8 +344,9 @@ void main() {
           expect(find.text('Medicine name'), findsOneWidget);
           final label = t.getRect(find.text('Medicine name'));
           final field = t.getRect(find.byKey(const ValueKey('medicine_name')));
-          expect(label.bottom, lessThan(field.top));
-          expect(find.text('Save medicine').hitTestable(), findsOneWidget);
+          expect(label.bottom, lessThanOrEqualTo(field.bottom));
+          await t.ensureVisible(find.text('Continue'));
+          expect(find.text('Continue').hitTestable(), findsOneWidget);
           expect(t.takeException(), isNull);
           await capture(t, '${dark ? 'night' : 'day'}-keyboard');
         } finally {

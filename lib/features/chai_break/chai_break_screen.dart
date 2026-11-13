@@ -13,17 +13,13 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/history_action.dart';
+import '../../core/providers/database_provider.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
 import 'widgets/brew_with_me_view.dart';
 import 'widgets/mindful_breathing_guide.dart';
 
-enum ChaiBreakMode {
-  mindfulPause,
-  brewWithMe,
-}
-
-/// Apple Mindfulness & Zen-inspired Chai & Coffee Screen
+/// Apple Mindfulness & Zen-inspired Pause & Study Sanctuary
 /// Minimalist, serene, tactile, informative with a clean single-view chill sanctuary.
 class ChaiBreakScreen extends ConsumerStatefulWidget {
   const ChaiBreakScreen({super.key});
@@ -33,7 +29,15 @@ class ChaiBreakScreen extends ConsumerStatefulWidget {
 }
 
 class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
-  ChaiBreakMode _selectedMode = ChaiBreakMode.mindfulPause;
+  void _showTaskPicker(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _ChaiTaskPickerSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +47,21 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
+    final router = GoRouter.maybeOf(context);
+    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
+
+    return PopScope(
+      canPop: canPopNow,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          if (router != null) {
+            router.go('/home');
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: g.bg,
       body: AscentAtmosphereBackground(
         child: SafeArea(
@@ -66,7 +84,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
-                      Navigator.of(context).pop();
+                      final router = GoRouter.maybeOf(context);
+                      if (router != null && router.canPop()) {
+                        router.pop();
+                      } else if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else if (router != null) {
+                        router.go('/home');
+                      }
                     },
                     tooltip: 'Back',
                   ),
@@ -78,7 +103,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'Chai & Coffee',
+                            'Pause',
                             style: AscentTextStyles.cardTitle.copyWith(
                               color: g.ink,
                               fontWeight: FontWeight.w700,
@@ -131,19 +156,28 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         label: 'Mindful Pause',
                       ),
                       AscentSegment(
+                        value: ChaiBreakMode.studyWithMe,
+                        label: 'Study with Me',
+                      ),
+                      AscentSegment(
                         value: ChaiBreakMode.brewWithMe,
-                        label: 'Brew With Me',
+                        label: 'Brew with Me',
                       ),
                     ],
-                    selected: _selectedMode,
-                    onChanged: (mode) => setState(() => _selectedMode = mode),
+                    selected: state.mode,
+                    onChanged: (mode) {
+                      HapticFeedback.selectionClick();
+                      notifier.setMode(mode);
+                    },
                   ),
 
                   const SizedBox(height: 8),
                   Text(
-                    _selectedMode == ChaiBreakMode.brewWithMe
+                    state.mode == ChaiBreakMode.brewWithMe
                         ? 'Follow a step-by-step artisanal brewing guide.'
-                        : 'Choose a short pause, breathe and enjoy your drink.',
+                        : (state.mode == ChaiBreakMode.studyWithMe
+                            ? 'Deep work with chai, soft songs, and streak tracking.'
+                            : 'Choose a short pause, breathe and enjoy your drink.'),
                     textAlign: TextAlign.center,
                     style: AscentTextStyles.captionMedium.copyWith(
                       color: g.inkMuted,
@@ -152,41 +186,87 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  if (_selectedMode == ChaiBreakMode.brewWithMe) ...[
+                  if (state.mode == ChaiBreakMode.brewWithMe) ...[
                     const BrewWithMeView(),
                   ] else ...[
                     // Duration Preset Pills
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 10,
-                      runSpacing: 8,
-                      children: [
-                        _ApplePresetPill(
-                          label: '5m Chai',
-                          isSelected: state.totalDurationSeconds == 300,
-                          onTap: () {
+                    if (state.mode == ChaiBreakMode.studyWithMe) ...[
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          _ApplePresetPill(
+                            label: '25m Flow',
+                            isSelected: state.totalDurationSeconds == 1500,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(25);
+                            },
+                          ),
+                          _ApplePresetPill(
+                            label: '45m Deep',
+                            isSelected: state.totalDurationSeconds == 2700,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(45);
+                            },
+                          ),
+                          _ApplePresetPill(
+                            label: '60m Marathon',
+                            isSelected: state.totalDurationSeconds == 3600,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(60);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      // Task Link Pill
+                      Center(
+                        child: _TaskLinkPill(
+                          linkedTaskTitle: state.linkedTaskTitle,
+                          onTapLink: () => _showTaskPicker(context),
+                          onTapUnlink: () {
                             HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(5);
+                            notifier.unlinkTask();
                           },
                         ),
-                        _ApplePresetPill(
-                          label: '10m Coffee',
-                          isSelected: state.totalDurationSeconds == 600,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(10);
-                          },
-                        ),
-                        _ApplePresetPill(
-                          label: '15m Reset',
-                          isSelected: state.totalDurationSeconds == 900,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(15);
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                    ] else ...[
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          _ApplePresetPill(
+                            label: '5m Chai',
+                            isSelected: state.totalDurationSeconds == 300,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(5);
+                            },
+                          ),
+                          _ApplePresetPill(
+                            label: '10m Coffee',
+                            isSelected: state.totalDurationSeconds == 600,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(10);
+                            },
+                          ),
+                          _ApplePresetPill(
+                            label: '15m Reset',
+                            isSelected: state.totalDurationSeconds == 900,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(15);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 14),
 
@@ -200,8 +280,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
 
                     const SizedBox(height: 12),
 
-                    // Optional Breathing Phase Banner
-                    if (state.isBreathingGuideEnabled) ...[
+                    // Optional Breathing Phase Banner (Mindful Pause only)
+                    if (state.mode == ChaiBreakMode.mindfulPause &&
+                        state.isBreathingGuideEnabled) ...[
                       MindfulBreathingGuide(
                         phase: state.breathPhase,
                         isRunning: state.isRunning,
@@ -281,13 +362,49 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
-                              Navigator.of(context).pop();
+                              notifier.stop();
+                              final router = GoRouter.maybeOf(context);
+                              if (router != null && router.canPop()) {
+                                router.pop();
+                              } else if (Navigator.of(context).canPop()) {
+                                Navigator.of(context).pop();
+                              } else if (router != null) {
+                                router.go('/home');
+                              }
                             },
-                            tooltip: 'Finish break early',
+                            tooltip: 'Finish session early',
                           ),
                         ),
                       ],
                     ),
+
+                    if (state.mode == ChaiBreakMode.studyWithMe) ...[
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: g.surface.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.local_fire_department_rounded, size: 13, color: g.clay),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Study minutes credit your daily streak',
+                                style: AscentTextStyles.captionMedium.copyWith(
+                                  color: g.inkMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
 
                   const SizedBox(height: 16),
@@ -321,6 +438,316 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
         ),
       ),
     ),
+    ),
+    );
+  }
+}
+
+/// Minimal, calm glass pill displaying linked task or prompt to link one
+class _TaskLinkPill extends StatelessWidget {
+  final String? linkedTaskTitle;
+  final VoidCallback onTapLink;
+  final VoidCallback onTapUnlink;
+
+  const _TaskLinkPill({
+    required this.linkedTaskTitle,
+    required this.onTapLink,
+    required this.onTapUnlink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final isLinked = linkedTaskTitle != null && linkedTaskTitle!.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTapLink,
+        borderRadius: AppGeometry.roundedr99,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          constraints: const BoxConstraints(maxWidth: 290),
+          decoration: BoxDecoration(
+            color: isLinked
+                ? g.clay.withValues(alpha: 0.12)
+                : g.fill,
+            borderRadius: AppGeometry.roundedr99,
+            border: Border.all(
+              color: isLinked ? g.clay.withValues(alpha: 0.4) : g.line,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isLinked ? Icons.check_circle_outline_rounded : Icons.add_link_rounded,
+                size: 14,
+                color: isLinked ? g.clay : g.inkMuted,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  isLinked ? linkedTaskTitle! : 'Link a task from Things (optional)',
+                  style: AscentTextStyles.captionMedium.copyWith(
+                    color: isLinked ? g.ink : g.inkMuted,
+                    fontWeight: isLinked ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 11.5,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+              if (isLinked) ...[
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onTapUnlink,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.all(2.0),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 13,
+                      color: g.inkMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet picker to link today's pending tasks to this study session
+class _ChaiTaskPickerSheet extends ConsumerWidget {
+  const _ChaiTaskPickerSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final tasksAsync = ref.watch(todayTasksStreamProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: g.bg,
+        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
+        border: Border.all(color: g.line, width: 1),
+      ),
+      padding: EdgeInsets.only(
+        top: 16,
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.paddingOf(context).bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: g.inkMuted.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(Icons.link_rounded, color: g.clay, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Link Today’s Task',
+                  style: AscentTextStyles.cardTitle.copyWith(
+                    color: g.ink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close_rounded, color: g.inkMuted, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+                tooltip: 'Close',
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Associate this study session with a pending task to record progress in Things Hub.',
+            style: AscentTextStyles.captionMedium.copyWith(
+              color: g.inkMuted,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.45,
+            ),
+            child: tasksAsync.when(
+              data: (tasks) {
+                final pendingTasks = tasks.where((t) => t.actualCompletedDate == null).toList();
+                if (pendingTasks.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.task_alt_rounded,
+                            size: 36,
+                            color: g.inkMuted.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'No pending tasks for today',
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'You can still start a freeform study session!',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: g.inkMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: pendingTasks.length,
+                  separatorBuilder: (_, _) => Divider(
+                    height: 1,
+                    color: g.line.withValues(alpha: 0.4),
+                  ),
+                  itemBuilder: (context, index) {
+                    final task = pendingTasks[index];
+                    return InkWell(
+                      borderRadius: AppGeometry.roundedr12,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(chaiBreakProvider.notifier).linkTask(task.id, task.title);
+                        Navigator.of(context).pop();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.black.withValues(alpha: 0.04),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: g.line.withValues(alpha: 0.5),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.radio_button_unchecked_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    task.title,
+                                    style: AscentTextStyles.bodyMedium.copyWith(
+                                      color: g.ink,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (task.notes != null && task.notes!.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      task.notes!,
+                                      style: AscentTextStyles.captionMedium.copyWith(
+                                        color: g.inkMuted,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 13,
+                              color: g.inkMuted.withValues(alpha: 0.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator.adaptive(),
+                ),
+              ),
+              error: (err, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Unable to load tasks',
+                    style: AscentTextStyles.captionMedium.copyWith(color: g.inkMuted),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Unlink / Freeform button
+          Center(
+            child: TextButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ref.read(chaiBreakProvider.notifier).unlinkTask();
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Continue without linking',
+                style: AscentTextStyles.captionMedium.copyWith(
+                  color: g.inkMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -395,13 +822,19 @@ class _AppleMindfulnessTimerDial extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    state.isRunning && state.isBreathingGuideEnabled
-                        ? state.breathPhase.label
-                        : '${state.totalDurationSeconds ~/ 60}m mindful pause',
+                    state.mode == ChaiBreakMode.studyWithMe
+                        ? (state.isRunning
+                            ? (state.linkedTaskTitle ?? 'Study focus in flow')
+                            : '${state.totalDurationSeconds ~/ 60}m deep study session')
+                        : (state.isRunning && state.isBreathingGuideEnabled
+                            ? state.breathPhase.label
+                            : '${state.totalDurationSeconds ~/ 60}m mindful pause'),
                     style: AscentTextStyles.captionMedium.copyWith(
                       color: state.isRunning ? g.clay : g.inkMuted,
                       fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

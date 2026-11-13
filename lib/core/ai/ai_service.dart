@@ -20,6 +20,8 @@ enum AiActionType {
   lectureMarkedComplete,
   scheduleRearranged,
   generalResponse,
+  studyPlanCreated,
+  mealPlanCreated,
 }
 
 class AiProposedAction {
@@ -186,6 +188,18 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       return _handleChaiBreak(ref);
     }
 
+    // 7g. Structured Study Plan Generation ("create study plan for DSA", "study plan for UPSC", "make a 7 day study plan for biology")
+    final studyPlan = _tryParseStudyPlan(prompt, lower);
+    if (studyPlan != null) {
+      return studyPlan;
+    }
+
+    // 7h. Structured Meal Plan Generation ("create meal plan", "high protein meal plan", "diet plan for weight loss")
+    final mealPlan = _tryParseMealPlan(prompt, lower);
+    if (mealPlan != null) {
+      return mealPlan;
+    }
+
     // 8. General Natural Language Task & Activity Creation
     // (Handles: "need to call saurabh at 2", "complete java spring boot today", "need to finish java tutorial today", "add todo need to complete java", "I want to exercise for 30 minutes after waking up", "remind me to apply for jobs tomorrow morning", "I need to study Java for two hours today", "add a task to call my friend")
     final taskMatch = tryParseActivityOrTask(prompt);
@@ -206,7 +220,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
       return AiResponse(
         text:
-            'Ready to add $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm to save it to your Activity Hub.',
+            'Ready to add $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm to save it to your Dayboard.',
         proposedAction: AiProposedAction(
           type: AiActionType.activityCreated,
           title: 'Add $kindStr: ${taskMatch['title']}',
@@ -744,7 +758,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     buffer.writeln(
-      "\n**Action:** Tap below to start your study focus session or open your Activity Hub.",
+      "\n**Action:** Tap below to start your study focus session or open your Dayboard.",
     );
 
     return AiResponse(
@@ -1208,7 +1222,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   // ---------------------------------------------------------------------------
-  // Chai Break
+  // Pause
   // ---------------------------------------------------------------------------
 
   bool _isChaiBreakRequest(String lower) =>
@@ -1223,6 +1237,228 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       text:
           'A chai reset is always a good idea. Step away from the screen, take a mindful reset, and give your mind a moment to settle.\n\nTap Open chai below to start your 5-minute session.',
       clarifyingOptions: ['Open chai'],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Structured Plans (Study & Meal)
+  // ---------------------------------------------------------------------------
+
+  AiResponse? _tryParseStudyPlan(String prompt, String lower) {
+    final isStudyKeyword = lower.contains('study plan') ||
+        lower.contains('syllabus plan') ||
+        lower.contains('prep plan') ||
+        lower.contains('revision plan') ||
+        lower.contains('study schedule') ||
+        (lower.contains('plan') &&
+            (lower.contains('study') ||
+                lower.contains('syllabus') ||
+                lower.contains('exam') ||
+                lower.contains('dsa')));
+
+    if (!isStudyKeyword) return null;
+
+    String subject = 'General Studies';
+    if (lower.contains('dsa') ||
+        lower.contains('data structure') ||
+        lower.contains('algorithm')) {
+      subject = 'Data Structures & Algorithms';
+    } else if (lower.contains('upsc')) {
+      subject = 'UPSC Civil Services';
+    } else if (lower.contains('biology') || lower.contains('bio')) {
+      subject = 'Biology';
+    } else if (lower.contains('chemistry') || lower.contains('chem')) {
+      subject = 'Chemistry';
+    } else if (lower.contains('physics')) {
+      subject = 'Physics';
+    } else if (lower.contains('math') || lower.contains('mathematics')) {
+      subject = 'Mathematics';
+    } else if (lower.contains('gate')) {
+      subject = 'GATE Computer Science';
+    } else if (lower.contains('java') || lower.contains('spring')) {
+      subject = 'Java & Backend Architecture';
+    } else if (lower.contains('flutter') || lower.contains('dart')) {
+      subject = 'Flutter & Mobile Engineering';
+    } else {
+      final forMatch = RegExp(
+        r'\b(?:for|on|about)\s+([a-zA-Z0-9\s&+-]+)',
+        caseSensitive: false,
+      ).firstMatch(prompt);
+      if (forMatch != null) {
+        final extracted = forMatch
+            .group(1)
+            ?.replaceAll(
+              RegExp(
+                r'\b(?:plan|study|schedule|days|day)\b',
+                caseSensitive: false,
+              ),
+              '',
+            )
+            .trim();
+        if (extracted != null && extracted.isNotEmpty && extracted.length < 50) {
+          subject = extracted;
+        }
+      }
+    }
+
+    int days = 7;
+    final daysMatch = RegExp(
+      r'\b(\d+)\s*(?:day|days)\b',
+      caseSensitive: false,
+    ).firstMatch(lower);
+    if (daysMatch != null) {
+      days = int.tryParse(daysMatch.group(1)!) ?? 7;
+      if (days < 1) days = 3;
+      if (days > 30) days = 30;
+    }
+
+    final dailyMin = days <= 5 ? 90 : 60;
+
+    final List<Map<String, dynamic>> items = [];
+    if (subject.contains('Data Structures') || subject.contains('DSA')) {
+      final dsaModules = [
+        'Arrays, Two-Pointers & Prefix Sums',
+        'Sliding Window & Hash Map Patterns',
+        'Linked Lists & Fast-Slow Pointers',
+        'Binary Search on Answer Range',
+        'Stacks, Monotonic Queues & DFS',
+        'Binary Trees, BST & Tree Traversal',
+        'Dynamic Programming & Timed Mock Sprint',
+      ];
+      for (int i = 0; i < days; i++) {
+        final modName = dsaModules[i % dsaModules.length];
+        items.add({
+          'day': i + 1,
+          'title': 'Day ${i + 1}: $modName',
+          'notes':
+              'Focus on pattern recognition and 2-3 standard benchmark problems.',
+          'minutes': dailyMin,
+          'targetTime': '09:00',
+          'category': 'study',
+        });
+      }
+    } else {
+      for (int i = 0; i < days; i++) {
+        items.add({
+          'day': i + 1,
+          'title': 'Day ${i + 1}: $subject Milestone ${i + 1}',
+          'notes':
+              'Core conceptual principles and targeted practice exercises.',
+          'minutes': dailyMin,
+          'targetTime': '09:00',
+          'category': 'study',
+        });
+      }
+    }
+
+    final payload = {
+      'type': 'study_plan',
+      'title': '$subject Study Plan',
+      'subject': subject,
+      'durationDays': days,
+      'dailyMinutes': dailyMin,
+      'category': 'study',
+      'items': items,
+    };
+
+    return AiResponse(
+      text:
+          'I have designed a focused $days-day Study Plan for $subject ($dailyMin mins/day). Review the syllabus milestones below and tap Save & Schedule to activate your sessions.',
+      proposedAction: AiProposedAction(
+        type: AiActionType.studyPlanCreated,
+        title: '$subject Study Plan',
+        summary: '$days Days • $dailyMin mins/day • ${items.length} Milestones',
+        payload: payload,
+      ),
+      clarifyingOptions: const ['Save Study Plan', 'Open Study Hub'],
+    );
+  }
+
+  AiResponse? _tryParseMealPlan(String prompt, String lower) {
+    final isMealKeyword = lower.contains('meal plan') ||
+        lower.contains('diet plan') ||
+        lower.contains('nutrition plan') ||
+        lower.contains('healthy eating plan') ||
+        lower.contains('plan my meals') ||
+        (lower.contains('plan') &&
+            (lower.contains('meal') ||
+                lower.contains('diet') ||
+                lower.contains('nutrition') ||
+                lower.contains('eating')));
+
+    if (!isMealKeyword) return null;
+
+    String dietType = 'Balanced Nutrition';
+    if (lower.contains('high protein') || lower.contains('protein')) {
+      dietType = 'High-Protein Vitality';
+    } else if (lower.contains('weight loss') ||
+        lower.contains('fat loss') ||
+        lower.contains('cut')) {
+      dietType = 'Clean Calorie-Conscious';
+    } else if (lower.contains('veg') || lower.contains('vegetarian')) {
+      dietType = 'Whole-Food Vegetarian';
+    } else if (lower.contains('muscle') || lower.contains('bulk')) {
+      dietType = 'Strength & Muscle Building';
+    }
+
+    final meals = [
+      {
+        'slot': 'Breakfast',
+        'title': 'Breakfast: Energy Kickstart',
+        'time': '08:30',
+        'notes':
+            'Oats/Eggs with chia seeds, banana, and a handful of soaked almonds.',
+        'calories': 380,
+        'category': 'meal',
+      },
+      {
+        'slot': 'Lunch',
+        'title': 'Lunch: Balanced Macro Plate',
+        'time': '13:30',
+        'notes':
+            'Brown rice / rotis, yellow dal/paneer/chicken, sautéed greens, and cucumber salad.',
+        'calories': 620,
+        'category': 'meal',
+      },
+      {
+        'slot': 'Snack',
+        'title': 'Evening Snack: Mindful Refuel',
+        'time': '17:00',
+        'notes':
+            'Roasted makhana or mixed nuts with unsweetened green tea or light ginger chai.',
+        'calories': 180,
+        'category': 'meal',
+      },
+      {
+        'slot': 'Dinner',
+        'title': 'Dinner: Light Restorative Bowl',
+        'time': '20:00',
+        'notes':
+            'Warm vegetable soup with steamed chickpeas or grilled protein and greens.',
+        'calories': 450,
+        'category': 'meal',
+      },
+    ];
+
+    final payload = {
+      'type': 'meal_plan',
+      'title': '$dietType Meal Plan',
+      'dietType': dietType,
+      'targetWaterMl': 2500,
+      'category': 'meal',
+      'items': meals,
+    };
+
+    return AiResponse(
+      text:
+          'Here is your structured $dietType Meal Plan. Balanced energy, healthy whole foods, and timely meal reminders. Tap Save & Schedule to link it to your daily rhythm.',
+      proposedAction: AiProposedAction(
+        type: AiActionType.mealPlanCreated,
+        title: '$dietType Meal Plan',
+        summary: '4 Balanced Meals • 2,500 mL Hydration • Timely Reminders',
+        payload: payload,
+      ),
+      clarifyingOptions: const ['Save Meal Plan', 'Log Water'],
     );
   }
 
@@ -1259,7 +1495,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final waterMl = ref.read(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.read(dailyWaterGoalStreamProvider).value ?? 2500;
 
-    // 5. Learning Hub status
+    // 5. Growth status
     final learningState = ref.read(learningHubProvider);
     final course = learningState.course;
     Lecture? nextLecture;

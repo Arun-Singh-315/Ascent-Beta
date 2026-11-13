@@ -25,6 +25,8 @@ class AiActionExecution {
     AiActionType.activityCreated,
     AiActionType.waterLogged,
     AiActionType.scheduleRearranged,
+    AiActionType.studyPlanCreated,
+    AiActionType.mealPlanCreated,
   }.contains(type);
 
   Future<AiExecutionResult> execute(AiProposedAction action) async {
@@ -94,6 +96,91 @@ class AiActionExecution {
         return AiExecutionResult(
           'Rescheduled ${rawIds.toSet().length} task(s). Reminders were not changed.',
           taskId: rawIds.toSet().length == 1 ? rawIds.first as int : null,
+        );
+      });
+    }
+
+    if (action.type == AiActionType.studyPlanCreated ||
+        action.type == AiActionType.mealPlanCreated) {
+      final title = _title(p, max: 200);
+      final category = p['category']?.toString() ??
+          (action.type == AiActionType.studyPlanCreated ? 'study' : 'meal');
+      final rawItems = p['items'] as List? ?? [];
+      final now = DateTime.now();
+      final collectionId =
+          'plan_${DateTime.now().millisecondsSinceEpoch}_$category';
+
+      return db.transaction(() async {
+        await db.into(db.planCollectionTable).insert(
+          PlanCollectionTableCompanion.insert(
+            id: collectionId,
+            requestId: 'ai_plan_${DateTime.now().millisecondsSinceEpoch}',
+            title: title,
+            description: Value('Category: $category'),
+            status: const Value('active'),
+          ),
+        );
+
+        int pos = 0;
+        final savedReminders = <Reminder>[];
+        for (final raw in rawItems) {
+          if (raw is! Map) continue;
+          final item = Map<String, dynamic>.from(raw);
+          final itemTitle = item['title']?.toString() ?? 'Plan Item';
+          final itemNotes = item['notes']?.toString() ?? '';
+          final minutes = item['minutes'] as int?;
+          final scheduledDate = now.add(Duration(days: pos));
+          final timeParts =
+              (item['time'] ?? item['targetTime'] ?? '09:00').toString().split(
+                ':',
+              );
+          final scheduledDateTime = DateTime(
+            scheduledDate.year,
+            scheduledDate.month,
+            scheduledDate.day,
+            int.tryParse(timeParts[0]) ?? 9,
+            timeParts.length > 1 ? (int.tryParse(timeParts[1]) ?? 0) : 0,
+          );
+
+          final taskId = await db.taskDao.insertTask(
+            TaskTableCompanion.insert(
+              title: itemTitle,
+              notes: Value('[$title] [Category: $category] $itemNotes'),
+              plannedDate: Value(scheduledDateTime),
+              estimatedMinutes: Value(minutes),
+              priority: const Value('medium'),
+            ),
+          );
+
+          if (scheduledDateTime.isAfter(DateTime.now())) {
+            final reminderId = await db.reminderDao.insertReminder(
+              ReminderTableCompanion.insert(
+                title: itemTitle,
+                scheduledAt: scheduledDateTime,
+                linkedTaskId: Value(taskId),
+              ),
+            );
+            final rem = await db.reminderDao.getReminderById(reminderId);
+            if (rem != null) savedReminders.add(rem);
+          }
+
+          final itemId = '${collectionId}_item_$pos';
+          await db.into(db.planCollectionItemTable).insert(
+            PlanCollectionItemTableCompanion.insert(
+              id: itemId,
+              collectionId: collectionId,
+              position: pos,
+              title: itemTitle,
+              notes: Value(itemNotes),
+              taskId: Value(taskId),
+            ),
+          );
+          pos++;
+        }
+
+        return AiExecutionResult(
+          'Activated $title with ${rawItems.length} structured sessions.',
+          reminders: savedReminders,
         );
       });
     }

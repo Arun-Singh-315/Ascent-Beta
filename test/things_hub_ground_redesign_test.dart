@@ -1,5 +1,11 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:drift/drift.dart' show Value;
 import 'dart:async';
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -9,6 +15,7 @@ import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/features/today/widgets/things_interactive_card.dart';
 import 'package:ascent/shared/widgets/glass_chip.dart';
+import 'package:ascent/shared/widgets/ascent_segmented_control.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,20 +33,23 @@ TodayActivityItem makeActivity({
   String sourceType = 'task',
   String priority = 'normal',
   int? linkedTaskId,
-}) =>
-    TodayActivityItem(
-      id: id,
-      title: title,
-      notes: notes,
-      kind: kind,
-      status: status,
-      sourceType: sourceType,
-      categoryTag: 'Task',
-      elapsedSecondsToday: 0,
-      targetMinutes: targetMinutes,
-      priority: priority,
-      linkedTaskId: linkedTaskId,
-    );
+  bool isOverdue = false,
+  DateTime? scheduledTime,
+}) => TodayActivityItem(
+  id: id,
+  title: title,
+  notes: notes,
+  kind: kind,
+  status: status,
+  sourceType: sourceType,
+  categoryTag: 'Task',
+  elapsedSecondsToday: 0,
+  targetMinutes: targetMinutes,
+  priority: priority,
+  linkedTaskId: linkedTaskId,
+  isOverdue: isOverdue,
+  scheduledTime: scheduledTime,
+);
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -49,13 +59,13 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
 class _FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 0,
-        yesterdaySeconds: 0,
-        priorStreakDays: 0,
-        historicalLongestStreak: 0,
-        historicalShortestStreak: 1,
-        now: DateTime.now(),
-      );
+    todaySeconds: 0,
+    yesterdaySeconds: 0,
+    priorStreakDays: 0,
+    historicalLongestStreak: 0,
+    historicalShortestStreak: 1,
+    now: DateTime.now(),
+  );
 }
 
 void main() {
@@ -75,10 +85,432 @@ void main() {
     await db.close();
   });
 
-  group('Things Hub Ground Border Style & UX Revamp', () {
-    testWidgets('ThingsInteractiveCard renders single ground border enclosure with no nested cards', (
-      tester,
-    ) async {
+  Future<void> pumpHub(
+    WidgetTester tester,
+    List<TodayActivityItem> items, {
+    bool dark = false,
+    double scale = 1,
+    bool reduceMotion = false,
+    String? initialTab,
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
+          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+          todayActivitiesProvider.overrideWith((ref) => Stream.value(items)),
+        ],
+        child: MaterialApp(
+          theme: dark ? AscentTheme.dark() : AscentTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scale),
+              disableAnimations: reduceMotion,
+            ),
+            child: child!,
+          ),
+          home: RepaintBoundary(
+            key: const ValueKey('things_qa'),
+            child: ThingsHubScreen(initialTab: initialTab),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> screenshot(WidgetTester tester, String name) async {
+    if (!const bool.fromEnvironment('HOME_SCREENSHOTS')) return;
+    await tester.runAsync(() async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('things_qa')),
+      );
+      final image = await boundary.toImage();
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final file = File('build/qa/things-$name.png');
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(bytes!.buffer.asUint8List());
+      image.dispose();
+    });
+  }
+
+  setUpAll(() async {
+    if (const bool.fromEnvironment('HOME_SCREENSHOTS')) {
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    }
+  });
+
+  List<TodayActivityItem> sampleThings() => [
+    makeActivity(
+      id: 'late',
+      title: 'Send the signed documents',
+      isOverdue: true,
+    ),
+    makeActivity(
+      id: 'scheduled',
+      title: 'Review the launch checklist',
+      scheduledTime: DateTime.now().add(const Duration(hours: 1)),
+    ),
+    makeActivity(
+      id: 'anytime',
+      title: 'Book the weekend stay',
+      priority: 'high',
+    ),
+    makeActivity(
+      id: 'timer',
+      title: 'Finish the project outline',
+      status: TodayActivityStatus.paused,
+      kind: ActivityKind.duration,
+      targetMinutes: 25,
+    ),
+    makeActivity(
+      id: 'done',
+      title: 'Morning walk',
+      status: TodayActivityStatus.done,
+    ),
+  ];
+
+  for (final dark in [false, true]) {
+    testWidgets(
+      'One connected status board with colored headings and no toggle bars (${dark ? 'dark' : 'light'})',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await pumpHub(tester, sampleThings(), dark: dark);
+        expect(find.byType(AscentSegmentedControl<String>), findsNothing);
+        expect(find.byType(GlassChip), findsNothing);
+        expect(
+          find.byKey(const ValueKey('things_connected_card')),
+          findsOneWidget,
+        );
+        expect(find.text('4 remaining · 1 completed'), findsOneWidget);
+        expect(find.text('Send the signed documents'), findsOneWidget);
+        expect(find.text('Review the launch checklist'), findsOneWidget);
+        expect(find.text('Book the weekend stay'), findsOneWidget);
+        expect(find.text('Finish the project outline'), findsOneWidget);
+        final overdue = tester.widget<Text>(find.text('Overdue - 01'));
+        final scheduled = tester.widget<Text>(find.text('Scheduled - 01'));
+        expect(overdue.style!.color, SharedControlColors.dueRed);
+        expect(
+          scheduled.style!.color,
+          dark
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue,
+        );
+        final headings = ['overdue', 'scheduled', 'anytime']
+            .map(
+              (s) => tester.getRect(find.byKey(ValueKey('things_heading_$s'))),
+            )
+            .toList();
+        expect(headings[0].top, headings[1].top);
+        expect(headings[1].top, headings[2].top);
+        expect(find.text('Next'), findsNothing);
+        await screenshot(tester, dark ? 'connected-dark' : 'connected-light');
+        await tester.tap(
+          find.byKey(const ValueKey('things_heading_scheduled')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Review the launch checklist'), findsOneWidget);
+        expect(find.text('Send the signed documents'), findsNothing);
+        expect(find.text('Book the weekend stay'), findsNothing);
+        // A single selected heading does not repeat its title inside the content.
+        expect(find.text('Scheduled today'), findsNothing);
+        await screenshot(
+          tester,
+          dark ? 'connected-scheduled-dark' : 'connected-scheduled-light',
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'Headings replace the connected list, collapse on a second tap, and All restores everything',
+    (tester) async {
+      await pumpHub(tester, sampleThings());
+      await tester.tap(find.byKey(const ValueKey('things_heading_overdue')));
+      await tester.pumpAndSettle();
+      expect(find.text('Send the signed documents'), findsOneWidget);
+      expect(find.text('Book the weekend stay'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('things_heading_anytime')));
+      await tester.pumpAndSettle();
+      expect(find.text('Send the signed documents'), findsNothing);
+      expect(find.text('Book the weekend stay'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('things_heading_anytime')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ActivityRowItem), findsNothing);
+      expect(
+        find.byKey(const ValueKey('things_heading_anytime')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('things_show_all')));
+      await tester.pumpAndSettle();
+      expect(find.text('Send the signed documents'), findsOneWidget);
+      expect(find.text('4 remaining · 1 completed'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Book the weekend stay'),
+        100,
+        scrollable: find.descendant(
+          of: find.byKey(const ValueKey('things_list_now')),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      expect(find.text('Book the weekend stay'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'Search keeps counts and lists in sync and closing it restores the board',
+    (tester) async {
+      await pumpHub(tester, sampleThings());
+      await tester.tap(find.byTooltip('Search things'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'launch');
+      await tester.pumpAndSettle();
+      expect(find.text('Review the launch checklist'), findsOneWidget);
+      expect(find.text('Send the signed documents'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('things_heading_scheduled')),
+          matching: find.text('Scheduled - 01'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('things_heading_overdue')),
+          matching: find.text('Overdue - 00'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Close search'));
+      await tester.pumpAndSettle();
+      expect(find.text('Send the signed documents'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Empty sections explain themselves and 1000 tasks remain lazy', (
+    tester,
+  ) async {
+    await pumpHub(tester, [
+      for (var i = 0; i < 1000; i++)
+        makeActivity(id: 'task_$i', title: 'Flexible task $i'),
+    ]);
+    expect(find.byType(ActivityRowItem).evaluate().length, lessThan(25));
+    await tester.tap(find.byKey(const ValueKey('things_heading_overdue')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing overdue'), findsOneWidget);
+    expect(find.byType(ActivityRowItem), findsNothing);
+    await tester.tap(find.text('Show all things'));
+    await tester.pumpAndSettle();
+    expect(find.text('Flexible task 0'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final scale in [1.0, 2.0]) {
+    testWidgets(
+      '320px board keeps headings and actions readable at text scale $scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await pumpHub(tester, sampleThings(), dark: true, scale: scale);
+        await screenshot(
+          tester,
+          scale == 1 ? 'connected-320' : 'connected-large-text',
+        );
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('things_heading_anytime')),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('things_heading_anytime')));
+        await tester.pumpAndSettle();
+        final scrollable = find.descendant(
+          of: find.byKey(const ValueKey('things_list_now')),
+          matching: find.byType(Scrollable),
+        );
+        await tester.scrollUntilVisible(
+          find.text('Resume'),
+          120,
+          scrollable: scrollable,
+        );
+        await tester.pumpAndSettle();
+        await screenshot(
+          tester,
+          scale == 1
+              ? 'connected-320-expanded'
+              : 'connected-large-text-expanded',
+        );
+        expect(find.text('Resume'), findsOneWidget);
+        if (scale == 2) {
+          final title = find.byKey(const ValueKey('activity_title_timer'));
+          expect(
+            tester.renderObject<RenderParagraph>(title).didExceedMaxLines,
+            isFalse,
+          );
+          expect(tester.getSize(title).height, greaterThan(60));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets(
+    'Reduced motion and rapid section taps settle on the last heading',
+    (tester) async {
+      await pumpHub(tester, sampleThings(), reduceMotion: true);
+      await tester.tap(find.byKey(const ValueKey('things_heading_overdue')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('things_heading_scheduled')));
+      await tester.pump();
+      expect(find.text('Review the launch checklist'), findsOneWidget);
+      expect(find.text('Send the signed documents'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Completed view is available through the menu and deep links', (
+    tester,
+  ) async {
+    await pumpHub(tester, sampleThings());
+    await tester.tap(find.byTooltip('Things views'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Completed'));
+    await tester.pumpAndSettle();
+    expect(find.text('Morning walk'), findsOneWidget);
+    expect(find.text('Book the weekend stay'), findsNothing);
+    expect(find.byKey(const ValueKey('things_heading_overdue')), findsNothing);
+    expect(find.text('Browse all history'), findsOneWidget);
+    expect(find.byType(AscentSegmentedControl<String>), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Board completion updates the real task and Undo restores it', (
+    tester,
+  ) async {
+    final id = (await tester.runAsync(
+      () => db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Send the proposal',
+          plannedDate: Value(DateTime.now()),
+        ),
+      ),
+    ))!;
+    await pumpHub(tester, [
+      makeActivity(
+        id: 'complete',
+        title: 'Send the proposal',
+        linkedTaskId: id,
+      ),
+    ]);
+    await tester.tap(find.byKey(const ValueKey('activity_action_complete')));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    await tester.pumpAndSettle();
+    expect(
+      (await tester.runAsync(
+        () => db.taskDao.getTaskById(id),
+      ))!.actualCompletedDate,
+      isNotNull,
+    );
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    expect(
+      (await tester.runAsync(
+        () => db.taskDao.getTaskById(id),
+      ))!.actualCompletedDate,
+      isNull,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Shared horizontal highlight matches unequal segment widths in both reading directions',
+    (tester) async {
+      for (final direction in [TextDirection.ltr, TextDirection.rtl]) {
+        var selected = 'all';
+        await tester.pumpWidget(
+          MaterialApp(
+            key: ValueKey(direction),
+            theme: AscentTheme.light(),
+            home: Directionality(
+              textDirection: direction,
+              child: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    width: 288,
+                    child: StatefulBuilder(
+                      builder: (context, update) =>
+                          AscentSegmentedControl<String>(
+                            segments: const [
+                              AscentSegment(
+                                key: ValueKey('width_all'),
+                                value: 'all',
+                                label: 'All',
+                                flex: 2,
+                              ),
+                              AscentSegment(
+                                key: ValueKey('width_task'),
+                                value: 'task',
+                                label: 'To-dos',
+                                flex: 3,
+                              ),
+                              AscentSegment(
+                                key: ValueKey('width_timer'),
+                                value: 'timer',
+                                label: 'Timers',
+                                flex: 3,
+                              ),
+                              AscentSegment(
+                                key: ValueKey('width_medicine'),
+                                value: 'medicine',
+                                label: 'Medicines',
+                                flex: 4,
+                              ),
+                            ],
+                            selected: selected,
+                            onChanged: (value) =>
+                                update(() => selected = value),
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        for (final value in ['all', 'task', 'timer', 'medicine']) {
+          final segment = find.byKey(ValueKey('width_$value'));
+          await tester.tap(segment);
+          await tester.pumpAndSettle();
+          final target = tester.getRect(segment);
+          final highlight = tester.getRect(find.byType(AnimatedPositioned));
+          expect(highlight.left, closeTo(target.left, .01));
+          expect(highlight.width, closeTo(target.width, .01));
+          expect(selected, value);
+        }
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
+
+  testWidgets(
+    'ThingsInteractiveCard renders single ground border enclosure with no nested cards',
+    (tester) async {
       final activity = makeActivity(
         id: 'act_ground_1',
         title: 'Review production pull request',
@@ -130,193 +562,6 @@ void main() {
 
       expect(find.text('Hide'), findsOneWidget);
       expect(find.textContaining('Story Micro-Steps'), findsOneWidget);
-    });
-
-    testWidgets('ThingsHubScreen has zero horizontal scrolls and supports expand/collapse filter lenses', (
-      tester,
-    ) async {
-      final task1 = makeActivity(
-        id: 'task_1',
-        title: 'Buy fresh coffee beans',
-      );
-      final task2 = makeActivity(
-        id: 'task_2',
-        title: 'System architecture deep dive',
-        kind: ActivityKind.duration,
-        targetMinutes: 45,
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayActivitiesProvider.overrideWith(
-            (ref) => Stream.value([task1, task2]),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const ThingsHubScreen(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Ensure NO horizontal SingleChildScrollView exists anywhere on the screen
-      final horizontalScrollFinder = find.byWidgetPredicate(
-        (w) => w is SingleChildScrollView && w.scrollDirection == Axis.horizontal,
-      );
-      expect(horizontalScrollFinder, findsNothing);
-
-      // Verify "More lenses" toggle exists (lenses start collapsed to prevent clutter)
-      final toggleFinder = find.byKey(const ValueKey('things_hub_toggle_lenses'));
-      expect(toggleFinder, findsOneWidget);
-      expect(find.text('More lenses'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsNothing);
-
-      // Tap "More lenses" to expand cognitive lenses
-      await tester.tap(toggleFinder);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Less'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsOneWidget);
-
-      // Tap "Less" to re-collapse
-      await tester.tap(toggleFinder);
-      await tester.pumpAndSettle();
-
-      expect(find.text('More lenses'), findsOneWidget);
-      expect(find.widgetWithText(GlassChip, '⚡ Quick Wins'), findsNothing);
-    });
-
-    testWidgets('ThingsHubScreen arranges activities into ground sections with counts and collapse toggles', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(400 * 3, 1200 * 3);
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final activeTimer = makeActivity(
-        id: 'active_1',
-        title: 'Ongoing writing session',
-        kind: ActivityKind.duration,
-        status: TodayActivityStatus.inProgress,
-      );
-      final attentionTask = makeActivity(
-        id: 'attention_1',
-        title: 'Urgent tax submission',
-        priority: 'high',
-      );
-      final nextTask = makeActivity(
-        id: 'next_1',
-        title: 'Plan weekend trip',
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayActivitiesProvider.overrideWith(
-            (ref) => Stream.value([activeTimer, attentionTask, nextTask]),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const ThingsHubScreen(),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Verify arranged ground section headers exist with counts
-      expect(find.text('In progress · 1'), findsOneWidget);
-      expect(find.text('Needs attention · 1'), findsOneWidget);
-      expect(find.text('Next · 1'), findsOneWidget);
-
-      // Verify tasks are visible
-      expect(find.text('Ongoing writing session'), findsOneWidget);
-      expect(find.text('Urgent tax submission'), findsOneWidget);
-      expect(find.text('Plan weekend trip'), findsOneWidget);
-
-      // Tap "Next" header to collapse section
-      await tester.tap(find.text('Next · 1'));
-      await tester.pumpAndSettle();
-
-      // Plan weekend trip is collapsed
-      expect(find.text('Plan weekend trip'), findsNothing);
-
-      // Tap "Next" header again to expand section
-      await tester.tap(find.text('Next · 1'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Plan weekend trip'), findsOneWidget);
-    });
-
-    testWidgets('Things Hub Ground components immune to overflow at 320px with 2.0x text scale', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320 * 3, 800 * 3);
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final task = makeActivity(
-        id: 'extreme_task',
-        title: 'An extremely long task title describing a complex end to end workflow that tests multi-line wrapping and responsiveness',
-        priority: 'high',
-        targetMinutes: 90,
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayActivitiesProvider.overrideWith((ref) => Stream.value([task])),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              home: const ThingsHubScreen(),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-    });
-  });
+    },
+  );
 }

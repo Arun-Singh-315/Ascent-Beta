@@ -1,3 +1,5 @@
+import 'home_section_heading.dart';
+import 'home_module_row.dart';
 import 'package:flutter/material.dart';
 import 'package:ascent/features/promises/widgets/promise_actions.dart';
 import 'package:flutter/services.dart';
@@ -28,72 +30,37 @@ class HomePromiseSection extends ConsumerWidget {
     final priorityPromise = ref.watch(priorityPromiseProvider);
     final allActive = ref.watch(activePromisesStreamProvider).value ?? [];
 
+    if (priorityPromise == null) {
+      return HomeModuleRow(
+        key: const ValueKey('home_promise_empty_card'),
+        title: 'Add commitment',
+        subtitle: 'Set a next step · Keep your progress in view',
+        icon: Icons.handshake_outlined,
+        actionIcon: Icons.add_rounded,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          PromiseChatComposer.show(context);
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section Header adhering strictly to Rule 18 & Rule 13
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Promises',
-                        style: AscentTextStyles.homeTitle.copyWith(
-                          color: g.ink,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (allActive.length > 1) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1.5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: g.line, width: 0.8),
-                      ),
-                      child: Text(
-                        '${allActive.length}',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: g.inkMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-            InkResponse(
-              radius: 18,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.push('/promises');
-              },
-              child: Icon(Icons.arrow_forward_rounded, size: 20, color: g.ink),
-            ),
-          ],
+        HomeSectionHeading(
+          title: 'Commitments',
+          centered: false,
+          trailing: HomeSectionArrowButton(
+            tooltip: 'Open commitments',
+            color: const Color(0xFFC67D32),
+            onTap: () => context.push('/promises'),
+          ),
         ),
         const SizedBox(height: 12),
 
         // Priority card or quiet empty state
-        if (priorityPromise != null) ...[
+        ...[
           _buildPriorityCard(context, ref, priorityPromise, g),
           if (allActive.length > 1)
             Padding(
@@ -110,15 +77,14 @@ class HomePromiseSection extends ConsumerWidget {
                     '+${allActive.length - 1} more commitments',
                     style: TextStyle(
                       color: g.clay,
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
             ),
-        ] else
-          _buildQuietEmptyState(context, g),
+        ],
       ],
     );
   }
@@ -134,15 +100,22 @@ class HomePromiseSection extends ConsumerWidget {
 
     return InkWell(
       key: const ValueKey('home_promise_card'),
+      onLongPress: () =>
+          showPromiseActionMenu(context, promise, locked: isLocked),
       onTap: () {
         HapticFeedback.selectionClick();
         PromiseDetailSheet.show(context, promise);
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.zero,
       child: GlassSurface(
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(18),
+        borderRadius: BorderRadius.zero,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        fillColor: Colors.transparent,
         enableBlur: false,
+        hasShadow: false,
+        customBorder: MediaQuery.highContrastOf(context)
+            ? Border.all(color: g.controlOutline)
+            : const Border(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -161,16 +134,22 @@ class HomePromiseSection extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      promise.category.toUpperCase(),
+                      promise.category,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: g.inkMuted,
-                        fontSize: 10.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.6,
+                        letterSpacing: 0,
                       ),
                     ),
                   ),
+                ),
+                IconButton(
+                  tooltip: 'Commitment actions',
+                  icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted),
+                  onPressed: () =>
+                      showPromiseActionMenu(context, promise, locked: isLocked),
                 ),
                 if (promise.isPrivate)
                   Tooltip(
@@ -202,7 +181,7 @@ class HomePromiseSection extends ConsumerWidget {
                                 style: TextStyle(
                                   color: g.clay,
                                   fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -243,10 +222,10 @@ class HomePromiseSection extends ConsumerWidget {
               // Title
               Text(
                 promise.title,
-                style: AscentTextStyles.homeTitle.copyWith(
+                style: AscentTextStyles.interfaceSection.copyWith(
                   color: g.ink,
                   fontSize: 16.5,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
@@ -291,7 +270,7 @@ class HomePromiseSection extends ConsumerWidget {
                   promise.progressSummary,
                   style: TextStyle(
                     color: g.inkMuted,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -303,57 +282,6 @@ class HomePromiseSection extends ConsumerWidget {
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuietEmptyState(BuildContext context, AscentGlass g) {
-    return InkWell(
-      key: const ValueKey('home_promise_empty_card'),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        PromiseChatComposer.show(context);
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: GlassSurface(
-        borderRadius: BorderRadius.circular(20),
-        padding: const EdgeInsets.all(18),
-        enableBlur: false,
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: g.ink.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.handshake_outlined, size: 20, color: g.ink),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'No active promises',
-                    style: TextStyle(
-                      color: g.ink,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Make a realistic commitment to yourself',
-                    style: TextStyle(color: g.inkMuted, fontSize: 12.5),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.add_rounded, color: g.ink, size: 22),
           ],
         ),
       ),

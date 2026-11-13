@@ -1,3 +1,4 @@
+import '../../../shared/widgets/ascent_action_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,10 +14,28 @@ import 'plan_collection_detail.dart';
 Future<void> showPlanProtectionDialog(
   BuildContext context,
   WidgetRef ref,
-  PlanChildRestriction restriction,
-) {
+  PlanChildRestriction restriction, {
+  bool manageOnly = false,
+}) async {
   if (restriction.targetType == 'collection_item') {
     return showPlanCollectionDetail(context, restriction.planId);
+  }
+  if (manageOnly) {
+    final action = await showAscentActionMenu<String>(
+      context: context,
+      title: 'Managed by ${restriction.planTitle}',
+      actions: [
+        AscentAction(
+          'open',
+          restriction.isRoutine ? 'Open routine' : 'Open plan',
+          Icons.event_note_rounded,
+        ),
+      ],
+    );
+    if (action == 'open' && context.mounted) {
+      context.push('/plans?id=${restriction.planId}');
+    }
+    return;
   }
   HapticFeedback.mediumImpact();
   final g = context.glass;

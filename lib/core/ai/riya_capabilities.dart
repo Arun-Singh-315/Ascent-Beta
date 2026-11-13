@@ -198,7 +198,7 @@ const riyaCapabilities = <RiyaCapability>[
     '/more',
     {'feature': RiyaValue.text},
     required: ['feature'],
-    example: 'Show me how to use Thought Wall',
+    example: 'Show me how to use Mindspace',
   ),
   RiyaCapability(
     'navigation.open',
@@ -927,7 +927,7 @@ class RiyaExecutor {
   }
 
   String _featureRoute(String feature) => switch (feature) {
-    'Thought Wall' => '/thought-wall',
+    'Mindspace' || 'Thought Wall' || 'Mind Space' => '/thought-wall',
     'Focus Timer' => '/focus',
     'Money' => '/money',
     'Reminders & Alerts' => '/reminders',

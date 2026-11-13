@@ -4,6 +4,7 @@ import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
@@ -108,7 +109,16 @@ class _LectureFocusPlayerSheetState
                       Icons.keyboard_arrow_down_rounded,
                       size: 28,
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      final router = GoRouter.maybeOf(context);
+                      if (router != null && router.canPop()) {
+                        router.pop();
+                      } else if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else if (router != null) {
+                        router.go('/home');
+                      }
+                    },
                     color: context.textPrimary,
                   ),
                   Text(

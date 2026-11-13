@@ -1,3 +1,6 @@
+import 'promise_privacy_guard.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -5,23 +8,49 @@ import '../../../shared/widgets/glass_surface.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
 import 'promise_action_button.dart';
+import '../../vault/providers/vault_providers.dart';
+import '../../../shared/widgets/locked_commitment_tile.dart';
 import 'promise_actions.dart';
 import 'promise_calendar.dart';
 import 'promise_schedule_editor.dart';
 
 class PromiseDetailSheet extends ConsumerStatefulWidget {
-  const PromiseDetailSheet({super.key, required this.promise});
+  const PromiseDetailSheet({
+    super.key,
+    required this.promise,
+    this.initialAction,
+  });
+  final String? initialAction;
   final PromiseModel promise;
   static final _open = <int>{};
-  static Future<void> show(BuildContext context, PromiseModel promise) async {
+  static Future<void> show(
+    BuildContext context,
+    PromiseModel promise, {
+    String? initialAction,
+  }) async {
     if (!_open.add(promise.id)) return;
     try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      final current = await container
+          .read(promiseRepositoryProvider)
+          .getPromiseById(promise.id);
+      if (current == null || !context.mounted) return;
+      if (current.isPrivate &&
+          !container.read(unlockedPromiseIdsProvider).contains(current.id)) {
+        final authenticated = await container
+            .read(vaultSecurityServiceProvider)
+            .authenticateBiometrics(reason: 'Unlock private commitment');
+        if (!authenticated || !context.mounted) return;
+        container.read(unlockedPromiseIdsProvider.notifier).unlock(current.id);
+      }
+      if (!context.mounted) return;
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => PromiseDetailSheet(promise: promise),
+        builder: (_) =>
+            PromiseDetailSheet(promise: current, initialAction: initialAction),
       );
     } finally {
       _open.remove(promise.id);
@@ -33,9 +62,33 @@ class PromiseDetailSheet extends ConsumerStatefulWidget {
 }
 
 class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted ||
+          (widget.promise.isPrivate &&
+              !ref
+                  .read(unlockedPromiseIdsProvider)
+                  .contains(widget.promise.id))) {
+        return;
+      }
+      if (widget.initialAction == 'edit') await _edit(widget.promise);
+      if (widget.initialAction == 'delete') await _delete(widget.promise);
+      if (widget.initialAction == 'pause') {
+        await _run(() => ref.read(promiseRepositoryProvider).setPromiseStatus(widget.promise.id,
+          widget.promise.isPaused ? PromiseStatus.active : PromiseStatus.paused));
+      }
+    });
+  }
+
   bool _busy = false;
   Future<void> _run(Future<void> Function() action) async {
-    if (_busy) return;
+    if (_busy ||
+        (widget.promise.isPrivate &&
+            !ref.read(unlockedPromiseIdsProvider).contains(widget.promise.id))) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       await action();
@@ -57,6 +110,25 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
     final g = context.glass;
     final live = ref.watch(promiseByIdProvider(widget.promise.id));
     final p = live.value ?? widget.promise;
+    final unlocked = ref.watch(unlockedPromiseIdsProvider).contains(p.id);
+    if (p.isPrivate && !unlocked) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: LockedCommitmentTile(
+            label: 'Private commitment',
+            onTap: () async {
+              final authenticated = await ref
+                  .read(vaultSecurityServiceProvider)
+                  .authenticateBiometrics(reason: 'Unlock private commitment');
+              if (authenticated && mounted) {
+                ref.read(unlockedPromiseIdsProvider.notifier).unlock(p.id);
+              }
+            },
+          ),
+        ),
+      );
+    }
     return GlassSurface(
       radius: 28,
       minimumOpacity: .88,
@@ -105,7 +177,11 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
                               .completePromise(p.id),
                         );
                       } else if (value == 'archive') {
-                        await _run(() => ref.read(promiseRepositoryProvider).setPromiseStatus(p.id, PromiseStatus.archived));
+                        await _run(
+                          () => ref
+                              .read(promiseRepositoryProvider)
+                              .setPromiseStatus(p.id, PromiseStatus.archived),
+                        );
                       } else if (value == 'delete') {
                         await _delete(p);
                       }
@@ -122,7 +198,10 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
                           child: Text('Finish this promise'),
                         ),
                       if (p.status != PromiseStatus.archived)
-                        const PopupMenuItem(value:'archive',child:Text('Archive · keep history')),
+                        const PopupMenuItem(
+                          value: 'archive',
+                          child: Text('Archive · keep history'),
+                        ),
                       const PopupMenuItem(
                         value: 'delete',
                         child: Text('Delete permanently'),
@@ -240,22 +319,15 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
   }
 
   Future<void> _delete(PromiseModel p) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete this promise?'),
-        content: const Text('Its progress history will also be removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: 'Delete this promise?',
+      content:
+          'Its progress history will also be removed. This cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep promise',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
     if (confirmed == true) {
       await _run(() async {
@@ -266,6 +338,19 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
   }
 
   Future<void> _edit(PromiseModel p) async {
+    if (await AscentDialog.confirm(
+              context: context,
+              title: 'Edit this promise?',
+              content: 'Your changes will only be applied when you save.',
+              confirmLabel: 'Continue editing',
+              cancelLabel: 'Keep as is',
+              icon: Icons.edit_outlined,
+            ) !=
+            true ||
+        !mounted) {
+      return;
+    }
+
     var draft = PromiseProposal(
       title: p.title,
       intention: p.intention,
@@ -290,103 +375,114 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
-        builder: (ctx) => StatefulBuilder(
-          builder: (ctx, setLocal) => Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-            ),
-            child: GlassSurface(
-              radius: 28,
-              minimumOpacity: .92,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(ctx).height * .8,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Edit promise',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
+        builder: (ctx) => PromisePrivacyGuard(
+          promise: p,
+          child: StatefulBuilder(
+            builder: (ctx, setLocal) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+              ),
+              child: GlassSurface(
+                radius: 28,
+                minimumOpacity: .92,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(ctx).height * .8,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Edit promise',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            onPressed: saving ? null : () => Navigator.pop(ctx),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ],
-                      ),
-                      TextField(
-                        controller: title,
-                        maxLines: 2,
-                        decoration: const InputDecoration(
-                          labelText: 'Your promise',
+                            IconButton(
+                              onPressed: saving
+                                  ? null
+                                  : () => Navigator.pop(ctx),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      AbsorbPointer(
-                        absorbing: saving,
-                        child: PromiseScheduleEditor(
-                          proposal: draft,
-                          allowTrackingType: false,
-                          onChanged: (next) => setLocal(() => draft = next),
-                        ),
-                      ),
-                      if (error != null)
-                        Text(
-                          error!,
-                          style: TextStyle(
-                            color: Theme.of(ctx).colorScheme.error,
+                        TextField(
+                          controller: title,
+                          maxLines: 2,
+                          decoration: const InputDecoration(
+                            labelText: 'Your promise',
                           ),
                         ),
-                      FilledButton(
-                        onPressed: saving
-                            ? null
-                            : () async {
-                                setLocal(() => saving = true);
-                                try {
-                                  await ref
-                                      .read(promiseRepositoryProvider)
-                                      .updatePromise(
-                                        p.copyWith(
-                                          title: title.text,
-                                          trackingType: draft.trackingType,
-                                          unit: draft.unit,
-                                          targetValue: draft.targetValue,
-                                          frequencyPerWeek:
-                                              draft.frequencyPerWeek,
-                                          schedule: draft.schedule,
-                                          targetDate: draft.schedule?.endDate,
-                                          isPrivate: draft.isPrivate,
-                                          reminderTime: draft.reminderTime,
-                                          reminderEnabled:
-                                              draft.reminderTime != null,
-                                          reminderDays: draft.schedule?.days,
-                                        ),
-                                      );
-                                  if (ctx.mounted) Navigator.pop(ctx);
-                                } catch (e) {
-                                  if (ctx.mounted) {
-                                    setLocal(() {
-                                      saving = false;
-                                      error = e is ArgumentError
-                                          ? e.message.toString()
-                                          : 'Could not save. Your changes are still here.';
-                                    });
+                        const SizedBox(height: 16),
+                        AbsorbPointer(
+                          absorbing: saving,
+                          child: PromiseScheduleEditor(
+                            proposal: draft,
+                            allowTrackingType: false,
+                            onChanged: (next) => setLocal(() => draft = next),
+                          ),
+                        ),
+                        if (error != null)
+                          Text(
+                            error!,
+                            style: TextStyle(
+                              color: Theme.of(ctx).colorScheme.error,
+                            ),
+                          ),
+                        FilledButton(
+                          onPressed: saving
+                              ? null
+                              : () async {
+                                  if (p.isPrivate &&
+                                      !ref
+                                          .read(unlockedPromiseIdsProvider)
+                                          .contains(p.id)) {
+                                    return;
                                   }
-                                }
-                              },
-                        child: Text(saving ? 'Saving…' : 'Save changes'),
-                      ),
-                    ],
+                                  setLocal(() => saving = true);
+                                  try {
+                                    await ref
+                                        .read(promiseRepositoryProvider)
+                                        .updatePromise(
+                                          p.copyWith(
+                                            title: title.text,
+                                            trackingType: draft.trackingType,
+                                            unit: draft.unit,
+                                            targetValue: draft.targetValue,
+                                            frequencyPerWeek:
+                                                draft.frequencyPerWeek,
+                                            schedule: draft.schedule,
+                                            targetDate: draft.schedule?.endDate,
+                                            isPrivate: draft.isPrivate,
+                                            reminderTime: draft.reminderTime,
+                                            reminderEnabled:
+                                                draft.reminderTime != null,
+                                            reminderDays: draft.schedule?.days,
+                                          ),
+                                        );
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                  } catch (e) {
+                                    if (ctx.mounted) {
+                                      setLocal(() {
+                                        saving = false;
+                                        error = e is ArgumentError
+                                            ? e.message.toString()
+                                            : 'Could not save. Your changes are still here.';
+                                      });
+                                    }
+                                  }
+                                },
+                          child: Text(saving ? 'Saving…' : 'Save changes'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -397,5 +493,39 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
     } finally {
       title.dispose();
     }
+  }
+}
+
+Future<void> showPromiseActionMenu(
+  BuildContext context,
+  PromiseModel promise, {
+  bool locked = false,
+}) async {
+  final action = await showAscentActionMenu<String>(
+    context: context,
+    title: locked ? 'Private commitment' : promise.title,
+    actions: [
+      const AscentAction('view', 'View commitment', Icons.open_in_new_rounded),
+      if (!locked && promise.isPrivate)
+        const AscentAction('lock', 'Lock commitment', Icons.lock_outline_rounded),
+      if (!locked)
+        const AscentAction('edit', 'Edit commitment', Icons.edit_outlined),
+      if (!locked && !promise.isCompleted)
+        AscentAction('pause', promise.isPaused ? 'Resume' : 'Pause', Icons.pause_circle_outline_rounded),
+      if (!locked)
+        const AscentAction(
+          'delete',
+          'Delete commitment',
+          Icons.delete_outline_rounded,
+          destructive: true,
+        ),
+    ],
+  );
+  if (action == 'lock' && context.mounted) {
+    ProviderScope.containerOf(context, listen: false).read(unlockedPromiseIdsProvider.notifier).lock(promise.id);
+    return;
+  }
+  if (action != null && context.mounted) {
+    await PromiseDetailSheet.show(context, promise, initialAction: action);
   }
 }

@@ -96,10 +96,10 @@ class ThingsCheckIn {
         final label = task.title.replaceAll(RegExp(r'\s+'), ' ').trim();
         final short = label.length > 64 ? '${label.substring(0, 61)}…' : label;
         final rest = pending.length > 1
-            ? ' +${pending.length - 1} more in Things hub.'
+            ? ' +${pending.length - 1} more in Dayboard.'
             : '';
         final body = redact
-            ? 'Your Things hub has unfinished items. Pick one small next step.'
+            ? 'Your Dayboard has unfinished items. Pick one small next step.'
             : hour == 18
             ? '“$short”$rest Close it out or carry it over to tomorrow.'
             : '“$short”$rest ${task.estimatedMinutes != null ? 'Got 5 minutes to start?' : 'One small step is enough.'}';
@@ -116,8 +116,8 @@ class ThingsCheckIn {
               title: title,
               body: body,
               summary: notifType == ThingsNotificationType.eveningWrapUp
-                  ? 'Things hub · Evening wrap-up'
-                  : 'Things hub · A gentle check-in',
+                  ? 'Dayboard · Evening wrap-up'
+                  : 'Dayboard · A gentle check-in',
             ),
             taskId: task.id,
             payload: payload,

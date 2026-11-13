@@ -1,0 +1,3 @@
+Generated with the built-in imagegen tool.
+
+Use case: logo-brand. Create a finished high definition square app icon for Ascent, a calm personal clarity and focus app. A single sculptural ascending ribbon forming a soft peak / letter A, pearl-white and pale ice blue, floating centered on a seamless deep muted midnight blue field (#12243A). Rounded flowing curves, restrained dimensional depth, soft studio lighting, luminous edges, very refined minimal composition, strong silhouette readable at 48px. Full bleed square canvas, no rounded outer icon mask, no text, no letters beyond the abstract A mark, no watermark, no extra objects. Mark fully within central 55% of canvas for adaptive launcher safe area. Calm composed sophisticated feel.

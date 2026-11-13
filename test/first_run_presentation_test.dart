@@ -58,6 +58,9 @@ void main() {
     defaultValue: '/tmp/ascent-first-run',
   );
   Future<void> capture(WidgetTester tester, GlobalKey key, String name) async {
+    final originalShadows = debugDisableShadows;
+    debugDisableShadows = false;
+    await tester.pump();
     await tester.runAsync(() async {
       final img =
           await (key.currentContext!.findRenderObject()
@@ -68,6 +71,8 @@ void main() {
       await File('$output/$name.png').writeAsBytes(bytes!.buffer.asUint8List());
       img.dispose();
     });
+    debugDisableShadows = originalShadows;
+    await tester.pump();
   }
 
   Widget wrap(
@@ -112,14 +117,18 @@ void main() {
         );
         await settle(tester);
         final next = find.byKey(const ValueKey('onboarding_next'));
+        await tester.ensureVisible(next);
+        await tester.pumpAndSettle();
         expect(next.hitTestable(), findsOneWidget);
         expect(find.text('Start now'), findsNothing);
-        expect(find.text('Continue'), findsOneWidget);
+        expect(find.text('Let’s begin'), findsOneWidget);
         expect(tester.takeException(), isNull);
         await capture(tester, key, 'welcome-$scale');
         await tester.tap(next);
         await settle(tester);
-        expect(find.text('Open Ascent'), findsOneWidget);
+        expect(find.text('Continue'), findsOneWidget);
+        await tester.ensureVisible(next);
+        await tester.pumpAndSettle();
         expect(next.hitTestable(), findsOneWidget);
         expect(tester.takeException(), isNull);
         await capture(tester, key, 'personalize-$scale');
@@ -133,46 +142,61 @@ void main() {
     },
   );
 
-  testWidgets('Name-free onboarding opens Home without seeding records', (
-    tester,
-  ) async {
-    final router = GoRouter(
-      initialLocation: '/onboarding',
-      routes: [
-        GoRoute(
-          path: '/onboarding',
-          builder: (_, _) => const OnboardingShell(),
+  testWidgets(
+    'Name and birthday are required and save without starter records',
+    (tester) async {
+      final router = GoRouter(
+        initialLocation: '/onboarding',
+        routes: [
+          GoRoute(
+            path: '/onboarding',
+            builder: (_, _) => const OnboardingShell(),
+          ),
+          GoRoute(
+            path: '/home',
+            builder: (_, _) => const Scaffold(body: Text('Home ready')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            theme: AscentTheme.light(),
+            routerConfig: router,
+          ),
         ),
-        GoRoute(
-          path: '/home',
-          builder: (_, _) => const Scaffold(body: Text('Home ready')),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp.router(
-          theme: AscentTheme.light(),
-          routerConfig: router,
-        ),
-      ),
-    );
-    await settle(tester);
-    await tester.tap(find.text('Continue'));
-    await settle(tester);
-    await tester.tap(find.text('Open Ascent'));
-    await settle(tester);
-    expect(find.text('Home ready'), findsOneWidget);
-    expect(prefs.getBool('ascent_quick_start_v1'), isTrue);
-    await tester.runAsync(() async {
-      expect(await db.userProfileDao.getProfile(), isNull);
-      expect(await db.select(db.taskTable).get(), isEmpty);
-    });
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-  });
+      );
+      await settle(tester);
+      await tester.tap(find.text('Let’s begin'));
+      await settle(tester);
+      await tester.tap(find.text('Continue'));
+      await settle(tester);
+      expect(find.text('Home ready'), findsNothing);
+      expect(find.text('Choose your date of birth.'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const ValueKey('onboarding_name')),
+        'Arun',
+      );
+      container
+          .read(onboardingProvider.notifier)
+          .setDateOfBirth(DateTime(1998, 6, 10));
+      await settle(tester);
+      await tester.tap(find.text('Continue'));
+      await settle(tester);
+      expect(find.text('Home ready'), findsOneWidget);
+      expect(prefs.getBool('ascent_quick_start_v1'), isTrue);
+      await tester.runAsync(() async {
+        final profile = await db.userProfileDao.getProfile();
+        expect(profile!.name, 'Arun');
+        expect(profile.dateOfBirth, DateTime(1998, 6, 10));
+        expect(await db.select(db.taskTable).get(), isEmpty);
+      });
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets(
     'First welcome previews ideas without saving; explicit add saves exactly one real task',
