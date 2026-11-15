@@ -33,6 +33,7 @@ import 'widgets/home_header.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_calendar.dart';
 import 'widgets/home_shortcut_panel.dart';
+import 'widgets/home_day_glance_card.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
 import '../vault/widgets/vault_home_preview.dart';
@@ -304,6 +305,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                                 'reminders',
                               ),
                             ),
+                          ),
+                          Padding(
+                            padding: _sectionPadding(context),
+                            child: const HomeDayGlanceCard(),
                           ),
                           Padding(
                             padding: _sectionPadding(context),
