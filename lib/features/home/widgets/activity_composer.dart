@@ -1,13 +1,12 @@
-import '../../../app/theme/home_design.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/app_input_bar.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_star_button.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
-import '../../../shared/widgets/app_surfaces.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../shared/widgets/schedule_picker.dart';
-import '../../../shared/widgets/note_list_button.dart';
 import '../../../core/services/plan_collection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -525,107 +524,48 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           ),
         ],
         const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final showRepeat = constraints.maxWidth >= 220;
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: HomeDesign.of(context).controlOutline,
-                  width: 1.2,
+        AppInputBar(
+          textFieldKey: const ValueKey('activity_quick_input'),
+          submitTooltip: 'Add activity',
+          controller: _text,
+          focusNode: _effectiveFocus,
+          hint: 'Add a to-do or focus timer…',
+          leadingIcon: Icons.add,
+          onLeadingTap: () {
+            HapticFeedback.lightImpact();
+            _effectiveFocus.requestFocus();
+          },
+          extraAction: Tooltip(
+            message: _isDailyStanding
+                ? 'Daily standing active (repeats every day)'
+                : 'Keep every day until turned off',
+            child: Material(
+              color: Colors.transparent,
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _saving
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        setState(
+                          () => _isDailyStanding = !_isDailyStanding,
+                        );
+                      },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.repeat_rounded,
+                    size: 20,
+                    color: _isDailyStanding
+                        ? context.c.accent
+                        : context.c.textSecondary,
+                  ),
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(6, 5, 6, 5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  InlineListAddButton(
-                    controller: _text,
-                    focusNode: _effectiveFocus,
-                    enabled: !_saving,
-                  ),
-                  Expanded(
-                    child: TextField(
-                      key: const ValueKey('activity_quick_input'),
-                      controller: _text,
-                      focusNode: _effectiveFocus,
-                      enabled: !_saving,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: 20000,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: TextStyle(color: g.ink, fontSize: 15, height: 1.4),
-                      decoration: InputDecoration(
-                        hintText: 'Add a to-do or focus timer…',
-                        hintStyle: TextStyle(color: g.inkMuted),
-                        counterText: '',
-                        filled: false,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 12,
-                        ),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        disabledBorder: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  if (showRepeat)
-                    Tooltip(
-                      message: _isDailyStanding
-                          ? 'Daily standing active (repeats every day)'
-                          : 'Keep every day until turned off',
-                      child: AppTapArea(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: _saving
-                            ? null
-                            : () {
-                                HapticFeedback.selectionClick();
-                                setState(
-                                  () => _isDailyStanding = !_isDailyStanding,
-                                );
-                              },
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(
-                            Icons.repeat_rounded,
-                            size: 20,
-                            color: _isDailyStanding
-                                ? SharedControlColors.actionBlue
-                                : g.inkMuted.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ),
-                    ),
-                  IconButton.filled(
-                    tooltip: 'Add activity',
-                    onPressed: _saving || !hasText ? null : _send,
-                    style: IconButton.styleFrom(
-                      backgroundColor: HomeDesign.of(context).strongSurface,
-                      foregroundColor: HomeDesign.of(context).onStrong,
-                      disabledBackgroundColor:
-                          HomeDesign.of(context).strongSurface,
-                      disabledForegroundColor: HomeDesign.of(
-                        context,
-                      ).onStrong.withValues(alpha: .5),
-                      shape: const CircleBorder(),
-                      minimumSize: const Size(44, 44),
-                    ),
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.arrow_upward_rounded, size: 20),
-                  ),
-                ],
-              ),
-            );
-          },
+            ),
+          ),
+          onSubmit: _saving || !hasText ? () {} : _send,
         ),
         if (_effectiveFocus.hasFocus || hasText || customized)
           Align(

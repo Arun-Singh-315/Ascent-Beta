@@ -1,5 +1,4 @@
-import '../../app/theme/home_design.dart';
-import 'widgets/home_section_heading.dart';
+import '../../core/theme/app_colors.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
 import 'widgets/home_content_transition.dart';
@@ -13,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -194,8 +192,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-
     final profileAsync = ref.watch(userProfileStreamProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _updateCompactHeader();
@@ -218,8 +214,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       }
     });
 
+    final c = context.c;
+
     return Scaffold(
-      backgroundColor: g.bg,
+      backgroundColor: c.bg,
+      extendBody: true,
       body: SafeArea(
         child: HomeDayBackground(
           child: Stack(
@@ -278,107 +277,68 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ref.invalidate(allRemindersProvider);
                         ref.invalidate(dismissedTodayReminderIdsProvider);
                       },
-                      color: g.clay,
+                      color: c.accent,
                       child: ListView(
                         key: const ValueKey('home_scroll'),
                         controller: _homeScroll,
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          bottom: AppSpace.s96,
-                        ),
+                        padding: EdgeInsets.zero,
                         children: [
+                          // 1. HomeHeader
                           HomeHeader(key: _headerKey, profile: profile),
                           const SizedBox(height: 12),
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
-                              0,
-                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
-                              16,
-                            ),
-                            child: HomeShortcutPanel(
-                              shortcuts: layout.shortcuts,
-                              showReminders: layout.visible.contains(
-                                'reminders',
-                              ),
-                            ),
+
+                          // 2. Your space shortcuts row
+                          HomeShortcutPanel(
+                            shortcuts: layout.shortcuts,
+                            showReminders: layout.visible.contains('reminders'),
                           ),
-                          Padding(
-                            padding: _sectionPadding(context),
-                            child: const HomeDayGlanceCard(),
-                          ),
-                          Padding(
-                            padding: _sectionPadding(context),
-                            child: HomeCalendar(),
-                          ),
+
+                          // 3. Today's Pulse card
+                          const HomeDayGlanceCard(),
+
+                          // 4. Calendar strip card
+                          const HomeCalendar(),
+
+                          // 5. Things SectionCard
                           if (layout.visible.contains('today'))
-                            Padding(
-                              padding: _sectionPadding(context),
-                              child: ActivityHubCard(
-                                previewLimit: layout.compact.contains('today')
-                                    ? 3
-                                    : 6,
-                              ),
+                            ActivityHubCard(
+                              previewLimit: layout.compact.contains('today') ? 3 : 6,
                             ),
+
+                          // 6. Mindspace SectionCard
                           if (layout.visible.contains('mind'))
-                            Padding(
-                              padding: _sectionPadding(context),
-                              child: ThoughtWallHomePreview(
-                                previewLimit: 1,
-                                compact: true,
-                              ),
+                            const ThoughtWallHomePreview(
+                              previewLimit: 1,
+                              compact: true,
                             ),
-                          if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              child: HomeLifeShelf(),
-                            ),
-                          Padding(
-                            padding: _sectionPadding(context),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                HomeSectionHeading(
-                                  title: 'Plans & Routines',
-                                  dotColor: HomeDesign.of(context).learningInk,
-                                  titleColor: HomeDesign.of(
-                                    context,
-                                  ).learningInk,
-                                  trailing: HomeSectionArrowButton(
-                                    tooltip: 'Open all plans',
-                                    framed: false,
-                                    color: HomeDesign.of(context).learningInk,
-                                    onTap: () => context.push('/plans'),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                const HomePlansPreview(
-                                  key: ValueKey('home_plans_big_card'),
-                                ),
-                              ],
-                            ),
+
+                          // 7. Daily rhythm SectionCard
+                          if (layout.visible.contains('life') && layout.tools.isNotEmpty)
+                            const HomeLifeShelf(),
+
+                          // 8. Plans & Routines SectionCard
+                          const HomePlansPreview(
+                            key: ValueKey('home_plans_big_card'),
                           ),
+
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
                           ),
-                          ..._buildContextualModules(context, layout).map(
-                            (module) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
+
+                          for (final module in _buildContextualModules(context, layout))
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: module,
                             ),
-                          ),
+
                           if (_entryDialogsReady &&
                               ref
                                       .read(sharedPreferencesProvider)
                                       .getString('ascent_first_home_day_v1') !=
                                   ref.watch(localDayProvider).toIso8601String())
                             const SmartCatchUpBanner(),
+
                           if (layout.visible.isEmpty)
                             EmptyState(
                               icon: Icons.dashboard_customize_outlined,
@@ -387,6 +347,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               actionLabel: 'Open tools',
                               onAction: () => context.push('/more'),
                             ),
+
+                          // 9. Bottom spacer
+                          SizedBox(
+                            height: 96 + MediaQuery.paddingOf(context).bottom,
+                          ),
                         ],
                       ),
                     );
@@ -442,11 +407,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         ),
       ),
     );
-  }
-
-  EdgeInsets _sectionPadding(BuildContext context) {
-    final margin = MediaQuery.sizeOf(context).width < 360 ? 16.0 : 20.0;
-    return EdgeInsets.fromLTRB(margin, 0, margin, 24);
   }
 
   List<Widget> _buildContextualModules(

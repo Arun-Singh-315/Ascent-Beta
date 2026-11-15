@@ -1,8 +1,8 @@
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_tokens.dart';
 import 'ascent_button.dart';
 import '../../app/theme/home_design.dart';
-import 'dart:ui';
 
-import 'package:ascent/app/theme/dimension_tokens.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/monochrome_surfaces.dart';
-import '../../app/theme/shared_control_tokens.dart';
 import '../../features/home/widgets/home_theme.dart';
 import '../../core/providers/calendar_view_mode_provider.dart';
 
@@ -202,136 +201,94 @@ class _AscentBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    final isDark = g.isDark;
     final neutral = Theme.of(context).extension<MonochromeSurfaces>();
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    final highContrast = MediaQuery.of(context).highContrast;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    // Glass fill & blur settings from C06 & C07
-    final enableBlur = !highContrast && !disableAnimations;
-    final navBg = enableBlur
-        ? g.elevated.withValues(alpha: isDark ? 0.94 : 0.92)
-        : g.elevated;
-
-    final navShadow = BoxShadow(
-      color: HomeDesign.of(context).shadow,
-      blurRadius: 24,
-      offset: const Offset(0, 8),
-      spreadRadius: 0,
-    );
-
+    final c = context.c;
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 8 + bottomInset),
-      child: DecoratedBox(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 64),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
-          boxShadow: [navShadow],
+          color: c.surface,
+          borderRadius: BorderRadius.circular(Rd.nav),
+          border: Border.all(color: c.border),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: enableBlur ? 12 : 0,
-              sigmaY: enableBlur ? 12 : 0,
-            ),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 64),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: navBg,
-                borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
-                border: Border.all(
-                  color: g.line,
-                  width: AscentDimensions.contentOutlineWidth,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            Widget tabAt(int index) {
+              final tab = tabs[index];
+              final active = index == currentIndex;
+              final fg = active ? c.accent : c.textSecondary;
+              return Semantics(
+                button: true,
+                selected: active,
+                label: tab.label,
+                child: InkWell(
+                  onTap: () => onTap(index),
+                  borderRadius: BorderRadius.circular(16),
+                  child: AnimatedContainer(
+                    duration: Duration(
+                      milliseconds: disableAnimations ? 0 : 200,
+                    ),
+                    curve: Curves.easeOutCubic,
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active ? c.accentTint : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(tab.activeIcon, size: 22, color: fg),
+                        const SizedBox(height: 3),
+                        Text(
+                          tab.label,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: fg,
+                            fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  Widget tabAt(int index) {
-                    final tab = tabs[index];
-                    final active = index == currentIndex;
-                    final blue = isDark
-                        ? SharedControlColors.actionBlueDark
-                        : SharedControlColors.actionBlue;
-                    final fg = active ? blue : g.inkSecondary;
-                    return Semantics(
-                      button: true,
-                      selected: active,
-                      label: tab.label,
-                      child: InkWell(
-                        onTap: () => onTap(index),
-                        borderRadius: BorderRadius.circular(24),
-                        child: AnimatedContainer(
-                          duration: Duration(
-                            milliseconds: disableAnimations ? 0 : 200,
-                          ),
-                          curve: Curves.easeOutCubic,
-                          constraints: const BoxConstraints(minHeight: 64),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: active
-                                ? blue.withValues(alpha: isDark ? .18 : .09)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(tab.activeIcon, size: 24, color: fg),
-                              const SizedBox(height: 4),
-                              Text(
-                                tab.label,
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                style:
-                                    (neutral != null
-                                            ? AscentTextStyles.interfaceLabel
-                                            : AscentTextStyles.caption)
-                                        .copyWith(
-                                          color: fg,
-                                          fontWeight: active
-                                              ? FontWeight.w600
-                                              : FontWeight.w500,
-                                        ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
+              );
+            }
 
-                  final scale = MediaQuery.textScalerOf(context).scale(1);
-                  final columns = neutral != null && scale >= 1.45
-                      ? (scale > 2.2 ? 1 : 2)
-                      : tabs.length;
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
+            final scale = MediaQuery.textScalerOf(context).scale(1);
+            final columns = neutral != null && scale >= 1.45
+                ? (scale > 2.2 ? 1 : 2)
+                : tabs.length;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var start = 0; start < tabs.length; start += columns)
+                  Row(
                     children: [
-                      for (var start = 0; start < tabs.length; start += columns)
-                        Row(
-                          children: [
-                            for (
-                              var index = start;
-                              index < start + columns && index < tabs.length;
-                              index++
-                            )
-                              Expanded(child: tabAt(index)),
-                          ],
-                        ),
+                      for (
+                        var index = start;
+                        index < start + columns && index < tabs.length;
+                        index++
+                      )
+                        Expanded(child: tabAt(index)),
                     ],
-                  );
-                },
-              ),
-            ),
-          ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

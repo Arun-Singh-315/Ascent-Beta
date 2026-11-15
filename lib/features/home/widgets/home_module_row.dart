@@ -105,7 +105,6 @@ class HomeModuleGroup extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     key: const ValueKey('home_growth_commitments_group'),
     padding: const EdgeInsets.symmetric(horizontal: 16),
-    clipBehavior: Clip.antiAlias,
     child: HomeModuleGroupScope(
       child: Column(
         children: [

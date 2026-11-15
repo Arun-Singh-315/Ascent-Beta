@@ -161,7 +161,7 @@ void main() {
   });
 
   testWidgets('Capture Home screen render photo with iOS summary', (tester) async {
-    tester.view.physicalSize = const Size(390, 844); // iPhone 14/15 viewport
+    tester.view.physicalSize = const Size(780, 1688); // iPhone 14/15 390x844 logical
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);

@@ -12,6 +12,7 @@ import 'text_styles.dart';
 import 'surface_tokens.dart';
 import 'shared_control_tokens.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Provides the light and dark [ThemeData] for the Ascent app.
 ///
@@ -73,6 +74,7 @@ class AscentTheme {
           highlight: Colors.white.withValues(alpha: .90),
           shadow: material.shadow,
         ),
+        AppColors.light,
       ],
     );
   }
@@ -778,6 +780,7 @@ class AscentTheme {
         borderRadius: BorderRadius.circular(4),
       ),
       extensions: [
+        isDark ? AppColors.dark : AppColors.light,
         isDark
             ? (isMerlotLinen
                   ? AscentGlass.merlotLinenDark

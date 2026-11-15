@@ -1,17 +1,14 @@
-import '../../../app/theme/home_design.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/section_card.dart';
+import '../../../shared/widgets/segmented_tabs.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 import 'activity_starter_actions.dart';
-import 'home_section_heading.dart';
-import 'home_content_transition.dart';
-import 'home_outline_surface.dart';
 import 'home_capture_entrance.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
@@ -106,53 +103,34 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       orElse: () => (0, 0),
     );
 
-    return HomeBorderSection(
+    return SectionCard(
+      key: const ValueKey('home_activity_card'),
+      icon: Icons.checklist_rounded,
+      title: 'Things',
+      onOpen: () => context.push('/things'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── SECTION HEADING ──────────────────────────────────────────
-          HomeSectionHeading(
-            title: 'Things',
-            cutout: true,
-            dotColor: HomeDesign.of(context).action,
-            titleColor: HomeDesign.of(context).action,
-            showDivider: false,
-            trailing: HomeSectionArrowButton(
-              key: const ValueKey('view_all_things_btn'),
-              tooltip: 'Open Things',
-              color: SharedControlColors.actionBlue,
-              onTap: () => context.push('/things'),
-            ),
+          SegmentedTabs(
+            key: const ValueKey('activity_hub_tabs'),
+            tabs: const ['Today', 'Done', 'Plans'],
+            selectedIndex: _showPlans ? 2 : (_showCompleted ? 1 : 0),
+            onTabSelected: (i) => setState(() {
+              _showCompleted = i == 1;
+              _showPlans = i == 2;
+              _showAll = false;
+            }),
           ),
-          const SizedBox(height: 4),
-          HomeContentTransition(
-            child: Container(
-              key: const ValueKey('home_activity_card'),
-              width: double.infinity,
-              decoration: null,
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _HubTabs(
-                    key: const ValueKey('activity_hub_tabs'),
-                    labels: const ['Today', 'Done', 'Plans'],
-                    selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
-                    onSelected: (i) => setState(() {
-                      _showCompleted = i == 1;
-                      _showPlans = i == 2;
-                      _showAll = false;
-                    }),
-                  ),
-                  if (!_showPlans && totalCount > 0 && doneCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-                      child: Text(
-                        '$doneCount of $totalCount completed',
-                        style: TextStyle(color: g.inkMuted, fontSize: 12),
-                      ),
-                    ),
-                  AnimatedSwitcher(
+          const SizedBox(height: 12),
+          if (!_showPlans && totalCount > 0 && doneCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '$doneCount of $totalCount completed',
+                style: TextStyle(color: context.c.textSecondary, fontSize: 12),
+              ),
+            ),
+          AnimatedSwitcher(
                     duration: Duration(
                       milliseconds: MediaQuery.disableAnimationsOf(context)
                           ? 0
@@ -315,29 +293,35 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                               _showCompleted
                                                   ? Icons
                                                         .check_circle_outline_rounded
-                                                  : Icons.spa_outlined,
-                                              size: 32,
-                                              color: g.inkSecondary,
+                                                  : Icons.checklist_rounded,
+                                              size: 36,
+                                              color: context.c.textTertiary,
                                             ),
                                             const SizedBox(height: 10),
                                             Text(
                                               _showCompleted
                                                   ? 'No completed activities yet.'
-                                                  : (items.any(
-                                                          (a) =>
-                                                              a.status ==
-                                                              TodayActivityStatus
-                                                                  .done,
-                                                        )
-                                                        ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
-                                                        : 'A little space to begin.\nAdd one thing you want to do today.'),
+                                                  : 'Nothing for today',
                                               style: TextStyle(
-                                                color: g.inkMuted,
-                                                fontSize: 13,
-                                                height: 1.4,
+                                                color: context.c.textSecondary,
+                                                fontSize: 14,
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
+                                            if (!_showCompleted) ...[
+                                              const SizedBox(height: 6),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    _composerFocus.requestFocus(),
+                                                child: Text(
+                                                  'Add a to-do',
+                                                  style: TextStyle(
+                                                    color: context.c.accent,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),
@@ -367,8 +351,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                       Divider(
                                         height: 1,
                                         thickness: .6,
-                                        indent: 42,
-                                        color: g.line.withValues(alpha: .65),
+                                        indent: 40,
+                                        color: context.c.border,
                                       ),
                                     if (entry is _MedicineGroupEntry)
                                       MedicineActivityGroupCard(
@@ -460,7 +444,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                           ),
                   ),
                   if (!_showPlans && !_showCompleted) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     ActivityComposer(
                       key: const ValueKey('home_composer'),
                       focusNode: _composerFocus,
@@ -468,84 +452,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   ],
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Slim text tabs (Active · Completed · Plans) shown at the top of the card.
-class _HubTabs extends StatelessWidget {
-  const _HubTabs({
-    super.key,
-    required this.labels,
-    required this.selected,
-    required this.onSelected,
-  });
-  final List<String> labels;
-  final int selected;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final blue = dark
-        ? SharedControlColors.actionBlueDark
-        : SharedControlColors.actionBlue;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          for (final (index, label) in labels.indexed) ...[
-            if (index > 0) const SizedBox(width: 8),
-            Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onSelected(index);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected == index
-                        ? blue.withValues(alpha: dark ? 0.22 : 0.12)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: selected == index
-                          ? blue
-                          : (dark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B)),
-                      fontSize: 14,
-                      fontWeight: selected == index
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-      ),
     );
   }
 }

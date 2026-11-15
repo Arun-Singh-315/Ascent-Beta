@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../app/theme/monochrome_surfaces.dart';
-import '../../../app/theme/home_design.dart';
 
 /// Shared atmosphere for Home's header, working surface and quieter lower area.
 class HomeDayDesign {
@@ -76,7 +76,7 @@ class HomeDayBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: BoxDecoration(color: HomeDesign.of(context).canvas),
+      decoration: BoxDecoration(color: context.c.bg),
       child: child,
     );
   }
