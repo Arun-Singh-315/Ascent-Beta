@@ -11,6 +11,7 @@ class HomeContentTransition extends StatelessWidget {
     ),
     curve: Curves.easeInOutCubic,
     alignment: Alignment.topCenter,
+    clipBehavior: Clip.hardEdge,
     child: child,
   );
 }

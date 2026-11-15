@@ -143,7 +143,10 @@ class HomeBorderSection extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-        child: child,
+        child: SizedBox(
+          width: double.infinity,
+          child: child,
+        ),
       ),
     );
   }

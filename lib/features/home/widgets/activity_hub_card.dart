@@ -108,7 +108,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
 
     return HomeBorderSection(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── SECTION HEADING ──────────────────────────────────────────
           HomeSectionHeading(
@@ -128,10 +128,11 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           HomeContentTransition(
             child: Container(
               key: const ValueKey('home_activity_card'),
+              width: double.infinity,
               decoration: null,
               padding: EdgeInsets.zero,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _HubTabs(
                     key: const ValueKey('activity_hub_tabs'),
@@ -496,9 +497,12 @@ class _HubTabs extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           for (final (index, label) in labels.indexed) ...[
             if (index > 0) const SizedBox(width: 8),
             Material(
@@ -540,6 +544,7 @@ class _HubTabs extends StatelessWidget {
             ),
           ],
         ],
+      ),
       ),
     );
   }
