@@ -144,10 +144,19 @@ class AppCard extends StatelessWidget {
       padding: padding,
       alignment: alignment,
       decoration: decoration,
-      clipBehavior: clipBehavior,
       foregroundDecoration: foregroundDecoration,
       child: child,
     );
+    if (clipBehavior != Clip.none) {
+      final borderRad =
+          decoration.borderRadius?.resolve(Directionality.of(context)) ??
+          BorderRadius.zero;
+      content = ClipRRect(
+        borderRadius: borderRad,
+        clipBehavior: clipBehavior,
+        child: content,
+      );
+    }
     if (onTap != null || onLongPress != null) {
       content = AscentPressFeedback(
         child: Material(

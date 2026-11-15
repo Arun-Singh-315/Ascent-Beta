@@ -1299,14 +1299,15 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
           style: TextStyle(color: g.inkMuted, fontSize: 14),
         ),
         const SizedBox(height: 18),
-        Container(
-          decoration: BoxDecoration(
-            color: g.surface,
-            borderRadius: BorderRadius.circular(AscentDimensions.radiusLg),
-            border: Border.all(color: g.line),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AscentDimensions.radiusLg),
+          child: Container(
+            decoration: BoxDecoration(
+              color: g.surface,
+              borderRadius: BorderRadius.circular(AscentDimensions.radiusLg),
+              border: Border.all(color: g.line),
+            ),
+            child: Column(
             children: [
               for (var i = 0; i < receipt.items.length; i++) ...[
                 if (i > 0) Divider(height: 1, indent: 14, color: g.line),
@@ -1360,6 +1361,7 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
             ],
           ),
         ),
+      ),
         if (_alertsPending) ...[
           const SizedBox(height: 14),
           Text(

@@ -18,20 +18,22 @@ class HomeProgressMeter extends StatelessWidget {
             for (var index = 0; index < 10; index++) ...[
               if (index > 0) const SizedBox(width: 4),
               Expanded(
-                child: Container(
-                  key: ValueKey('home_progress_segment_$index'),
-                  height: 13,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: design.wellnessEdge),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: FractionallySizedBox(
-                      widthFactor: (fraction * 10 - index).clamp(0.0, 1.0),
-                      heightFactor: 1,
-                      child: ColoredBox(color: design.wellnessInk),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    key: ValueKey('home_progress_segment_$index'),
+                    height: 13,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: design.wellnessEdge),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FractionallySizedBox(
+                        widthFactor: (fraction * 10 - index).clamp(0.0, 1.0),
+                        heightFactor: 1,
+                        child: ColoredBox(color: design.wellnessInk),
+                      ),
                     ),
                   ),
                 ),
