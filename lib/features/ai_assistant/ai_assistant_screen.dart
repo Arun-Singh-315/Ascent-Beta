@@ -3,6 +3,7 @@ import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
 import 'riya_entity_card.dart';
+import 'riya_paragraph_text.dart';
 import 'riya_plan_cards.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -1145,8 +1146,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
                                           maxWidth:
-                                              MediaQuery.sizeOf(context).width *
-                                              0.84,
+                                              (MediaQuery.sizeOf(context).width *
+                                                      0.88)
+                                                  .clamp(260.0, 560.0),
                                         ),
                                         child: _ConversationMessageBubble(
                                           msg: msg,
@@ -1677,61 +1679,130 @@ class _ConversationMessageBubble extends StatelessWidget {
       timestampColor = g.inkMuted;
     }
 
-    // Serene, symmetrical radius matching Ascent design system
-    final borderRadius = BorderRadius.circular(16);
+    // Apple-grade asymmetric bubble corners for clear speaker direction
+    final borderRadius = isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(6),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(6),
+            bottomRight: Radius.circular(20),
+          );
+
+    final messageText = (actionData?['records'] as List? ?? []).isNotEmpty
+        ? (msg.actionType?.startsWith('promises.') == true
+              ? 'Here are your Promises.'
+              : 'Here are your Todos. Choose a card below.')
+        : msg.message;
 
     Widget bubbleContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Assistant Header Tag — only on first message in a run
+        // Assistant Header Pill — only on first message in a run
         if (!isUser && isFirstInRun) ...[
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome_rounded, size: 11, color: accentColor),
-              const SizedBox(width: 4),
-              Text(
-                assistantName,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: accentColor,
-                  letterSpacing: 0.1,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 12, color: accentColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      assistantName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
         ],
 
-        // Message Body
-        Text(
-          (actionData?['records'] as List? ?? []).isNotEmpty
-              ? (msg.actionType?.startsWith('promises.') == true
-                    ? 'Here are your Promises.'
-                    : 'Here are your Todos. Choose a card below.')
-              : msg.message,
-          style: GoogleFonts.plusJakartaSans(
+        // Message Body formatted with paragraph spacing, lists, headers & code
+        RiyaParagraphText(
+          text: messageText,
+          baseStyle: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
             color: messageTextColor,
-            height: 1.5,
+            height: 1.58,
+            letterSpacing: 0.15,
           ),
+          accentColor: accentColor,
+          isUser: isUser,
         ),
 
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
 
-        // Micro Timestamp (Minimalist, clean, zero double-tick clutter)
-        Align(
-          alignment: Alignment.bottomRight,
-          child: Text(
-            timeString,
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 9.5,
-              color: timestampColor,
+        // Footer: Copy shortcut for long responses + Micro Timestamp
+        Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: isUser
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.spaceBetween,
+          children: [
+            if (!isUser && messageText.length > 70)
+              InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  await Clipboard.setData(ClipboardData(text: messageText));
+                  if (context.mounted) {
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Copied to clipboard',
+                      icon: Icons.check_circle_outline_rounded,
+                    );
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.copy_rounded, size: 11, color: timestampColor),
+                      const SizedBox(width: 3),
+                      Text(
+                        'Copy',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: timestampColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else if (!isUser)
+              const SizedBox.shrink(),
+            Text(
+              timeString,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 9.5,
+                color: timestampColor,
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -1739,7 +1810,7 @@ class _ConversationMessageBubble extends StatelessWidget {
     final Widget mainBubble = isUser
         ? GlassSurface(
             borderRadius: borderRadius,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             fillColor: bubbleFill,
             customBorder: Border.all(color: bubbleBorder, width: 1.1),
             enableBlur: true,
@@ -1747,16 +1818,21 @@ class _ConversationMessageBubble extends StatelessWidget {
             child: bubbleContent,
           )
         : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             decoration: BoxDecoration(
               color: bubbleFill,
               borderRadius: borderRadius,
               border: Border.all(color: bubbleBorder, width: 1.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
