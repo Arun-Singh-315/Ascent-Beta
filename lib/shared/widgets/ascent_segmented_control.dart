@@ -209,9 +209,9 @@ class AscentSegmentedControl<T> extends StatelessWidget {
                         textDirection: Directionality.of(context),
                         textScaler: textScaler,
                       )..layout()).width +
-                      20 +
+                      (pill ? 16 : 20) +
                       (segment.icon == null ? 0 : 23))
-                  .clamp(48.0, double.infinity),
+                  .clamp(pill ? 44.0 : 48.0, double.infinity),
           ];
           final minimum = widths.fold<double>(0, (sum, width) => sum + width);
           final flex = segments.fold<int>(

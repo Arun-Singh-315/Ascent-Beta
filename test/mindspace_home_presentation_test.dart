@@ -5,6 +5,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
+import 'package:ascent/features/home/widgets/home_section_heading.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -153,7 +154,7 @@ void main() {
               find.byKey(ValueKey('home_thought_${thoughts[2].id}')),
               findsNothing,
             );
-            expect(find.text('View ›'), findsWidgets);
+            expect(find.byType(HomeSectionArrowButton), findsWidgets);
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox());
             await tester.pumpAndSettle();

@@ -368,7 +368,7 @@ class _ThoughtWallHomePreviewState
                 textCapitalization: TextCapitalization.sentences,
                 style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                 decoration: InputDecoration(
-                  hintText: "Capture an insight, reflection, or clarity…",
+                  hintText: 'Capture a thought…',
                   hintStyle: TextStyle(
                     color: g.inkMuted,
                     fontSize: 14,
@@ -1315,6 +1315,54 @@ class _ThoughtWallHomePreviewState
                   ],
                 ),
               ),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _buildSparkChip(
+                    icon: Icons.lightbulb_outline_rounded,
+                    label: 'Spark an idea',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _controller.text = '💡 ';
+                      _controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: _controller.text.length),
+                      );
+                      _focusNode.requestFocus();
+                    },
+                    g: g,
+                  ),
+                  _buildSparkChip(
+                    icon: Icons.emoji_events_outlined,
+                    label: 'Log a win',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _controller.text = '🎯 Win: ';
+                      _controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: _controller.text.length),
+                      );
+                      _focusNode.requestFocus();
+                    },
+                    g: g,
+                  ),
+                  _buildSparkChip(
+                    icon: Icons.edit_note_rounded,
+                    label: 'Reflect',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _controller.text = 'Reflecting on: ';
+                      _controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: _controller.text.length),
+                      );
+                      _focusNode.requestFocus();
+                    },
+                    g: g,
+                  ),
+                ],
+              ),
+            ),
             if (latest != null)
               HomeCaptureEntrance(
                 key: ValueKey('home_recent_entrance_${latest.id}'),
@@ -1512,55 +1560,6 @@ class _ThoughtWallHomePreviewState
                     ),
                   ),
                 ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _buildSparkChip(
-                      icon: Icons.lightbulb_outline_rounded,
-                      label: 'Spark an idea',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '💡 ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.emoji_events_outlined,
-                      label: 'Log a win',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = '🎯 Win: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                    _buildSparkChip(
-                      icon: Icons.edit_note_rounded,
-                      label: 'Reflect',
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        _controller.text = 'Reflecting on: ';
-                        _controller.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _controller.text.length),
-                        );
-                        _focusNode.requestFocus();
-                      },
-                      g: g,
-                    ),
-                  ],
-                ),
               ),
           ],
         ),
@@ -1578,12 +1577,16 @@ class _ThoughtWallHomePreviewState
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: HomeDesign.of(context).mindTint.withValues(alpha: .55),
-            borderRadius: BorderRadius.circular(28),
+            color: HomeDesign.of(context).mindTint.withValues(alpha: .28),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: HomeDesign.of(context).mindInk.withValues(alpha: .35),
+              width: 1.0,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1593,7 +1596,7 @@ class _ThoughtWallHomePreviewState
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11.5,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: HomeDesign.of(context).mindInk,
                 ),

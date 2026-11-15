@@ -203,8 +203,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
             children: [
               LayoutBuilder(
                 builder: (context, constraints) {
-                  if (MediaQuery.textScalerOf(context).scale(14) > 21 &&
-                      constraints.maxWidth < 350) {
+                  final shouldWrap = constraints.maxWidth < 280 ||
+                      (MediaQuery.textScalerOf(context).scale(14) > 18 &&
+                          constraints.maxWidth < 350);
+                  if (shouldWrap) {
                     return Wrap(
                       spacing: 16,
                       runSpacing: 8,

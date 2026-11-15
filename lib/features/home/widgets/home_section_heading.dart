@@ -124,12 +124,9 @@ class HomeSectionHeading extends StatelessWidget {
               child: cutout
                   ? Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: ColoredBox(
-                        color: design.canvas,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: labelContent,
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: labelContent,
                       ),
                     )
                   : labelContent,

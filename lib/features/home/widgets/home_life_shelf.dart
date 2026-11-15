@@ -368,9 +368,8 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         ),
       ),
     );
-    return Container(
+    return Padding(
       padding: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(24),

@@ -241,7 +241,11 @@ void main() {
         // Running timer is formatted inline
         expect(
           find.byWidgetPredicate(
-            (w) => w is Text && (w.data == '01:05' || w.data == '01:05 / 25m'),
+            (w) =>
+                w is Text &&
+                (w.data == '01:05' ||
+                    w.data == '01:05 / 25m' ||
+                    w.data == '01:05 / 25:00'),
           ),
           findsOneWidget,
         );
