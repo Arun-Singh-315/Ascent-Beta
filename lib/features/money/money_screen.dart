@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -17,6 +18,8 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
+import '../../shared/widgets/ascent_switch.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_transaction_sheet.dart';
 import 'budget_settings_sheet.dart';
@@ -43,6 +46,72 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleExpenseReminder(bool enable, Reminder? existingReminder) async {
+    final db = ref.read(databaseProvider);
+    HapticFeedback.lightImpact();
+    if (existingReminder != null) {
+      await db.reminderDao.updateReminder(
+        ReminderTableCompanion(
+          id: drift.Value(existingReminder.id),
+          isActive: drift.Value(enable),
+          alertSyncPending: const drift.Value(true),
+        ),
+      );
+      if (mounted) {
+        AscentSnackBar.show(
+          context,
+          message: enable
+              ? 'Evening expense reflection reminder enabled'
+              : 'Evening expense reflection reminder paused',
+          icon: enable ? Icons.alarm_on_rounded : Icons.alarm_off_rounded,
+        );
+      }
+    } else if (enable) {
+      final now = DateTime.now();
+      var scheduled = DateTime(now.year, now.month, now.day, 21, 0); // 9:00 PM
+      if (scheduled.isBefore(now)) {
+        scheduled = scheduled.add(const Duration(days: 1));
+      }
+      await db.reminderDao.insertReminder(
+        ReminderTableCompanion.insert(
+          title: 'Evening Expense Reflection · Mindful Check-In 🌙',
+          scheduledAt: scheduled,
+          isActive: const drift.Value(true),
+          alertSyncPending: const drift.Value(true),
+        ),
+      );
+      if (mounted) {
+        AscentSnackBar.show(
+          context,
+          message: 'Daily expense check-in scheduled for 9:00 PM',
+          icon: Icons.alarm_on_rounded,
+        );
+      }
+    }
+  }
+
+  Future<void> _scheduleBillReminder(FinanceTransaction tx) async {
+    final db = ref.read(databaseProvider);
+    HapticFeedback.lightImpact();
+    final now = DateTime.now();
+    final scheduled = DateTime(now.year, now.month, now.day, 10, 0).add(const Duration(days: 3));
+    await db.reminderDao.insertReminder(
+      ReminderTableCompanion.insert(
+        title: 'Bill Due: ${tx.title} (₹${tx.amount.toStringAsFixed(0)})',
+        scheduledAt: scheduled,
+        isActive: const drift.Value(true),
+        alertSyncPending: const drift.Value(true),
+      ),
+    );
+    if (mounted) {
+      AscentSnackBar.show(
+        context,
+        message: 'Reminder scheduled for ${tx.title}',
+        icon: Icons.notifications_active_outlined,
+      );
+    }
   }
 
   IconData _categoryIcon(String category) {
@@ -298,6 +367,13 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     final budgetAsync = ref.watch(overallBudgetStreamProvider);
     final recentTxAsync = ref.watch(recentTransactionsStreamProvider);
     final goalsAsync = ref.watch(savingsGoalsStreamProvider);
+    final remindersAsync = ref.watch(allRemindersProvider);
+    final reminders = remindersAsync.value ?? const [];
+    final expenseReminder = reminders
+        .where((r) => r.title.contains('Expense') || r.title.contains('Spend'))
+        .firstOrNull;
+    final isExpenseReminderActive =
+        expenseReminder != null && expenseReminder.isActive;
 
     final todaySpend = todaySpendAsync.value ?? 0.0;
     final monthSpend = monthSpendAsync.value ?? 0.0;
@@ -309,6 +385,18 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
       double.infinity,
     );
     final budgetProgress = (monthSpend / monthlyLimit).clamp(0.0, 1.0);
+
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysRemaining = math.max(1, daysInMonth - now.day + 1);
+    final safeDailySpend = (remainingBudget / daysRemaining).clamp(
+      0.0,
+      double.infinity,
+    );
+    final safeRemainingToday = (safeDailySpend - todaySpend).clamp(
+      0.0,
+      double.infinity,
+    );
+    final isMindfulPace = todaySpend <= safeDailySpend;
 
     final g = context.glass;
 
@@ -347,6 +435,118 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
               vertical: AppSpace.s16,
             ),
             children: [
+              // Safe to Spend Velocity Card
+              AscentCard(
+                margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                padding: const EdgeInsets.all(AppSpace.s16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: (isMindfulPace ? g.sage : g.amber)
+                                .withValues(alpha: 0.14),
+                            borderRadius: AppGeometry.roundedr10,
+                          ),
+                          child: Icon(
+                            isMindfulPace
+                                ? Icons.spa_outlined
+                                : Icons.speed_rounded,
+                            color: isMindfulPace ? g.sage : g.amber,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Safe to Spend Today',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: g.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              Text(
+                                '$daysRemaining days remaining in ${DateFormat('MMMM').format(now)}',
+                                style: TextStyle(
+                                  color: g.inkMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s8,
+                            vertical: AppSpace.s3,
+                          ),
+                          nightDecoration: BoxDecoration(
+                            color: (isMindfulPace ? g.sage : g.amber)
+                                .withValues(alpha: 0.15),
+                            borderRadius: AppGeometry.roundedr6,
+                          ),
+                          child: Text(
+                            isMindfulPace
+                                ? 'Mindful Pace 🍃'
+                                : 'Adjusting Pace ⚡',
+                            style: AppTypeRoles.typeRole34.copyWith(
+                              color: isMindfulPace ? g.sage : g.amber,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          '₹${safeRemainingToday.toStringAsFixed(0)}',
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(
+                                color: isMindfulPace ? g.sage : g.coral,
+                                fontWeight: FontWeight.w800,
+                              )
+                              .merge(AppTypeRoles.typeRole45),
+                        ),
+                        Text(
+                          'available today (₹${safeDailySpend.toStringAsFixed(0)}/day allowance)',
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      isMindfulPace
+                          ? 'You are pacing mindfully within your monthly budget.'
+                          : 'Spending is ahead of daily pace. Prioritize essentials.',
+                      style: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               // Hero Balance Card
               AscentCard(
                 padding: const EdgeInsets.all(AppSpace.s20),
@@ -544,9 +744,125 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       ? allDayEntries
                       : allDayEntries.take(2).toList();
 
+                  final recurringBills = transactions
+                      .where(
+                        (t) =>
+                            t.isRecurring ||
+                            t.category == 'Bills & Subscriptions',
+                      )
+                      .toList();
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (recurringBills.isNotEmpty)
+                        AscentCard(
+                          margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                          padding: const EdgeInsets.all(AppSpace.s14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.repeat_rounded,
+                                    color: g.coral,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Upcoming Bills & Subscriptions',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            color: g.ink,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              for (final bill in recurringBills.take(3)) ...[
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              bill.title,
+                                              style: TextStyle(
+                                                color: g.ink,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            Text(
+                                              '₹${bill.amount.toStringAsFixed(0)} · ${bill.category}',
+                                              style: TextStyle(
+                                                color: g.inkMuted,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Builder(
+                                        builder: (context) {
+                                          final hasReminder = reminders.any(
+                                            (r) =>
+                                                r.title.contains(bill.title) &&
+                                                r.isActive,
+                                          );
+                                          if (hasReminder) {
+                                            return AppTag(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                              nightDecoration: BoxDecoration(
+                                                color: g.sage.withValues(
+                                                  alpha: 0.15,
+                                                ),
+                                                borderRadius:
+                                                    AppGeometry.roundedr6,
+                                              ),
+                                              child: Text(
+                                                'Reminder Set 🔔',
+                                                style: TextStyle(
+                                                  color: g.sage,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                          return AscentButton.ghost(
+                                            icon: Icons.alarm_add_rounded,
+                                            label: 'Remind',
+                                            compact: true,
+                                            onPressed: () =>
+                                                _scheduleBillReminder(bill),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       for (final entry in visibleEntries)
                         AscentCard(
                           key: ValueKey(
@@ -714,6 +1030,63 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       style: AscentTextStyles.bodySmall.copyWith(
                         color: context.textMuted,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Daily Mindful Expense Check-in Card
+              AscentCard(
+                padding: const EdgeInsets.all(AppSpace.s16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        borderRadius: AppGeometry.roundedr10,
+                      ),
+                      child: Icon(
+                        Icons.nightlight_round,
+                        color: g.clay,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Evening Expense Reflection',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  color: g.ink,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Daily gentle nudge at 9:00 PM to record spending & reflect on mindful choices.',
+                            style: TextStyle(
+                              color: g.inkMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AscentSwitch(
+                      key: const ValueKey('expense_reminder_switch'),
+                      value: isExpenseReminderActive,
+                      onChanged: (val) =>
+                          _toggleExpenseReminder(val, expenseReminder),
                     ),
                   ],
                 ),

@@ -11,6 +11,7 @@ import '../../core/services/note_draft_binding.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_dialog.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -51,6 +52,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   String _category = 'Food & Groceries';
   String _account = 'UPI';
   DateTime _date = DateTime.now();
+  bool _isRecurring = false;
+  String? _selectedIntent;
 
   final List<String> _categories = const [
     'Food & Groceries',
@@ -202,6 +205,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
     setState(() => _saving = true);
     try {
+      final noteParts = [
+        if (_selectedIntent != null && _selectedIntent!.isNotEmpty) _selectedIntent!,
+        if (_notesController.text.trim().isNotEmpty) _notesController.text.trim(),
+      ];
+      final combinedNotes = noteParts.isEmpty ? null : noteParts.join(' · ');
+
       final arguments = jsonEncode({
         'title': title,
         'amount': amount,
@@ -209,7 +218,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         'type': _type,
         'category': _category,
         'account': _account,
-        'notes': _notesController.text.trim(),
+        'notes': combinedNotes,
+        'isRecurring': _isRecurring,
       });
       if (_submittedArguments != null && _submittedArguments != arguments) {
         _entryToken = 'expense-entry:${DateTime.now().microsecondsSinceEpoch}';
@@ -230,9 +240,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         type: _type,
         category: _category,
         account: _account,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
+        notes: combinedNotes,
+        isRecurring: _isRecurring,
       );
       // The record is now committed. Draft/check-in failures must never report a failed expense.
       try {
@@ -374,6 +383,54 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   hint: 'What was it for?',
                 ),
               ),
+              const SizedBox(height: 12),
+              Text(
+                'Mindful Intent (Optional)',
+                style: TextStyle(
+                  color: context.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  'Essential 🍞',
+                  'Mindful Joy ☕',
+                  'Investment 📚',
+                  'Impulse 🛍️',
+                ].map((intent) {
+                  final selected = _selectedIntent == intent;
+                  return ChoiceChip(
+                    label: Text(
+                      intent,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected ? Colors.white : context.textPrimary,
+                      ),
+                    ),
+                    selected: selected,
+                    selectedColor: context.accentPrimary,
+                    backgroundColor: context.recessedSurface,
+                    showCheckmark: false,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 0,
+                    ),
+                    onSelected: _saving
+                        ? null
+                        : (val) {
+                            setState(() {
+                              _selectedIntent = val ? intent : null;
+                            });
+                          },
+                  );
+                }).toList(),
+              ),
               const SizedBox(height: 10),
               Text(
                 '$_category · $_account · ${DateFormat('MMM d').format(_date)}',
@@ -452,6 +509,24 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                             setState(() => _date = picked);
                           }
                         },
+                ),
+              ),
+              const SizedBox(height: 8),
+              AscentSwitchRow(
+                title: 'Recurring Subscription',
+                helper: 'Mark as recurring bill',
+                value: _isRecurring,
+                onChanged: _saving
+                    ? null
+                    : (val) => setState(() => _isRecurring = val),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notesController,
+                enabled: !_saving,
+                decoration: field(
+                  'Additional Notes',
+                  hint: 'Tags, memo or details',
                 ),
               ),
             ],
