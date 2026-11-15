@@ -470,11 +470,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                     color: context.textMuted.withValues(alpha: 0.7),
                   ),
                   filled: true,
-                  fillColor: context.bgBase,
+                  fillColor: context.glass.fill,
                   contentPadding: const EdgeInsets.all(AppSpace.s14),
                   border: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr14,
-                    borderSide: BorderSide(color: context.divider),
+                    borderSide: BorderSide(color: context.glass.line),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr14,

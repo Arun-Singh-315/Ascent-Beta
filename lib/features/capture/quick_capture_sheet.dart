@@ -1092,6 +1092,8 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
                     ),
                     counterText: '',
                     isDense: true,
+                    filled: false,
+                    fillColor: Colors.transparent,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,

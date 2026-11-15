@@ -36,6 +36,7 @@ import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import '../../shared/widgets/thought_excerpt.dart';
 import '../../shared/widgets/locked_commitment_tile.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -715,13 +716,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   }
 
   Future<void> _browseCollections() async {
-    final choice = await showModalBottomSheet<({String key, bool add})>(
+    final choice = await showAscentCenteredForm<({String key, bool add})>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => Consumer(
-        builder: (context, ref, _) {
+      maxWidth: 420,
+      builder: (sheetContext) => Material(
+        color: context.glass.elevated,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.glass.line, width: 1.0),
+          ),
+          child: Consumer(
+            builder: (context, ref, _) {
           final categories =
               ref.watch(thoughtCategoriesStreamProvider).value ?? _categories;
           final notes =
@@ -838,7 +846,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           );
         },
       ),
-    );
+    ),
+  ),
+);
     if (!mounted || choice == null) return;
     if (choice.key == '__new') {
       await _createCategory();
@@ -872,12 +882,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   }
 
   Future<void> _chooseFilter() async {
-    final result = await showModalBottomSheet<String>(
+    final result = await showAscentCenteredForm<String>(
       context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (ctx) => Consumer(
-        builder: (ctx, sheetRef, _) => StatefulBuilder(
+      maxWidth: 420,
+      builder: (ctx) => Material(
+        color: context.glass.elevated,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.glass.line, width: 1.0),
+          ),
+          child: Consumer(
+            builder: (ctx, sheetRef, _) => StatefulBuilder(
           builder: (ctx, sheetSetState) {
             final shortcuts = sheetRef.watch(thoughtCategoryShortcutsProvider);
             return ConstrainedBox(
@@ -1034,8 +1052,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           },
         ),
       ),
-    );
-    if (!mounted || result == null) return;
+    ),
+  ),
+);
+if (!mounted || result == null) return;
     if (result == '__create__') {
       await _createCategory();
       return;
@@ -1231,11 +1251,24 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 IconButton(
                   tooltip: 'Wall appearance',
                   icon: const Icon(Icons.tune_rounded),
-                  onPressed: () => showModalBottomSheet<void>(
+                  onPressed: () => showAscentCenteredForm<void>(
                     context: context,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    builder: (_) => const ThoughtWallAppearanceSheet(),
+                    maxWidth: 420,
+                    builder: (_) => Material(
+                      color: context.glass.elevated,
+                      borderRadius: BorderRadius.circular(24),
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: context.glass.line,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: const ThoughtWallAppearanceSheet(),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -1749,30 +1782,29 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
     final hasBubbleFraming = !minimal;
     final hardBorderColor = thought.isCompleted
-        ? context.doneInk.withValues(alpha: .6)
+        ? context.doneInk.withValues(alpha: isDark ? .35 : .25)
         : hasBubbleFraming
         ? Color.lerp(
-            g.ink.withValues(alpha: isDark ? .35 : .40),
-            moodAccent,
-            isDark ? 0.45 : 0.40,
+            g.edge,
+            moodAccent.withValues(alpha: isDark ? 0.28 : 0.20),
+            0.40,
           )!
-        : g.ink.withValues(alpha: isDark ? .34 : .38);
+        : g.edge.withValues(alpha: isDark ? .34 : .38);
 
     final borderWidth = hasBubbleFraming
-        ? widget.appearance.bubbleBorderWidth
+        ? (widget.appearance.bubbleBorderWidth > 1.2 ? 1.2 : widget.appearance.bubbleBorderWidth)
         : 1.0;
 
     final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
         ? Colors.transparent
         : thought.isCompleted
-        ? context.doneInk.withValues(alpha: .08)
+        ? context.doneInk.withValues(alpha: isDark ? .06 : .04)
         : isSelected
-        ? g.clay.withValues(alpha: isDark ? 0.09 : 0.06)
+        ? g.clay.withValues(alpha: isDark ? 0.12 : 0.08)
         : hasBubbleFraming
-        ? Color.lerp(
-            g.fill,
-            moodAccent.withValues(alpha: isDark ? 0.06 : 0.04),
-            0.5,
+        ? Color.alphaBlend(
+            moodAccent.withValues(alpha: isDark ? 0.07 : 0.04),
+            isDark ? g.elevated : g.surface,
           )
         : Colors.transparent;
 
@@ -1783,8 +1815,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isSelected
           ? [
               BoxShadow(
-                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.22),
-                blurRadius: 12,
+                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.18),
+                blurRadius: 14,
                 spreadRadius: 1,
                 offset: const Offset(0, 2),
               ),
@@ -1792,28 +1824,28 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isBubble && widget.appearance.bubbleFilled
           ? [
               BoxShadow(
-                color: moodAccent.withValues(
-                  alpha: isDark ? 0.10 : 0.05,
+                color: (isDark ? Colors.black : moodAccent).withValues(
+                  alpha: isDark ? 0.22 : 0.05,
                 ),
-                blurRadius: 8,
+                blurRadius: 12,
                 spreadRadius: 0,
-                offset: const Offset(0, 2),
+                offset: const Offset(0, 3),
               ),
             ]
           : const [],
       borderRadius: switch (style) {
-        ThoughtCardStyle.soft => BorderRadius.circular(16),
+        ThoughtCardStyle.soft => BorderRadius.circular(20),
         ThoughtCardStyle.bubble => BorderRadius.only(
-          topLeft: const Radius.circular(18),
-          topRight: const Radius.circular(18),
-          bottomLeft: Radius.circular(index.isEven ? 18 : 6),
-          bottomRight: Radius.circular(index.isOdd ? 6 : 18),
+          topLeft: const Radius.circular(20),
+          topRight: const Radius.circular(20),
+          bottomLeft: Radius.circular(index.isEven ? 20 : 8),
+          bottomRight: Radius.circular(index.isOdd ? 8 : 20),
         ),
         ThoughtCardStyle.minimal =>
-          widget.compact ? BorderRadius.zero : BorderRadius.circular(6),
+          widget.compact ? BorderRadius.zero : BorderRadius.circular(10),
       },
       border: isSelected
-          ? Border.all(color: g.clay, width: 2.0)
+          ? Border.all(color: g.clay, width: 1.8)
           : minimal && widget.compact
           ? Border(bottom: BorderSide(color: hardBorderColor, width: 1.0))
           : Border.all(color: hardBorderColor, width: borderWidth),

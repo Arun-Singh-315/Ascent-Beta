@@ -7,6 +7,7 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
@@ -28,77 +29,93 @@ Future<SpacePick?> showSpacePicker(
   String? current,
   String title = 'Move to',
 }) {
-  return showModalBottomSheet<SpacePick>(
+  return showAscentCenteredForm<SpacePick>(
     context: context,
-    useSafeArea: true,
-    isScrollControlled: true,
-    builder: (sheetContext) => Consumer(
-      builder: (context, ref, _) {
-        final g = context.glass;
-        final categories =
-            ref.watch(thoughtCategoriesStreamProvider).value ??
-            ThoughtDao.builtInCategories;
-        final keys = [
-          wallCategoryKey,
-          ...categories.keys.where((k) => k != wallCategoryKey),
-        ];
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .75,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpace.s20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AscentTextStyles.cardTitle.copyWith(color: g.ink),
-                ),
-                const SizedBox(height: AppSpace.s16),
-                Wrap(
-                  spacing: AppSpace.s8,
-                  runSpacing: AppSpace.s8,
-                  children: [
-                    for (final key in keys)
-                      ChoicePill(
-                        key: ValueKey('space_pick_$key'),
-                        icon: key == wallCategoryKey
-                            ? Icons.bubble_chart_rounded
-                            : spaceStyleFor(categories[key] ?? '').icon,
-                        label: _spaceLabel(key, categories[key] ?? ''),
-                        selected: key == current,
-                        onTap: () => Navigator.pop(sheetContext, (
-                          key: key,
-                          newName: null,
-                        )),
+    maxWidth: 400,
+    builder: (sheetContext) => Material(
+      color: context.glass.elevated,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: context.glass.line, width: 1.0),
+        ),
+        child: Consumer(
+          builder: (context, ref, _) {
+            final g = context.glass;
+            final categories =
+                ref.watch(thoughtCategoriesStreamProvider).value ??
+                ThoughtDao.builtInCategories;
+            final keys = [
+              wallCategoryKey,
+              ...categories.keys.where((k) => k != wallCategoryKey),
+            ];
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpace.s20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AscentTextStyles.cardTitle.copyWith(color: g.ink),
+                        ),
                       ),
-                    ChoicePill(
-                      key: const ValueKey('space_pick_new'),
-                      icon: Icons.add_rounded,
-                      label: 'New space',
-                      onTap: () async {
-                        final name = await showDialog<String>(
-                          context: sheetContext,
-                          builder: (_) =>
-                              const CreateThoughtCategoryDialog(move: true),
-                        );
-                        if (name != null && sheetContext.mounted) {
-                          Navigator.pop(sheetContext, (
-                            key: null,
-                            newName: name,
-                          ));
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(sheetContext),
+                        icon: Icon(Icons.close_rounded, color: g.inkMuted, size: 20),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.s16),
+                  Wrap(
+                    spacing: AppSpace.s8,
+                    runSpacing: AppSpace.s8,
+                    children: [
+                      for (final key in keys)
+                        ChoicePill(
+                          key: ValueKey('space_pick_$key'),
+                          icon: key == wallCategoryKey
+                              ? Icons.bubble_chart_rounded
+                              : spaceStyleFor(categories[key] ?? '').icon,
+                          label: _spaceLabel(key, categories[key] ?? ''),
+                          selected: key == current,
+                          onTap: () => Navigator.pop(sheetContext, (
+                            key: key,
+                            newName: null,
+                          )),
+                        ),
+                      ChoicePill(
+                        key: const ValueKey('space_pick_new'),
+                        icon: Icons.add_rounded,
+                        label: 'New space',
+                        onTap: () async {
+                          final name = await showDialog<String>(
+                            context: sheetContext,
+                            builder: (_) =>
+                                const CreateThoughtCategoryDialog(move: true),
+                          );
+                          if (name != null && sheetContext.mounted) {
+                            Navigator.pop(sheetContext, (
+                              key: null,
+                              newName: name,
+                            ));
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     ),
   );
 }

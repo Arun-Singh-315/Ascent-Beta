@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import 'app_surfaces.dart';
 import '../../app/theme/glass_theme.dart';
 
 /// Measures the rendered text rather than guessing truncation by character count,
@@ -128,37 +130,69 @@ class _ThoughtExcerptState extends State<ThoughtExcerpt> {
         )..layout(maxWidth: constraints.maxWidth);
         final overflow = painter.didExceedMaxLines;
         painter.dispose();
+        final accent = widget.arrowColor ?? context.glass.clay;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text.rich(
-              richSpan,
-              maxLines: _expanded ? null : widget.maxLines,
-              overflow: _expanded
-                  ? TextOverflow.visible
-                  : TextOverflow.ellipsis,
-            ),
-            if (overflow)
-              TextButton.icon(
-                onPressed: () => setState(() => _expanded = !_expanded),
-                style: TextButton.styleFrom(
-                  foregroundColor: widget.arrowColor ?? context.glass.clay,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 48),
-                  alignment: Alignment.centerLeft,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  backgroundColor: Colors.transparent,
-                  side: BorderSide.none,
-                ),
-                icon: Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                ),
-                label: Text(_expanded ? 'Read less' : 'Read more'),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeInOutCubic,
+              alignment: Alignment.topLeft,
+              child: Text.rich(
+                richSpan,
+                maxLines: _expanded ? null : widget.maxLines,
+                overflow: _expanded
+                    ? TextOverflow.visible
+                    : TextOverflow.ellipsis,
               ),
+            ),
+            if (overflow) ...[
+              const SizedBox(height: 8),
+              AppTapArea(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _expanded = !_expanded);
+                },
+                borderRadius: BorderRadius.circular(999),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.22),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _expanded ? 'Show less' : 'Show more',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: accent,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 15,
+                        color: accent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         );
       },

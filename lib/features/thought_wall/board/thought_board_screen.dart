@@ -16,6 +16,7 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/ascent_scaffold.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/message_composer.dart';
 import '../../promises/providers/promise_providers.dart';
@@ -251,7 +252,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       all.where((t) => _selected.contains(t.id)).toList();
 
   Future<void> _more(List<Thought> picked) async {
-    final g = context.glass;
     final db = ref.read(databaseProvider);
     if (picked.any(
       (t) => isPrivateLocked(
@@ -267,44 +267,32 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       );
       return;
     }
-    final action = await showModalBottomSheet<String>(
+    final action = await showAscentActionMenu<String>(
       context: context,
-      useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.all(AppSpace.s20),
-        child: Wrap(
-          spacing: AppSpace.s8,
-          runSpacing: AppSpace.s8,
-          children: [
-            ChoicePill(
-              key: const ValueKey('select_todo'),
-              icon: Icons.add_task_rounded,
-              label: 'Todo',
-              onTap: () => Navigator.pop(sheetContext, 'todo'),
-            ),
-            ChoicePill(
-              key: const ValueKey('select_reminder'),
-              icon: Icons.notifications_active_outlined,
-              label: 'Reminder',
-              onTap: () => Navigator.pop(sheetContext, 'reminder'),
-            ),
-            if (picked.length > 1)
-              ChoicePill(
-                key: const ValueKey('select_merge'),
-                icon: Icons.merge_rounded,
-                label: 'Merge',
-                onTap: () => Navigator.pop(sheetContext, 'merge'),
-              ),
-            ChoicePill(
-              key: const ValueKey('select_share'),
-              icon: Icons.share_outlined,
-              label: 'Share',
-              color: g.ink,
-              onTap: () => Navigator.pop(sheetContext, 'share'),
-            ),
-          ],
+      title: 'More actions',
+      actions: [
+        const AscentAction(
+          'todo',
+          'Convert to Todo',
+          Icons.add_task_rounded,
         ),
-      ),
+        const AscentAction(
+          'reminder',
+          'Set Reminder',
+          Icons.notifications_active_outlined,
+        ),
+        if (picked.length > 1)
+          const AscentAction(
+            'merge',
+            'Merge Thoughts',
+            Icons.merge_rounded,
+          ),
+        const AscentAction(
+          'share',
+          'Share Thoughts',
+          Icons.share_outlined,
+        ),
+      ],
     );
     if (action == null || !mounted) return;
     if (picked.any(

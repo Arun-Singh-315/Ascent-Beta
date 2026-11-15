@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/shared_control_tokens.dart';
@@ -64,7 +65,8 @@ BorderRadius _boardRadius(ThoughtCardStyle style, int index) => switch (style) {
 
 /// One thought on the board. It shows the thought and nothing else: no
 /// buttons, no menus. Tap opens it, long-press selects, double-tap completes.
-class BoardCard extends StatelessWidget {
+/// Long thoughts expand and collapse inline with smooth liquid animation.
+class BoardCard extends StatefulWidget {
   const BoardCard({
     super.key,
     required this.thought,
@@ -95,6 +97,33 @@ class BoardCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onDoubleTap;
+
+  @override
+  State<BoardCard> createState() => _BoardCardState();
+}
+
+class _BoardCardState extends State<BoardCard> {
+  bool _expanded = false;
+
+  Thought get thought => widget.thought;
+  int get index => widget.index;
+  DateTime get now => widget.now;
+  ThoughtWallAppearance get appearance => widget.appearance;
+  String? get spaceName => widget.spaceName;
+  bool get isSelected => widget.isSelected;
+  bool get isSelectionMode => widget.isSelectionMode;
+  bool get isLocked => widget.isLocked;
+  VoidCallback? get onTap => widget.onTap;
+  VoidCallback? get onLongPress => widget.onLongPress;
+  VoidCallback? get onDoubleTap => widget.onDoubleTap;
+
+  @override
+  void didUpdateWidget(covariant BoardCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.thought.id != widget.thought.id) {
+      _expanded = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,38 +328,77 @@ class BoardCard extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ShaderMask(
-                shaderCallback: (rect) => const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black, Colors.black, Colors.transparent],
-                  stops: [0.0, 0.72, 1.0],
-                ).createShader(rect),
-                blendMode: BlendMode.dstIn,
-                child: Text(
-                  text,
-                  maxLines: kind == BoardCardKind.long ? 6 : 5,
-                  overflow: TextOverflow.clip,
-                  style: AppTypography.thoughtContent(color: g.ink),
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeInOutCubic,
+                alignment: Alignment.topLeft,
+                child: _expanded
+                    ? Text(
+                        text,
+                        style: AppTypography.thoughtContent(color: g.ink),
+                      )
+                    : ShaderMask(
+                        shaderCallback: (rect) => const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black,
+                            Colors.black,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.72, 1.0],
+                        ).createShader(rect),
+                        blendMode: BlendMode.dstIn,
+                        child: Text(
+                          text,
+                          maxLines: kind == BoardCardKind.long ? 6 : 5,
+                          overflow: TextOverflow.clip,
+                          style: AppTypography.thoughtContent(color: g.ink),
+                        ),
+                      ),
               ),
               const SizedBox(height: AppSpace.s6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.notes_rounded, size: 12, color: g.clay),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Read more',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: g.clay,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _expanded = !_expanded);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.22),
+                      width: 0.8,
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_rounded, size: 10, color: g.clay),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _expanded ? 'Show less' : 'Show more',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 13,
+                        color: g.clay,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           );

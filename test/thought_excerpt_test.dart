@@ -15,7 +15,7 @@ void main() {
     },
   );
 
-  testWidgets('read more expands in place and read less collapses', (
+  testWidgets('show more expands in place and show less collapses', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -31,19 +31,19 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Read more'), findsOneWidget);
+    expect(find.text('Show more'), findsOneWidget);
     Text richText() => tester.widget<Text>(find.byType(Text).first);
     expect(richText().maxLines, 2);
-    await tester.tap(find.text('Read more'));
+    await tester.tap(find.text('Show more'));
     await tester.pumpAndSettle();
-    expect(find.text('Read less'), findsOneWidget);
+    expect(find.text('Show less'), findsOneWidget);
     expect(richText().maxLines, isNull);
-    await tester.tap(find.text('Read less'));
+    await tester.tap(find.text('Show less'));
     await tester.pumpAndSettle();
     expect(richText().maxLines, 2);
   });
 
-  testWidgets('two short lines do not show a spurious read more', (
+  testWidgets('two short lines do not show a spurious show more', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -59,6 +59,6 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Read more'), findsNothing);
+    expect(find.text('Show more'), findsNothing);
   });
 }

@@ -10,6 +10,7 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../home/widgets/home_schedule_sheet.dart';
@@ -38,12 +39,21 @@ class ThoughtDetailSheet extends ConsumerWidget {
   final Thought initial;
 
   static Future<void> show(BuildContext context, Thought thought) =>
-      showModalBottomSheet<void>(
+      showAscentCenteredForm<void>(
         context: context,
-        useSafeArea: true,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (_) => ThoughtDetailSheet(initial: thought),
+        maxWidth: 440,
+        builder: (_) => Material(
+          color: context.glass.elevated,
+          borderRadius: BorderRadius.circular(24),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: context.glass.line, width: 1.0),
+            ),
+            child: ThoughtDetailSheet(initial: thought),
+          ),
+        ),
       );
 
   @override
