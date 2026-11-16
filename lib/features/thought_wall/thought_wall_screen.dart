@@ -1399,39 +1399,30 @@ if (!mounted || result == null) return;
               Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 4,
+                    vertical: 6,
                   ),
-                child: Row(
+                child: Wrap(
                   key: const ValueKey('thought_filter_bar'),
+                  spacing: 6,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final key in <String>{
-                              if (_categoryFilter != 'all' &&
-                                  !shortcuts.contains(_categoryFilter))
-                                _categoryFilter,
-                              'all',
-                              ...shortcuts.where(_categories.containsKey),
-                            })
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: AppPill.choice(
-                                  label: Text(
-                                    key == 'all'
-                                        ? 'All notes'
-                                        : _filterMeta[key]?.$1 ?? 'Category',
-                                  ),
-                                  selected: _categoryFilter == key,
-                                  onSelected: (_) => _selectFilter(key),
-                                ),
-                              ),
-                          ],
+                    for (final key in <String>{
+                      if (_categoryFilter != 'all' &&
+                          !shortcuts.contains(_categoryFilter))
+                        _categoryFilter,
+                      'all',
+                      ...shortcuts.where(_categories.containsKey),
+                    })
+                      AppPill.choice(
+                        label: Text(
+                          key == 'all'
+                              ? 'All'
+                              : '#${_categories[key] ?? _filterMeta[key]?.$1 ?? key}',
                         ),
+                        selected: _categoryFilter == key,
+                        onSelected: (_) => _selectFilter(key),
                       ),
-                    ),
                     GlassChip(
                       label: 'Archive',
                       icon: Icons.archive_outlined,
@@ -1440,14 +1431,14 @@ if (!mounted || result == null) return;
                         _archiveFilter == 'archived' ? 'all' : 'archived',
                       ),
                     ),
-                    const SizedBox(width: 4),
                     IconButton(
                       tooltip: 'Category filter',
+                      visualDensity: VisualDensity.compact,
                       icon: Badge(
                         isLabelVisible:
                             _completionFilter != 'all' ||
                             _archiveFilter != 'active',
-                        child: const Icon(Icons.filter_list_rounded),
+                        child: const Icon(Icons.filter_list_rounded, size: 20),
                       ),
                       onPressed: _chooseFilter,
                     ),
@@ -1536,9 +1527,15 @@ if (!mounted || result == null) return;
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final thought = filtered[index];
+                      final isHero = index == 0 &&
+                          _categoryFilter != 'archived' &&
+                          !_isSelectionMode;
                       final bubble = ThoughtCardBubble(
                         key: ValueKey(thought.id),
-                        compact: true,
+                        compact: !isHero,
+                        role: isHero
+                            ? ThoughtCardRole.hero
+                            : ThoughtCardRole.compact,
                         appearance: appearance,
                         categoryLabel: _categories[thought.category],
                         onMoveToCategory: () => _moveToCategory([thought]),
@@ -1549,15 +1546,35 @@ if (!mounted || result == null) return;
                         onToggleSelect: () => _toggleSelection(thought.id),
                         onLongPress: () => _enterSelectionMode(thought.id),
                       );
+
+                      String getGroupLabel(Thought t, int idx) {
+                        if (t.isCompleted) return 'Completed';
+                        if (t.isPinned) return 'Pinned';
+                        if (idx == 0 && !t.isArchived) return 'Latest';
+                        final now = DateTime.now();
+                        final startOfToday =
+                            DateTime(now.year, now.month, now.day);
+                        final startOfThought = DateTime(
+                          t.createdAt.year,
+                          t.createdAt.month,
+                          t.createdAt.day,
+                        );
+                        final diffDays =
+                            startOfToday.difference(startOfThought).inDays;
+                        if (diffDays <= 0) return 'Today';
+                        if (diffDays <= 7) return 'This week';
+                        return 'Earlier';
+                      }
+
+                      final currentGroup = getGroupLabel(thought, index);
+                      final prevGroup = index > 0
+                          ? getGroupLabel(filtered[index - 1], index - 1)
+                          : null;
                       final showHeading = _isSelectionMode
                           ? index == 0
                           : _categoryFilter != 'pinned' &&
-                                !thought.isArchived &&
-                                (index == 0 ||
-                                    filtered[index - 1].isPinned !=
-                                        thought.isPinned ||
-                                    filtered[index - 1].isCompleted !=
-                                        thought.isCompleted);
+                              !thought.isArchived &&
+                              (index == 0 || currentGroup != prevGroup);
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1573,13 +1590,15 @@ if (!mounted || result == null) return;
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      thought.isCompleted
-                                          ? 'Completed'
-                                          : thought.isPinned
-                                          ? 'Pinned'
-                                          : 'Recent',
+                                      _isSelectionMode
+                                          ? 'Select notes'
+                                          : currentGroup,
                                       style: AscentTextStyles.labelMedium
-                                          .copyWith(color: g.inkMuted),
+                                          .copyWith(
+                                            color: c.textSecondary,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
                                     ),
                                   ),
                                   if (_isSelectionMode) ...[
@@ -1672,6 +1691,7 @@ if (!mounted || result == null) return;
 
 class ThoughtCardBubble extends ConsumerStatefulWidget {
   final bool compact;
+  final ThoughtCardRole role;
   final ThoughtWallAppearance appearance;
   final String? categoryLabel;
   final Future<void> Function()? onMoveToCategory;
@@ -1687,6 +1707,7 @@ class ThoughtCardBubble extends ConsumerStatefulWidget {
     required this.thought,
     required this.index,
     this.compact = false,
+    this.role = ThoughtCardRole.standard,
     this.appearance = const ThoughtWallAppearance(),
     this.categoryLabel,
     this.onMoveToCategory,
@@ -1810,7 +1831,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           )!
         : g.edge.withValues(alpha: isDark ? .34 : .38);
 
-    final borderWidth = hasBubbleFraming
+    final isHero = widget.role == ThoughtCardRole.hero;
+    final borderWidth = isHero
+        ? 1.2
+        : hasBubbleFraming
         ? (widget.appearance.bubbleBorderWidth > 1.2 ? 1.2 : widget.appearance.bubbleBorderWidth)
         : 1.0;
 
@@ -1820,11 +1844,20 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? context.doneInk.withValues(alpha: isDark ? .06 : .04)
         : isSelected
         ? g.clay.withValues(alpha: isDark ? 0.12 : 0.08)
-        : hasBubbleFraming
+        : isHero
         ? Color.alphaBlend(
-            moodAccent.withValues(alpha: isDark ? 0.07 : 0.04),
+            moodAccent.withValues(alpha: isDark ? 0.12 : 0.07),
             isDark ? g.elevated : g.surface,
           )
+        : hasBubbleFraming
+        ? (widget.role == ThoughtCardRole.compact
+            ? (isDark
+                ? g.surface.withValues(alpha: 0.55)
+                : g.surface.withValues(alpha: 0.85))
+            : Color.alphaBlend(
+                moodAccent.withValues(alpha: isDark ? 0.07 : 0.04),
+                isDark ? g.elevated : g.surface,
+              ))
         : Colors.transparent;
 
     return BoxDecoration(
@@ -1840,15 +1873,26 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 offset: const Offset(0, 2),
               ),
             ]
+          : isHero
+          ? [
+              BoxShadow(
+                color: (isDark ? Colors.black : moodAccent).withValues(
+                  alpha: isDark ? 0.28 : 0.08,
+                ),
+                blurRadius: 14,
+                spreadRadius: 0,
+                offset: const Offset(0, 3),
+              ),
+            ]
           : isBubble && widget.appearance.bubbleFilled
           ? [
               BoxShadow(
                 color: (isDark ? Colors.black : moodAccent).withValues(
-                  alpha: isDark ? 0.22 : 0.05,
+                  alpha: isDark ? 0.12 : 0.03,
                 ),
-                blurRadius: 12,
+                blurRadius: 6,
                 spreadRadius: 0,
-                offset: const Offset(0, 3),
+                offset: const Offset(0, 1),
               ),
             ]
           : const [],

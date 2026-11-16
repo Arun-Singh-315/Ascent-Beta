@@ -1440,6 +1440,13 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
         ? 'Private thought'
         : ThoughtExcerpt.displayContent(widget.thought.content);
 
+    final heroBg = dark
+        ? c.surfaceAlt.withValues(alpha: 0.95)
+        : c.surface;
+    final heroBorderColor = dark
+        ? c.border.withValues(alpha: 0.95)
+        : c.border.withValues(alpha: 0.85);
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1447,13 +1454,12 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
         onTap: widget.onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: dark
-                ? c.surfaceAlt.withValues(alpha: 0.6)
-                : c.surfaceAlt.withValues(alpha: 0.8),
+            color: heroBg,
             borderRadius: BorderRadius.circular(AppRadius.bubble),
-            border: AppBorder.all(c.border.withValues(alpha: 0.8)),
+            border: AppBorder.all(heroBorderColor),
+            boxShadow: AppElevation.soft(dark ? Colors.black : c.border, dark: dark),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 12, 14, 14),
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -1569,7 +1575,7 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
                     fontStyle:
                         widget.locked ? FontStyle.italic : FontStyle.normal,
                     color: widget.locked ? c.textSecondary : c.textPrimary,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w500,
                   );
                   final span = TextSpan(text: display, style: textStyle);
                   final painter = TextPainter(

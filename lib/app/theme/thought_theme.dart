@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import 'glass_theme.dart';
 import 'surface_tokens.dart';
 
+/// Visual hierarchy role for thought cards across Ascent.
+enum ThoughtCardRole {
+  hero,
+  standard,
+  compact,
+}
+
 /// Local colour treatment for thought spaces, including nested surface tokens.
 /// Keeping both token sets aligned prevents day surfaces reverting to white.
 class ThoughtTheme {
