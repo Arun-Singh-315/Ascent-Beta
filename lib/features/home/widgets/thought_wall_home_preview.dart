@@ -1401,7 +1401,7 @@ class _ThoughtWallHomePreviewState
 /// with a soft overshoot and fades in. Thoughts already on screen (first load,
 /// reorders) are shown instantly. Honors the system "reduce motion" setting.
 
-class _HomeThoughtBubble extends StatefulWidget {
+class _HomeThoughtBubble extends StatelessWidget {
   const _HomeThoughtBubble({
     super.key,
     required this.thought,
@@ -1418,27 +1418,12 @@ class _HomeThoughtBubble extends StatefulWidget {
   final VoidCallback onAction;
 
   @override
-  State<_HomeThoughtBubble> createState() => _HomeThoughtBubbleState();
-}
-
-class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
-  bool _expanded = false;
-
-  @override
-  void didUpdateWidget(covariant _HomeThoughtBubble oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.thought.id != widget.thought.id) {
-      _expanded = false;
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final c = context.c;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final display = widget.locked
+    final display = locked
         ? 'Private thought'
-        : ThoughtExcerpt.displayContent(widget.thought.content);
+        : ThoughtExcerpt.displayContent(thought.content);
 
     final heroBg = dark
         ? c.surfaceAlt.withValues(alpha: 0.95)
@@ -1451,7 +1436,7 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.bubble),
-        onTap: widget.onTap,
+        onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: heroBg,
@@ -1467,7 +1452,7 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
               // Header row: category pill + timestamp + more menu
               Row(
                 children: [
-                  if (widget.locked) ...[
+                  if (locked) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -1509,9 +1494,9 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              widget.thought.mood == 'win'
+                              thought.mood == 'win'
                                   ? Icons.emoji_events_outlined
-                                  : (widget.thought.mood == 'spark'
+                                  : (thought.mood == 'spark'
                                         ? Icons.lightbulb_outline_rounded
                                         : Icons.bubble_chart_outlined),
                               size: 12,
@@ -1520,7 +1505,7 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                '#${widget.thought.category}',
+                                '#${thought.category}',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -1537,7 +1522,7 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
                   ],
                   const SizedBox(width: 8),
                   Text(
-                    widget.timeAgo,
+                    timeAgo,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1560,102 +1545,27 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
                       size: 18,
                       color: c.textSecondary,
                     ),
-                    onPressed: widget.onAction,
+                    onPressed: onAction,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
 
-              // Thought content
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final textStyle = TextStyle(
-                    fontSize: 14.5,
-                    height: 1.45,
-                    fontStyle:
-                        widget.locked ? FontStyle.italic : FontStyle.normal,
-                    color: widget.locked ? c.textSecondary : c.textPrimary,
-                    fontWeight: FontWeight.w500,
-                  );
-                  final span = TextSpan(text: display, style: textStyle);
-                  final painter = TextPainter(
-                    text: span,
-                    maxLines: 4,
-                    textDirection: Directionality.of(context),
-                    textScaler: MediaQuery.textScalerOf(context),
-                    ellipsis: '…',
-                  )..layout(maxWidth: constraints.maxWidth);
-                  final overflow = !widget.locked && painter.didExceedMaxLines;
-                  painter.dispose();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 240),
-                        curve: Curves.easeInOutCubic,
-                        alignment: Alignment.topLeft,
-                        child: Text(
-                          display,
-                          key: const ValueKey('home_latest_thought_text'),
-                          maxLines: _expanded ? null : 4,
-                          overflow: _expanded
-                              ? TextOverflow.visible
-                              : TextOverflow.ellipsis,
-                          style: textStyle,
-                        ),
-                      ),
-                      if (overflow) ...[
-                        const SizedBox(height: 8),
-                        AppTapArea(
-                          key: const ValueKey('home_thought_expand_toggle'),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            setState(() => _expanded = !_expanded);
-                          },
-                          borderRadius: BorderRadius.circular(999),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: c.accent.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: c.accent.withValues(alpha: 0.22),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  _expanded ? 'Show less' : 'Show more',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: c.accent,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  _expanded
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  size: 15,
-                                  color: c.accent,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-                },
+              // Thought content via shared ThoughtExcerpt component
+              ThoughtExcerpt(
+                content: display,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.45,
+                  fontStyle: locked ? FontStyle.italic : FontStyle.normal,
+                  color: locked ? c.textSecondary : c.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 4,
+                thoughtId: thought.id,
+                textKey: const ValueKey('home_latest_thought_text'),
+                toggleKey: const ValueKey('home_thought_expand_toggle'),
+                arrowColor: c.accent,
               ),
             ],
           ),

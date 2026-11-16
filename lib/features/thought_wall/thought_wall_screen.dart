@@ -2715,10 +2715,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           content: thought.content.startsWith('[HIGH] ')
                               ? thought.content.substring(7)
                               : thought.content,
-                          maxLines: 6,
+                          maxLines: widget.role == ThoughtCardRole.hero ? 6 : 4,
+                          thoughtId: thought.id,
                           style: AppTypography.thoughtContent(
                             color: context.glass.ink,
                           ),
+                          arrowColor: moodColor,
                         ),
                       ),
                     ],
