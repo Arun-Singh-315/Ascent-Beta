@@ -21,13 +21,21 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Rd.card),
-        border: Border.all(color: c.border),
+        border: Border.all(color: c.border.withValues(alpha: 0.9), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: (dark ? Colors.black : c.border).withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -100,7 +100,10 @@ class HomeWeather extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(homeWeatherProvider);
     final current = state.value?['current'] as Map<String, dynamic>?;
-    final city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first ?? 'Bhopal';
+    String city = 'Bhopal';
+    try {
+      city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first ?? 'Bhopal';
+    } catch (_) {}
 
     final String label;
     final IconData iconData;

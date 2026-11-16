@@ -102,6 +102,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Row 1: Avatar | Date | Weather pill (right)
           Row(
@@ -157,7 +158,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
               // Right: Weather capsule (no redundant icon button beside day/night toggle)
               const SizedBox(width: 8),
               const Flexible(
-                child: HomeWeather(),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: HomeWeather(),
+                ),
               ),
             ],
           ),
@@ -197,7 +202,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                 if (todayFestival != null)
                   AppChip(
                     key: const ValueKey('home_festival_banner'),
-                    icon: Icons.wb_sunny_rounded,
+                    icon: Icons.celebration_rounded,
                     iconColor: c.warn,
                     label: 'Happy ${todayFestival.name}! ✨',
                   ),

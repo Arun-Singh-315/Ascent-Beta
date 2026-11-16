@@ -24,6 +24,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../core/theme/app_colors.dart';
 import '../../app/theme/shared_control_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -1163,6 +1164,8 @@ if (!mounted || result == null) return;
       if (_selectedIds.isEmpty) _isSelectionMode = false;
     }
     final g = context.glass;
+    final c = context.c;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: !_isSelectionMode,
@@ -1178,6 +1181,7 @@ if (!mounted || result == null) return;
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
+        glow1: c.accent.withValues(alpha: 0.12),
         glow2: g.glow2,
         showFeatureHelp: false,
         leading: _isSelectionMode
@@ -1272,7 +1276,20 @@ if (!mounted || result == null) return;
                   ),
                 ),
               ],
-        body: Column(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                c.headerTop.withValues(alpha: isDark ? 0.30 : 0.45),
+                c.bg,
+                c.bg,
+              ],
+              stops: const [0.0, 0.35, 1.0],
+            ),
+          ),
+          child: Column(
           children: [
             if (MediaQuery.viewInsetsOf(context).bottom == 0 ||
                 _isSelectionMode) ...[
@@ -1647,7 +1664,8 @@ if (!mounted || result == null) return;
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
@@ -1835,12 +1853,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : const [],
       borderRadius: switch (style) {
         ThoughtCardStyle.soft => BorderRadius.circular(20),
-        ThoughtCardStyle.bubble => BorderRadius.only(
-          topLeft: const Radius.circular(20),
-          topRight: const Radius.circular(20),
-          bottomLeft: Radius.circular(index.isEven ? 20 : 8),
-          bottomRight: Radius.circular(index.isOdd ? 8 : 20),
-        ),
+        ThoughtCardStyle.bubble => BorderRadius.circular(18),
         ThoughtCardStyle.minimal =>
           widget.compact ? BorderRadius.zero : BorderRadius.circular(10),
       },
@@ -1891,8 +1904,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                     ? 8
                     : 12)
               : AppSpace.s14,
-          left: index.isOdd ? 32 : 0,
-          right: index.isEven ? 32 : 0,
         ),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
@@ -2659,7 +2670,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           content: thought.content.startsWith('[HIGH] ')
                               ? thought.content.substring(7)
                               : thought.content,
-                          maxLines: 5,
+                          maxLines: 6,
                           style: AppTypography.thoughtContent(
                             color: context.glass.ink,
                           ),

@@ -35,6 +35,7 @@ import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
 import '../../thought_wall/thought_wall_appearance_sheet.dart';
+import '../../thought_wall/board/board_actions.dart';
 import '../../../core/services/festival_service.dart';
 import 'dart:convert';
 
@@ -747,10 +748,8 @@ class _ThoughtWallHomePreviewState
                     key: ValueKey('home_thought_entrance_${thought.id}'),
                     animate: isNew,
                     child: Padding(
-                      padding: EdgeInsets.only(
+                      padding: const EdgeInsets.only(
                         bottom: AppSpace.s10,
-                        left: !widget.compact && isRight ? 36.0 : 0.0,
-                        right: !widget.compact && !isRight ? 36.0 : 0.0,
                       ),
                       child: AppTapArea(
                         onTap: () async {
@@ -957,21 +956,13 @@ class _ThoughtWallHomePreviewState
                                   ),
                                   const SizedBox(height: 6),
                                 ],
-                                Text.rich(
-                                  ThoughtExcerpt.buildRichArrowSpan(
-                                    context: context,
-                                    text: widget.compact
-                                        ? thought.content
-                                              .replaceAll(RegExp(r'\s+'), ' ')
-                                              .trim()
-                                        : thought.content,
-                                    arrowColor: thoughtTextColor,
-                                    baseStyle: AppTypography.thoughtContent(
-                                      color: thoughtTextColor,
-                                    ),
+                                ThoughtExcerpt(
+                                  content: thought.content,
+                                  maxLines: 5,
+                                  arrowColor: thoughtTextColor,
+                                  style: AppTypography.thoughtContent(
+                                    color: thoughtTextColor,
                                   ),
-                                  maxLines: widget.compact ? 2 : 3,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                               if (isDraftSource) ...[
@@ -1234,6 +1225,7 @@ class _ThoughtWallHomePreviewState
             controller: _controller,
             focusNode: _focusNode,
             hint: "What's on your mind?",
+            submitTooltip: 'Send capture',
             leadingIcon: Icons.add,
             onLeadingTap: () {
               HapticFeedback.lightImpact();
@@ -1243,127 +1235,88 @@ class _ThoughtWallHomePreviewState
           ),
           const SizedBox(height: 12),
 
-          // 2. Horizontally scrollable row of three AppChips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                AppChip(
-                  icon: Icons.lightbulb_outline_rounded,
-                  label: 'Spark an idea',
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _controller.text = '💡 ';
-                    _controller.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _controller.text.length),
-                    );
-                    _focusNode.requestFocus();
-                  },
-                ),
-                const SizedBox(width: 8),
-                AppChip(
-                  icon: Icons.emoji_events_outlined,
-                  label: 'Log a win',
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _controller.text = '🎯 Win: ';
-                    _controller.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _controller.text.length),
-                    );
-                    _focusNode.requestFocus();
-                  },
-                ),
-                const SizedBox(width: 8),
-                AppChip(
-                  icon: Icons.edit_note_rounded,
-                  label: 'Reflect',
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _controller.text = 'Reflecting on: ';
-                    _controller.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _controller.text.length),
-                    );
-                    _focusNode.requestFocus();
-                  },
-                ),
-              ],
-            ),
+          // 2. Wrap of three AppChips without horizontal scrolling
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              AppChip(
+                icon: Icons.lightbulb_outline_rounded,
+                label: 'Spark an idea',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _controller.text = '💡 ';
+                  _controller.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _controller.text.length),
+                  );
+                  _focusNode.requestFocus();
+                },
+              ),
+              AppChip(
+                icon: Icons.emoji_events_outlined,
+                label: 'Log a win',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _controller.text = '🎯 Win: ';
+                  _controller.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _controller.text.length),
+                  );
+                  _focusNode.requestFocus();
+                },
+              ),
+              AppChip(
+                icon: Icons.edit_note_rounded,
+                label: 'Reflect',
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _controller.text = 'Reflecting on: ';
+                  _controller.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _controller.text.length),
+                  );
+                  _focusNode.requestFocus();
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 14),
 
-          // 3. Latest entry as quote row OR Empty state
+          // 3. Latest entry as premium bubble OR Empty state
           if (latest != null) ...[
-            InkWell(
-              key: const ValueKey('home_latest_thought_bubble'),
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => context.push('/thought-wall?thought=${latest.id}'),
-              onLongPress: () => showHomeThoughtActions(
-                context,
-                ref,
-                latest,
-                locked: locked,
+            Dismissible(
+              key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
+              direction: DismissDirection.endToStart,
+              confirmDismiss: (_) async {
+                final confirmed = await confirmHomeThoughtDeletion(context);
+                if (confirmed && context.mounted) {
+                  await deleteThoughtsWithUndo(context, ref, [latest]);
+                  return true;
+                }
+                return false;
+              },
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                decoration: BoxDecoration(
+                  color: c.alertTint,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  color: c.alert,
+                  size: 22,
+                ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 3px wide left bar in accent (radius 2)
-                    Container(
-                      width: 3,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: c.accent,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            locked
-                                ? 'Private thought'
-                                : ThoughtExcerpt.displayContent(latest.content),
-                            key: const ValueKey('home_latest_thought_text'),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                              color: c.textPrimary,
-                              height: 1.35,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatTimeAgo(latest.createdAt),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: c.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Thought actions',
-                      icon: Icon(
-                        Icons.more_horiz_rounded,
-                        size: 20,
-                        color: c.textSecondary,
-                      ),
-                      onPressed: () => showHomeThoughtActions(
-                        context,
-                        ref,
-                        latest,
-                        locked: locked,
-                      ),
-                    ),
-                  ],
+              child: _HomeThoughtBubble(
+                key: const ValueKey('home_latest_thought_bubble'),
+                thought: latest,
+                locked: locked,
+                timeAgo: _formatTimeAgo(latest.createdAt),
+                onTap: () => context.push('/thought-wall?thought=${latest.id}'),
+                onAction: () => showHomeThoughtActions(
+                  context,
+                  ref,
+                  latest,
+                  locked: locked,
                 ),
               ),
             ),
@@ -1446,3 +1399,271 @@ class _ThoughtWallHomePreviewState
 /// Drops a freshly saved thought in from the composer: it slides down, settles
 /// with a soft overshoot and fades in. Thoughts already on screen (first load,
 /// reorders) are shown instantly. Honors the system "reduce motion" setting.
+
+class _HomeThoughtBubble extends StatefulWidget {
+  const _HomeThoughtBubble({
+    super.key,
+    required this.thought,
+    required this.locked,
+    required this.timeAgo,
+    required this.onTap,
+    required this.onAction,
+  });
+
+  final Thought thought;
+  final bool locked;
+  final String timeAgo;
+  final VoidCallback onTap;
+  final VoidCallback onAction;
+
+  @override
+  State<_HomeThoughtBubble> createState() => _HomeThoughtBubbleState();
+}
+
+class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant _HomeThoughtBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.thought.id != widget.thought.id) {
+      _expanded = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final display = widget.locked
+        ? 'Private thought'
+        : ThoughtExcerpt.displayContent(widget.thought.content);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: widget.onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: dark
+                ? c.surfaceAlt.withValues(alpha: 0.6)
+                : c.surfaceAlt.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: c.border.withValues(alpha: 0.9),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (dark ? Colors.black : c.border).withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 14, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header row: category pill + timestamp + more menu
+              Row(
+                children: [
+                  if (widget.locked) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: c.accentTint,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock_rounded, size: 12, color: c.accent),
+                          const SizedBox(width: 4),
+                          Text(
+                            'PRIVATE COMMITMENT',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: c.accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: c.accentTint,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.thought.mood == 'win'
+                                  ? Icons.emoji_events_outlined
+                                  : (widget.thought.mood == 'spark'
+                                        ? Icons.lightbulb_outline_rounded
+                                        : Icons.bubble_chart_outlined),
+                              size: 12,
+                              color: c.accent,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '#${widget.thought.category}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: c.accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.timeAgo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: c.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: 'Thought actions',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 18,
+                      color: c.textSecondary,
+                    ),
+                    onPressed: widget.onAction,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Thought content
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final textStyle = TextStyle(
+                    fontSize: 14.5,
+                    height: 1.45,
+                    fontStyle:
+                        widget.locked ? FontStyle.italic : FontStyle.normal,
+                    color: widget.locked ? c.textSecondary : c.textPrimary,
+                    fontWeight: FontWeight.w400,
+                  );
+                  final span = TextSpan(text: display, style: textStyle);
+                  final painter = TextPainter(
+                    text: span,
+                    maxLines: 4,
+                    textDirection: Directionality.of(context),
+                    textScaler: MediaQuery.textScalerOf(context),
+                    ellipsis: '…',
+                  )..layout(maxWidth: constraints.maxWidth);
+                  final overflow = !widget.locked && painter.didExceedMaxLines;
+                  painter.dispose();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 240),
+                        curve: Curves.easeInOutCubic,
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          display,
+                          key: const ValueKey('home_latest_thought_text'),
+                          maxLines: _expanded ? null : 4,
+                          overflow: _expanded
+                              ? TextOverflow.visible
+                              : TextOverflow.ellipsis,
+                          style: textStyle,
+                        ),
+                      ),
+                      if (overflow) ...[
+                        const SizedBox(height: 8),
+                        AppTapArea(
+                          key: const ValueKey('home_thought_expand_toggle'),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _expanded = !_expanded);
+                          },
+                          borderRadius: BorderRadius.circular(999),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: c.accent.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: c.accent.withValues(alpha: 0.22),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _expanded ? 'Show less' : 'Show more',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.accent,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  _expanded
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  size: 15,
+                                  color: c.accent,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -111,17 +111,23 @@ void main() {
         find.byKey(const ValueKey('home_latest_thought_text')),
       );
       expect(text.data, message);
-      expect(text.maxLines, 2);
+      expect(text.maxLines, 4);
       expect(text.overflow, TextOverflow.ellipsis);
-      expect(tester.getSize(bubble).height, lessThan(80));
-      expect(
-        tester.getTopLeft(bubble).dx,
-        greaterThan(
-          tester
-              .getTopLeft(find.byKey(const ValueKey('home_thought_studio')))
-              .dx,
-        ),
+
+      // Verify "Show more" button appears and expands the bubble full inline without opening any popup!
+      final showMore = find.byKey(const ValueKey('home_thought_expand_toggle'));
+      expect(showMore, findsOneWidget);
+      expect(find.text('Show more'), findsOneWidget);
+
+      await tester.tap(showMore);
+      await settle(tester);
+
+      expect(find.text('Show less'), findsOneWidget);
+      final expandedText = tester.widget<Text>(
+        find.byKey(const ValueKey('home_latest_thought_text')),
       );
+      expect(expandedText.maxLines, isNull); // Expanded to full length!
+
       expect(tester.takeException(), isNull);
       await tester.runAsync(() async {
         final rendered =
