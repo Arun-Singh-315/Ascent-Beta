@@ -88,6 +88,15 @@ class HomeTheme {
         modalBackgroundColor: design.elevated,
         surfaceTintColor: Colors.transparent,
       ),
+      scrollbarTheme: parent.scrollbarTheme.copyWith(
+        thumbColor: WidgetStatePropertyAll(
+          dark
+              ? Colors.white.withValues(alpha: 0.28)
+              : Colors.black.withValues(alpha: 0.22),
+        ),
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        interactive: true,
+      ),
       popupMenuTheme: parent.popupMenuTheme.copyWith(
         color: design.elevated,
         surfaceTintColor: Colors.transparent,

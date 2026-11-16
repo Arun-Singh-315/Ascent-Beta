@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,9 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/providers/settings_provider.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/services/cosmic_profile_service.dart';
 import '../../../core/services/festival_service.dart';
+import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/app_chip.dart';
@@ -55,6 +57,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
     final dob = widget.profile?.dateOfBirth;
     final sign = dob == null ? null : const CosmicProfileService().getZodiac(dob);
     final todayFestival = ref.watch(todayFestivalProvider);
+    final streak = math.max(
+      ref.watch(studyStreakProvider).displayStreakDays,
+      ref.watch(currentStreakStreamProvider).value ?? 0,
+    );
+    final showStreak = streak > 0;
 
     final quote = todayFestival?.thought ??
         (day.cue.isNotEmpty ? day.cue : 'Rising with unwavering discipline and offering gratitude to the source of life.');
@@ -71,16 +78,32 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [c.headerTop, c.bg],
+          colors: [
+            c.headerTop,
+            dark ? c.surfaceAlt : c.surface,
+          ],
         ),
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(Rd.header),
         ),
+        border: Border(
+          bottom: BorderSide(
+            color: c.border.withValues(alpha: 0.8),
+            width: 1.0,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (dark ? Colors.black : c.border).withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Avatar | Date | Weather & Theme actions
+          // Row 1: Avatar | Date | Weather pill (right)
           Row(
             children: [
               // Avatar
@@ -121,6 +144,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                 child: Text(
                   DateFormat('EEE, d MMM').format(now),
                   key: const ValueKey('home_date'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -129,21 +154,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
                 ),
               ),
 
-              // Right: Weather & Theme action buttons (40px outlined circle, surface fill)
-              _HeaderIconButton(
-                key: const ValueKey('home_weather_button'),
-                icon: Icons.wb_sunny_outlined,
-                tooltip: 'Weather',
-                onTap: () => showWeatherForecastSheet(context),
-              ),
+              // Right: Weather capsule (no redundant icon button beside day/night toggle)
               const SizedBox(width: 8),
-              _HeaderIconButton(
-                key: const ValueKey('home_day_night_toggle'),
-                icon: dark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                tooltip: dark ? 'Day mode' : 'Night mode',
-                onTap: () => ref
-                    .read(themeModeProvider.notifier)
-                    .setThemeMode(dark ? ThemeMode.light : ThemeMode.dark),
+              const Flexible(
+                child: HomeWeather(),
               ),
             ],
           ),
@@ -172,33 +186,40 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
             ),
           ),
 
-          // Row 3: Scrollable chip row (top margin 14)
-          const SizedBox(height: 14),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
+          // Row 3: Chip row (top margin 14) — uses Wrap to guarantee zero horizontal scrolling!
+          if (todayFestival != null || sign != null || showStreak) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                if (todayFestival != null) ...[
+                if (todayFestival != null)
                   AppChip(
                     key: const ValueKey('home_festival_banner'),
                     icon: Icons.wb_sunny_rounded,
                     iconColor: c.warn,
                     label: 'Happy ${todayFestival.name}! ✨',
                   ),
-                  const SizedBox(width: 8),
-                ],
-                if (sign != null) ...[
+                if (sign != null)
                   AppChip(
                     key: const ValueKey('home_rashi'),
                     label: '${sign.name} · ${sign.vedicRashi} · ${sign.element.label}',
                   ),
-                  const SizedBox(width: 8),
-                ],
-                const HomeWeather(),
+                if (showStreak)
+                  AppChip(
+                    key: const ValueKey('home_streak_chip'),
+                    icon: Icons.local_fire_department_rounded,
+                    iconColor: c.warn,
+                    label: '$streak day streak',
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      ref.read(studyStreakCardVisibleProvider.notifier).toggle();
+                    },
+                  ),
               ],
             ),
-          ),
+          ],
 
           // Row 4: Quote line in italic textSecondary, max 2 lines (top margin 12)
           const SizedBox(height: 12),
@@ -215,43 +236,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({
-    super.key,
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Material(
-      color: c.surface,
-      shape: CircleBorder(side: BorderSide(color: c.border)),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Tooltip(
-          message: tooltip,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, size: 20, color: c.textPrimary),
-          ),
-        ),
       ),
     );
   }

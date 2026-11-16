@@ -779,6 +779,24 @@ class AscentTheme {
         linearMinHeight: 4,
         borderRadius: BorderRadius.circular(4),
       ),
+
+      // ── Scrollbar ────────────────────────────────────────────────────────────
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: WidgetStatePropertyAll(
+          isDark
+              ? Colors.white.withValues(alpha: 0.28)
+              : Colors.black.withValues(alpha: 0.22),
+        ),
+        trackColor: WidgetStatePropertyAll(
+          isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.04),
+        ),
+        radius: const Radius.circular(4),
+        thickness: const WidgetStatePropertyAll(4.0),
+        thumbVisibility: const WidgetStatePropertyAll(true),
+        interactive: true,
+      ),
       extensions: [
         isDark ? AppColors.dark : AppColors.light,
         isDark

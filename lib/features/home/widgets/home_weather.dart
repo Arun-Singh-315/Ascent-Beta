@@ -109,6 +109,9 @@ class HomeWeather extends ConsumerWidget {
       label = '$temp° · $city';
       final code = (current['weather_code'] as num).toInt();
       iconData = weatherIconForCode(code);
+    } else if (state.hasError) {
+      label = 'Weather unavailable · Retry';
+      iconData = Icons.cloud_off_rounded;
     } else if (state.isLoading) {
       label = 'Loading…';
       iconData = Icons.wb_sunny_outlined;
@@ -138,6 +141,7 @@ class WeatherForecastSheet extends ConsumerStatefulWidget {
 
 class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
   final query = TextEditingController();
+  final _scrollController = ScrollController();
   List<dynamic> cities = [];
   bool searching = false;
   String? error;
@@ -157,6 +161,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
   @override
   void dispose() {
     query.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -227,67 +232,107 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * 0.9,
       ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          0,
-          16,
-          MediaQuery.viewInsetsOf(context).bottom + 20,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 1. Drag handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 16),
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: c.border,
-                  borderRadius: BorderRadius.circular(2),
+      child: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        interactive: true,
+        thickness: 4.0,
+        radius: const Radius.circular(4),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            MediaQuery.viewInsetsOf(context).bottom + 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 16),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
 
-            // 2. Title row
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: c.accentTint,
-                    borderRadius: BorderRadius.circular(Rd.iconChip),
+              // 2. Title row
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: c.accentTint,
+                      borderRadius: BorderRadius.circular(Rd.iconChip),
+                    ),
+                    child: Icon(conditionIcon, color: c.accent, size: 20),
                   ),
-                  child: Icon(conditionIcon, color: c.accent, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Weather & Forecast',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: c.textPrimary,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Weather & Forecast',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                          ),
                         ),
-                      ),
-                      Text(
-                        currentCity.split(',').first,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: c.textSecondary,
+                        Text(
+                          currentCity,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: c.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  IconButton(
+                    key: const ValueKey('close_weather_sheet'),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: c.textSecondary,
+                    tooltip: 'Close',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+            if (weather.hasError) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: c.alertTint,
+                  borderRadius: BorderRadius.circular(Rd.field),
+                  border: Border.all(color: c.alert.withValues(alpha: 0.3)),
                 ),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: c.alert, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Weather could not load. Check your connection and retry.',
+                        style: TextStyle(color: c.alert, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
 
             // 3. Current conditions card
@@ -542,8 +587,9 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _statTile(BuildContext context, String label, String value, IconData icon) {
     final c = context.c;
