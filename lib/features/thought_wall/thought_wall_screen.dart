@@ -26,6 +26,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/theme/app_colors.dart';
 import '../../app/theme/shared_control_tokens.dart';
+import '../../core/theme/app_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../promises/providers/promise_providers.dart';
@@ -1852,10 +1853,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
             ]
           : const [],
       borderRadius: switch (style) {
-        ThoughtCardStyle.soft => BorderRadius.circular(20),
-        ThoughtCardStyle.bubble => BorderRadius.circular(18),
+        ThoughtCardStyle.soft => BorderRadius.circular(AppRadius.xl),
+        ThoughtCardStyle.bubble => BorderRadius.circular(AppRadius.bubble),
         ThoughtCardStyle.minimal =>
-          widget.compact ? BorderRadius.zero : BorderRadius.circular(10),
+          widget.compact ? BorderRadius.zero : BorderRadius.circular(AppRadius.iconChip),
       },
       border: isSelected
           ? Border.all(color: g.clay, width: 1.8)

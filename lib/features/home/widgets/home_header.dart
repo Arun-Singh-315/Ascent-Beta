@@ -84,21 +84,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
           ],
         ),
         borderRadius: const BorderRadius.vertical(
-          bottom: Radius.circular(Rd.header),
+          bottom: Radius.circular(AppRadius.header),
         ),
-        border: Border(
-          bottom: BorderSide(
-            color: c.border.withValues(alpha: 0.8),
-            width: 1.0,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (dark ? Colors.black : c.border).withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: AppBorder.bottom(c.border.withValues(alpha: 0.8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

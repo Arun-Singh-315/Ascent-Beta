@@ -1,4 +1,5 @@
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../../shared/widgets/app_input_bar.dart';
 import '../../../shared/widgets/app_chip.dart';
@@ -1442,25 +1443,15 @@ class _HomeThoughtBubbleState extends State<_HomeThoughtBubble> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.bubble),
         onTap: widget.onTap,
         child: Container(
           decoration: BoxDecoration(
             color: dark
                 ? c.surfaceAlt.withValues(alpha: 0.6)
                 : c.surfaceAlt.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: c.border.withValues(alpha: 0.9),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (dark ? Colors.black : c.border).withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppRadius.bubble),
+            border: AppBorder.all(c.border.withValues(alpha: 0.8)),
           ),
           padding: const EdgeInsets.fromLTRB(16, 12, 14, 14),
           child: Column(

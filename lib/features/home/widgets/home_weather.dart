@@ -320,7 +320,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                 decoration: BoxDecoration(
                   color: c.alertTint,
                   borderRadius: BorderRadius.circular(Rd.field),
-                  border: Border.all(color: c.alert.withValues(alpha: 0.3)),
+                  border: AppBorder.all(c.alert.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -344,7 +344,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
               decoration: BoxDecoration(
                 color: c.surfaceAlt,
                 borderRadius: BorderRadius.circular(Rd.card),
-                border: Border.all(color: c.border),
+                border: AppBorder.all(c.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,7 +381,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: c.surface,
-                          border: Border.all(color: c.border),
+                          border: AppBorder.all(c.border),
                         ),
                         child: Icon(conditionIcon, size: 28, color: c.accent),
                       ),
@@ -530,7 +530,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                       decoration: BoxDecoration(
                         color: c.surfaceAlt,
                         borderRadius: BorderRadius.circular(Rd.field),
-                        border: Border.all(color: c.border),
+                        border: AppBorder.all(c.border),
                       ),
                       child: Row(
                         children: [
@@ -602,7 +602,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: BorderRadius.circular(Rd.field),
-          border: Border.all(color: c.border),
+          border: AppBorder.all(c.border),
         ),
         child: Column(
           children: [

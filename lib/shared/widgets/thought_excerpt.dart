@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app_surfaces.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../core/theme/app_tokens.dart';
 
 /// Measures the rendered text rather than guessing truncation by character count,
 /// with rich styled arrow markers (`→ `) for plan items.
@@ -148,13 +149,13 @@ class _ThoughtExcerptState extends State<ThoughtExcerpt> {
               ),
             ),
             if (overflow) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               AppTapArea(
                 onTap: () {
                   HapticFeedback.lightImpact();
                   setState(() => _expanded = !_expanded);
                 },
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppRadius.chip),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 11,
@@ -162,10 +163,10 @@ class _ThoughtExcerptState extends State<ThoughtExcerpt> {
                   ),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.chip),
                     border: Border.all(
                       color: accent.withValues(alpha: 0.22),
-                      width: 0.8,
+                      width: AppBorder.hairline,
                     ),
                   ),
                   child: Row(
