@@ -209,12 +209,11 @@ class _ThoughtExcerptState extends State<ThoughtExcerpt> {
             overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
           );
         } else {
-          textWidget = Text(
-            formatted,
+          textWidget = Text.rich(
+            TextSpan(text: formatted, style: widget.style),
             key: widget.textKey,
             maxLines: expanded ? null : widget.maxLines,
             overflow: expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: widget.style,
           );
         }
 

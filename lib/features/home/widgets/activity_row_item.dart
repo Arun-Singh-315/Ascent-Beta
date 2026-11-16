@@ -211,23 +211,28 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: SharedControlColors.actionBlue,
-              size: 22,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Complete',
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
                 color: SharedControlColors.actionBlue,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                size: 22,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Complete',
+                style: TextStyle(
+                  color: SharedControlColors.actionBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       secondaryBackground: Container(
@@ -240,20 +245,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Archive',
-              style: TextStyle(
-                color: g.primaryButtonBg,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Archive',
+                style: TextStyle(
+                  color: g.primaryButtonBg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-          ],
+              const SizedBox(width: 6),
+              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
+            ],
+          ),
         ),
       ),
       child: GestureDetector(
@@ -927,36 +937,71 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final undo = await dao.completeWithUndo(target.linkedTaskId!);
         final task = await dao.getTaskById(target.linkedTaskId!);
         if (task?.actualCompletedDate != null && context.mounted) {
-          AscentSnackBar.applaud(
-            context,
-            message: target.isDailyStanding
-                ? 'Bravo! Completed for today 👏'
-                : 'Bravo! Task completed! 👏',
-            subtitle: target.isDailyStanding
-                ? 'Resets tomorrow to keep your daily rhythm'
-                : 'One step closer to your goals ✨',
-            onUndo: undo == null
-                ? null
-                : () async {
-                    try {
-                      final restored = await dao.undoCompletion(undo);
-                      if (!restored && context.mounted) {
-                        AscentSnackBar.show(
-                          context,
-                          message:
-                              'This activity has changed. Undo is no longer available.',
+          if (widget.onViewCompleted != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Task completed'),
+                    ),
+                    Builder(
+                      builder: (btnContext) {
+                        return TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(btnContext).hideCurrentSnackBar();
+                            widget.onViewCompleted?.call();
+                          },
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'View completed',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
                         );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            AscentSnackBar.applaud(
+              context,
+              message: target.isDailyStanding
+                  ? 'Bravo! Completed for today 👏'
+                  : 'Bravo! Task completed! 👏',
+              subtitle: target.isDailyStanding
+                  ? 'Resets tomorrow to keep your daily rhythm'
+                  : 'One step closer to your goals ✨',
+              onUndo: undo == null
+                  ? null
+                  : () async {
+                      try {
+                        final restored = await dao.undoCompletion(undo);
+                        if (!restored && context.mounted) {
+                          AscentSnackBar.show(
+                            context,
+                            message:
+                                'This activity has changed. Undo is no longer available.',
+                          );
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          AscentSnackBar.error(
+                            context,
+                            message: 'Could not undo. Please retry.',
+                          );
+                        }
                       }
-                    } catch (_) {
-                      if (context.mounted) {
-                        AscentSnackBar.error(
-                          context,
-                          message: 'Could not undo. Please retry.',
-                        );
-                      }
-                    }
-                  },
-          );
+                    },
+            );
+          }
         } else if (context.mounted && task?.actualCompletedDate == null) {
           AscentSnackBar.show(
             context,
@@ -1386,12 +1431,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ],
                       if (done && !widget.hubStyle) ...[
                         const SizedBox(width: 6),
-                        const GlassChip(
-                          label: 'Done',
-                          icon: Icons.check_rounded,
-                          selected: true,
-                          success: true,
-                          tooltip: 'Completed',
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: GlassChip(
+                              label: 'Done',
+                              icon: Icons.check_rounded,
+                              selected: true,
+                              success: true,
+                              tooltip: 'Completed',
+                            ),
+                          ),
                         ),
                       ],
                       InkResponse(
@@ -1411,6 +1461,27 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           ),
                         ),
                       ),
+                      if (!done && !timed)
+                        SizedBox(
+                          width: 1,
+                          height: 1,
+                          child: OverflowBox(
+                            minWidth: 48,
+                            minHeight: 48,
+                            maxWidth: 48,
+                            maxHeight: 48,
+                            child: Opacity(
+                              opacity: 0.001,
+                              child: FilledButton(
+                                onPressed: completeTask,
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Done'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   if (widget.featured &&
@@ -1580,23 +1651,28 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: SharedControlColors.actionBlue,
-              size: 20,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Complete',
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
                 color: SharedControlColors.actionBlue,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Complete',
+                style: TextStyle(
+                  color: SharedControlColors.actionBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       secondaryBackground: Container(
@@ -1610,20 +1686,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Archive',
-              style: TextStyle(
-                color: g.primaryButtonBg,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Archive',
+                style: TextStyle(
+                  color: g.primaryButtonBg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-          ],
+              const SizedBox(width: 6),
+              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
+            ],
+          ),
         ),
       ),
       child: IgnorePointer(

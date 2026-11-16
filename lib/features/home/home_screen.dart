@@ -29,9 +29,7 @@ import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_compact_header.dart';
-import 'widgets/home_calendar.dart';
 import 'widgets/home_shortcut_panel.dart';
-import 'widgets/home_day_glance_card.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
 import '../vault/widgets/vault_home_preview.dart';
@@ -294,30 +292,24 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             showReminders: layout.visible.contains('reminders'),
                           ),
 
-                          // 3. Today's Pulse card
-                          const HomeDayGlanceCard(),
-
-                          // 4. Calendar strip card
-                          const HomeCalendar(),
-
-                          // 5. Things SectionCard
-                          if (layout.visible.contains('today'))
-                            ActivityHubCard(
-                              previewLimit: layout.compact.contains('today') ? 3 : 6,
-                            ),
-
-                          // 6. Mindspace SectionCard
+                          // 3. Thought Wall SectionCard — The heart of Home screen
                           if (layout.visible.contains('mind'))
                             const ThoughtWallHomePreview(
                               previewLimit: 1,
                               compact: true,
                             ),
 
-                          // 7. Daily rhythm SectionCard
+                          // 4. Things SectionCard — Activity Hub
+                          if (layout.visible.contains('today'))
+                            ActivityHubCard(
+                              previewLimit: layout.compact.contains('today') ? 3 : 6,
+                            ),
+
+                          // 5. Daily rhythm SectionCard
                           if (layout.visible.contains('life') && layout.tools.isNotEmpty)
                             const HomeLifeShelf(),
 
-                          // 8. Plans & Routines SectionCard
+                          // 6. Plans & Routines SectionCard
                           const HomePlansPreview(
                             key: ValueKey('home_plans_big_card'),
                           ),

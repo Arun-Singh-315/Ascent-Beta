@@ -90,35 +90,38 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                   color: g.inkMuted,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: completedTasks > 0
-                          ? const Color(0xFF10B981)
-                          : SharedControlColors.actionBlue,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: completedTasks > 0
+                            ? const Color(0xFF10B981)
+                            : SharedControlColors.actionBlue,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    statusBadge,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: g.ink,
+                    const SizedBox(width: 5),
+                    Text(
+                      statusBadge,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: g.ink,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 15,
-                    color: g.inkMuted,
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 15,
+                      color: g.inkMuted,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

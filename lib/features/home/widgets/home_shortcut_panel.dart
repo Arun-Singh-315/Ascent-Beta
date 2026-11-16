@@ -169,7 +169,7 @@ class _ShortcutTile extends StatelessWidget {
       case 'health':
         return Icons.water_drop_outlined;
       case 'assistant':
-        return Icons.auto_awesome_outlined;
+        return Icons.auto_awesome_rounded;
       case 'vault':
         return Icons.shield_outlined;
       default:
@@ -230,7 +230,7 @@ class _ShortcutTile extends StatelessWidget {
     final label = _labelFor(item.id);
 
     return InkWell(
-      key: ValueKey('shortcut_item_${item.id}'),
+      key: ValueKey('shortcut_${item.id}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(

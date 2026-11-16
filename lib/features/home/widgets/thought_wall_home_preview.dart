@@ -752,7 +752,9 @@ class _ThoughtWallHomePreviewState
                     key: ValueKey('home_thought_entrance_${thought.id}'),
                     animate: isNew,
                     child: Padding(
-                      padding: const EdgeInsets.only(
+                      padding: EdgeInsets.only(
+                        left: isRight ? 36 : 0,
+                        right: isRight ? 0 : 36,
                         bottom: AppSpace.s10,
                       ),
                       child: AppTapArea(
@@ -1220,6 +1222,10 @@ class _ThoughtWallHomePreviewState
       key: const ValueKey('home_mind_space_card'),
       icon: Icons.psychology_alt_outlined,
       title: 'Mindspace',
+      trailing: TextButton(
+        onPressed: () => context.push('/thought-wall'),
+        child: const Text('View all'),
+      ),
       onOpen: () => context.push('/thought-wall'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1287,41 +1293,46 @@ class _ThoughtWallHomePreviewState
 
           // 3. Latest entry as premium bubble OR Empty state
           if (latest != null) ...[
-            Dismissible(
-              key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
-              direction: DismissDirection.endToStart,
-              confirmDismiss: (_) async {
-                HapticFeedback.mediumImpact();
-                ThoughtExpandedRegistry.collapse(latest.id);
-                if (context.mounted) {
-                  await deleteThoughtsWithUndo(context, ref, [latest]);
-                }
-                return true;
-              },
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                decoration: BoxDecoration(
-                  color: c.alertTint,
-                  borderRadius: BorderRadius.circular(16),
+            HomeCaptureEntrance(
+              key: ValueKey('home_thought_entrance_${latest.id}'),
+              animate: false,
+              child: Dismissible(
+                key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
+                direction: DismissDirection.endToStart,
+                confirmDismiss: (_) async {
+                  HapticFeedback.mediumImpact();
+                  ThoughtExpandedRegistry.collapse(latest.id);
+                  if (context.mounted) {
+                    await deleteThoughtsWithUndo(context, ref, [latest]);
+                  }
+                  return true;
+                },
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: c.alertTint,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.delete_outline_rounded,
+                    color: c.alert,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(
-                  Icons.delete_outline_rounded,
-                  color: c.alert,
-                  size: 22,
-                ),
-              ),
-              child: _HomeThoughtBubble(
-                key: const ValueKey('home_latest_thought_bubble'),
-                thought: latest,
-                locked: locked,
-                timeAgo: _formatTimeAgo(latest.createdAt),
-                onTap: () => context.push('/thought-wall?thought=${latest.id}'),
-                onAction: () => showHomeThoughtActions(
-                  context,
-                  ref,
-                  latest,
+                child: _HomeThoughtBubble(
+                  key: const ValueKey('home_latest_thought_bubble'),
+                  thought: latest,
                   locked: locked,
+                  timeAgo: _formatTimeAgo(latest.createdAt),
+                  maxLines: widget.previewLimit == 1 ? 2 : 4,
+                  onTap: () => context.push('/thought-wall?thought=${latest.id}'),
+                  onAction: () => showHomeThoughtActions(
+                    context,
+                    ref,
+                    latest,
+                    locked: locked,
+                  ),
                 ),
               ),
             ),
@@ -1503,6 +1514,7 @@ class _HomeThoughtBubble extends StatelessWidget {
     required this.timeAgo,
     required this.onTap,
     required this.onAction,
+    this.maxLines = 4,
   });
 
   final Thought thought;
@@ -1510,6 +1522,7 @@ class _HomeThoughtBubble extends StatelessWidget {
   final String timeAgo;
   final VoidCallback onTap;
   final VoidCallback onAction;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -1655,7 +1668,7 @@ class _HomeThoughtBubble extends StatelessWidget {
                   color: locked ? c.textSecondary : c.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
-                maxLines: 4,
+                maxLines: maxLines,
                 thoughtId: thought.id,
                 textKey: const ValueKey('home_latest_thought_text'),
                 toggleKey: const ValueKey('home_thought_expand_toggle'),

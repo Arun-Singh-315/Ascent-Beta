@@ -451,6 +451,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                           activity: entry.activity,
                                           compact: true,
                                           ground: true,
+                                          hubStyle: true,
                                           onViewCompleted: () {
                                             if (!mounted) return;
                                             setState(() {
@@ -699,6 +700,7 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
                           activity: rows[index],
                           compact: true,
                           ground: true,
+                          hubStyle: true,
                         ),
                       );
                     },
