@@ -14,6 +14,7 @@ import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/app_chip.dart';
+import '../../../shared/widgets/capped_chip_wrap.dart';
 import 'home_day_design.dart';
 import 'home_weather.dart';
 
@@ -182,7 +183,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader> {
           // Row 3: Chip row (top margin 14) — uses Wrap to guarantee zero horizontal scrolling!
           if (todayFestival != null || sign != null || showStreak) ...[
             const SizedBox(height: 14),
-            Wrap(
+            CappedChipWrap(
+              maxRows: 2,
               spacing: 8,
               runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,

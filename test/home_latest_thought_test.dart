@@ -209,22 +209,11 @@ void main() {
       final bubble = find.byKey(const ValueKey('home_latest_thought_bubble'));
       expect(bubble, findsOneWidget);
 
-      // Drag left to delete
+      // Drag left to delete (direct swipe-to-delete without confirmation dialog, with Undo snackbar)
       await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
       await settle(tester);
 
-      // Deletion waits for an explicit confirmation; cancelling preserves it.
-      expect(await db.thoughtDao.getThoughtById(id), isNotNull);
-      expect(find.text('Delete this thought?'), findsOneWidget);
-      await tester.tap(find.text('Keep thought'));
-      await settle(tester);
-      expect(await db.thoughtDao.getThoughtById(id), isNotNull);
-      await tester.drag(find.byType(Dismissible), const Offset(-500, 0));
-      await settle(tester);
-      await tester.tap(find.text('Delete').last);
-      await settle(tester);
-
-      // Verify thought is deleted
+      // Verify thought is deleted immediately without dialog
       final thoughtAfter = await db.thoughtDao.getThoughtById(id);
       expect(thoughtAfter, isNull);
 

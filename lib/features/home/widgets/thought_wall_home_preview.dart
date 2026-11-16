@@ -1,5 +1,6 @@
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/capped_chip_wrap.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../../shared/widgets/app_input_bar.dart';
 import '../../../shared/widgets/app_chip.dart';
@@ -1236,8 +1237,9 @@ class _ThoughtWallHomePreviewState
           ),
           const SizedBox(height: 12),
 
-          // 2. Wrap of three AppChips without horizontal scrolling
-          Wrap(
+          // 2. Wrap of AppChips capped at 2 rows with "+N more" expansion
+          CappedChipWrap(
+            maxRows: 2,
             spacing: 8,
             runSpacing: 8,
             children: [
@@ -1287,12 +1289,12 @@ class _ThoughtWallHomePreviewState
               key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
               direction: DismissDirection.endToStart,
               confirmDismiss: (_) async {
-                final confirmed = await confirmHomeThoughtDeletion(context);
-                if (confirmed && context.mounted) {
+                HapticFeedback.mediumImpact();
+                ThoughtExpandedRegistry.collapse(latest.id);
+                if (context.mounted) {
                   await deleteThoughtsWithUndo(context, ref, [latest]);
-                  return true;
                 }
-                return false;
+                return true;
               },
               background: Container(
                 alignment: Alignment.centerRight,
