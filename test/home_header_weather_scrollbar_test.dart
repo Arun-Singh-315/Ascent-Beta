@@ -8,7 +8,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/festival_service.dart';
-import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/home_weather.dart';
 
@@ -64,11 +63,12 @@ void main() {
       expect(find.byKey(const ValueKey('home_day_night_toggle')), findsNothing);
       expect(find.byKey(const ValueKey('home_weather_button')), findsNothing);
 
-      // Verify header has distinct styling
+      // Verify header has distinct styling: gradient + hairline border, no extra shadow (Phase 1)
       final headerContainer = tester.widget<Container>(find.byKey(const ValueKey('home_day_header')));
       final decoration = headerContainer.decoration as BoxDecoration;
       expect(decoration.border, isNotNull);
-      expect(decoration.boxShadow, isNotNull);
+      expect(decoration.gradient, isNotNull);
+      expect(decoration.boxShadow, isNull);
     });
 
     testWidgets('Header chips use Wrap and have zero horizontal scrolling with all chips populated', (tester) async {
