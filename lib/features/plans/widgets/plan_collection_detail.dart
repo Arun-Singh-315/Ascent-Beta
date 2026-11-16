@@ -20,8 +20,13 @@ Future<void> showPlanCollectionDetail(
   String? initialAction,
 }) => showModalBottomSheet<void>(
   context: context,
+  useRootNavigator: true,
   isScrollControlled: true,
   useSafeArea: true,
+  constraints: BoxConstraints(
+    maxWidth: 600,
+    maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+  ),
   backgroundColor: Colors.transparent,
   builder: (ctx) => Container(
     decoration: BoxDecoration(
@@ -249,6 +254,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
       final g = context.glass;
       await showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
@@ -418,6 +424,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
       final g = context.glass;
       final id = await showModalBottomSheet<String>(
         context: context,
+        useRootNavigator: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (ctx) => Container(

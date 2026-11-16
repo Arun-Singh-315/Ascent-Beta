@@ -46,6 +46,7 @@ class PromiseDetailSheet extends ConsumerStatefulWidget {
       if (!context.mounted) return;
       await showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
@@ -372,6 +373,7 @@ class _PromiseDetailSheetState extends ConsumerState<PromiseDetailSheet> {
     try {
       await showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,

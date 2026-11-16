@@ -120,6 +120,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   Future<void> _pasteList(SpaceStyle style) async {
     final text = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -182,6 +183,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   void _menu(String name, bool custom) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(AppSpace.s20),

@@ -175,6 +175,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         : <HistoryEvent>[];
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,

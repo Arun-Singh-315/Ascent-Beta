@@ -24,6 +24,8 @@ class VaultItemDetailSheet extends StatefulWidget {
   static Future<void> show(BuildContext context, VaultItem item) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => VaultItemDetailSheet(item: item),
@@ -89,7 +91,15 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
     final isDark = context.isDark;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpace.s20),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s20,
+        AppSpace.s20,
+        AppSpace.s20 + MediaQuery.paddingOf(context).bottom,
+      ),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161622) : const Color(0xFFF9FAFC),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -97,8 +107,10 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
       ),
       child: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: Column(
+        child: Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -269,6 +281,7 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

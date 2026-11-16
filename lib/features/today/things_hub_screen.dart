@@ -669,9 +669,11 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
                   ? 'Things with a time will appear here.'
                   : _tab == 'done'
                   ? 'Things you finish today will appear here.'
+                  : items.isEmpty
+                  ? 'Add a task or timed focus block to get your day started.'
                   : 'Add a thing whenever you’re ready.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: g.inkMuted, fontSize: 12.5, height: 1.4),
+              style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.4),
             ),
             if (filtered) ...[
               const SizedBox(height: 12),

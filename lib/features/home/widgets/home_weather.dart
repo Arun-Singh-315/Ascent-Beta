@@ -83,6 +83,7 @@ void showWeatherForecastSheet(BuildContext context) {
   final c = context.c;
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: c.surface,

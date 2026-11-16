@@ -10,6 +10,7 @@ class PromiseSessionSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, PromiseModel promise) =>
       showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,

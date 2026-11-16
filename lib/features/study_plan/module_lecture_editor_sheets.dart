@@ -24,6 +24,7 @@ Future<int?> showAddModuleSheet(
 
   return await showModalBottomSheet<int>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: context.bgSurface,
@@ -155,6 +156,7 @@ Future<void> showEditModuleSheet(
 
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: context.bgSurface,
@@ -307,6 +309,7 @@ Future<void> showAddLectureSheet(
 
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: context.bgSurface,
@@ -497,6 +500,7 @@ Future<void> showEditLectureSheet(
 
   await showModalBottomSheet(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: context.bgSurface,

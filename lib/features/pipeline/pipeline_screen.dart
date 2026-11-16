@@ -78,6 +78,8 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
   void _openAddApplicationSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -91,6 +93,8 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(

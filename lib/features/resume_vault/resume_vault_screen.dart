@@ -33,6 +33,8 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
   void _openUploadSheet([Resume? existing]) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -89,6 +91,8 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
   void _confirmDelete(Resume resume) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),

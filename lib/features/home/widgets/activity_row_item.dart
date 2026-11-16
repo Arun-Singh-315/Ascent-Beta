@@ -1719,6 +1719,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   HapticFeedback.lightImpact();
                   final delay = await showModalBottomSheet<Duration>(
                     context: context,
+                    useRootNavigator: true,
+                    useSafeArea: true,
                     builder: (ctx) => SafeArea(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

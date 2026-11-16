@@ -135,6 +135,8 @@ class InlineListAddButton extends StatelessWidget {
     final g = context.glass;
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => Container(

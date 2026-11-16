@@ -25,8 +25,13 @@ Future<void> showPlanCollectionEditor(
   bool dailyTimes = false,
 }) => showModalBottomSheet<void>(
   context: context,
+  useRootNavigator: true,
   isScrollControlled: true,
   useSafeArea: true,
+  constraints: BoxConstraints(
+    maxWidth: 600,
+    maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+  ),
   backgroundColor: Colors.transparent,
   builder: (ctx) => Container(
     decoration: BoxDecoration(
@@ -336,6 +341,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final item = _items[index];
     final result = await showModalBottomSheet<PlanItemDraft>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -367,7 +373,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final current = item.minutes;
     final result = await showModalBottomSheet<int?>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(AppSpace.s20),
@@ -669,6 +677,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     if (start == null || !mounted) return;
     final result = await showModalBottomSheet<_Defaults>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -691,6 +700,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final g = context.glass;
     final text = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

@@ -221,7 +221,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: 600,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
       backgroundColor: context.glass.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
@@ -230,15 +236,18 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            final navBottom = MediaQuery.paddingOf(context).bottom;
             return Padding(
               padding: EdgeInsets.only(
                 left: AppSpace.s20,
                 right: AppSpace.s20,
                 top: AppSpace.s20,
-                bottom: bottomInset + AppSpace.s24,
+                bottom: bottomInset + navBottom + AppSpace.s24,
               ),
-              child: SingleChildScrollView(
-                child: Column(
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -728,6 +737,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ],
                 ),
               ),
+              ),
             );
           },
         );
@@ -1010,11 +1020,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               .toList();
           if (reminders.isEmpty && !_isCalendarView) {
             return ListView(
-              padding: const EdgeInsets.only(
-                left: AppSpace.s16,
-                right: AppSpace.s16,
-                top: AppSpace.s16,
-                bottom: AppSpace.s80,
+              padding: EdgeInsets.fromLTRB(
+                AppSpace.s16,
+                AppSpace.s16,
+                AppSpace.s16,
+                100 + MediaQuery.paddingOf(context).bottom,
               ),
               children: [
                 if (!_notificationsEnabled) _notificationPermissionNotice(),
@@ -1155,11 +1165,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
           return ListView(
-            padding: const EdgeInsets.only(
-              left: AppSpace.s16,
-              right: AppSpace.s16,
-              top: AppSpace.s16,
-              bottom: AppSpace.s80,
+            padding: EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s16,
+              AppSpace.s16,
+              100 + MediaQuery.paddingOf(context).bottom,
             ),
             children: [
               if (!_notificationsEnabled) _notificationPermissionNotice(),

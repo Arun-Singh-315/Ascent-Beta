@@ -43,6 +43,7 @@ Future<bool> showPlanNotificationSheet(
 }) async =>
     await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (_) => PlanNotificationSheet(

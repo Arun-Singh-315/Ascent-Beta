@@ -355,11 +355,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               AppSpace.s20,
               AppSpace.s16,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // Sheet Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1019,6 +1021,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

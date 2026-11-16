@@ -623,6 +623,8 @@ class _TaskItemTile extends ConsumerWidget {
         } else {
           final confirmed = await showModalBottomSheet<bool>(
             context: context,
+            useRootNavigator: true,
+            useSafeArea: true,
             backgroundColor: context.bgSurface,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr20),

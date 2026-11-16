@@ -37,6 +37,8 @@ class _SeriesReportCardScreenState
   void _showAddTaskSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(

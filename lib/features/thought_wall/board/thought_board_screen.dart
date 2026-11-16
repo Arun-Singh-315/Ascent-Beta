@@ -721,6 +721,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     } else if (value == 'background') {
                       showModalBottomSheet<void>(
                         context: context,
+                        useRootNavigator: true,
                         useSafeArea: true,
                         isScrollControlled: true,
                         showDragHandle: true,
@@ -729,6 +730,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     } else {
                       showModalBottomSheet<void>(
                         context: context,
+                        useRootNavigator: true,
                         useSafeArea: true,
                         isScrollControlled: true,
                         builder: (_) => const ThoughtWallAppearanceSheet(),

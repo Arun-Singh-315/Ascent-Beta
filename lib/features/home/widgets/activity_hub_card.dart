@@ -1,4 +1,5 @@
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../../shared/widgets/segmented_tabs.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
@@ -63,21 +64,58 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   }
 
   Widget _starterCard(BuildContext context) {
-    final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+    final c = context.c;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.surfaceAlt,
+        borderRadius: BorderRadius.circular(Rd.card),
+        border: Border.all(color: c.border),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'Start with something small.',
-            style: AscentTextStyles.interfaceTitle.copyWith(
-              color: g.ink,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: c.accent.withValues(alpha: 0.10),
+              border: Border.all(
+                color: c.accent.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.checklist_rtl_rounded,
+              size: 24,
+              color: c.accent,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Text(
+            'What’s on your mind today?',
+            style: TextStyle(
+              color: c.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add a task or timed focus block to build daily momentum.',
+            style: TextStyle(
+              color: c.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
           const ActivityStarterActions(),
         ],
       ),
@@ -278,52 +316,86 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                   if (allEntries.isEmpty &&
                                       !hasHero &&
                                       (items.isNotEmpty || _showCompleted))
-                                    Padding(
+                                    Container(
+                                      width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 24,
+                                        vertical: 20,
                                         horizontal: 16,
                                       ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(
+                                      decoration: BoxDecoration(
+                                        color: context.c.surfaceAlt,
+                                        borderRadius:
+                                            BorderRadius.circular(Rd.card),
+                                        border: Border.all(
+                                          color: context.c.border,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _showCompleted
+                                                  ? context.c.accent
+                                                      .withValues(alpha: 0.10)
+                                                  : context.c.border,
+                                            ),
+                                            child: Icon(
                                               _showCompleted
                                                   ? Icons
-                                                        .check_circle_outline_rounded
+                                                      .check_circle_outline_rounded
                                                   : Icons.checklist_rounded,
-                                              size: 36,
-                                              color: context.c.textTertiary,
+                                              size: 24,
+                                              color: _showCompleted
+                                                  ? context.c.accent
+                                                  : context.c.textSecondary,
                                             ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            _showCompleted
+                                                ? 'No completed activities yet'
+                                                : 'Nothing for today',
+                                            style: TextStyle(
+                                              color: context.c.textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.2,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _showCompleted
+                                                ? 'Tasks and focus blocks you finish today will appear here.'
+                                                : 'All caught up! Tap below to add a new task.',
+                                            style: TextStyle(
+                                              color: context.c.textSecondary,
+                                              fontSize: 12.5,
+                                              height: 1.35,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          if (!_showCompleted) ...[
                                             const SizedBox(height: 10),
-                                            Text(
-                                              _showCompleted
-                                                  ? 'No completed activities yet.'
-                                                  : 'Nothing for today',
-                                              style: TextStyle(
-                                                color: context.c.textSecondary,
-                                                fontSize: 14,
-                                              ),
-                                              textAlign: TextAlign.center,
-                                            ),
-                                            if (!_showCompleted) ...[
-                                              const SizedBox(height: 6),
-                                              TextButton(
-                                                onPressed: () =>
-                                                    _composerFocus.requestFocus(),
-                                                child: Text(
-                                                  'Add a to-do',
-                                                  style: TextStyle(
-                                                    color: context.c.accent,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  _composerFocus.requestFocus(),
+                                              child: Text(
+                                                'Add a to-do',
+                                                style: TextStyle(
+                                                  color: context.c.accent,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                               ),
-                                            ],
+                                            ),
                                           ],
-                                        ),
+                                        ],
                                       ),
                                     ),
                                   if (hasHero && heroActivity != null)

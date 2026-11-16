@@ -32,6 +32,8 @@ class VaultItemEditorSheet extends ConsumerStatefulWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => VaultItemEditorSheet(
@@ -419,11 +421,16 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
     final isDark = context.isDark;
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
       padding: EdgeInsets.only(
         top: AppSpace.s16,
         left: AppSpace.s16,
         right: AppSpace.s16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpace.s20,
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.paddingOf(context).bottom +
+            AppSpace.s20,
       ),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161622) : const Color(0xFFF9FAFC),
@@ -432,8 +439,10 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       ),
       child: SafeArea(
         top: false,
-        child: SingleChildScrollView(
-          child: Column(
+        child: Scrollbar(
+          thumbVisibility: true,
+          child: SingleChildScrollView(
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -617,6 +626,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

@@ -320,6 +320,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void _confirmResetData() {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: AppPalette.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
@@ -415,6 +417,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   void _showGpsBatteryGuide(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: AppPalette.transparent,
       builder: (ctx) {

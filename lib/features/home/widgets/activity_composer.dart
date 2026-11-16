@@ -259,9 +259,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
     _effectiveFocus.unfocus();
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
+      constraints: BoxConstraints(
+        maxWidth: 600,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
       builder: (sheetContext) => StatefulBuilder(
         builder: (ctx, refresh) {
           final g = ctx.glass;
@@ -270,9 +275,11 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             if (ctx.mounted) refresh(() {});
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-            child: Column(
+          return Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -380,6 +387,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                 ),
               ],
             ),
+          ),
           );
         },
       ),

@@ -1350,6 +1350,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final customController = TextEditingController();
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {

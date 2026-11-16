@@ -198,6 +198,8 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
   ) async {
     await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: context.bgSurface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

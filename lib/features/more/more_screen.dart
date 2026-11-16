@@ -341,7 +341,7 @@ class MoreScreen extends ConsumerWidget {
               route: '/settings',
             ),
           ),
-          const SizedBox(height: 36),
+          SizedBox(height: 100 + MediaQuery.paddingOf(context).bottom),
         ],
       ),
     );

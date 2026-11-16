@@ -59,7 +59,13 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
 
     return showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: 600,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
       backgroundColor: AppPalette.transparent,
       builder: (_) => DropThoughtSheet(
         initialPrompt: initialPrompt,
@@ -313,7 +319,9 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
             top: AppSpace.s20,
             left: AppSpace.s20,
             right: AppSpace.s20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpace.s24,
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.paddingOf(context).bottom +
+                AppSpace.s24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

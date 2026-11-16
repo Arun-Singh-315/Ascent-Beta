@@ -99,6 +99,8 @@ class _ThoughtWallHomePreviewState
     HapticFeedback.lightImpact();
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => const ThoughtWallAppearanceSheet(),
@@ -1324,11 +1326,101 @@ class _ThoughtWallHomePreviewState
               ),
             ),
           ] else ...[
-            Text(
-              'Capture a quick thought or spark above.',
-              style: TextStyle(
-                fontSize: 13,
-                color: c.textSecondary,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+              decoration: BoxDecoration(
+                color: c.surfaceAlt,
+                borderRadius: BorderRadius.circular(Rd.card),
+                border: Border.all(color: c.border),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: c.accent.withValues(alpha: 0.10),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 22,
+                      color: c.accent,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Your mindspace is clear',
+                    style: TextStyle(
+                      color: c.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Capture a thought, win, or spark an idea above.',
+                    style: TextStyle(
+                      color: c.textSecondary,
+                      fontSize: 12.5,
+                      height: 1.35,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      AppChip(
+                        icon: Icons.lightbulb_outline_rounded,
+                        label: 'Spark idea',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _controller.text = '💡 ';
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length),
+                          );
+                          _focusNode.requestFocus();
+                        },
+                      ),
+                      AppChip(
+                        icon: Icons.auto_awesome_rounded,
+                        label: 'Daily win',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _controller.text = '✨ Today’s win: ';
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length),
+                          );
+                          _focusNode.requestFocus();
+                        },
+                      ),
+                      AppChip(
+                        icon: Icons.psychology_outlined,
+                        label: 'Self-reflection',
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          _controller.text = '🧠 Realization: ';
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length),
+                          );
+                          _focusNode.requestFocus();
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
