@@ -201,15 +201,19 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     );
   }
 
-  Widget _buildAtmosphericCard(
+  Widget _buildFloatingPillsRow(
     BuildContext context,
     dynamic c,
     bool dark,
     ZodiacSignInfo? sign,
+    int streak,
+    bool showStreak,
+    String streakLabel,
+    IconData streakIcon,
   ) {
     final weatherState = ref.watch(homeWeatherProvider);
     final current = weatherState.value?['current'] as Map<String, dynamic>?;
-    String city = 'Local weather';
+    String city = 'Local';
     try {
       final configured =
           ref.watch(sharedPreferencesProvider).getString('weather_city');
@@ -230,90 +234,78 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       weatherIcon = weatherIconForCode(code);
     } else if (weatherState.hasError) {
       tempStr = '--°';
-      descStr = 'Weather offline';
+      descStr = 'Offline';
       weatherIcon = Icons.cloud_off_rounded;
     } else if (weatherState.isLoading) {
       tempStr = '…';
-      descStr = 'Syncing…';
+      descStr = 'Syncing';
       weatherIcon = Icons.wb_sunny_outlined;
     } else {
       tempStr = '--°';
-      descStr = 'Tap for weather';
+      descStr = 'Weather';
       weatherIcon = Icons.wb_sunny_outlined;
     }
 
+    final pillBg = c.surfaceAlt.withValues(alpha: dark ? 0.45 : 0.65);
+    final pillBorder = Border.all(
+      color: c.border.withValues(alpha: dark ? 0.75 : 0.85),
+      width: 1,
+    );
+
     return Container(
       key: const ValueKey('home_atmospheric_card'),
-      decoration: BoxDecoration(
-        color: c.surfaceAlt.withValues(alpha: dark ? 0.75 : 0.85),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: c.border.withValues(alpha: 0.8),
-          width: 1,
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          // Left Side: Weather & Atmosphere (key: home_weather)
-          Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                key: const ValueKey('home_weather'),
-                borderRadius: BorderRadius.circular(12),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  showWeatherForecastSheet(context);
-                },
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          // 1. Floating Weather & Temperature Pill
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: const ValueKey('home_weather'),
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                showWeatherForecastSheet(context);
+              },
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: math.max(
+                    0.0,
+                    MediaQuery.sizeOf(context).width - 32,
+                  ),
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(
+                  color: pillBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: pillBorder,
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: c.accentTint,
-                        ),
-                        child: Icon(
-                          weatherIcon,
-                          size: 18,
-                          color: c.accent,
+                      Icon(weatherIcon, size: 14, color: c.accent),
+                      const SizedBox(width: 6),
+                      Text(
+                        '$tempStr · $descStr',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: c.textPrimary,
+                          letterSpacing: -0.1,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$tempStr · $descStr',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: c.textPrimary,
-                                letterSpacing: -0.1,
-                              ),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              '📍 $city',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: c.textSecondary,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(width: 4),
+                      Text(
+                        '· $city',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.textSecondary,
                         ),
                       ),
                     ],
@@ -323,72 +315,48 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
             ),
           ),
 
-          if (sign != null) ...[
-            Container(
-              width: 1,
-              height: 32,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              color: c.border.withValues(alpha: 0.6),
-            ),
-
-            // Right Side: Celestial & Vedic Rashi (key: home_rashi)
-            Expanded(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  key: const ValueKey('home_rashi'),
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    _showCosmicInsightDialog(context, sign);
-                  },
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          if (sign != null)
+            // 2. Floating Vedic Rashi & Cosmic Sign Pill
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: const ValueKey('home_rashi'),
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  _showCosmicInsightDialog(context, sign);
+                },
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: math.max(
+                      0.0,
+                      MediaQuery.sizeOf(context).width - 32,
+                    ),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: pillBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: pillBorder,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 34,
-                          height: 34,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: c.warnTint,
-                          ),
-                          child: Text(
-                            sign.symbol,
-                            style: const TextStyle(fontSize: 16),
-                          ),
+                        Text(
+                          sign.symbol,
+                          style: const TextStyle(fontSize: 13),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '${sign.symbol} ${sign.vedicRashi} · ${sign.name}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: c.textPrimary,
-                                  letterSpacing: -0.1,
-                                ),
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                '${sign.element.icon} ${sign.element.label} · ${sign.archetype}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: c.textSecondary,
-                                ),
-                              ),
-                            ],
+                        const SizedBox(width: 6),
+                        Text(
+                          '${sign.vedicRashi} · ${sign.name}',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                            letterSpacing: -0.1,
                           ),
                         ),
                       ],
@@ -397,9 +365,225 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 ),
               ),
             ),
-          ],
+
+          if (showStreak)
+            // 3. Floating Streak Pill
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: const ValueKey('home_streak_chip'),
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  ref
+                      .read(studyStreakCardVisibleProvider.notifier)
+                      .toggle();
+                },
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: math.max(
+                      0.0,
+                      MediaQuery.sizeOf(context).width - 32,
+                    ),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: pillBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: pillBorder,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(streakIcon, size: 14, color: c.warn),
+                        const SizedBox(width: 4),
+                        Text(
+                          streakLabel,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  Widget _buildIlluminatedAssistantHero(
+    BuildContext context,
+    dynamic c,
+    bool dark,
+    String assistantName,
+  ) {
+    return AnimatedBuilder(
+      animation: _animController,
+      builder: (context, _) {
+        return CustomPaint(
+          painter: _IlluminatingBorderPainter(
+            progress: _animController.value,
+            accentColor: c.accent,
+            secondaryColor: const Color(0xFF818CF8),
+            dark: dark,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              key: const ValueKey('home_assistant_button'),
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/ai-assistant');
+              },
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 64),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: c.surfaceAlt.withValues(alpha: dark ? 0.5 : 0.65),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    // Glowing Icon Disc
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            c.accent.withValues(alpha: 0.25),
+                            const Color(0xFF818CF8).withValues(alpha: 0.15),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: c.accent.withValues(alpha: 0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 20,
+                        color: c.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Title and Description
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Ask $assistantName',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: c.textPrimary,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: c.accent.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'AI',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: c.accent,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Brainstorm ideas, ask anything, or plan your day',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: c.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Action Pill / Arrow
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: c.accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: c.accent.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Chat',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: c.accent,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 13,
+                              color: c.accent,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -414,7 +598,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final rawName = widget.profile?.name.trim() ?? '';
     final name = rawName.replaceAll(';)', '').trim();
     final initial = name.isEmpty ? 'A' : name[0].toUpperCase();
-    final role = widget.profile?.targetRole.trim() ?? '';
     final dob = widget.profile?.dateOfBirth;
     final sign =
         dob == null ? null : const CosmicProfileService().getZodiac(dob);
@@ -666,193 +849,42 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     ],
                   ),
 
-                  // Row 2: Greeting & Name (Oh it's your profile feel)
+                  // Row 2: Greeting & Name (Clean, minimal, personal profile feel)
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        greeting,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                          color: c.textSecondary,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    greeting,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
+                      color: c.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name.isEmpty ? 'Your space' : name,
-                          key: const ValueKey('home_user_name'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 27,
-                            fontWeight: FontWeight.w700,
-                            color: c.textPrimary,
-                            height: 1.2,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: c.accentTint,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: c.accent.withValues(alpha: 0.3),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified_rounded,
-                                size: 12, color: c.accent),
-                            const SizedBox(width: 3),
-                            Text(
-                              'Profile',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
-                                color: c.accent,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (role.isNotEmpty &&
-                      role.toLowerCase() != 'inner peace') ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      role,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: c.textSecondary,
-                      ),
+                  Text(
+                    name.isEmpty ? 'Your space' : name,
+                    key: const ValueKey('home_user_name'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 27,
+                      fontWeight: FontWeight.w700,
+                      color: c.textPrimary,
+                      height: 1.2,
+                      letterSpacing: -0.5,
                     ),
-                  ],
+                  ),
 
-                  // Row 3: Action Buttons (Ask Riya + Streak)
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      // Centralized AI Assistant Gateway button (Rule 4)
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          key: const ValueKey('home_assistant_button'),
-                          borderRadius: BorderRadius.circular(24),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            context.push('/ai-assistant');
-                          },
-                          child: Container(
-                            constraints: const BoxConstraints(
-                              minHeight: 46,
-                              minWidth: 120,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: c.accentTint,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: c.accent.withValues(alpha: 0.35),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.auto_awesome_rounded,
-                                  size: 16,
-                                  color: c.accent,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Ask $assistantName',
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: c.accent,
-                                    letterSpacing: -0.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // Streak Chip
-                      if (showStreak)
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            key: const ValueKey('home_streak_chip'),
-                            borderRadius: BorderRadius.circular(24),
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              ref
-                                  .read(
-                                      studyStreakCardVisibleProvider.notifier)
-                                  .toggle();
-                            },
-                            child: Container(
-                              constraints:
-                                  const BoxConstraints(minHeight: 46),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: c.surfaceAlt,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: c.border),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    streakIcon,
-                                    size: 16,
-                                    color: c.warn,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    streakLabel,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: c.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  // Row 3: Floating Transparent Pills with Border (Weather & Temp, Vedic Rashi, Streak)
+                  const SizedBox(height: 12),
+                  _buildFloatingPillsRow(
+                    context,
+                    c,
+                    dark,
+                    sign,
+                    streak,
+                    showStreak,
+                    streakLabel,
+                    streakIcon,
                   ),
 
                   // Row 4: Festival Celebration Banner (if festival today)
@@ -892,9 +924,14 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     ),
                   ],
 
-                  // Row 5: Atmospheric & Celestial Showcase (Weather & Rashi synchronized)
+                  // Row 5: Illuminating AI Hero Gateway (Ask bot name with animated moving light border)
                   const SizedBox(height: 12),
-                  _buildAtmosphericCard(context, c, dark, sign),
+                  _buildIlluminatedAssistantHero(
+                    context,
+                    c,
+                    dark,
+                    assistantName,
+                  ),
 
                   // Row 6: Quote / Day Cue
                   const SizedBox(height: 12),
@@ -918,6 +955,71 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       ),
     );
   }
+}
+
+class _IlluminatingBorderPainter extends CustomPainter {
+  _IlluminatingBorderPainter({
+    required this.progress,
+    required this.accentColor,
+    required this.secondaryColor,
+    required this.dark,
+  });
+
+  final double progress;
+  final Color accentColor;
+  final Color secondaryColor;
+  final bool dark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(
+      rect.deflate(0.8),
+      const Radius.circular(20),
+    );
+
+    // Base subtle border outline
+    final basePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = (dark ? Colors.white : Colors.black)
+          .withValues(alpha: dark ? 0.12 : 0.08);
+    canvas.drawRRect(rrect, basePaint);
+
+    // Dynamic sweeping glow highlight around border
+    final sweepAngle = progress * 2 * math.pi;
+
+    final sweepGradient = SweepGradient(
+      center: Alignment.center,
+      transform: GradientRotation(sweepAngle),
+      colors: [
+        accentColor.withValues(alpha: 0.0),
+        accentColor.withValues(alpha: 0.25),
+        secondaryColor.withValues(alpha: 0.85),
+        Colors.white.withValues(alpha: dark ? 0.95 : 0.80),
+        accentColor.withValues(alpha: 0.90),
+        accentColor.withValues(alpha: 0.15),
+        accentColor.withValues(alpha: 0.0),
+      ],
+      stops: const [0.0, 0.55, 0.72, 0.82, 0.90, 0.96, 1.0],
+    );
+
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round
+      ..shader = sweepGradient.createShader(rect);
+
+    canvas.drawRRect(rrect, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(_IlluminatingBorderPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.accentColor != accentColor ||
+      oldDelegate.secondaryColor != secondaryColor ||
+      oldDelegate.dark != dark;
 }
 
 class _AtmosphereCanvasPainter extends CustomPainter {

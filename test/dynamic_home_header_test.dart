@@ -67,9 +67,10 @@ void main() {
       expect(find.text('Kavita'), findsOneWidget);
       expect(find.text('Arun'), findsNothing);
 
-      // Verify dynamic role
-      expect(find.text('VP of Product Design'), findsOneWidget);
+      // Verify role clutter and hardcoded job titles are cleanly omitted
+      expect(find.text('VP of Product Design'), findsNothing);
       expect(find.text('Staff Software Engineer'), findsNothing);
+      expect(find.text('Profile'), findsNothing);
 
       // Verify dynamic city from SharedPreferences
       expect(find.textContaining('Mumbai'), findsOneWidget);

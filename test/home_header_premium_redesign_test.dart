@@ -86,10 +86,11 @@ void main() {
       expect(avatarOffset.dx, greaterThan(dateOffset.dx));
       expect(toggleOffset.dx, greaterThan(dateOffset.dx));
 
-      // Name is prominently displayed with profile feel
+      // Name is prominently displayed with clean typography without role clutter
       expect(find.byKey(const ValueKey('home_user_name')), findsOneWidget);
       expect(find.text('Arun'), findsOneWidget);
-      expect(find.text('Staff Software Engineer'), findsOneWidget);
+      expect(find.text('Staff Software Engineer'), findsNothing);
+      expect(find.text('Profile'), findsNothing);
     });
 
     testWidgets('Tapping day/night toggle changes theme mode smoothly', (tester) async {

@@ -69,76 +69,91 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
     final focusMins = ref.watch(studyStreakProvider).todaySeconds ~/ 60;
     final msgCount = ref.watch(todayShortcutMessageCountProvider).value ?? 0;
 
-    return Container(
-      key: const ValueKey('home_shortcut_panel'),
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Section header: "Your space" + Add action
-          Row(
-            children: [
-              Text(
-                'Your space',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: c.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              Material(
-                color: c.surfaceAlt,
-                shape: CircleBorder(side: BorderSide(color: c.border)),
-                child: InkWell(
-                  key: const ValueKey('home_add'),
-                  customBorder: const CircleBorder(),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    showHomeCaptureActions(context);
-                  },
-                  child: SizedBox(
-                    width: 38,
-                    height: 38,
-                    child: Icon(Icons.add, size: 20, color: c.textPrimary),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
-          // 4 equal shortcut tiles
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final item in items)
-                Expanded(
-                  child: _ShortcutTile(
-                    item: item,
-                    assistantName: assistantName,
-                    waterMl: waterMl,
-                    focusMins: focusMins,
-                    msgCount: msgCount,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      if (widget.onSelectShortcut != null) {
-                        widget.onSelectShortcut!(
-                          widget.activeShortcutId == item.id ? null : item.id,
-                        );
-                      } else {
-                        final route = item.id == 'learning' &&
-                                !ref.read(learningHubProvider).hasStartedLearning
-                            ? '/study-plan'
-                            : item.route;
-                        context.push(route);
-                      }
-                    },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Container(
+        key: const ValueKey('home_shortcut_panel'),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          color: c.surfaceAlt.withValues(alpha: dark ? 0.35 : 0.45),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: c.border.withValues(alpha: 0.8),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top action bar inside single border: quick capture '+' on right
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Tooltip(
+                  message: 'Your space actions',
+                  child: Material(
+                    color: c.surfaceAlt.withValues(alpha: 0.6),
+                    shape: CircleBorder(
+                      side: BorderSide(color: c.border.withValues(alpha: 0.7)),
+                    ),
+                    child: InkWell(
+                      key: const ValueKey('home_add'),
+                      customBorder: const CircleBorder(),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        showHomeCaptureActions(context);
+                      },
+                      child: SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: Icon(Icons.add, size: 18, color: c.textPrimary),
+                      ),
+                    ),
                   ),
                 ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 6),
+
+            // 4 equal shortcut tiles
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final item in items)
+                  Expanded(
+                    child: _ShortcutTile(
+                      item: item,
+                      assistantName: assistantName,
+                      waterMl: waterMl,
+                      focusMins: focusMins,
+                      msgCount: msgCount,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        if (widget.onSelectShortcut != null) {
+                          widget.onSelectShortcut!(
+                            widget.activeShortcutId == item.id
+                                ? null
+                                : item.id,
+                          );
+                        } else {
+                          final route = item.id == 'learning' &&
+                                  !ref
+                                      .read(learningHubProvider)
+                                      .hasStartedLearning
+                              ? '/study-plan'
+                              : item.route;
+                          context.push(route);
+                        }
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
