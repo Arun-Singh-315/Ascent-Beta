@@ -5,6 +5,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/text_styles.dart';
+import '../utils/smart_list_input_formatter.dart';
 import 'note_list_button.dart';
 
 class MessageComposer extends StatefulWidget {
@@ -18,6 +19,7 @@ class MessageComposer extends StatefulWidget {
     this.autofocus = false,
     this.quiet = false,
     this.maxLines = 5,
+    this.minHeight,
   });
   final TextEditingController controller;
   final String hint;
@@ -26,6 +28,7 @@ class MessageComposer extends StatefulWidget {
   final bool autofocus;
   final bool quiet;
   final int maxLines;
+  final double? minHeight;
   final FocusNode? focusNode;
   @override
   State<MessageComposer> createState() => _MessageComposerState();
@@ -93,6 +96,7 @@ class _MessageComposerState extends State<MessageComposer> {
                     : const Color(0xFF90CAF9).withValues(alpha: 0.55));
 
           return Container(
+            constraints: BoxConstraints(minHeight: widget.minHeight ?? 52),
             decoration: BoxDecoration(
               color: containerBg,
               borderRadius: BorderRadius.circular(28),
@@ -131,7 +135,7 @@ class _MessageComposerState extends State<MessageComposer> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
-                      vertical: 8,
+                      vertical: 10,
                     ),
                     child: TextField(
                       key: _fieldKey,
@@ -143,6 +147,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.newline,
                       textCapitalization: TextCapitalization.sentences,
+                      inputFormatters: const [SmartListInputFormatter()],
                       cursorColor: isDark && g.merlot ? g.inkSecondary : g.clay,
                       style: AscentTextStyles.bodyLarge.copyWith(
                         color: g.ink,

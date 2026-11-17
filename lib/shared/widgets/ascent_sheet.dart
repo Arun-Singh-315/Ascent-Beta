@@ -16,7 +16,7 @@ Future<T?> showAscentSheet<T>({
   barrierColor: Colors.black.withValues(alpha: .4),
   constraints: BoxConstraints(
     maxWidth: 600,
-    maxHeight: MediaQuery.sizeOf(context).height * .94,
+    maxHeight: MediaQuery.sizeOf(context).height * .90,
   ),
   sheetAnimationStyle: AnimationStyle(
     duration: Duration(
@@ -32,11 +32,17 @@ Future<T?> showAscentSheet<T>({
           child: AscentSheetSurface(
             child: SafeArea(
               top: false,
+              bottom: true,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const AscentSheetHandle(),
-                  Flexible(child: builder(ctx)),
+                  Flexible(
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      child: builder(ctx),
+                    ),
+                  ),
                 ],
               ),
             ),

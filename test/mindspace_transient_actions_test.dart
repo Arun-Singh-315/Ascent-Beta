@@ -117,6 +117,7 @@ void main() {
       expect(find.text('Start'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(minutes: 20));
     });
   });
 

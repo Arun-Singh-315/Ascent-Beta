@@ -60,6 +60,7 @@ class SpacesShelf extends ConsumerWidget {
   ) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
@@ -141,7 +142,25 @@ class SpacesShelf extends ConsumerWidget {
                     ),
                   ],
                 ),
-                _CompactNewSpaceButton(onTap: onNew),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _CompactNewSpaceButton(onTap: onNew),
+                    const SizedBox(width: 6),
+                    TextButton.icon(
+                      key: const ValueKey('space_tile_all'),
+                      onPressed: () => _showAllSpacesSheet(context, ref, pinned),
+                      iconAlignment: IconAlignment.end,
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                      label: const Text('View all', style: TextStyle(fontSize: 12)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -188,13 +207,6 @@ class SpacesShelf extends ConsumerWidget {
                     count: archivedCount,
                     onTap: onOpenArchive,
                   ),
-                TextButton.icon(
-                  key: const ValueKey('space_tile_all'),
-                  onPressed: () => _showAllSpacesSheet(context, ref, pinned),
-                  iconAlignment: IconAlignment.end,
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                  label: const Text('View all'),
-                ),
               ],
             ),
           ],

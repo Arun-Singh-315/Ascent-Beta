@@ -34,6 +34,7 @@ class HomeCustomizationSheet extends ConsumerStatefulWidget {
 
 class _HomeCustomizationSheetState
     extends ConsumerState<HomeCustomizationSheet> {
+  final _scrollController = ScrollController();
   late HomeLayout _draft = ref
       .read(homeLayoutProvider)
       .copyWith(
@@ -44,6 +45,13 @@ class _HomeCustomizationSheetState
       );
   bool _saving = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _toggle(String id) {
     final visible = {..._draft.visible};
     if (!visible.remove(id)) visible.add(id);
@@ -88,8 +96,14 @@ class _HomeCustomizationSheetState
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: ListView(
-                  children: [
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  radius: const Radius.circular(4),
+                  thickness: 4.0,
+                  child: ListView(
+                    controller: _scrollController,
+                    children: [
                     Text(
                       'Home sections',
                       style: AscentTextStyles.labelMedium.copyWith(
@@ -226,6 +240,7 @@ class _HomeCustomizationSheetState
                   ],
                 ),
               ),
+            ),
               if (_error != null)
                 Text(
                   _error!,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/shared_control_tokens.dart';
@@ -52,19 +53,19 @@ IconData? boardMoodIcon(String mood) => switch (mood) {
 };
 
 BorderRadius _boardRadius(ThoughtCardStyle style, int index) => switch (style) {
-  ThoughtCardStyle.soft => AppGeometry.roundedr18,
-  ThoughtCardStyle.bubble => BorderRadius.only(
-    topLeft: AppGeometry.radiusr18,
-    topRight: AppGeometry.radiusr18,
-    bottomLeft: index.isEven ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
-    bottomRight: index.isOdd ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
+  ThoughtCardStyle.soft || ThoughtCardStyle.bubble => BorderRadius.only(
+    topLeft: index.isEven ? const Radius.circular(6) : const Radius.circular(18),
+    topRight: index.isOdd ? const Radius.circular(6) : const Radius.circular(18),
+    bottomLeft: const Radius.circular(18),
+    bottomRight: const Radius.circular(18),
   ),
   ThoughtCardStyle.minimal => AppGeometry.roundedr8,
 };
 
 /// One thought on the board. It shows the thought and nothing else: no
 /// buttons, no menus. Tap opens it, long-press selects, double-tap completes.
-class BoardCard extends StatelessWidget {
+/// Long thoughts expand and collapse inline with smooth liquid animation.
+class BoardCard extends StatefulWidget {
   const BoardCard({
     super.key,
     required this.thought,
@@ -97,6 +98,33 @@ class BoardCard extends StatelessWidget {
   final VoidCallback? onDoubleTap;
 
   @override
+  State<BoardCard> createState() => _BoardCardState();
+}
+
+class _BoardCardState extends State<BoardCard> {
+  bool _expanded = false;
+
+  Thought get thought => widget.thought;
+  int get index => widget.index;
+  DateTime get now => widget.now;
+  ThoughtWallAppearance get appearance => widget.appearance;
+  String? get spaceName => widget.spaceName;
+  bool get isSelected => widget.isSelected;
+  bool get isSelectionMode => widget.isSelectionMode;
+  bool get isLocked => widget.isLocked;
+  VoidCallback? get onTap => widget.onTap;
+  VoidCallback? get onLongPress => widget.onLongPress;
+  VoidCallback? get onDoubleTap => widget.onDoubleTap;
+
+  @override
+  void didUpdateWidget(covariant BoardCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.thought.id != widget.thought.id) {
+      _expanded = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final dark = context.isDark;
@@ -106,15 +134,17 @@ class BoardCard extends StatelessWidget {
     final comfortable = appearance.density == ThoughtCardDensity.comfortable;
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
-        ? Colors.transparent
+        ? (dark
+            ? g.ink.withValues(alpha: .045)
+            : Colors.white.withValues(alpha: .32))
         : Color.alphaBlend(
             g.ink.withValues(alpha: dark ? .065 : .012),
             dark ? g.bg : g.fill,
           );
     final borderColor = isSelected
         ? SharedControlColors.actionBlue
-        : g.ink.withValues(alpha: dark ? .12 : .07);
-    final borderWidth = isSelected ? 1.8 : .7;
+        : g.line.withValues(alpha: dark ? .35 : .26);
+    final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
     final moodIcon = boardMoodIcon(thought.mood);
@@ -247,7 +277,7 @@ class BoardCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: AscentTextStyles.cardTitle.copyWith(
             color: g.ink,
-            fontSize: 16,
+            fontSize: 15.5,
             fontWeight: FontWeight.w500,
             height: 1.4,
           ),
@@ -299,38 +329,77 @@ class BoardCard extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ShaderMask(
-                shaderCallback: (rect) => const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black, Colors.black, Colors.transparent],
-                  stops: [0.0, 0.72, 1.0],
-                ).createShader(rect),
-                blendMode: BlendMode.dstIn,
-                child: Text(
-                  text,
-                  maxLines: kind == BoardCardKind.long ? 6 : 5,
-                  overflow: TextOverflow.clip,
-                  style: AppTypography.thoughtContent(color: g.ink),
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeInOutCubic,
+                alignment: Alignment.topLeft,
+                child: _expanded
+                    ? Text(
+                        text,
+                        style: AppTypography.thoughtContent(color: g.ink),
+                      )
+                    : ShaderMask(
+                        shaderCallback: (rect) => const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black,
+                            Colors.black,
+                            Colors.transparent,
+                          ],
+                          stops: [0.0, 0.72, 1.0],
+                        ).createShader(rect),
+                        blendMode: BlendMode.dstIn,
+                        child: Text(
+                          text,
+                          maxLines: kind == BoardCardKind.long ? 6 : 5,
+                          overflow: TextOverflow.clip,
+                          style: AppTypography.thoughtContent(color: g.ink),
+                        ),
+                      ),
               ),
               const SizedBox(height: AppSpace.s6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.notes_rounded, size: 12, color: g.clay),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Read more',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: g.clay,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _expanded = !_expanded);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.22),
+                      width: 0.8,
                     ),
                   ),
-                  const SizedBox(width: 2),
-                  Icon(Icons.arrow_forward_rounded, size: 10, color: g.clay),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _expanded ? 'Show less' : 'Show more',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _expanded
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 13,
+                        color: g.clay,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           );
@@ -375,8 +444,8 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final fill = dark
-        ? Color.alphaBlend(g.ink.withValues(alpha: .07), g.bg)
-        : Color.alphaBlend(Colors.white.withValues(alpha: .88), g.fill);
+        ? g.ink.withValues(alpha: .06)
+        : Colors.white.withValues(alpha: .30);
     final onFill = g.ink;
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
@@ -395,17 +464,17 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? .12 : .04),
+                color: Color(0x0A5C4A3E),
                 blurRadius: 16,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
             border: Border.all(
               color: isSelected
-                  ? SharedControlColors.actionBlue
+                  ? const Color(0xFFBF5A36)
                   : g.line.withValues(alpha: dark ? 0.35 : 0.25),
               width: isSelected ? 1.5 : 1.0,
             ),

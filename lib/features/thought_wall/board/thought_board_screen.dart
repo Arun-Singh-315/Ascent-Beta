@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/ascent_scaffold.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/message_composer.dart';
 import '../../promises/providers/promise_providers.dart';
@@ -251,7 +253,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       all.where((t) => _selected.contains(t.id)).toList();
 
   Future<void> _more(List<Thought> picked) async {
-    final g = context.glass;
     final db = ref.read(databaseProvider);
     if (picked.any(
       (t) => isPrivateLocked(
@@ -267,44 +268,32 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       );
       return;
     }
-    final action = await showModalBottomSheet<String>(
+    final action = await showAscentActionMenu<String>(
       context: context,
-      useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.all(AppSpace.s20),
-        child: Wrap(
-          spacing: AppSpace.s8,
-          runSpacing: AppSpace.s8,
-          children: [
-            ChoicePill(
-              key: const ValueKey('select_todo'),
-              icon: Icons.add_task_rounded,
-              label: 'Todo',
-              onTap: () => Navigator.pop(sheetContext, 'todo'),
-            ),
-            ChoicePill(
-              key: const ValueKey('select_reminder'),
-              icon: Icons.notifications_active_outlined,
-              label: 'Reminder',
-              onTap: () => Navigator.pop(sheetContext, 'reminder'),
-            ),
-            if (picked.length > 1)
-              ChoicePill(
-                key: const ValueKey('select_merge'),
-                icon: Icons.merge_rounded,
-                label: 'Merge',
-                onTap: () => Navigator.pop(sheetContext, 'merge'),
-              ),
-            ChoicePill(
-              key: const ValueKey('select_share'),
-              icon: Icons.share_outlined,
-              label: 'Share',
-              color: g.ink,
-              onTap: () => Navigator.pop(sheetContext, 'share'),
-            ),
-          ],
+      title: 'More actions',
+      actions: [
+        const AscentAction(
+          'todo',
+          'Convert to Todo',
+          Icons.add_task_rounded,
         ),
-      ),
+        const AscentAction(
+          'reminder',
+          'Set Reminder',
+          Icons.notifications_active_outlined,
+        ),
+        if (picked.length > 1)
+          const AscentAction(
+            'merge',
+            'Merge Thoughts',
+            Icons.merge_rounded,
+          ),
+        const AscentAction(
+          'share',
+          'Share Thoughts',
+          Icons.share_outlined,
+        ),
+      ],
     );
     if (action == null || !mounted) return;
     if (picked.any(
@@ -438,17 +427,21 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     );
   }
 
-  Widget _composer(AscentGlass g) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-    child: MessageComposer(
-      quiet: true,
-      controller: _input,
-      focusNode: _focus,
-      hint: 'Write a thought…',
-      busy: _saving,
-      onSend: (_) => _send(),
-    ),
-  );
+  Widget _composer(AscentGlass g) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16.0 + math.max(12.0, bottomInset)),
+      child: MessageComposer(
+        quiet: true,
+        controller: _input,
+        focusNode: _focus,
+        hint: 'Write a thought…',
+        busy: _saving,
+        minHeight: 56,
+        onSend: (_) => _send(),
+      ),
+    );
+  }
 
   // Board -------------------------------------------------------------------
 
@@ -505,7 +498,14 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       return Column(
         children: [
           for (var i = 0; i < thoughts.length; i++) ...[
-            card(thoughts[i], i),
+            Align(
+              alignment:
+                  i.isEven ? Alignment.centerLeft : Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width * 0.92),
+                child: card(thoughts[i], i),
+              ),
+            ),
             const SizedBox(height: AppSpace.s10),
           ],
         ],
@@ -652,52 +652,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 ),
               ]
             : [
-                if (MediaQuery.sizeOf(context).width >= 360 &&
-                    MediaQuery.textScalerOf(context).scale(1) < 1.45)
-                  Tooltip(
-                    message: layout == ThoughtBoardLayout.board
-                        ? 'Switch to List view'
-                        : 'Switch to Grid view',
-                    child: TextButton.icon(
-                      key: const ValueKey('board_layout_toggle'),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(48, 40),
-                      ),
-                      icon: Icon(
-                        layout == ThoughtBoardLayout.board
-                            ? Icons.view_agenda_outlined
-                            : Icons.dashboard_outlined,
-                        size: 16,
-                        color: g.clay,
-                      ),
-                      label: Text(
-                        layout == ThoughtBoardLayout.board ? 'List' : 'Grid',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.clay,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      onPressed: () async {
-                        try {
-                          await ref
-                              .read(thoughtBoardLayoutProvider.notifier)
-                              .set(
-                                layout == ThoughtBoardLayout.board
-                                    ? ThoughtBoardLayout.stream
-                                    : ThoughtBoardLayout.board,
-                              );
-                        } catch (_) {
-                          if (context.mounted) {
-                            AscentSnackBar.error(
-                              context,
-                              message: 'Could not save the layout.',
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
                 IconButton(
                   key: const ValueKey('board_top_promises'),
                   tooltip: 'Commitments',
@@ -733,6 +687,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     } else if (value == 'background') {
                       showModalBottomSheet<void>(
                         context: context,
+                        useRootNavigator: true,
                         useSafeArea: true,
                         isScrollControlled: true,
                         showDragHandle: true,
@@ -741,6 +696,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     } else {
                       showModalBottomSheet<void>(
                         context: context,
+                        useRootNavigator: true,
                         useSafeArea: true,
                         isScrollControlled: true,
                         builder: (_) => const ThoughtWallAppearanceSheet(),

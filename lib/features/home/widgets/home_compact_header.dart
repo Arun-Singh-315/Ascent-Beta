@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/home_design.dart';
-import '../../../app/theme/glass_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import 'home_day_design.dart';
-import 'home_header_scene.dart';
 
 class HomeCompactHeader extends StatelessWidget {
   const HomeCompactHeader({
@@ -11,75 +9,64 @@ class HomeCompactHeader extends StatelessWidget {
     required this.onReturnToTop,
     this.now,
   });
+
   final String name;
   final VoidCallback onReturnToTop;
   final DateTime? now;
+
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final time = now ?? DateTime.now();
-    final g = context.glass;
-    final design = HomeDesign.of(context);
+    final cleanName = name.replaceAll(';)', '').trim();
+    final greeting = cleanName.isEmpty
+        ? 'Good day'
+        : '${HomeDayDesign.at(time).greeting} $cleanName';
+    final initial = cleanName.isEmpty ? 'A' : cleanName[0].toUpperCase();
+
     return Material(
       key: const ValueKey('home_compact_header'),
-      color: design.surface,
+      color: c.surface.withValues(alpha: 0.95),
       child: InkWell(
         onTap: onReturnToTop,
         child: Container(
+          height: 56,
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: g.line.withValues(alpha: .8), width: .8)),
-            boxShadow: [
-              BoxShadow(
-                color: g.shadow.withValues(alpha: .06),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            border: Border(bottom: BorderSide(color: c.border)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              ExcludeSemantics(
-                child: ClipOval(
-                  child: SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: HomeHeaderScene(
-                      flat: true,
-                      now: time,
-                      child: FittedBox(child: HomeCelestialMark(now: time)),
-                    ),
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.accentTint,
+                  border: Border.all(color: c.border),
+                ),
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: c.accent,
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      HomeDayDesign.at(time).greeting,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: g.inkMuted),
-                    ),
-                    Text(
-                      name.trim().isEmpty ? 'Your day' : name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: g.ink,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  greeting,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: c.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Tooltip(
-                message: 'Return to top',
-                child: Icon(Icons.keyboard_arrow_up_rounded, color: g.inkMuted),
               ),
             ],
           ),

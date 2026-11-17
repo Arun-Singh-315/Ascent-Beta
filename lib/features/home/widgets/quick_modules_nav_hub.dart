@@ -54,7 +54,7 @@ class QuickModulesNavHub extends ConsumerWidget {
         ? 'Next: $nextMedName (${nextDose.timeSlot})'
         : (totalMedDoses > 0 && takenMedDoses >= totalMedDoses
             ? 'All prescribed doses completed for today · Schedule intact'
-            : (totalMedDoses > 0 ? '$takenMedDoses of $totalMedDoses doses taken' : 'No prescriptions due today'));
+            : (totalMedDoses > 0 ? '$takenMedDoses of $totalMedDoses doses taken' : 'No doses scheduled'));
 
     // Hydration stream watchers
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
@@ -322,7 +322,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                        'No doses',
+                                        'No doses scheduled',
                                         key: const ValueKey('medicine_empty_summary'),
                                         style: AscentTextStyles.homeSecondary
                                             .copyWith(color: g.inkMuted, height: 1.4),
@@ -365,28 +365,28 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     ),
                                   ],
                                 )
-                              else
-                                RichText(
-                                  textScaler: MediaQuery.textScalerOf(context),
-                                  text: TextSpan(
-                                    style: GoogleFonts.plusJakartaSans(
-                                      color: g.ink,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.3,
-                                    ),
-                                    children: [
-                                      TextSpan(text: '$takenMedDoses'),
-                                      TextSpan(
-                                        text: ' of $totalMedDoses doses',
-                                        style: AppTypography.dmSans11W400108(
-                                          color: g.inkMuted,
-                                        ),
+                              else ...[
+                                if (totalMedDoses > 0)
+                                  RichText(
+                                    textScaler: MediaQuery.textScalerOf(context),
+                                    text: TextSpan(
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: g.ink,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.3,
                                       ),
-                                    ],
+                                      children: [
+                                        TextSpan(text: '$takenMedDoses'),
+                                        TextSpan(
+                                          text: ' of $totalMedDoses doses',
+                                          style: AppTypography.dmSans11W400108(
+                                            color: g.inkMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              if (totalMedDoses > 0)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
@@ -400,22 +400,24 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     ),
                                   ),
                                 ),
+                              ],
                             ],
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(height: 8),
-                              _NeutralProgressBar(
-                                key: const ValueKey('medicine_progress_bar'),
-                                progress: medProgress,
-                                fillColor: medProgress >= 1.0
-                                    ? const Color(0xFF10B981)
-                                    : g.clay,
-                              ),
-                            ],
-                          ),
+                          if (totalMedDoses > 0)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 8),
+                                _NeutralProgressBar(
+                                  key: const ValueKey('medicine_progress_bar'),
+                                  progress: medProgress,
+                                  fillColor: medProgress >= 1.0
+                                      ? const Color(0xFF10B981)
+                                      : g.clay,
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     );

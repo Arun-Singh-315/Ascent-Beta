@@ -19,6 +19,7 @@ Future<bool> showThoughtConversion(
 }) async =>
     await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       isDismissible: false,

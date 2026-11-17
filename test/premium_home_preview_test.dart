@@ -246,7 +246,7 @@ void main() {
             expect(find.text('New Delhi, India'), findsOneWidget);
             expect(find.text('Partly cloudy'), findsOneWidget);
             await _capture(t, key, '$prefix-weather');
-            Navigator.of(t.element(find.text('Weather'))).pop();
+            Navigator.of(t.element(find.textContaining('Weather'))).pop();
             await _settle(t);
             await t.tap(find.byKey(const ValueKey('home_calendar_open')));
             await _settle(t);
@@ -278,7 +278,9 @@ void main() {
             await _settle(t);
             router.pop();
             await _settle(t);
-            await t.tap(find.byKey(const ValueKey('home_day_night_toggle')));
+            container
+                .read(themeModeProvider.notifier)
+                .setThemeMode(dark ? ThemeMode.light : ThemeMode.dark);
             await _settle(t);
             expect(
               HomeDesign.of(
@@ -286,7 +288,9 @@ void main() {
               ).darkness,
               dark ? 0 : 1,
             );
-            await t.tap(find.byKey(const ValueKey('home_day_night_toggle')));
+            container
+                .read(themeModeProvider.notifier)
+                .setThemeMode(dark ? ThemeMode.dark : ThemeMode.light);
             await _settle(t);
           }
           await t.drag(

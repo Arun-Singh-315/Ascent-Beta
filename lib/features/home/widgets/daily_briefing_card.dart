@@ -671,7 +671,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 ? g.fill
                 : (g.merlot
                     ? MerlotPalette.surface
-                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
+                    : (g.frozen ? FrozenPalette.surface : g.fill)),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 14,
               vertical: 12,

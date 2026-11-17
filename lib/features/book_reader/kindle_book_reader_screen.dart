@@ -257,6 +257,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -429,6 +431,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -903,6 +907,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
   void _showThemePicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: _theme.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr22),

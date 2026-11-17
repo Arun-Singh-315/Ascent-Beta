@@ -14,6 +14,7 @@ class ExpenseActions {
     String category = 'Other',
     String account = 'UPI',
     String? notes,
+    bool isRecurring = false,
   }) async {
     final text = title.trim();
     if (text.isEmpty ||
@@ -31,6 +32,7 @@ class ExpenseActions {
       'category': category,
       'account': account,
       'notes': notes,
+      'isRecurring': isRecurring,
     };
     final result = await LocalActionReceipts(db).run(
       requestId: requestId,
@@ -46,6 +48,7 @@ class ExpenseActions {
             category: drift.Value(category),
             account: drift.Value(account),
             notes: drift.Value(notes),
+            isRecurring: drift.Value(isRecurring),
           ),
         );
         return {'id': id};

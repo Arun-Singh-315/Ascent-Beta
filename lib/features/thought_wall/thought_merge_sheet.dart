@@ -15,6 +15,7 @@ Future<bool> showThoughtMerge(
   if (thoughts.length < 2) return false;
   return await showModalBottomSheet<bool>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         isDismissible: false,

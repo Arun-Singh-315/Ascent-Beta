@@ -21,6 +21,7 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
     try {
       await showModalBottomSheet(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: AppPalette.transparent,

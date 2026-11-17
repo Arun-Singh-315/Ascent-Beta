@@ -313,6 +313,54 @@ class MedicineService {
     await _alerts();
   }
 
+  Future<void> snoozeDose(int logId, {Duration duration = const Duration(minutes: 30)}) async {
+    await db.transaction(() async {
+      final log = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
+      if (log == null || log.linkedReminderId == null) return;
+      final rem = await db.reminderDao.getReminderById(log.linkedReminderId!);
+      if (rem == null) return;
+      final newScheduledAt = clock().add(duration);
+      await (db.update(db.reminderTable)..where((r) => r.id.equals(rem.id))).write(
+        ReminderTableCompanion(
+          scheduledAt: Value(newScheduledAt),
+          isActive: const Value(true),
+          alertSyncPending: const Value(true),
+        ),
+      );
+    });
+    await _alerts();
+  }
+
+  Future<int> scheduleRefillReminder(Medicine medicine, {DateTime? date}) async {
+    final start = DateTime(
+      medicine.startDate.year,
+      medicine.startDate.month,
+      medicine.startDate.day,
+    );
+    final courseEnd = DateTime(
+      start.year,
+      start.month,
+      start.day + medicine.durationDays,
+      9,
+      0,
+    );
+    final targetDate = date ?? (medicine.durationDays > 3
+        ? courseEnd.subtract(const Duration(days: 2))
+        : courseEnd);
+    final reminderTime = targetDate.isAfter(clock()) ? targetDate : clock().add(const Duration(hours: 1));
+
+    final id = await db.reminderDao.insertReminder(
+      ReminderTableCompanion.insert(
+        title: _bounded('Refill prescription: ${medicine.name} (${medicine.dosage})'),
+        scheduledAt: reminderTime,
+        isActive: const Value(true),
+        alertSyncPending: const Value(true),
+      ),
+    );
+    await _alerts();
+    return id;
+  }
+
   Future<void> deleteMedicine(int id) async {
     await db.medicineDao.deleteMedicine(id);
     await _alerts();

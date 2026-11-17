@@ -175,6 +175,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         : <HistoryEvent>[];
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
@@ -580,19 +581,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                   ],
                                 ),
                               ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? g.elevated
-                                      : Theme.of(ctx).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: g.line.withValues(alpha: 0.35),
-                                    width: 0.75,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? g.elevated
+                                        : Theme.of(ctx).colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: g.line.withValues(alpha: 0.35),
+                                      width: 0.75,
+                                    ),
                                   ),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: Column(
+                                  child: Column(
                                   children: [
                                     for (var j = 0; j < events.length; j++) ...[
                                       if (j > 0)
@@ -700,6 +702,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                   ],
                                 ),
                               ),
+                            ),
                             ],
                           ),
                         );

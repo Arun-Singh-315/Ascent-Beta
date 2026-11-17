@@ -69,6 +69,8 @@ Future<void> showPlanProtectionDialog(
 
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
+    useSafeArea: true,
     backgroundColor: isDark ? g.bg : Colors.white,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),

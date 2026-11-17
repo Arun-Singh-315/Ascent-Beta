@@ -83,6 +83,8 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: g.bg,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

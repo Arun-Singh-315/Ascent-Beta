@@ -1,17 +1,15 @@
-import '../../../app/theme/home_design.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/section_card.dart';
+import '../../../shared/widgets/segmented_tabs.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 import 'activity_starter_actions.dart';
-import 'home_section_heading.dart';
-import 'home_content_transition.dart';
-import 'home_outline_surface.dart';
 import 'home_capture_entrance.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
@@ -66,21 +64,58 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   }
 
   Widget _starterCard(BuildContext context) {
-    final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+    final c = context.c;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: c.surfaceAlt,
+        borderRadius: BorderRadius.circular(Rd.card),
+        border: Border.all(color: c.border),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            'Start with something small.',
-            style: AscentTextStyles.interfaceTitle.copyWith(
-              color: g.ink,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: c.accent.withValues(alpha: 0.10),
+              border: Border.all(
+                color: c.accent.withValues(alpha: 0.25),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.checklist_rtl_rounded,
+              size: 24,
+              color: c.accent,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Text(
+            'What’s on your mind today?',
+            style: TextStyle(
+              color: c.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add a task or timed focus block to build daily momentum.',
+            style: TextStyle(
+              color: c.textSecondary,
+              fontSize: 13,
+              height: 1.35,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 14),
           const ActivityStarterActions(),
         ],
       ),
@@ -106,52 +141,34 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       orElse: () => (0, 0),
     );
 
-    return HomeBorderSection(
+    return SectionCard(
+      key: const ValueKey('home_activity_card'),
+      icon: Icons.checklist_rounded,
+      title: 'Things',
+      onOpen: () => context.push('/things'),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── SECTION HEADING ──────────────────────────────────────────
-          HomeSectionHeading(
-            title: 'Things',
-            cutout: true,
-            dotColor: HomeDesign.of(context).action,
-            titleColor: HomeDesign.of(context).action,
-            showDivider: false,
-            trailing: HomeSectionArrowButton(
-              key: const ValueKey('view_all_things_btn'),
-              tooltip: 'Open Things',
-              color: SharedControlColors.actionBlue,
-              onTap: () => context.push('/things'),
-            ),
+          SegmentedTabs(
+            key: const ValueKey('activity_hub_tabs'),
+            tabs: const ['Today', 'Done', 'Plans'],
+            selectedIndex: _showPlans ? 2 : (_showCompleted ? 1 : 0),
+            onTabSelected: (i) => setState(() {
+              _showCompleted = i == 1;
+              _showPlans = i == 2;
+              _showAll = false;
+            }),
           ),
-          const SizedBox(height: 4),
-          HomeContentTransition(
-            child: Container(
-              key: const ValueKey('home_activity_card'),
-              decoration: null,
-              padding: EdgeInsets.zero,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HubTabs(
-                    key: const ValueKey('activity_hub_tabs'),
-                    labels: const ['Today', 'Done', 'Plans'],
-                    selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
-                    onSelected: (i) => setState(() {
-                      _showCompleted = i == 1;
-                      _showPlans = i == 2;
-                      _showAll = false;
-                    }),
-                  ),
-                  if (!_showPlans && totalCount > 0 && doneCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
-                      child: Text(
-                        '$doneCount of $totalCount completed',
-                        style: TextStyle(color: g.inkMuted, fontSize: 12),
-                      ),
-                    ),
-                  AnimatedSwitcher(
+          const SizedBox(height: 12),
+          if (!_showPlans && totalCount > 0 && doneCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '$doneCount of $totalCount completed',
+                style: TextStyle(color: context.c.textSecondary, fontSize: 12),
+              ),
+            ),
+          AnimatedSwitcher(
                     duration: Duration(
                       milliseconds: MediaQuery.disableAnimationsOf(context)
                           ? 0
@@ -299,46 +316,86 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                   if (allEntries.isEmpty &&
                                       !hasHero &&
                                       (items.isNotEmpty || _showCompleted))
-                                    Padding(
+                                    Container(
+                                      width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 24,
+                                        vertical: 20,
                                         horizontal: 16,
                                       ),
-                                      child: Center(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Icon(
+                                      decoration: BoxDecoration(
+                                        color: context.c.surfaceAlt,
+                                        borderRadius:
+                                            BorderRadius.circular(Rd.card),
+                                        border: Border.all(
+                                          color: context.c.border,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _showCompleted
+                                                  ? context.c.accent
+                                                      .withValues(alpha: 0.10)
+                                                  : context.c.border,
+                                            ),
+                                            child: Icon(
                                               _showCompleted
                                                   ? Icons
-                                                        .check_circle_outline_rounded
-                                                  : Icons.spa_outlined,
-                                              size: 32,
-                                              color: g.inkSecondary,
+                                                      .check_circle_outline_rounded
+                                                  : Icons.checklist_rounded,
+                                              size: 24,
+                                              color: _showCompleted
+                                                  ? context.c.accent
+                                                  : context.c.textSecondary,
                                             ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Text(
+                                            _showCompleted
+                                                ? 'No completed activities yet'
+                                                : 'Nothing for today',
+                                            style: TextStyle(
+                                              color: context.c.textPrimary,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.2,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            _showCompleted
+                                                ? 'Tasks and focus blocks you finish today will appear here.'
+                                                : 'All caught up! Tap below to add a new task.',
+                                            style: TextStyle(
+                                              color: context.c.textSecondary,
+                                              fontSize: 12.5,
+                                              height: 1.35,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          if (!_showCompleted) ...[
                                             const SizedBox(height: 10),
-                                            Text(
-                                              _showCompleted
-                                                  ? 'No completed activities yet.'
-                                                  : (items.any(
-                                                          (a) =>
-                                                              a.status ==
-                                                              TodayActivityStatus
-                                                                  .done,
-                                                        )
-                                                        ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
-                                                        : 'A little space to begin.\nAdd one thing you want to do today.'),
-                                              style: TextStyle(
-                                                color: g.inkMuted,
-                                                fontSize: 13,
-                                                height: 1.4,
+                                            TextButton(
+                                              onPressed: () =>
+                                                  _composerFocus.requestFocus(),
+                                              child: Text(
+                                                'Add a to-do',
+                                                style: TextStyle(
+                                                  color: context.c.accent,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                               ),
-                                              textAlign: TextAlign.center,
                                             ),
                                           ],
-                                        ),
+                                        ],
                                       ),
                                     ),
                                   if (hasHero && heroActivity != null)
@@ -366,8 +423,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                       Divider(
                                         height: 1,
                                         thickness: .6,
-                                        indent: 42,
-                                        color: g.line.withValues(alpha: .65),
+                                        indent: 40,
+                                        color: context.c.border,
                                       ),
                                     if (entry is _MedicineGroupEntry)
                                       MedicineActivityGroupCard(
@@ -394,6 +451,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                           activity: entry.activity,
                                           compact: true,
                                           ground: true,
+                                          hubStyle: true,
                                           onViewCompleted: () {
                                             if (!mounted) return;
                                             setState(() {
@@ -459,7 +517,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                           ),
                   ),
                   if (!_showPlans && !_showCompleted) ...[
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     ActivityComposer(
                       key: const ValueKey('home_composer'),
                       focusNode: _composerFocus,
@@ -467,80 +525,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   ],
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Slim text tabs (Active · Completed · Plans) shown at the top of the card.
-class _HubTabs extends StatelessWidget {
-  const _HubTabs({
-    super.key,
-    required this.labels,
-    required this.selected,
-    required this.onSelected,
-  });
-  final List<String> labels;
-  final int selected;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final blue = dark
-        ? SharedControlColors.actionBlueDark
-        : SharedControlColors.actionBlue;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final (index, label) in labels.indexed) ...[
-            if (index > 0) const SizedBox(width: 8),
-            Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onSelected(index);
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected == index
-                        ? blue.withValues(alpha: dark ? 0.22 : 0.12)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: selected == index
-                          ? blue
-                          : (dark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B)),
-                      fontSize: 14,
-                      fontWeight: selected == index
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -716,6 +700,7 @@ class _FullActivityListState extends ConsumerState<_FullActivityList> {
                           activity: rows[index],
                           compact: true,
                           ground: true,
+                          hubStyle: true,
                         ),
                       );
                     },

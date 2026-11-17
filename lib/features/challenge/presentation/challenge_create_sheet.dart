@@ -23,6 +23,8 @@ class ChallengeCreateSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, {Thought? linkedPromise}) =>
       showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
+        useSafeArea: true,
         isScrollControlled: true,
         backgroundColor: AppPalette.transparent,
         builder: (_) => ChallengeCreateSheet(linkedPromise: linkedPromise),

@@ -31,6 +31,7 @@ class AddLectureActivitySheet extends ConsumerStatefulWidget {
   }) async =>
       await showModalBottomSheet<bool>(
         context: context,
+        useRootNavigator: true,
         isScrollControlled: true,
         useSafeArea: true,
         isDismissible: false,

@@ -24,7 +24,9 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../core/theme/app_colors.dart';
 import '../../app/theme/shared_control_tokens.dart';
+import '../../core/theme/app_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../promises/providers/promise_providers.dart';
@@ -36,6 +38,7 @@ import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import '../../shared/widgets/thought_excerpt.dart';
 import '../../shared/widgets/locked_commitment_tile.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -715,13 +718,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   }
 
   Future<void> _browseCollections() async {
-    final choice = await showModalBottomSheet<({String key, bool add})>(
+    final choice = await showAscentCenteredForm<({String key, bool add})>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (sheetContext) => Consumer(
-        builder: (context, ref, _) {
+      maxWidth: 420,
+      builder: (sheetContext) => Material(
+        color: context.glass.elevated,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.glass.line, width: 1.0),
+          ),
+          child: Consumer(
+            builder: (context, ref, _) {
           final categories =
               ref.watch(thoughtCategoriesStreamProvider).value ?? _categories;
           final notes =
@@ -838,7 +848,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           );
         },
       ),
-    );
+    ),
+  ),
+);
     if (!mounted || choice == null) return;
     if (choice.key == '__new') {
       await _createCategory();
@@ -872,12 +884,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   }
 
   Future<void> _chooseFilter() async {
-    final result = await showModalBottomSheet<String>(
+    final result = await showAscentCenteredForm<String>(
       context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (ctx) => Consumer(
-        builder: (ctx, sheetRef, _) => StatefulBuilder(
+      maxWidth: 420,
+      builder: (ctx) => Material(
+        color: context.glass.elevated,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.glass.line, width: 1.0),
+          ),
+          child: Consumer(
+            builder: (ctx, sheetRef, _) => StatefulBuilder(
           builder: (ctx, sheetSetState) {
             final shortcuts = sheetRef.watch(thoughtCategoryShortcutsProvider);
             return ConstrainedBox(
@@ -1034,8 +1054,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           },
         ),
       ),
-    );
-    if (!mounted || result == null) return;
+    ),
+  ),
+);
+if (!mounted || result == null) return;
     if (result == '__create__') {
       await _createCategory();
       return;
@@ -1143,6 +1165,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       if (_selectedIds.isEmpty) _isSelectionMode = false;
     }
     final g = context.glass;
+    final c = context.c;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return PopScope(
       canPop: !_isSelectionMode,
@@ -1158,6 +1182,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
+        glow1: c.accent.withValues(alpha: 0.12),
         glow2: g.glow2,
         showFeatureHelp: false,
         leading: _isSelectionMode
@@ -1231,15 +1256,41 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 IconButton(
                   tooltip: 'Wall appearance',
                   icon: const Icon(Icons.tune_rounded),
-                  onPressed: () => showModalBottomSheet<void>(
+                  onPressed: () => showAscentCenteredForm<void>(
                     context: context,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    builder: (_) => const ThoughtWallAppearanceSheet(),
+                    maxWidth: 420,
+                    builder: (_) => Material(
+                      color: context.glass.elevated,
+                      borderRadius: BorderRadius.circular(24),
+                      clipBehavior: Clip.antiAlias,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: context.glass.line,
+                            width: 1.0,
+                          ),
+                        ),
+                        child: const ThoughtWallAppearanceSheet(),
+                      ),
+                    ),
                   ),
                 ),
               ],
-        body: Column(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                c.headerTop.withValues(alpha: isDark ? 0.30 : 0.45),
+                c.bg,
+                c.bg,
+              ],
+              stops: const [0.0, 0.35, 1.0],
+            ),
+          ),
+          child: Column(
           children: [
             if (MediaQuery.viewInsetsOf(context).bottom == 0 ||
                 _isSelectionMode) ...[
@@ -1348,39 +1399,30 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 4,
+                    vertical: 6,
                   ),
-                child: Row(
+                child: Wrap(
                   key: const ValueKey('thought_filter_bar'),
+                  spacing: 6,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (final key in <String>{
-                              if (_categoryFilter != 'all' &&
-                                  !shortcuts.contains(_categoryFilter))
-                                _categoryFilter,
-                              'all',
-                              ...shortcuts.where(_categories.containsKey),
-                            })
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: AppPill.choice(
-                                  label: Text(
-                                    key == 'all'
-                                        ? 'All notes'
-                                        : _filterMeta[key]?.$1 ?? 'Category',
-                                  ),
-                                  selected: _categoryFilter == key,
-                                  onSelected: (_) => _selectFilter(key),
-                                ),
-                              ),
-                          ],
+                    for (final key in <String>{
+                      if (_categoryFilter != 'all' &&
+                          !shortcuts.contains(_categoryFilter))
+                        _categoryFilter,
+                      'all',
+                      ...shortcuts.where(_categories.containsKey),
+                    })
+                      AppPill.choice(
+                        label: Text(
+                          key == 'all'
+                              ? 'All'
+                              : '#${_categories[key] ?? _filterMeta[key]?.$1 ?? key}',
                         ),
+                        selected: _categoryFilter == key,
+                        onSelected: (_) => _selectFilter(key),
                       ),
-                    ),
                     GlassChip(
                       label: 'Archive',
                       icon: Icons.archive_outlined,
@@ -1389,14 +1431,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                         _archiveFilter == 'archived' ? 'all' : 'archived',
                       ),
                     ),
-                    const SizedBox(width: 4),
                     IconButton(
                       tooltip: 'Category filter',
+                      visualDensity: VisualDensity.compact,
                       icon: Badge(
                         isLabelVisible:
                             _completionFilter != 'all' ||
                             _archiveFilter != 'active',
-                        child: const Icon(Icons.filter_list_rounded),
+                        child: const Icon(Icons.filter_list_rounded, size: 20),
                       ),
                       onPressed: _chooseFilter,
                     ),
@@ -1485,9 +1527,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final thought = filtered[index];
+                      final isHero = index == 0 &&
+                          _categoryFilter != 'archived' &&
+                          !_isSelectionMode;
                       final bubble = ThoughtCardBubble(
                         key: ValueKey(thought.id),
-                        compact: true,
+                        compact: !isHero,
+                        role: isHero
+                            ? ThoughtCardRole.hero
+                            : ThoughtCardRole.compact,
                         appearance: appearance,
                         categoryLabel: _categories[thought.category],
                         onMoveToCategory: () => _moveToCategory([thought]),
@@ -1498,15 +1546,35 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                         onToggleSelect: () => _toggleSelection(thought.id),
                         onLongPress: () => _enterSelectionMode(thought.id),
                       );
+
+                      String getGroupLabel(Thought t, int idx) {
+                        if (t.isCompleted) return 'Completed';
+                        if (t.isPinned) return 'Pinned';
+                        if (idx == 0 && !t.isArchived) return 'Latest';
+                        final now = DateTime.now();
+                        final startOfToday =
+                            DateTime(now.year, now.month, now.day);
+                        final startOfThought = DateTime(
+                          t.createdAt.year,
+                          t.createdAt.month,
+                          t.createdAt.day,
+                        );
+                        final diffDays =
+                            startOfToday.difference(startOfThought).inDays;
+                        if (diffDays <= 0) return 'Today';
+                        if (diffDays <= 7) return 'This week';
+                        return 'Earlier';
+                      }
+
+                      final currentGroup = getGroupLabel(thought, index);
+                      final prevGroup = index > 0
+                          ? getGroupLabel(filtered[index - 1], index - 1)
+                          : null;
                       final showHeading = _isSelectionMode
                           ? index == 0
                           : _categoryFilter != 'pinned' &&
-                                !thought.isArchived &&
-                                (index == 0 ||
-                                    filtered[index - 1].isPinned !=
-                                        thought.isPinned ||
-                                    filtered[index - 1].isCompleted !=
-                                        thought.isCompleted);
+                              !thought.isArchived &&
+                              (index == 0 || currentGroup != prevGroup);
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1522,13 +1590,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      thought.isCompleted
-                                          ? 'Completed'
-                                          : thought.isPinned
-                                          ? 'Pinned'
-                                          : 'Recent',
+                                      _isSelectionMode
+                                          ? 'Select notes'
+                                          : currentGroup,
                                       style: AscentTextStyles.labelMedium
-                                          .copyWith(color: g.inkMuted),
+                                          .copyWith(
+                                            color: c.textSecondary,
+                                            fontWeight: FontWeight.w600,
+                                            letterSpacing: 0.5,
+                                          ),
                                     ),
                                   ),
                                   if (_isSelectionMode) ...[
@@ -1614,12 +1684,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 
 class ThoughtCardBubble extends ConsumerStatefulWidget {
   final bool compact;
+  final ThoughtCardRole role;
   final ThoughtWallAppearance appearance;
   final String? categoryLabel;
   final Future<void> Function()? onMoveToCategory;
@@ -1635,6 +1707,7 @@ class ThoughtCardBubble extends ConsumerStatefulWidget {
     required this.thought,
     required this.index,
     this.compact = false,
+    this.role = ThoughtCardRole.standard,
     this.appearance = const ThoughtWallAppearance(),
     this.categoryLabel,
     this.onMoveToCategory,
@@ -1749,31 +1822,42 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
     final hasBubbleFraming = !minimal;
     final hardBorderColor = thought.isCompleted
-        ? context.doneInk.withValues(alpha: .6)
+        ? context.doneInk.withValues(alpha: isDark ? .35 : .25)
         : hasBubbleFraming
         ? Color.lerp(
-            g.ink.withValues(alpha: isDark ? .35 : .40),
-            moodAccent,
-            isDark ? 0.45 : 0.40,
+            g.edge,
+            moodAccent.withValues(alpha: isDark ? 0.28 : 0.20),
+            0.40,
           )!
-        : g.ink.withValues(alpha: isDark ? .34 : .38);
+        : g.edge.withValues(alpha: isDark ? .34 : .38);
 
-    final borderWidth = hasBubbleFraming
-        ? widget.appearance.bubbleBorderWidth
+    final isHero = widget.role == ThoughtCardRole.hero;
+    final borderWidth = isHero
+        ? 1.2
+        : hasBubbleFraming
+        ? (widget.appearance.bubbleBorderWidth > 1.2 ? 1.2 : widget.appearance.bubbleBorderWidth)
         : 1.0;
 
     final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
         ? Colors.transparent
         : thought.isCompleted
-        ? context.doneInk.withValues(alpha: .08)
+        ? context.doneInk.withValues(alpha: isDark ? .06 : .04)
         : isSelected
-        ? g.clay.withValues(alpha: isDark ? 0.09 : 0.06)
-        : hasBubbleFraming
-        ? Color.lerp(
-            g.fill,
-            moodAccent.withValues(alpha: isDark ? 0.06 : 0.04),
-            0.5,
+        ? g.clay.withValues(alpha: isDark ? 0.12 : 0.08)
+        : isHero
+        ? Color.alphaBlend(
+            moodAccent.withValues(alpha: isDark ? 0.12 : 0.07),
+            isDark ? g.elevated : g.surface,
           )
+        : hasBubbleFraming
+        ? (widget.role == ThoughtCardRole.compact
+            ? (isDark
+                ? g.surface.withValues(alpha: 0.55)
+                : g.surface.withValues(alpha: 0.85))
+            : Color.alphaBlend(
+                moodAccent.withValues(alpha: isDark ? 0.07 : 0.04),
+                isDark ? g.elevated : g.surface,
+              ))
         : Colors.transparent;
 
     return BoxDecoration(
@@ -1783,37 +1867,43 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isSelected
           ? [
               BoxShadow(
-                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.22),
-                blurRadius: 12,
+                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.18),
+                blurRadius: 14,
                 spreadRadius: 1,
                 offset: const Offset(0, 2),
+              ),
+            ]
+          : isHero
+          ? [
+              BoxShadow(
+                color: (isDark ? Colors.black : moodAccent).withValues(
+                  alpha: isDark ? 0.28 : 0.08,
+                ),
+                blurRadius: 14,
+                spreadRadius: 0,
+                offset: const Offset(0, 3),
               ),
             ]
           : isBubble && widget.appearance.bubbleFilled
           ? [
               BoxShadow(
-                color: moodAccent.withValues(
-                  alpha: isDark ? 0.10 : 0.05,
+                color: (isDark ? Colors.black : moodAccent).withValues(
+                  alpha: isDark ? 0.12 : 0.03,
                 ),
-                blurRadius: 8,
+                blurRadius: 6,
                 spreadRadius: 0,
-                offset: const Offset(0, 2),
+                offset: const Offset(0, 1),
               ),
             ]
           : const [],
       borderRadius: switch (style) {
-        ThoughtCardStyle.soft => BorderRadius.circular(16),
-        ThoughtCardStyle.bubble => BorderRadius.only(
-          topLeft: const Radius.circular(18),
-          topRight: const Radius.circular(18),
-          bottomLeft: Radius.circular(index.isEven ? 18 : 6),
-          bottomRight: Radius.circular(index.isOdd ? 6 : 18),
-        ),
+        ThoughtCardStyle.soft => BorderRadius.circular(AppRadius.xl),
+        ThoughtCardStyle.bubble => BorderRadius.circular(AppRadius.bubble),
         ThoughtCardStyle.minimal =>
-          widget.compact ? BorderRadius.zero : BorderRadius.circular(6),
+          widget.compact ? BorderRadius.zero : BorderRadius.circular(AppRadius.iconChip),
       },
       border: isSelected
-          ? Border.all(color: g.clay, width: 2.0)
+          ? Border.all(color: g.clay, width: 1.8)
           : minimal && widget.compact
           ? Border(bottom: BorderSide(color: hardBorderColor, width: 1.0))
           : Border.all(color: hardBorderColor, width: borderWidth),
@@ -1859,8 +1949,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                     ? 8
                     : 12)
               : AppSpace.s14,
-          left: index.isOdd ? 32 : 0,
-          right: index.isEven ? 32 : 0,
         ),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
@@ -2627,10 +2715,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           content: thought.content.startsWith('[HIGH] ')
                               ? thought.content.substring(7)
                               : thought.content,
-                          maxLines: 5,
+                          maxLines: widget.role == ThoughtCardRole.hero ? 6 : 4,
+                          thoughtId: thought.id,
                           style: AppTypography.thoughtContent(
                             color: context.glass.ink,
                           ),
+                          arrowColor: moodColor,
                         ),
                       ),
                     ],

@@ -48,6 +48,7 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
     String? error;
     await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       isDismissible: false,

@@ -45,7 +45,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   final _input = TextEditingController();
   final _focus = FocusNode();
   late String _tab = widget.initialThoughtId == null ? 'open' : 'all';
-  SpaceViewMode _mode = SpaceViewMode.list;
+  final _mode = SpaceViewMode.list;
   bool _saving = false;
   NoteDraftBinding? _draft;
   UnlockedPromiseIdsNotifier? _unlocked;
@@ -120,6 +120,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   Future<void> _pasteList(SpaceStyle style) async {
     final text = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -182,27 +183,13 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   void _menu(String name, bool custom) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       useSafeArea: true,
       builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(AppSpace.s20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SpaceMenuAction(
-              key: const ValueKey('space_view_toggle'),
-              icon: _mode == SpaceViewMode.list
-                  ? Icons.grid_view_rounded
-                  : Icons.view_agenda_outlined,
-              label: _mode == SpaceViewMode.list ? 'Poster view' : 'List view',
-              onTap: () {
-                Navigator.pop(sheetContext);
-                setState(
-                  () => _mode = _mode == SpaceViewMode.list
-                      ? SpaceViewMode.grid
-                      : SpaceViewMode.list,
-                );
-              },
-            ),
             if (custom) ...[
               _SpaceMenuAction(
                 key: const ValueKey('space_rename'),
@@ -401,10 +388,6 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
                             : 'Switch tabs to see the rest.',
                       ),
                     )
-                  : _mode == SpaceViewMode.grid &&
-                        MediaQuery.sizeOf(context).width >= 360 &&
-                        MediaQuery.textScalerOf(context).scale(1) < 1.45
-                  ? _grid(shown, entryFor, bottomInset)
                   : ListView.separated(
                       padding: EdgeInsets.fromLTRB(
                         AppSpace.s16,
@@ -501,43 +484,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
     );
   }
 
-  Widget _grid(
-    List<Thought> shown,
-    Widget Function(Thought, int) entryFor,
-    double bottomInset,
-  ) {
-    final columns = balanceColumns<(Thought, int)>(
-      [for (var i = 0; i < shown.length; i++) (shown[i], i)],
-      2,
-      (item) => item.$1.content.length > 40 ? 150 : 130,
-    );
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        AppSpace.s16,
-        AppSpace.s8,
-        AppSpace.s16,
-        AppSpace.s24 + bottomInset,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var c = 0; c < columns.length; c++) ...[
-            if (c > 0) const SizedBox(width: AppSpace.s10),
-            Expanded(
-              child: Column(
-                children: [
-                  for (final item in columns[c]) ...[
-                    entryFor(item.$1, item.$2),
-                    const SizedBox(height: AppSpace.s10),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+
 }
 
 /// One entry of a space. A list row has a big tap-circle on the left that

@@ -31,6 +31,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(

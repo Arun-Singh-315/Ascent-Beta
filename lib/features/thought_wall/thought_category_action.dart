@@ -1,52 +1,139 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 
 Future<bool> moveThoughtsToCategory(
   BuildContext context,
   WidgetRef ref,
   List<Thought> selected,
 ) async {
-  var category = await showModalBottomSheet<String>(
+  var category = await showAscentCenteredForm<String>(
     context: context,
-    useSafeArea: true,
-    isScrollControlled: true,
-    builder: (context) => Consumer(
-      builder: (context, sheetRef, _) {
-        final categories =
-            sheetRef.watch(thoughtCategoriesStreamProvider).value ??
-            ThoughtDao.builtInCategories;
-        return ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .75,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const ListTile(title: Text('Move to category')),
-                for (final entry in categories.entries)
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(entry.value),
-                    onTap: () => Navigator.pop(context, entry.key),
+    maxWidth: 380,
+    builder: (dialogContext) => Material(
+      color: dialogContext.glass.elevated,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: dialogContext.glass.line, width: 1.0),
+        ),
+        child: Consumer(
+          builder: (context, sheetRef, _) {
+            final categories =
+                sheetRef.watch(thoughtCategoriesStreamProvider).value ??
+                ThoughtDao.builtInCategories;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Move to category',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: dialogContext.glass.ink,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: dialogContext.glass.inkMuted,
+                          size: 20,
+                        ),
+                      ),
+                    ],
                   ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.create_new_folder_outlined),
-                  title: const Text('Create category'),
-                  onTap: () => Navigator.pop(context, '__create__'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+                  const SizedBox(height: 8),
+                  for (final entry in categories.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(14),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+                          onTap: () => Navigator.pop(dialogContext, entry.key),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 12,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.folder_outlined,
+                                  size: 20,
+                                  color: dialogContext.glass.clay,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    entry.value,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: dialogContext.glass.ink,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  const Divider(height: 16),
+                  Material(
+                    color: dialogContext.glass.clay.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.pop(dialogContext, '__create__'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.create_new_folder_outlined,
+                              size: 20,
+                              color: dialogContext.glass.clay,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Create category',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: dialogContext.glass.clay,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     ),
   );
   if (category == null || !context.mounted) return false;

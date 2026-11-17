@@ -211,23 +211,28 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: SharedControlColors.actionBlue,
-              size: 22,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Complete',
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
                 color: SharedControlColors.actionBlue,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                size: 22,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Complete',
+                style: TextStyle(
+                  color: SharedControlColors.actionBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       secondaryBackground: Container(
@@ -240,20 +245,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Archive',
-              style: TextStyle(
-                color: g.primaryButtonBg,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Archive',
+                style: TextStyle(
+                  color: g.primaryButtonBg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-          ],
+              const SizedBox(width: 6),
+              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
+            ],
+          ),
         ),
       ),
       child: GestureDetector(
@@ -874,20 +884,21 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ? 'Finished ${_formatActivityTimestamp(activity.completedAt!)}'
         : null;
 
+    final String? timeLabel = (widget.hubStyle && activity.scheduledTime != null)
+        ? 'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
+        : (activity.sourceType == 'medicine' && activity.plannedDate != null)
+            ? DateFormat('h:mm a').format(activity.plannedDate!)
+            : createdLabel;
+
     final status = visualDone
         ? [
             if (finishedLabel != null) finishedLabel else 'Completed',
-            ?createdLabel,
+            if (finishedLabel == null && timeLabel != null) timeLabel,
           ].join(' · ')
         : [
             if (activity.sourceType == 'medicine') 'Medicine',
             if (lecture) 'Lecture',
-            if (widget.hubStyle && activity.scheduledTime != null)
-              'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
-            else if (activity.sourceType == 'medicine' &&
-                activity.plannedDate != null)
-              DateFormat('h:mm a').format(activity.plannedDate!),
-            ?createdLabel,
+            ?timeLabel,
           ].join(' · ');
 
     final actionLabel = done
@@ -927,36 +938,71 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final undo = await dao.completeWithUndo(target.linkedTaskId!);
         final task = await dao.getTaskById(target.linkedTaskId!);
         if (task?.actualCompletedDate != null && context.mounted) {
-          AscentSnackBar.applaud(
-            context,
-            message: target.isDailyStanding
-                ? 'Bravo! Completed for today 👏'
-                : 'Bravo! Task completed! 👏',
-            subtitle: target.isDailyStanding
-                ? 'Resets tomorrow to keep your daily rhythm'
-                : 'One step closer to your goals ✨',
-            onUndo: undo == null
-                ? null
-                : () async {
-                    try {
-                      final restored = await dao.undoCompletion(undo);
-                      if (!restored && context.mounted) {
-                        AscentSnackBar.show(
-                          context,
-                          message:
-                              'This activity has changed. Undo is no longer available.',
+          if (widget.onViewCompleted != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Task completed'),
+                    ),
+                    Builder(
+                      builder: (btnContext) {
+                        return TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(btnContext).hideCurrentSnackBar();
+                            widget.onViewCompleted?.call();
+                          },
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'View completed',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
                         );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            AscentSnackBar.applaud(
+              context,
+              message: target.isDailyStanding
+                  ? 'Bravo! Completed for today 👏'
+                  : 'Bravo! Task completed! 👏',
+              subtitle: target.isDailyStanding
+                  ? 'Resets tomorrow to keep your daily rhythm'
+                  : 'One step closer to your goals ✨',
+              onUndo: undo == null
+                  ? null
+                  : () async {
+                      try {
+                        final restored = await dao.undoCompletion(undo);
+                        if (!restored && context.mounted) {
+                          AscentSnackBar.show(
+                            context,
+                            message:
+                                'This activity has changed. Undo is no longer available.',
+                          );
+                        }
+                      } catch (_) {
+                        if (context.mounted) {
+                          AscentSnackBar.error(
+                            context,
+                            message: 'Could not undo. Please retry.',
+                          );
+                        }
                       }
-                    } catch (_) {
-                      if (context.mounted) {
-                        AscentSnackBar.error(
-                          context,
-                          message: 'Could not undo. Please retry.',
-                        );
-                      }
-                    }
-                  },
-          );
+                    },
+            );
+          }
         } else if (context.mounted && task?.actualCompletedDate == null) {
           AscentSnackBar.show(
             context,
@@ -1099,58 +1145,104 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     ),
                   ),
                 )
-              : AscentButton.primary(
-                  key: ValueKey('activity_action_${activity.id}'),
-                  label: actionLabel,
-                  icon: running
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  loading: _timerActionBusy,
-                  onPressed: () async {
-                    if (_timerActionBusy) return;
-                    setState(() => _timerActionBusy = true);
-                    try {
-                      if (lecture) {
-                        if (_selectLecture(ref, activity)) {
-                          ref
-                              .read(learningHubProvider.notifier)
-                              .togglePlayPause();
+              : ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minHeight: 44,
+                    minWidth: 44,
+                  ),
+                  child: Center(
+                    child: OutlinedButton.icon(
+                      key: ValueKey('activity_action_${activity.id}'),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: running
+                            ? SharedControlColors.dueRed.withValues(alpha: 0.12)
+                            : SharedControlColors.actionBlue.withValues(
+                                alpha: 0.08,
+                              ),
+                        foregroundColor: running
+                            ? SharedControlColors.dueRed
+                            : (context.isDark
+                                  ? SharedControlColors.actionBlueDark
+                                  : SharedControlColors.actionBlue),
+                        side: BorderSide(
+                          color: (running
+                                  ? SharedControlColors.dueRed
+                                  : SharedControlColors.actionBlue)
+                              .withValues(
+                            alpha: context.isDark ? 0.55 : 0.35,
+                          ),
+                          width: 1.0,
+                        ),
+                        minimumSize: const Size(0, 26),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: Icon(
+                        running
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        size: 13,
+                      ),
+                      label: Text(actionLabel),
+                      onPressed: () async {
+                        HapticFeedback.selectionClick();
+                        if (_timerActionBusy) return;
+                        setState(() => _timerActionBusy = true);
+                        try {
+                          if (lecture) {
+                            if (_selectLecture(ref, activity)) {
+                              ref
+                                  .read(learningHubProvider.notifier)
+                                  .togglePlayPause();
+                            }
+                          } else {
+                            final tracker =
+                                ref.read(timeTrackingProvider.notifier);
+                            if (running) {
+                              final session = ref
+                                  .read(timeTrackingProvider)
+                                  .activeSession;
+                              final matches = session != null &&
+                                  (activity.linkedSessionId != null
+                                      ? session.id == activity.linkedSessionId
+                                      : activity.linkedTaskId != null &&
+                                          session.linkedTaskId ==
+                                              activity.linkedTaskId);
+                              if (!matches) throw StateError('Timer changed');
+                              await tracker.pauseSession();
+                            } else {
+                              await tracker.switchToTask(
+                                title: activity.title,
+                                taskId: activity.linkedTaskId,
+                                sourceType: activity.sourceType,
+                                autoStart: true,
+                              );
+                            }
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            AscentSnackBar.error(
+                              context,
+                              message:
+                                  'Could not update this timer. Please retry.',
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _timerActionBusy = false);
                         }
-                      } else {
-                        final tracker = ref.read(timeTrackingProvider.notifier);
-                        if (running) {
-                          final session = ref
-                              .read(timeTrackingProvider)
-                              .activeSession;
-                          final matches =
-                              session != null &&
-                              (activity.linkedSessionId != null
-                                  ? session.id == activity.linkedSessionId
-                                  : activity.linkedTaskId != null &&
-                                        session.linkedTaskId ==
-                                            activity.linkedTaskId);
-                          if (!matches) throw StateError('Timer changed');
-                          await tracker.pauseSession();
-                        } else {
-                          await tracker.switchToTask(
-                            title: activity.title,
-                            taskId: activity.linkedTaskId,
-                            sourceType: activity.sourceType,
-                            autoStart: true,
-                          );
-                        }
-                      }
-                    } catch (_) {
-                      if (context.mounted) {
-                        AscentSnackBar.error(
-                          context,
-                          message: 'Could not update this timer. Please retry.',
-                        );
-                      }
-                    } finally {
-                      if (mounted) setState(() => _timerActionBusy = false);
-                    }
-                  },
+                      },
+                    ),
+                  ),
                 ))
         : null;
 
@@ -1249,7 +1341,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     : Border.all(color: softBorderColor, width: 0.65),
               ),
               padding: EdgeInsets.symmetric(
-                horizontal: timed ? 10 : (widget.ground ? 4 : 12),
+                horizontal: widget.ground ? 4 : 12,
                 vertical: timed ? 10 : (widget.ground ? 6 : 8.5),
               ),
               child: Column(
@@ -1340,12 +1432,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ],
                       if (done && !widget.hubStyle) ...[
                         const SizedBox(width: 6),
-                        const GlassChip(
-                          label: 'Done',
-                          icon: Icons.check_rounded,
-                          selected: true,
-                          success: true,
-                          tooltip: 'Completed',
+                        const Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: GlassChip(
+                              label: 'Done',
+                              icon: Icons.check_rounded,
+                              selected: true,
+                              success: true,
+                              tooltip: 'Completed',
+                            ),
+                          ),
                         ),
                       ],
                       InkResponse(
@@ -1365,6 +1462,27 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           ),
                         ),
                       ),
+                      if (!done && !timed)
+                        SizedBox(
+                          width: 1,
+                          height: 1,
+                          child: OverflowBox(
+                            minWidth: 48,
+                            minHeight: 48,
+                            maxWidth: 48,
+                            maxHeight: 48,
+                            child: Opacity(
+                              opacity: 0.001,
+                              child: FilledButton(
+                                onPressed: completeTask,
+                                child: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Done'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   if (widget.featured &&
@@ -1534,23 +1652,28 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: SharedControlColors.actionBlue,
-              size: 20,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Complete',
-              style: TextStyle(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
                 color: SharedControlColors.actionBlue,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                size: 20,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                'Complete',
+                style: TextStyle(
+                  color: SharedControlColors.actionBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       secondaryBackground: Container(
@@ -1564,20 +1687,25 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Archive',
-              style: TextStyle(
-                color: g.primaryButtonBg,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Archive',
+                style: TextStyle(
+                  color: g.primaryButtonBg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-          ],
+              const SizedBox(width: 6),
+              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
+            ],
+          ),
         ),
       ),
       child: IgnorePointer(
@@ -1673,6 +1801,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   HapticFeedback.lightImpact();
                   final delay = await showModalBottomSheet<Duration>(
                     context: context,
+                    useRootNavigator: true,
+                    useSafeArea: true,
                     builder: (ctx) => SafeArea(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

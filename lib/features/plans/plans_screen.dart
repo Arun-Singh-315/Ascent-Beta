@@ -11,7 +11,6 @@ import '../../shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'widgets/plan_detail_sheet.dart';
-import 'widgets/plan_collection_editor.dart';
 import 'widgets/plan_collection_detail.dart';
 import 'planning_providers.dart';
 
@@ -72,7 +71,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                   children: [
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: () => showPlanCollectionEditor(context),
+                        onPressed: () => context.push(AscentRoutes.createPlan),
                         icon: const Icon(Icons.add, size: 16),
                         label: const Text('New plan'),
                       ),

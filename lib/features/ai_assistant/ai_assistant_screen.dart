@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
 import 'riya_entity_card.dart';
 import 'riya_plan_cards.dart';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,15 +13,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
-import '../../shared/widgets/ascent_atmosphere.dart';
-import '../../shared/widgets/message_composer.dart';
-import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/app_composer.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/riya_learning_actions.dart';
 import '../../core/services/home_capture_service.dart';
@@ -738,6 +739,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = ref.watch(assistantNameProvider);
@@ -766,33 +768,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   ? MerlotPalette.canvas
                   : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: c.bg,
           elevation: 0,
           scrolledUnderElevation: 0,
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? context.bgBase.withValues(alpha: 0.72)
-                      : context.bgBase.withValues(alpha: 0.82),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.06,
-                      ),
-                      width: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           leading: IconButton(
             icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: context.textPrimary,
+              color: c.textPrimary,
               size: 19,
             ),
             onPressed: _isLoading
@@ -808,179 +790,77 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     }
                   },
           ),
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          accentColor.withValues(alpha: 0.25),
-                          context.glass.clay.withValues(alpha: 0.25),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.45),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.auto_awesome_rounded,
-                        color: accentColor,
-                        size: 17,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: context.glass.sage,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? context.bgBase : Colors.white,
-                          width: 1.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.glass.sage.withValues(alpha: 0.6),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: InkWell(
-                  key: const ValueKey('ai_assistant_identity_switcher'),
-                  onTap: _isLoading
-                      ? null
-                      : () => _showCompanionSelectorSheet(context, ref, name),
-                  borderRadius: AscentRadii.borderSm,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: context.textPrimary,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 18,
-                              color: context.textMuted,
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Intelligent · On-Device · Private',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          centerTitle: true,
+          title: Text(
+            name,
+            key: const ValueKey('ai_assistant_title'),
+            style: TextStyle(
+              color: c.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
           ),
           actions: [
-            if (widget.compact)
-              IconButton(
-                tooltip: 'Expand conversation',
-                icon: const Icon(Icons.open_in_full_rounded),
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        final router = GoRouter.of(context);
-                        Navigator.pop(context);
-                        router.push(
-                          Uri(
-                            path: '/ai-assistant',
-                            queryParameters: _textController.text.isEmpty
-                                ? null
-                                : {'prompt': _textController.text},
-                          ).toString(),
-                        );
-                      },
+            PopupMenuButton<String>(
+              key: const ValueKey('ai_assistant_menu_button'),
+              color: isDark ? const Color(0xFF16181E) : const Color(0xFFFFFDF9),
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: c.border, width: 1.0),
               ),
-            IconButton(
               icon: Icon(
-                Icons.delete_sweep_outlined,
-                color: context.textMuted,
+                Icons.more_vert_rounded,
+                color: c.textSecondary,
                 size: 21,
               ),
-              tooltip: 'Clear chat history',
-              onPressed: _isLoading
-                  ? null
-                  : () async {
-                      HapticFeedback.lightImpact();
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Clear chat history?'),
-                          content: Text(
-                            'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Clear history'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true && mounted) {
-                        await ref
-                            .read(aiAssistantDaoProvider)
-                            .clearChatHistory();
-                        ref.read(riyaConversationProvider).resetConversation();
-                        await ref
-                            .read(sharedPreferencesProvider)
-                            .remove(riyaConversationKey);
-                      }
-                    },
+              tooltip: 'More options',
+              onSelected: (val) {
+                if (val == 'clear') {
+                  _showClearHistoryDialog(context, name);
+                } else if (val == 'tone') {
+                  _showCompanionSelectorSheet(context, ref, name);
+                } else if (val == 'voice') {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Voice output toggled');
+                } else if (val == 'export') {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Conversation exported');
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'clear',
+                  child: Text(
+                    'Clear conversation',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'tone',
+                  child: Text(
+                    'Tone selector',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'voice',
+                  child: Text(
+                    'Voice toggle',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export',
+                  child: Text(
+                    'Export',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
           ],
         ),
         body: Stack(
@@ -1144,9 +1024,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                           : Alignment.centerLeft,
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
-                                          maxWidth:
-                                              MediaQuery.sizeOf(context).width *
-                                              0.84,
+                                          maxWidth: isUser
+                                              ? (MediaQuery.sizeOf(context).width *
+                                                      0.82)
+                                                  .clamp(240.0, 520.0)
+                                              : double.infinity,
                                         ),
                                         child: _ConversationMessageBubble(
                                           msg: msg,
@@ -1155,7 +1037,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                           assistantName: name,
                                           accentColor: accentColor,
                                           actionData: actionData,
-                                          messageQuickChips: messageQuickChips,
+                                          messageQuickChips: (index == messages.length - 1 && !isUser)
+                                              ? messageQuickChips.take(2).toList()
+                                              : const <String>[],
                                           onSelectChip: _handleSubmitted,
                                           busy: _isLoading,
                                           onEditDraft: () =>
@@ -1183,91 +1067,28 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             ),
                     ),
 
-                    // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
-                    if (!hasMessages) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: AscentSpacing.xs,
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _buildQuickChip(
-                                'Study Plan',
-                                Icons.school_rounded,
-                                () => _handleSubmitted('Create a study plan for DSA'),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                'Meal Plan',
-                                Icons.restaurant_rounded,
-                                () => _handleSubmitted('Create a healthy meal plan'),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'Todos' : 'Plan my day',
-                                Icons.wb_sunny_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact ? 'Show todos' : 'Plan my day',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'Commitments' : 'Today\'s agenda',
-                                Icons.checklist_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact
-                                      ? 'Show promises'
-                                      : 'What are my tasks today?',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'New Todo' : 'Medicines',
-                                widget.compact
-                                    ? Icons.add_rounded
-                                    : Icons.medication_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact
-                                      ? 'New todo'
-                                      : 'What are my medicines today?',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ] else ...[
-                      const SizedBox(height: 4),
-                    ],
-
-                    // Mindspace Consistent Input Box (Glass fill + Pill + Animated Send Circle)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
-                      child: SafeArea(
-                        top: false,
-                        child: MessageComposer(
-                          controller: _textController,
-                          focusNode: _composerFocus,
-                          hint: 'Message $name...',
-                          busy: _isLoading,
-                          onSend: _handleSubmitted,
-                        ),
-                      ),
+                    // Single-enclosure floating AppComposer
+                    AppComposer(
+                      controller: _textController,
+                      focusNode: _composerFocus,
+                      assistantName: name,
+                      isLoading: _isLoading,
+                      onSubmitted: _handleSubmitted,
+                      onPlusPressed: () {
+                        HapticFeedback.lightImpact();
+                        _showCompanionSelectorSheet(
+                          context,
+                          ref,
+                          name,
+                        );
+                      },
+                      onMicPressed: () {
+                        HapticFeedback.lightImpact();
+                        AscentSnackBar.show(
+                          context,
+                          message: 'Voice input active',
+                        );
+                      },
                     ),
                   ],
                 );
@@ -1279,64 +1100,35 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     );
   }
 
-  Widget _buildQuickChip(
-    String label,
-    IconData icon,
-    VoidCallback onTap,
+  Future<void> _showClearHistoryDialog(
     BuildContext context,
-    Color accentColor,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        borderRadius: AscentRadii.borderLg,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: 7.5,
-            horizontal: AscentSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            color: isDark
-                ? context.bgSurface.withValues(alpha: 0.88)
-                : Colors.white.withValues(alpha: 0.92),
-            borderRadius: AscentRadii.borderLg,
-            border: Border.all(
-              color: isDark ? context.glass.edge : context.divider,
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: accentColor),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
-                ),
-                maxLines: 1,
-              ),
-            ],
-          ),
+    String name,
+  ) async {
+    HapticFeedback.lightImpact();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear chat history?'),
+        content: Text(
+          'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear history'),
+          ),
+        ],
       ),
     );
+    if (confirmed == true && mounted) {
+      await ref.read(aiAssistantDaoProvider).clearChatHistory();
+      ref.read(riyaConversationProvider).resetConversation();
+      await ref.read(sharedPreferencesProvider).remove(riyaConversationKey);
+    }
   }
 
   void _showCompanionSelectorSheet(
@@ -1348,23 +1140,23 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final customController = TextEditingController();
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        final g = sheetContext.glass;
-        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF16181D) : const Color(0xFFF9F9FB),
+              color: sheetContext.c.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
               border: Border.all(
-                color: isDark ? g.edge : const Color(0x1F000000),
+                color: sheetContext.c.border,
                 width: 1,
               ),
             ),
@@ -1381,7 +1173,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white24 : Colors.black12,
+                          color: sheetContext.c.border,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1392,7 +1184,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: sheetContext.textPrimary,
+                        color: sheetContext.c.textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -1402,102 +1194,56 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: sheetContext.textMuted,
+                        color: sheetContext.c.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _buildCompanionTile(
                       sheetContext: sheetContext,
-                      name: 'Aria',
-                      tagline: 'Reflective & Calm',
+                      name: 'Jarvis',
+                      tagline: 'Tactical & Thoughtful',
                       description:
-                          'Quiet clarity, intentional pacing, and mindful focus.',
+                          'Sharp, proactive planning with grounded intelligence and calm clarity.',
                       icon: Icons.auto_awesome_rounded,
-                      selected: currentName == 'Aria',
+                      selected: currentName == 'Jarvis' ||
+                          currentName.isEmpty ||
+                          currentName == 'Aria' ||
+                          currentName == 'Riya',
                       onSelect: () {
                         HapticFeedback.mediumImpact();
                         ref
                             .read(assistantNameProvider.notifier)
-                            .setName('Aria');
-                        Navigator.pop(sheetContext);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildCompanionTile(
-                      sheetContext: sheetContext,
-                      name: 'Riya',
-                      tagline: 'Vibrant & Action-Driven',
-                      description:
-                          'High energy, proactive habits, and relentless momentum.',
-                      icon: Icons.bolt_rounded,
-                      selected: currentName == 'Riya',
-                      onSelect: () {
-                        HapticFeedback.mediumImpact();
-                        ref
-                            .read(assistantNameProvider.notifier)
-                            .setName('Riya');
+                            .setName('Jarvis');
                         Navigator.pop(sheetContext);
                       },
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                    AppTextField(
+                      controller: customController,
+                      hintText: 'Custom companion name...',
+                      suffixIcon: TextButton(
+                        onPressed: () {
+                          final trimmed = customController.text.trim();
+                          if (trimmed.isNotEmpty) {
+                            HapticFeedback.mediumImpact();
+                            ref
+                                .read(assistantNameProvider.notifier)
+                                .setName(trimmed);
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        child: const Text('Set'),
                       ),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E2129) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark ? g.edge : const Color(0x1F000000),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: customController,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                color: sheetContext.textPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Custom companion name...',
-                                hintStyle: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  color: sheetContext.textMuted,
-                                ),
-                                isDense: true,
-                                border: InputBorder.none,
-                              ),
-                              onSubmitted: (val) {
-                                final trimmed = val.trim();
-                                if (trimmed.isNotEmpty) {
-                                  HapticFeedback.mediumImpact();
-                                  ref
-                                      .read(assistantNameProvider.notifier)
-                                      .setName(trimmed);
-                                  Navigator.pop(sheetContext);
-                                }
-                              },
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              final trimmed = customController.text.trim();
-                              if (trimmed.isNotEmpty) {
-                                HapticFeedback.mediumImpact();
-                                ref
-                                    .read(assistantNameProvider.notifier)
-                                    .setName(trimmed);
-                                Navigator.pop(sheetContext);
-                              }
-                            },
-                            child: const Text('Set'),
-                          ),
-                        ],
-                      ),
+                      onSubmitted: (val) {
+                        final trimmed = val.trim();
+                        if (trimmed.isNotEmpty) {
+                          HapticFeedback.mediumImpact();
+                          ref
+                              .read(assistantNameProvider.notifier)
+                              .setName(trimmed);
+                          Navigator.pop(sheetContext);
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -1614,7 +1360,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 // Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
-class _ConversationMessageBubble extends StatelessWidget {
+class _ConversationMessageBubble extends StatefulWidget {
   final AiChatMessage msg;
   final bool isUser;
   final bool isFirstInRun;
@@ -1648,120 +1394,242 @@ class _ConversationMessageBubble extends StatelessWidget {
   });
 
   @override
+  State<_ConversationMessageBubble> createState() =>
+      _ConversationMessageBubbleState();
+}
+
+class _ConversationMessageBubbleState
+    extends State<_ConversationMessageBubble> {
+  bool _showTimestamp = false;
+
+  @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final msg = widget.msg;
+    final isUser = widget.isUser;
+    final isFirstInRun = widget.isFirstInRun;
+    final assistantName = widget.assistantName;
+    final accentColor = widget.accentColor;
+    final actionData = widget.actionData;
+    final messageQuickChips = widget.messageQuickChips;
+    final onSelectChip = widget.onSelectChip;
+    final onRecover = widget.onRecover;
+    final onReview = widget.onReview;
+    final onEditDraft = widget.onEditDraft;
+    final onOpenCourse = widget.onOpenCourse;
+    final onOpenHub = widget.onOpenHub;
+    final busy = widget.busy;
 
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
-    // ── Unified Glass Cards (Zero double-ticks, calm Things Hub aesthetic) ──
+    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.c;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ── iOS Glass Message Bubbles (Sand & Ember / Charcoal Black) ──
     final Color bubbleFill;
     final Color bubbleBorder;
     final Color messageTextColor;
     final Color timestampColor;
+    final BorderRadius borderRadius;
 
     if (isUser) {
-      bubbleFill = isDark
-          ? g.surface.withValues(alpha: 0.85)
-          : Colors.white.withValues(alpha: 0.90);
-      bubbleBorder = g.line.withValues(alpha: isDark ? 0.35 : 0.20);
-      messageTextColor = g.ink;
-      timestampColor = g.inkMuted;
+      bubbleFill =
+          isDark ? const Color(0x3DF08A5D) : colorScheme.primaryContainer;
+      bubbleBorder = isDark
+          ? const Color(0x60F08A5D)
+          : colorScheme.primary.withValues(alpha: 0.25);
+      messageTextColor =
+          isDark ? const Color(0xFFFFE8DC) : colorScheme.onPrimaryContainer;
+      timestampColor = isDark
+          ? const Color(0xAAFFE8DC)
+          : colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(18),
+        topRight: Radius.circular(18),
+        bottomLeft: Radius.circular(18),
+        bottomRight: Radius.circular(4),
+      );
     } else {
-      bubbleFill = isDark
-          ? g.surface.withValues(alpha: 0.95)
-          : Colors.white.withValues(alpha: 0.98);
-      bubbleBorder = g.line.withValues(alpha: isDark ? 0.30 : 0.15);
-      messageTextColor = g.ink;
-      timestampColor = g.inkMuted;
+      bubbleFill =
+          isDark ? const Color(0x40222630) : c.surfaceAlt.withValues(alpha: 0.55);
+      bubbleBorder =
+          isDark ? const Color(0x2EFFFFFF) : c.border.withValues(alpha: 0.6);
+      messageTextColor = c.textPrimary;
+      timestampColor = c.textTertiary;
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(18),
+        topRight: Radius.circular(18),
+        bottomRight: Radius.circular(18),
+        bottomLeft: Radius.circular(4),
+      );
     }
 
-    // Serene, symmetrical radius matching Ascent design system
-    final borderRadius = BorderRadius.circular(16);
+    final messageText = (actionData?['records'] as List? ?? []).isNotEmpty
+        ? (msg.actionType?.startsWith('promises.') == true
+              ? 'Here are your Promises.'
+              : 'Here are your Todos. Choose a card below.')
+        : msg.message;
 
     Widget bubbleContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Assistant Header Tag — only on first message in a run
+        // Small 13px bold assistant name at start of turn
         if (!isUser && isFirstInRun) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              assistantName,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ],
+
+        // Message Body: styled with flutter_markdown for assistant, plain for user
+        if (isUser)
+          Text(
+            messageText,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: messageTextColor,
+              height: 1.4,
+              letterSpacing: -0.1,
+            ),
+          )
+        else
+          MarkdownBody(
+            data: messageText,
+            selectable: true,
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+              p: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: c.textPrimary,
+                height: 1.5,
+              ),
+              strong: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h1: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h2: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h3: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              listBullet: TextStyle(
+                fontSize: 15,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+              pPadding: const EdgeInsets.only(bottom: 8),
+            ),
+          ),
+
+        // Action row under each assistant reply: Copy, Regenerate, Thumbs
+        if (!isUser) ...[
+          const SizedBox(height: 6),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.auto_awesome_rounded, size: 11, color: accentColor),
+              IconButton(
+                icon: Icon(Icons.copy_rounded, size: 16, color: c.textTertiary),
+                tooltip: 'Copy',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  await Clipboard.setData(ClipboardData(text: messageText));
+                  if (context.mounted) {
+                    AscentSnackBar.show(context, message: 'Copied to clipboard');
+                  }
+                },
+              ),
               const SizedBox(width: 4),
-              Text(
-                assistantName,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: accentColor,
-                  letterSpacing: 0.1,
-                ),
+              IconButton(
+                icon: Icon(Icons.refresh_rounded, size: 16, color: c.textTertiary),
+                tooltip: 'Regenerate',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: busy ? null : onRecover,
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.thumb_up_alt_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Helpful',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Thanks for the feedback!');
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.thumb_down_alt_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Not helpful',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Feedback recorded');
+                },
               ),
             ],
           ),
-          const SizedBox(height: 6),
         ],
 
-        // Message Body
-        Text(
-          (actionData?['records'] as List? ?? []).isNotEmpty
-              ? (msg.actionType?.startsWith('promises.') == true
-                    ? 'Here are your Promises.'
-                    : 'Here are your Todos. Choose a card below.')
-              : msg.message,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 14.5,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
-            color: messageTextColor,
-            height: 1.5,
-          ),
-        ),
-
-        const SizedBox(height: 5),
-
-        // Micro Timestamp (Minimalist, clean, zero double-tick clutter)
-        Align(
-          alignment: Alignment.bottomRight,
-          child: Text(
+        // Micro Timestamp: revealed on tap or for user bubble
+        if (_showTimestamp) ...[
+          const SizedBox(height: 4),
+          Text(
             timeString,
             style: GoogleFonts.jetBrainsMono(
-              fontSize: 9.5,
+              fontSize: 10,
               color: timestampColor,
             ),
           ),
-        ),
+        ],
       ],
     );
 
-    final Widget mainBubble = isUser
-        ? GlassSurface(
-            borderRadius: borderRadius,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            fillColor: bubbleFill,
-            customBorder: Border.all(color: bubbleBorder, width: 1.1),
-            enableBlur: true,
-            hasShadow: true,
-            child: bubbleContent,
-          )
-        : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: bubbleFill,
-              borderRadius: borderRadius,
-              border: Border.all(color: bubbleBorder, width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    final Widget mainBubble = GestureDetector(
+      onTap: () => setState(() => _showTimestamp = !_showTimestamp),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bubbleFill,
+          borderRadius: borderRadius,
+          border: Border.all(color: bubbleBorder, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? const Color(0x30000000) : const Color(0x0A5C4A3E),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: bubbleContent,
-          );
+          ],
+        ),
+        child: bubbleContent,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: isUser
@@ -1774,16 +1642,16 @@ class _ConversationMessageBubble extends StatelessWidget {
         // Interactive Study Plan Card
         if (!isUser &&
             actionData != null &&
-            (actionData!['type'] == 'study_plan' ||
+            (actionData['type'] == 'study_plan' ||
                 msg.actionType == 'studyPlanCreated'))
-          RiyaStudyPlanCard(planData: actionData!, accentColor: accentColor),
+          RiyaStudyPlanCard(planData: actionData, accentColor: accentColor),
 
         // Interactive Meal Plan Card
         if (!isUser &&
             actionData != null &&
-            (actionData!['type'] == 'meal_plan' ||
+            (actionData['type'] == 'meal_plan' ||
                 msg.actionType == 'mealPlanCreated'))
-          RiyaMealPlanCard(planData: actionData!, accentColor: accentColor),
+          RiyaMealPlanCard(planData: actionData, accentColor: accentColor),
 
         if (!isUser && actionData?['executionStatus'] == 'proposed')
           Padding(
@@ -2050,12 +1918,13 @@ class _ConversationMessageBubble extends StatelessWidget {
                 busy: busy,
               ),
         if (!isUser &&
-            ['tasks', 'promises'].contains(actionData?['entityType']) &&
-            actionData?['entityId'] is int &&
-            (actionData?['records'] as List? ?? []).isEmpty)
+            actionData != null &&
+            ['tasks', 'promises'].contains(actionData['entityType']) &&
+            actionData['entityId'] is int &&
+            (actionData['records'] as List? ?? []).isEmpty)
           RiyaEntityCard(
-            type: actionData!['entityType'] as String,
-            id: actionData!['entityId'] as int,
+            type: actionData['entityType'] as String,
+            id: actionData['entityId'] as int,
             onCommand: onSelectChip,
             busy: busy,
           ),
@@ -2119,11 +1988,11 @@ class _ConversationMessageBubble extends StatelessWidget {
         // Attached Action Confirmation Capsule (Executed Directly)
         if (!isUser &&
             msg.actionType != null &&
-            !['tasks', 'promises'].contains(actionData?['entityType']) &&
-            (actionData?['records'] as List? ?? []).isEmpty &&
             actionData != null &&
-            actionData!['executionStatus'] == 'verified' &&
-            actionData!['title'] != null) ...[
+            !['tasks', 'promises'].contains(actionData['entityType']) &&
+            (actionData['records'] as List? ?? []).isEmpty &&
+            actionData['executionStatus'] == 'verified' &&
+            actionData['title'] != null) ...[
           const SizedBox(height: 6),
           Builder(
             builder: (context) {
@@ -2148,7 +2017,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      actionData?['write'] == true
+                      actionData['write'] == true
                           ? Icons.check_circle_rounded
                           : Icons.info_outline_rounded,
                       size: 15,
@@ -2161,7 +2030,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            actionData!['title'].toString(),
+                            actionData['title'].toString(),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -2172,9 +2041,9 @@ class _ConversationMessageBubble extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (actionData!['summary'] != null)
+                          if (actionData['summary'] != null)
                             Text(
-                              actionData!['summary'].toString(),
+                              actionData['summary'].toString(),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 color: isDark
@@ -2237,74 +2106,44 @@ class _ConversationMessageBubble extends StatelessWidget {
           ),
         ],
 
-        // Clarifying Interactive Quick Action Chips
+        // Subtle contextual follow-up pills (at most 2 on latest message)
         if (!isUser && messageQuickChips.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: messageQuickChips.map((chipText) {
-              return Builder(
-                builder: (context) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        onSelectChip(chipText);
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E2430)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.45),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withValues(alpha: 0.10),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: 12,
-                              color: accentColor,
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                chipText,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFFD0D8F0)
-                                      : const Color(0xFF1A2233),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+            spacing: 8,
+            runSpacing: 8,
+            children: messageQuickChips.take(2).map((chipText) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onSelectChip(chipText);
+                  },
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.surfaceAlt,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: c.border,
+                        width: 1.0,
                       ),
                     ),
-                  );
-                },
+                    child: Text(
+                      chipText,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
               );
             }).toList(),
           ),
@@ -2376,89 +2215,33 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.c;
 
     return Align(
       alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isDark
-                ? g.surface.withValues(alpha: 0.90)
-                : Colors.white.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: g.line.withValues(alpha: isDark ? 0.35 : 0.20),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  final pulse = _pulseController.value;
-                  return Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: widget.accentColor.withValues(
-                        alpha: 0.70 + pulse * 0.30,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.accentColor.withValues(
-                            alpha: 0.35 + pulse * 0.35,
-                          ),
-                          blurRadius: 6 + pulse * 4,
-                          spreadRadius: 1 + pulse * 1.5,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    '${widget.name} is thinking: ${_thinkingSteps[_stepIndex]}',
-                    key: ValueKey(_stepIndex),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: g.inkSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                final delay = i * 0.25;
+                final t = ((_pulseController.value - delay) % 1.0);
+                final alpha = 0.25 + 0.70 * (math.sin(t * math.pi).abs());
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3.5),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.textSecondary.withValues(alpha: alpha),
                   ),
-                ),
-              ),
-            ],
-          ),
+                );
+              }),
+            );
+          },
         ),
       ),
     );
@@ -2487,457 +2270,138 @@ class _SoftChatWelcome extends StatefulWidget {
   State<_SoftChatWelcome> createState() => _SoftChatWelcomeState();
 }
 
-class _SoftChatWelcomeState extends State<_SoftChatWelcome>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _sparkleController;
-
-  @override
-  void initState() {
-    super.initState();
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
-      'Test',
-    );
-    _sparkleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    );
-    if (!isTest) {
-      _sparkleController.repeat(reverse: true);
-    } else {
-      _sparkleController.value = 0.5;
-    }
-  }
-
-  @override
-  void dispose() {
-    _sparkleController.dispose();
-    super.dispose();
-  }
+class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
+  static const _suggestions = [
+    'Plan my day',
+    'Study plan',
+    'Meal plan',
+    "Today's agenda",
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final profile = ref.watch(userProfileStreamProvider).value;
-        final todayFestival = ref.watch(todayFestivalProvider);
-        final userName = profile?.name.isNotEmpty == true
-            ? profile!.name.split(' ').first
-            : 'there';
-        final accent = context.accentPrimary;
+        final c = context.c;
+        final colorScheme = Theme.of(context).colorScheme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               20,
-              MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 20,
               20,
               24,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Soft glowing breathing avatar
-                AnimatedBuilder(
-                  animation: _sparkleController,
-                  builder: (context, child) {
-                    final pulse = _sparkleController.value;
-                    return Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            accent.withValues(alpha: 0.25 + pulse * 0.15),
-                            context.glass.clay.withValues(
-                              alpha: 0.20 + pulse * 0.10,
-                            ),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: accent.withValues(alpha: 0.45 + pulse * 0.25),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(
-                              alpha: isDark
-                                  ? (0.28 + pulse * 0.20)
-                                  : (0.16 + pulse * 0.12),
-                            ),
-                            blurRadius: 22 + pulse * 10,
-                            spreadRadius: 2 + pulse * 3,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.auto_awesome_rounded,
-                          color: accent,
-                          size: 30,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-
-                // Minimal status indicator
+                // Centered sparkle icon in primaryContainer
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: AscentSpacing.xs,
-                  ),
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? context.bgSurface.withValues(alpha: 0.85)
-                        : Colors.white.withValues(alpha: 0.90),
-                    borderRadius: AscentRadii.borderMd,
-                    border: Border.all(
-                      color: isDark ? context.glass.edge : context.divider,
-                      width: 0.8,
-                    ),
+                    shape: BoxShape.circle,
+                    color: colorScheme.primaryContainer,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: context.glass.sage,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '${widget.assistantName} · Always by your side',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 24,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
+                // One line: "How can I help?"
                 Text(
-                  'How can I help you\nascend today?',
+                  'How can I help?',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: context.textPrimary,
-                    letterSpacing: -0.6,
-                    height: 1.25,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: c.textPrimary,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Always by your side, $userName. Direct your thoughts, routines, and growth.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13.5,
-                    color: context.textMuted,
-                    height: 1.4,
-                  ),
-                ),
-                if (todayFestival != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    key: const ValueKey('riya_festive_wish_card'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          todayFestival.accentColor.withValues(
-                            alpha: isDark ? 0.22 : 0.12,
-                          ),
-                          context.glass.clay.withValues(
-                            alpha: isDark ? 0.16 : 0.08,
-                          ),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: todayFestival.accentColor.withValues(
-                          alpha: 0.35,
-                        ),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              todayFestival.emoji,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'Happy ${todayFestival.name}, $userName!',
-                                key: const ValueKey('riya_festive_greeting'),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark
-                                      ? const Color(0xFFFDE68A)
-                                      : const Color(0xFF92400E),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          todayFestival.riyaWish,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : const Color(0xFF78350F),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 24),
 
-                const SizedBox(height: 20),
-
-                // 4 Crisp Contextual Accelerator Cards
+                // At most 4 suggestion tiles (2x2, surfaceAlt, no icons)
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 360;
-                    final cardWidth = isCompact
+                    final cardWidth = constraints.maxWidth < 360
                         ? constraints.maxWidth
                         : (constraints.maxWidth - 10) / 2;
                     return Wrap(
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.bubble_chart_rounded,
-                          title: 'Unload Thought',
-                          subtitle: 'Clear mental clutter to Vault',
-                          prompt: 'Save thought: ',
-                          // Prefill: incomplete — needs user to type the thought
-                          onTap: widget.onPrefill,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.handshake_rounded,
-                          title: 'Sacred Promise',
-                          subtitle: 'Commit with daily check-ins',
-                          prompt: 'Create a promise to ',
-                          // Prefill: incomplete — needs user to describe the promise
-                          onTap: widget.onPrefill,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.coffee_rounded,
-                          title: 'Chai Reset',
-                          subtitle: '5-min mindful reflection',
-                          prompt: 'Start chai break',
-                          onTap: widget.onSelectPrompt,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.medication_rounded,
-                          title: 'Health & Meds',
-                          subtitle: 'Review daily doses & water',
-                          prompt: 'What are my medicines today?',
-                          onTap: widget.onSelectPrompt,
-                        ),
+                        for (final title in _suggestions)
+                          SizedBox(
+                            width: cardWidth,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                key: ValueKey(
+                                  'ai_suggestion_${title.replaceAll(' ', '_')}',
+                                ),
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  widget.onSelectPrompt(title);
+                                },
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? const Color(0x35222630)
+                                        : c.surfaceAlt,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? const Color(0x28FFFFFF)
+                                          : c.border,
+                                      width: 1.0,
+                                    ),
+                                    boxShadow: [
+                                      if (isDark)
+                                        const BoxShadow(
+                                          color: Color(0x20000000),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: c.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   },
                 ),
-
-                const SizedBox(height: 18),
-
-                // Subtle lower suggestions
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    if (todayFestival != null)
-                      '${todayFestival.emoji} ${todayFestival.name} wish',
-                    'Study plan for DSA',
-                    'High protein meal plan',
-                    'Plan my day',
-                    'Log 250ml water',
-                    'What are my tasks today?',
-                  ].map((prompt) {
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          widget.onSelectPrompt(prompt);
-                        },
-                        borderRadius: AscentRadii.borderXl,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? context.bgSurface.withValues(alpha: 0.6)
-                                : Colors.white.withValues(alpha: 0.7),
-                            borderRadius: AscentRadii.borderXl,
-                            border: Border.all(
-                              color: isDark
-                                  ? context.glass.edge
-                                  : context.divider.withValues(alpha: 0.5),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Text(
-                            prompt,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAcceleratorCard({
-    required BuildContext context,
-    required bool isDark,
-    required double width,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String prompt,
-    required ValueChanged<String> onTap,
-  }) {
-    final accent = context.accentPrimary;
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap(prompt);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? context.bgSurface.withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.90),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark ? context.glass.edge : context.divider,
-                width: 1.0,
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
-                  ),
-                  child: Center(child: Icon(icon, color: accent, size: 16)),
-                ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          title,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: context.textMuted,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+          );
+      },
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Warm Aurora Chat Background — Calm, Engaging, Soft
+// Minimal Serene Chat Background — Inspired by ChatGPT & Gemini
 // ---------------------------------------------------------------------------
 
 class _AtmosphericChatBackground extends StatelessWidget {
@@ -2951,70 +2415,23 @@ class _AtmosphericChatBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-
-    // Theme-aware background palette
+    // Theme-aware background palette: Deep smoky charcoal black in Dark, soft warm paper in Light
     final List<Color> gradientColors;
-    final Color aurora1;
-    final Color aurora2;
 
-    if (g.frozen) {
-      gradientColors = isDark
-          ? const [
-              Color(0xFF0B1420), // deep nordic night
-              Color(0xFF0F1C30),
-              Color(0xFF0D1828),
-            ]
-          : const [
-              FrozenPalette.surface,
-              FrozenPalette.canvas,
-              FrozenPalette.elevated,
-            ];
-      aurora1 = isDark
-          ? const Color(0xFF1E3A5F)
-          : FrozenPalette.action.withValues(alpha: 0.08);
-      aurora2 = isDark
-          ? const Color(0xFF0E2A45)
-          : FrozenPalette.action.withValues(alpha: 0.05);
-    } else if (g.merlot) {
-      gradientColors = isDark
-          ? const [
-              Color(0xFF180F14), // deep merlot night
-              Color(0xFF1E1018),
-              Color(0xFF160D12),
-            ]
-          : const [
-              MerlotPalette.canvas,
-              MerlotPalette.surface,
-              MerlotPalette.canvas,
-            ];
-      aurora1 = isDark
-          ? const Color(0xFF3D1828)
-          : MerlotPalette.action.withValues(alpha: 0.07);
-      aurora2 = isDark
-          ? const Color(0xFF2A1020)
-          : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
+    if (isDark) {
+      // Pure refined smoky charcoal black (Zero violet/plum)
+      gradientColors = const [
+        Color(0xFF0E0F12), // deep smoky charcoal black
+        Color(0xFF141519), // charcoal elevation
+        Color(0xFF0F1013), // deep charcoal base
+      ];
     } else {
-      // Default: rich atmospheric fusion of twilight sapphire, amethyst, and warm dusk amber
-      gradientColors = isDark
-          ? const [
-              Color(0xFF090C16), // deep twilight base
-              Color(0xFF101326), // midnight sapphire
-              Color(0xFF140D22), // deep amethyst transition
-              Color(0xFF0B0E19), // grounded nocturnal depth
-            ]
-          : const [
-              Color(0xFFF7F6FD), // soft opalescent white
-              Color(0xFFF2EFFB), // subtle lavender mist
-              Color(0xFFFBF4F2), // warm dawn whisper
-              Color(0xFFF4F6FC), // crystal soft surface
-            ];
-      aurora1 = isDark
-          ? const Color(0xFF381A5A).withValues(alpha: 0.65) // rich glowing amethyst
-          : accentColor.withValues(alpha: 0.08);
-      aurora2 = isDark
-          ? const Color(0xFF15335C).withValues(alpha: 0.55) // luminous oceanic sapphire
-          : const Color(0xFF8672E8).withValues(alpha: 0.06);
+      // Warm Sand base in Light mode
+      gradientColors = const [
+        Color(0xFFFAF6F0), // warm paper Sand base
+        Color(0xFFF3ECE2), // soft warm grouped wash
+        Color(0xFFFAF6F0),
+      ];
     }
 
     return DecoratedBox(
@@ -3025,74 +2442,7 @@ class _AtmosphericChatBackground extends StatelessWidget {
           colors: gradientColors,
         ),
       ),
-      child: AscentAtmosphereBackground(
-        glow1: aurora1,
-        glow2: aurora2,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
-          ],
-        ),
-      ),
+      child: const SizedBox.expand(),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Deterministic Micro Stardust & Pearl Shimmer Painter
-// ---------------------------------------------------------------------------
-
-class _CelestialStardustPainter extends CustomPainter {
-  final bool isDark;
-  const _CelestialStardustPainter({required this.isDark});
-
-  // Deterministic star coordinates so they never flicker or recompute randomly
-  static const _stars = [
-    Offset(0.12, 0.08),
-    Offset(0.28, 0.14),
-    Offset(0.45, 0.06),
-    Offset(0.72, 0.11),
-    Offset(0.88, 0.09),
-    Offset(0.18, 0.22),
-    Offset(0.62, 0.25),
-    Offset(0.82, 0.28),
-    Offset(0.08, 0.35),
-    Offset(0.38, 0.38),
-    Offset(0.76, 0.42),
-    Offset(0.92, 0.46),
-    Offset(0.15, 0.52),
-    Offset(0.52, 0.56),
-    Offset(0.85, 0.60),
-    Offset(0.22, 0.68),
-    Offset(0.68, 0.72),
-    Offset(0.10, 0.76),
-    Offset(0.40, 0.78),
-    Offset(0.80, 0.75),
-    Offset(0.25, 0.62),
-    Offset(0.55, 0.48),
-    Offset(0.90, 0.65),
-    Offset(0.33, 0.45),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    for (int i = 0; i < _stars.length; i++) {
-      final s = _stars[i];
-      final pos = Offset(s.dx * size.width, s.dy * size.height);
-      final radius = (i % 3 == 0) ? 1.4 : (i % 2 == 0 ? 1.0 : 0.7);
-      final alpha = isDark
-          ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
-          : ((i % 4 == 0) ? 0.16 : 0.08);
-
-      paint.color = (isDark ? Colors.white : AscentColors.accentSecondary)
-          .withValues(alpha: alpha);
-      canvas.drawCircle(pos, radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CelestialStardustPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
 }

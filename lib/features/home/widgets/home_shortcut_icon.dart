@@ -52,8 +52,8 @@ class HomeShortcutIcon extends StatelessWidget {
                     ? SharedControlColors.actionBlueDark.withValues(alpha: 0.22)
                     : SharedControlColors.actionBlue.withValues(alpha: 0.14))
                 : (isDark
-                    ? const Color(0xFF1E293B).withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.85))),
+                    ? accentInk.withValues(alpha: 0.12)
+                    : accentInk.withValues(alpha: 0.05))),
         shape: BoxShape.circle,
         border: !framed
             ? null
@@ -63,7 +63,7 @@ class HomeShortcutIcon extends StatelessWidget {
                           ? SharedControlColors.actionBlueDark
                           : SharedControlColors.actionBlue)
                     : (identity != null
-                        ? accentInk.withValues(alpha: isDark ? 0.55 : 0.4)
+                        ? accentInk.withValues(alpha: isDark ? 0.55 : 0.45)
                         : design.separator),
                 width: selected ? 1.5 : 1.1,
               ),
@@ -71,9 +71,9 @@ class HomeShortcutIcon extends StatelessWidget {
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ],
       ),

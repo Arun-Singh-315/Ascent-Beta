@@ -33,6 +33,8 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
     HapticFeedback.lightImpact();
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const _ChaiTaskPickerSheet(),

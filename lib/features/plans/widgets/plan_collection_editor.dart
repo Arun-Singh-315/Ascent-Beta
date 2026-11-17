@@ -13,6 +13,7 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/plan_collection_service.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
 import '../planning_providers.dart';
+import '../screens/plan_creator_screen.dart';
 
 Future<void> showPlanCollectionEditor(
   BuildContext context, {
@@ -23,26 +24,9 @@ Future<void> showPlanCollectionEditor(
   PlanItemView? editing,
   List<PlanItemView>? scheduling,
   bool dailyTimes = false,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  backgroundColor: Colors.transparent,
-  builder: (ctx) => Container(
-    decoration: BoxDecoration(
-      color: ctx.bgSurfaceElevated,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      border: Border.all(color: ctx.glass.line),
-    ),
-    child: PlanCollectionEditor(
-      source: source,
-      initialText: initialText,
-      collectionId: collectionId,
-      draftKey: draftKey,
-      editing: editing,
-      scheduling: scheduling,
-      dailyTimes: dailyTimes,
-    ),
+}) => Navigator.of(context, rootNavigator: true).push<void>(
+  MaterialPageRoute(
+    builder: (_) => const PlanCreatorScreen(),
   ),
 );
 
@@ -336,6 +320,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final item = _items[index];
     final result = await showModalBottomSheet<PlanItemDraft>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -367,7 +352,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final current = item.minutes;
     final result = await showModalBottomSheet<int?>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(AppSpace.s20),
@@ -669,6 +656,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     if (start == null || !mounted) return;
     final result = await showModalBottomSheet<_Defaults>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
@@ -691,6 +679,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final g = context.glass;
     final text = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

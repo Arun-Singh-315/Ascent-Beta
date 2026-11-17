@@ -11,6 +11,7 @@ import 'island_surface.dart';
 Future<void> showIslandCustomization(BuildContext context) =>
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,

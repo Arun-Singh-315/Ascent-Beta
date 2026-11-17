@@ -19,15 +19,15 @@ class HomeDesign extends ThemeExtension<HomeDesign> {
 
   Color _tone(int day, int night) =>
       Color.lerp(Color(day), Color(night), darkness)!;
-  Color get canvas => _tone(0xFFFFFFFF, 0xFF111418);
-  Color get surface => _tone(0xFFFFFFFF, 0xFF111418);
-  Color get elevated => _tone(0xFFFFFFFF, 0xFF1C2027);
-  Color get primaryText => _tone(0xFF101318, 0xFFF1F3F7);
-  Color get secondaryText => _tone(0xFF657080, 0xFFA9B1BF);
-  Color get tertiaryText => _tone(0xFF6B7B8B, 0xFF8CA0B5);
-  Color get separator => _tone(0xFFD9E1E8, 0xFF34465A);
-  Color get controlOutline => _tone(0xFF7A8998, 0xFF829AB2);
-  Color get groupedFill => _tone(0xFFE8EDF2, 0xFF26384B);
+  Color get canvas => _tone(0xFFF1F4F8, 0xFF0B0F15);
+  Color get surface => _tone(0xFFFFFFFF, 0xFF131922);
+  Color get elevated => _tone(0xFFE8EEF5, 0xFF1A222E);
+  Color get primaryText => _tone(0xFF0F172A, 0xFFF1F5F9);
+  Color get secondaryText => _tone(0xFF475569, 0xFF94A3B8);
+  Color get tertiaryText => _tone(0xFF64748B, 0xFF64748B);
+  Color get separator => _tone(0xFFD6DFE8, 0xFF222C3A);
+  Color get controlOutline => _tone(0xFFD6DFE8, 0xFF222C3A);
+  Color get groupedFill => _tone(0xFFE8EEF5, 0xFF1A222E);
   Color get heroStart => canvas;
   Color get heroEnd => canvas;
   Color get workTint => _tone(0xFFEAF2FD, 0xFF203A53);

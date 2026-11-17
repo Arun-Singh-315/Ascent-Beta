@@ -1,5 +1,4 @@
-import '../../app/theme/home_design.dart';
-import 'widgets/home_section_heading.dart';
+import '../../core/theme/app_colors.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
 import 'widgets/home_content_transition.dart';
@@ -13,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -30,8 +28,8 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
+import 'widgets/home_assistant_hero_card.dart';
 import 'widgets/home_compact_header.dart';
-import 'widgets/home_calendar.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
@@ -193,8 +191,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-
     final profileAsync = ref.watch(userProfileStreamProvider);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _updateCompactHeader();
@@ -217,8 +213,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       }
     });
 
+    final c = context.c;
+
     return Scaffold(
-      backgroundColor: g.bg,
+      backgroundColor: c.bg,
+      extendBody: true,
       body: SafeArea(
         child: HomeDayBackground(
           child: Stack(
@@ -277,103 +276,73 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ref.invalidate(allRemindersProvider);
                         ref.invalidate(dismissedTodayReminderIdsProvider);
                       },
-                      color: g.clay,
+                      color: c.accent,
                       child: ListView(
                         key: const ValueKey('home_scroll'),
                         controller: _homeScroll,
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          bottom: AppSpace.s96,
-                        ),
+                        padding: EdgeInsets.zero,
                         children: [
-                          HomeHeader(key: _headerKey, profile: profile),
+                          // 1. HomeHeader (keeps header spacious by setting includeAssistant: false)
+                          HomeHeader(
+                            key: _headerKey,
+                            profile: profile,
+                            includeAssistant: false,
+                          ),
                           const SizedBox(height: 12),
-                          Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
-                              0,
-                              MediaQuery.sizeOf(context).width < 360 ? 16 : 20,
-                              16,
-                            ),
-                            child: HomeShortcutPanel(
-                              shortcuts: layout.shortcuts,
-                              showReminders: layout.visible.contains(
-                                'reminders',
-                              ),
-                            ),
+
+                          // 2. Gemini-illuminated AI Gateway (Ask Riya Hero Card)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: HomeAssistantHeroCard(),
                           ),
-                          Padding(
-                            padding: _sectionPadding(context),
-                            child: HomeCalendar(),
+                          const SizedBox(height: 14),
+
+                          // 3. Your space shortcuts row
+                          HomeShortcutPanel(
+                            shortcuts: layout.shortcuts,
+                            showReminders: layout.visible.contains('reminders'),
                           ),
-                          if (layout.visible.contains('today'))
-                            Padding(
-                              padding: _sectionPadding(context),
-                              child: ActivityHubCard(
-                                previewLimit: layout.compact.contains('today')
-                                    ? 3
-                                    : 6,
-                              ),
-                            ),
+
+                          // 3. Thought Wall SectionCard — The heart of Home screen
                           if (layout.visible.contains('mind'))
-                            Padding(
-                              padding: _sectionPadding(context),
-                              child: ThoughtWallHomePreview(
-                                previewLimit: 1,
-                                compact: true,
-                              ),
+                            const ThoughtWallHomePreview(
+                              previewLimit: 1,
+                              compact: true,
                             ),
-                          if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              child: HomeLifeShelf(),
+
+                          // 4. Things SectionCard — Activity Hub
+                          if (layout.visible.contains('today'))
+                            ActivityHubCard(
+                              previewLimit: layout.compact.contains('today') ? 3 : 6,
                             ),
-                          Padding(
-                            padding: _sectionPadding(context),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                HomeSectionHeading(
-                                  title: 'Plans & Routines',
-                                  dotColor: HomeDesign.of(context).learningInk,
-                                  titleColor: HomeDesign.of(
-                                    context,
-                                  ).learningInk,
-                                  trailing: HomeSectionArrowButton(
-                                    tooltip: 'Open all plans',
-                                    framed: false,
-                                    color: HomeDesign.of(context).learningInk,
-                                    onTap: () => context.push('/plans'),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                const HomePlansPreview(
-                                  key: ValueKey('home_plans_big_card'),
-                                ),
-                              ],
-                            ),
+
+                          // 5. Daily rhythm SectionCard
+                          if (layout.visible.contains('life') && layout.tools.isNotEmpty)
+                            const HomeLifeShelf(),
+
+                          // 6. Plans & Routines SectionCard
+                          const HomePlansPreview(
+                            key: ValueKey('home_plans_big_card'),
                           ),
+
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
                           ),
-                          ..._buildContextualModules(context, layout).map(
-                            (module) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
+
+                          for (final module in _buildContextualModules(context, layout))
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: module,
                             ),
-                          ),
+
                           if (_entryDialogsReady &&
                               ref
                                       .read(sharedPreferencesProvider)
                                       .getString('ascent_first_home_day_v1') !=
                                   ref.watch(localDayProvider).toIso8601String())
                             const SmartCatchUpBanner(),
+
                           if (layout.visible.isEmpty)
                             EmptyState(
                               icon: Icons.dashboard_customize_outlined,
@@ -382,6 +351,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               actionLabel: 'Open tools',
                               onAction: () => context.push('/more'),
                             ),
+
+                          // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
+                          SizedBox(
+                            height:
+                                64 + MediaQuery.paddingOf(context).bottom + 16,
+                          ),
                         ],
                       ),
                     );
@@ -439,18 +414,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     );
   }
 
-  EdgeInsets _sectionPadding(BuildContext context) {
-    final margin = MediaQuery.sizeOf(context).width < 360 ? 16.0 : 20.0;
-    return EdgeInsets.fromLTRB(margin, 0, margin, 24);
-  }
-
   List<Widget> _buildContextualModules(
     BuildContext context,
     HomeLayout layout,
   ) {
     final modules = <Widget>[];
     Widget spaced(Widget child) => Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 12),
       child: HomeContentTransition(child: child),
     );
     if (!_heavierModulesReady) return modules;

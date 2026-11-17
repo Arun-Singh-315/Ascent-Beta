@@ -1,6 +1,7 @@
 import '../promises/promise_composer.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/note_list_button.dart';
+import '../../shared/utils/smart_list_input_formatter.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -59,7 +60,13 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
 
     return showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: 600,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
+      ),
       backgroundColor: AppPalette.transparent,
       builder: (_) => DropThoughtSheet(
         initialPrompt: initialPrompt,
@@ -313,7 +320,9 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
             top: AppSpace.s20,
             left: AppSpace.s20,
             right: AppSpace.s20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpace.s24,
+            bottom: MediaQuery.of(context).viewInsets.bottom +
+                MediaQuery.paddingOf(context).bottom +
+                AppSpace.s24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -459,6 +468,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                 autofocus: true,
                 readOnly: false,
                 maxLines: 4,
+                inputFormatters: const [SmartListInputFormatter()],
                 style: AscentTextStyles.bodyMedium.copyWith(
                   color: context.textPrimary,
                   height: 1.4,
@@ -470,11 +480,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                     color: context.textMuted.withValues(alpha: 0.7),
                   ),
                   filled: true,
-                  fillColor: context.bgBase,
+                  fillColor: context.glass.fill,
                   contentPadding: const EdgeInsets.all(AppSpace.s14),
                   border: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr14,
-                    borderSide: BorderSide(color: context.divider),
+                    borderSide: BorderSide(color: context.glass.line),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: AppGeometry.roundedr14,

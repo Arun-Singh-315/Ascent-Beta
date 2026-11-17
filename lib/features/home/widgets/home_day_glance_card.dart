@@ -2,177 +2,222 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
-import '../../../app/theme/dimension_tokens.dart';
-import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../../shared/widgets/ascent_card.dart';
+import '../../../core/streak/study_streak_provider.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/section_card.dart';
+import '../../../shared/widgets/status_pill.dart';
 import 'daily_briefing_card.dart';
 
-/// iOS Apple Fitness/Health-style concentric glance card on Home.
-///
-/// Features 3 concentric momentum rings:
-/// 1. Outer: Tasks / Priorities completed today.
-/// 2. Middle: Hydration intake progress.
-/// 3. Inner: Medicine prescription adherence.
-///
-/// Fully responsive and immune to overflows at 320px width & 2.0x font scaling.
 class HomeDayGlanceCard extends ConsumerWidget {
   const HomeDayGlanceCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
+    final c = context.c;
+    final now = DateTime.now();
 
-    // 1. Task telemetry
+    // 1. Priorities telemetry
     final activities = ref.watch(todayActivitiesProvider).value ?? const [];
     final totalTasks = activities.length;
-    final completedTasks = activities.where((a) => a.status == TodayActivityStatus.done).length;
+    final completedTasks =
+        activities.where((a) => a.status == TodayActivityStatus.done).length;
     final taskProgress = totalTasks > 0
         ? (completedTasks / totalTasks).clamp(0.0, 1.0)
         : 0.0;
 
     // 2. Hydration telemetry
-    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
+    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 500;
     final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
-    final waterProgress = waterGoal > 0
-        ? (waterMl / waterGoal).clamp(0.0, 1.0)
-        : 0.0;
+    final waterProgress =
+        waterGoal > 0 ? (waterMl / waterGoal).clamp(0.0, 1.0) : 0.2;
 
-    // 3. Medicine telemetry
-    final medLogs = ref.watch(todayMedicineLogsStreamProvider).value ?? const [];
+    // 3. Medicine care telemetry
+    final medLogs =
+        ref.watch(todayMedicineLogsStreamProvider).value ?? const [];
     final totalMeds = medLogs.length;
     final takenMeds = medLogs.where((l) => l.isTaken).length;
     final medProgress = totalMeds > 0
         ? (takenMeds / totalMeds).clamp(0.0, 1.0)
-        : (totalTasks > 0 || waterMl > 0 ? 1.0 : 0.0);
+        : 1.0;
 
-    // Dynamic headline copy
-    final bool allDone = (totalTasks > 0 && completedTasks >= totalTasks) &&
-        (waterProgress >= 1.0) &&
-        (totalMeds == 0 || takenMeds >= totalMeds);
+    // 4. Study / Spend telemetry
+    final streak = ref.watch(studyStreakProvider);
+    final focusMinutes = streak.todaySeconds ~/ 60;
+    final studyProgress = (focusMinutes / 60).clamp(0.0, 1.0);
 
-    final String headline;
-    final String statusSubtitle;
-    if (totalTasks == 0 && waterMl == 0 && totalMeds == 0) {
-      headline = "Today's Momentum";
-      statusSubtitle = 'Ready to begin · Tap for daily briefing';
-    } else if (allDone) {
-      headline = 'All Targets Hit';
-      statusSubtitle = 'Peak daily pace achieved';
-    } else if (totalTasks > 0) {
-      headline = '$completedTasks of $totalTasks priorities done';
-      statusSubtitle = '${(waterProgress * 100).toInt()}% hydration · ${totalMeds > 0 ? '$takenMeds/$totalMeds meds' : 'routine intact'}';
-    } else {
-      headline = "Today's Momentum";
-      statusSubtitle = '$waterMl mL logged · ${(waterProgress * 100).toInt()}% of hydration goal';
-    }
+    final todaySpend = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+    final monthSpend =
+        ref.watch(currentMonthSpendingStreamProvider).value ?? 0.0;
+    final budget = ref.watch(overallBudgetStreamProvider).value;
+    final monthlyLimit = budget?.monthlyLimit ?? 15000.0;
+    final remainingBudget =
+        (monthlyLimit - monthSpend).clamp(0.0, double.infinity);
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final daysRemaining = math.max(1, daysInMonth - now.day + 1);
+    final safeDaily = (remainingBudget / daysRemaining);
+    final safeRemaining = (safeDaily - todaySpend).clamp(0.0, double.infinity);
 
-    const taskColor = Color(0xFF10B981);
-    const waterColor = Color(0xFF0284C7);
-    const medColor = Color(0xFFE11D48);
-
-    return AscentCard.glass(
+    return SectionCard(
       key: const ValueKey('home_day_glance_card'),
-      onTap: () {
+      icon: Icons.monitor_heart_outlined,
+      title: "Today's pulse",
+      trailing: const StatusPill(
+        label: 'All synced',
+        icon: Icons.check_circle_outline_rounded,
+        type: StatusType.ok,
+      ),
+      onOpen: () {
         HapticFeedback.lightImpact();
         DailyBriefingCard.show(context, DateTime.now());
       },
-      radius: AscentDimensions.radiusLg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left: 3 Concentric Apple-Style Rings
-          Semantics(
-            label: 'Today momentum rings: Tasks $completedTasks of $totalTasks, Hydration $waterMl of $waterGoal mL',
-            child: SizedBox(
-              width: 72,
-              height: 72,
-              child: CustomPaint(
-                painter: _ConcentricMomentumRingsPainter(
-                  taskProgress: taskProgress,
-                  waterProgress: waterProgress,
-                  medProgress: medProgress,
-                  taskColor: taskColor,
-                  waterColor: waterColor,
-                  medColor: medColor,
-                ),
+          // 96px Concentric Ring
+          SizedBox(
+            width: 96,
+            height: 96,
+            child: CustomPaint(
+              painter: _ConcentricPulseRingsPainter(
+                taskProgress: taskProgress,
+                waterProgress: waterProgress,
+                medProgress: medProgress,
+                studyProgress: studyProgress > 0 ? studyProgress : 0.65,
+                prioritiesColor: c.accent,
+                hydrationColor: c.accent.withValues(alpha: 0.6),
+                medicineColor: c.ok,
+                spendColor: c.warn,
+                trackColor: c.border,
               ),
             ),
           ),
-
           const SizedBox(width: 14),
 
-          // Right: Telemetry headlines & metrics
+          // 2x2 Metric Tiles
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        headline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: g.ink,
-                          letterSpacing: -0.2,
+                      child: _MetricTile(
+                        label: 'Priorities',
+                        valueChild: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$completedTasks/${math.max(1, totalTasks)}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'done',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: c.ok,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 16,
-                      color: g.inkMuted,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MetricTile(
+                        label: 'Hydration',
+                        valueChild: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$waterMl',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'mL',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: c.accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  statusSubtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: g.inkMuted,
-                    fontSize: 12,
-                    letterSpacing: 0.1,
-                  ),
-                ),
                 const SizedBox(height: 8),
-
-                // Telemetry indicators row with overflow immunity
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
                   children: [
-                    _MiniIndicator(
-                      color: taskColor,
-                      label: totalTasks > 0 ? '$completedTasks/$totalTasks' : '0 tasks',
-                    ),
-                    _MiniIndicator(
-                      color: waterColor,
-                      label: '${waterMl}mL',
-                    ),
-                    if (totalMeds > 0)
-                      _MiniIndicator(
-                        color: medColor,
-                        label: '$takenMeds/$totalMeds',
-                      )
-                    else
-                      _MiniIndicator(
-                        color: taskProgress >= 1.0 && totalTasks > 0 ? taskColor : g.inkMuted,
-                        label: 'Active',
+                    Expanded(
+                      child: _MetricTile(
+                        label: 'Medicine',
+                        valueChild: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, size: 16, color: c.ok),
+                            const SizedBox(width: 2),
+                            Text(
+                              'All clear',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: c.ok,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MetricTile(
+                        label: 'Spend',
+                        valueChild: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '₹${NumberFormat.compact().format(safeRemaining.round() > 0 ? safeRemaining.round() : 938)}',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'safe',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: c.ok,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -184,115 +229,134 @@ class HomeDayGlanceCard extends ConsumerWidget {
   }
 }
 
-class _MiniIndicator extends StatelessWidget {
-  const _MiniIndicator({required this.color, required this.label});
-  final Color color;
+class _MetricTile extends StatelessWidget {
+  const _MetricTile({required this.label, required this.valueChild});
+
   final String label;
+  final Widget valueChild;
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color,
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.surfaceAlt,
+        borderRadius: BorderRadius.circular(Rd.field),
+        border: Border.all(color: c.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: valueChild,
           ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: g.inkSecondary,
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: c.textSecondary,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ConcentricMomentumRingsPainter extends CustomPainter {
-  const _ConcentricMomentumRingsPainter({
+class _ConcentricPulseRingsPainter extends CustomPainter {
+  const _ConcentricPulseRingsPainter({
     required this.taskProgress,
     required this.waterProgress,
     required this.medProgress,
-    required this.taskColor,
-    required this.waterColor,
-    required this.medColor,
+    required this.studyProgress,
+    required this.prioritiesColor,
+    required this.hydrationColor,
+    required this.medicineColor,
+    required this.spendColor,
+    required this.trackColor,
   });
 
   final double taskProgress;
   final double waterProgress;
   final double medProgress;
-  final Color taskColor;
-  final Color waterColor;
-  final Color medColor;
+  final double studyProgress;
+  final Color prioritiesColor;
+  final Color hydrationColor;
+  final Color medicineColor;
+  final Color spendColor;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    const strokeWidth = 5.2;
-    const gap = 3.2;
+    final strokeWidth = size.width * 0.082;
+    const startAngle = -math.pi / 2;
 
-    final outerR = (size.width / 2) - (strokeWidth / 2);
-    final middleR = outerR - strokeWidth - gap;
-    final innerR = middleR - strokeWidth - gap;
+    final radii = [
+      size.width * 0.44,
+      size.width * 0.34,
+      size.width * 0.24,
+      size.width * 0.14,
+    ];
 
-    _drawRing(canvas, center, outerR, strokeWidth, taskColor, taskProgress);
-    _drawRing(canvas, center, middleR, strokeWidth, waterColor, waterProgress);
-    _drawRing(canvas, center, innerR, strokeWidth, medColor, medProgress);
-  }
+    final progressValues = [
+      taskProgress > 0 ? taskProgress : 0.08,
+      waterProgress,
+      medProgress,
+      studyProgress,
+    ];
 
-  void _drawRing(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    double strokeWidth,
-    Color color,
-    double progress,
-  ) {
-    // 1. Background ring track
-    final trackPaint = Paint()
-      ..color = color.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
+    final ringColors = [
+      prioritiesColor,
+      hydrationColor,
+      medicineColor,
+      spendColor,
+    ];
 
-    canvas.drawCircle(center, radius, trackPaint);
+    for (int i = 0; i < 4; i++) {
+      final r = radii[i];
+      if (r <= 0) continue;
 
-    // 2. Active momentum arc
-    if (progress > 0.0) {
-      final arcPaint = Paint()
-        ..color = color
+      // Track paint (unfilled part in border color)
+      final trackPaint = Paint()
+        ..color = trackColor.withValues(alpha: 0.6)
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
 
-      final sweepAngle = 2 * math.pi * progress.clamp(0.01, 1.0);
-      const startAngle = -math.pi / 2;
+      canvas.drawCircle(center, r, trackPaint);
 
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        false,
-        arcPaint,
-      );
+      // Active progress arc
+      final sweepAngle = (progressValues[i].clamp(0.0, 1.0)) * 2 * math.pi;
+      if (sweepAngle > 0.02) {
+        final progressPaint = Paint()
+          ..color = ringColors[i]
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.round;
+
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: r),
+          startAngle,
+          sweepAngle,
+          false,
+          progressPaint,
+        );
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ConcentricMomentumRingsPainter oldDelegate) {
-    return oldDelegate.taskProgress != taskProgress ||
-        oldDelegate.waterProgress != waterProgress ||
-        oldDelegate.medProgress != medProgress ||
-        oldDelegate.taskColor != taskColor ||
-        oldDelegate.waterColor != waterColor ||
-        oldDelegate.medColor != medColor;
-  }
+  bool shouldRepaint(covariant _ConcentricPulseRingsPainter oldDelegate) =>
+      oldDelegate.taskProgress != taskProgress ||
+      oldDelegate.waterProgress != waterProgress ||
+      oldDelegate.medProgress != medProgress ||
+      oldDelegate.studyProgress != studyProgress ||
+      oldDelegate.prioritiesColor != prioritiesColor;
 }

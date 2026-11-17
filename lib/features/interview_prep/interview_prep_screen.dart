@@ -75,6 +75,8 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
 
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -373,6 +375,8 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
   void _openAddEditDialog([InterviewPrep? existing]) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
@@ -982,6 +986,8 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
   void _confirmDeleteQuestion(int id) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),

@@ -20,6 +20,7 @@ class StudyStreakMeterCard extends StatelessWidget {
   void _showExplanation(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

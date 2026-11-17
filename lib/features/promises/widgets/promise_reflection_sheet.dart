@@ -16,6 +16,7 @@ class PromiseReflectionSheet extends ConsumerStatefulWidget {
   static Future<void> show(BuildContext context, PromiseModel promise) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,

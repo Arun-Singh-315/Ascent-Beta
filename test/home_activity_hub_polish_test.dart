@@ -5,7 +5,7 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
+import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
@@ -62,19 +62,21 @@ void main() {
           child: MaterialApp(
             theme: AscentTheme.light(),
             home: const Scaffold(
-              body: HomeHeader(profile: null),
+              body: SingleChildScrollView(
+                child: HomeShortcutPanel(),
+              ),
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.byKey(const ValueKey('home_assistant_button'));
+      final buttonFinder = find.byKey(const ValueKey('shortcut_assistant'));
       expect(buttonFinder, findsOneWidget);
 
       final button = tester.widget<InkWell>(buttonFinder);
       expect(button.onTap, isNotNull);
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
     });
 
     testWidgets('Ask Riya button in dark theme maintains high contrast with blue outline and blue tint', (tester) async {
@@ -84,19 +86,21 @@ void main() {
           child: MaterialApp(
             theme: AscentTheme.dark(),
             home: const Scaffold(
-              body: HomeHeader(profile: null),
+              body: SingleChildScrollView(
+                child: HomeShortcutPanel(),
+              ),
             ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.byKey(const ValueKey('home_assistant_button'));
+      final buttonFinder = find.byKey(const ValueKey('shortcut_assistant'));
       expect(buttonFinder, findsOneWidget);
 
       final button = tester.widget<InkWell>(buttonFinder);
       expect(button.onTap, isNotNull);
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
     });
   });
 
@@ -328,8 +332,11 @@ void main() {
       await tester.drag(dismissibleFinder, const Offset(-500, 0));
       await tester.pumpAndSettle();
 
-      if (find.text('Delete').evaluate().isNotEmpty) {
-        await tester.tap(find.text('Delete'));
+      final confirmBtn = find.text('Archive').evaluate().isNotEmpty
+          ? find.text('Archive').last
+          : find.text('Delete');
+      if (confirmBtn.evaluate().isNotEmpty) {
+        await tester.tap(confirmBtn);
         await tester.pumpAndSettle();
       }
 

@@ -29,6 +29,8 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
   void _openAddProblemSheet(BuildContext context, [DsaLog? existing]) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(

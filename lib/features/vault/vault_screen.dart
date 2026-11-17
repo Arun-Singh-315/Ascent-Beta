@@ -198,11 +198,11 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
           child: items.isEmpty
               ? _buildEmptyState(context, g, selectedCategory)
               : ListView.builder(
-                  padding: const EdgeInsets.only(
+                  padding: EdgeInsets.only(
                     left: AppSpace.s16,
                     right: AppSpace.s16,
                     top: AppSpace.s8,
-                    bottom: 88, // padding for FAB
+                    bottom: 100 + MediaQuery.paddingOf(context).bottom, // padding for nav & FAB
                   ),
                   itemCount: items.length,
                   itemBuilder: (ctx, index) {

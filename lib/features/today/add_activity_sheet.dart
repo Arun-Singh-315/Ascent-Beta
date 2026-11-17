@@ -1,4 +1,3 @@
-import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/ascent_star_button.dart';
 import '../../shared/widgets/schedule_picker.dart';
 import '../../shared/widgets/note_list_button.dart';
@@ -32,6 +31,8 @@ import '../plans/widgets/plan_protection_dialog.dart';
 import '../plans/widgets/plan_detail_sheet.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 
+import 'screens/add_activity_screen.dart';
+
 class AddActivitySheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final Task? existingTask;
@@ -64,17 +65,17 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     int? parentTaskId,
     int? prefilledApplicationId,
   }) async {
-    await showAscentSheet<void>(
-      context: context,
-      builder: (ctx) => AddActivitySheet(
-        existingTask: existingTask,
-        initialDate: initialDate,
-        initialTitle: initialTitle,
-        initialKind: initialKind,
-        initialDurationMinutes: initialDurationMinutes,
-        parentTaskId: parentTaskId,
-        prefilledApplicationId: prefilledApplicationId,
-        isDialog: true,
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(
+        builder: (_) => AddActivityScreen(
+          existingTask: existingTask,
+          initialDate: initialDate,
+          initialTitle: initialTitle,
+          initialKind: initialKind,
+          initialDurationMinutes: initialDurationMinutes,
+          parentTaskId: parentTaskId,
+          prefilledApplicationId: prefilledApplicationId,
+        ),
       ),
     );
   }
@@ -355,11 +356,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               AppSpace.s20,
               AppSpace.s16,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            child: Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // Sheet Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1019,6 +1022,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 ],
               ),
             ),
+          ),
           ),
         ),
       ),

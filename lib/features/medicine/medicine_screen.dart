@@ -92,6 +92,24 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     }
   }
 
+  Future<void> _snoozeDose(MedicineLog log, Duration duration) async {
+    try {
+      await ref.read(medicineServiceProvider).snoozeDose(log.id, duration: duration);
+      HapticFeedback.lightImpact();
+      if (mounted) {
+        AscentSnackBar.show(
+          context,
+          message: 'Dose snoozed for ${duration.inMinutes} minutes',
+          icon: Icons.snooze_rounded,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not snooze dose.');
+      }
+    }
+  }
+
   Future<void> _delete(Medicine medicine) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -167,14 +185,29 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     final taken = logs.where((log) => log.isTaken).length;
     final now = DateTime.now();
     final currentTime = DateFormat('HH:mm').format(now);
+    final overdueCount = logs
+        .where((log) => !log.isTaken && log.timeSlot.compareTo(currentTime) < 0)
+        .length;
     final next = logs
         .where(
           (log) => !log.isTaken && log.timeSlot.compareTo(currentTime) >= 0,
         )
         .firstOrNull;
+
+    final String heroTitle;
+    if (!hasMedicines) {
+      heroTitle = 'Your Care\nCompanion';
+    } else if (taken == logs.length && logs.isNotEmpty) {
+      heroTitle = 'All caught up!\nRest well 🌿';
+    } else if (overdueCount > 0) {
+      heroTitle = 'A dose is\nwaiting for you';
+    } else {
+      heroTitle = 'One dose\nat a time.';
+    }
+
     return CareHero(
       eyebrow: DateFormat('EEEE, MMM d').format(now),
-      title: 'One dose\nat a time.',
+      title: heroTitle,
       child: hasMedicines
           ? Container(
               padding: const EdgeInsets.all(16),
@@ -224,6 +257,32 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                       ),
                     ],
                   ),
+                  if (overdueCount > 0) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: g.coral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 14, color: g.coral),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '$overdueCount pending dose${overdueCount == 1 ? '' : 's'} past scheduled time',
+                              style: TextStyle(
+                                color: g.coral,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   if (next != null) ...[
                     const SizedBox(height: 14),
                     Text(
@@ -274,6 +333,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     final now = DateTime.now();
     final currentTime = DateFormat('HH:mm').format(now);
     final isFuture = !log.isTaken && log.timeSlot.compareTo(currentTime) > 0;
+    final isOverdue = !log.isTaken && log.timeSlot.compareTo(currentTime) < 0;
 
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,32 +354,52 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         ),
       ],
     );
-    final action = isFuture
-        ? GlassChip(
-            label: 'Scheduled',
-            icon: Icons.lock_outline_rounded,
-            tooltip:
+    final Widget action;
+    if (isFuture) {
+      action = GlassChip(
+        label: 'Scheduled',
+        icon: Icons.lock_outline_rounded,
+        tooltip:
+            'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
+        onTap: () {
+          HapticFeedback.lightImpact();
+          AscentSnackBar.show(
+            context,
+            message:
                 'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
-            onTap: () {
-              HapticFeedback.lightImpact();
-              AscentSnackBar.show(
-                context,
-                message:
-                    'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
-                icon: Icons.schedule_rounded,
-              );
-            },
-          )
-        : GlassChip(
-            label: _updating.contains(log.id)
-                ? 'Saving…'
-                : log.isTaken
-                ? 'Taken'
-                : 'Take',
-            tooltip: log.isTaken ? 'Undo taken dose' : 'Mark taken',
-            success: log.isTaken,
-            onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
+            icon: Icons.schedule_rounded,
           );
+        },
+      );
+    } else if (log.isTaken) {
+      action = GlassChip(
+        label: _updating.contains(log.id) ? 'Saving…' : 'Taken',
+        tooltip: 'Undo taken dose',
+        success: true,
+        onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
+      );
+    } else {
+      action = Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (isOverdue)
+            GlassChip(
+              label: 'Snooze 30m',
+              icon: Icons.snooze_rounded,
+              tooltip: 'Push reminder 30 minutes forward',
+              onTap: () => _snoozeDose(log, const Duration(minutes: 30)),
+            ),
+          GlassChip(
+            label: _updating.contains(log.id) ? 'Saving…' : 'Take',
+            tooltip: 'Mark taken',
+            success: false,
+            onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
+          ),
+        ],
+      );
+    }
     return Container(
       key: ValueKey('medicine_dose_${log.id}'),
       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -331,8 +411,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < 300 ||
-                  MediaQuery.textScalerOf(context).scale(14) > 18) {
+              if (constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 16 ||
+                  isOverdue) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [details, const SizedBox(height: 10), action],
@@ -478,6 +559,63 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               color: g.actionInk,
               backgroundColor: g.track,
             ),
+            if (medicine.isActive && medicine.durationDays - day <= 3 && medicine.durationDays - day >= 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: g.amberSoft.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: g.amber.withValues(alpha: 0.3), width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.inventory_2_outlined, size: 16, color: g.amber),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            medicine.durationDays - day == 0
+                                ? 'Course finishes today · Refill if continued'
+                                : '${medicine.durationDays - day} days left · Refill soon',
+                            style: TextStyle(
+                              color: g.ink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    AscentButton.outlined(
+                      label: 'Set Refill Reminder',
+                      icon: Icons.alarm_add_rounded,
+                      compact: true,
+                      expanded: false,
+                      onPressed: () async {
+                        try {
+                          await ref.read(medicineServiceProvider).scheduleRefillReminder(medicine);
+                          if (context.mounted) {
+                            AscentSnackBar.show(
+                              context,
+                              message: 'Refill reminder scheduled for ${medicine.name}',
+                              icon: Icons.notifications_active_rounded,
+                            );
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            AscentSnackBar.error(context, message: 'Could not schedule refill reminder');
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,

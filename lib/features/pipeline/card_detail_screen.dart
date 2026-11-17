@@ -41,6 +41,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
   void _confirmDelete(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
@@ -149,6 +151,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
+                  useRootNavigator: true,
+                  useSafeArea: true,
                   isScrollControlled: true,
                   backgroundColor: context.bgSurface,
                   shape: const RoundedRectangleBorder(

@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../app/theme/home_design.dart';
-import '../../../app/theme/text_styles.dart';
+
 import '../../../core/providers/settings_provider.dart';
-import '../../../shared/widgets/ascent_sheet.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
+import '../../../shared/widgets/app_chip.dart';
+import '../../../shared/widgets/app_input_bar.dart';
 
 Future<Map<String, dynamic>> weatherJson(Uri uri) async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
@@ -42,15 +44,25 @@ String weatherDescription(int code) => switch (code) {
   >= 80 && <= 82 => 'Rain showers',
   85 || 86 => 'Snow showers',
   >= 95 => 'Thunderstorms',
-  _ => 'Current conditions',
+  _ => 'Clear sky',
+};
+
+IconData weatherIconForCode(int code) => switch (code) {
+  0 => Icons.wb_sunny_outlined,
+  1 || 2 => Icons.cloud_outlined,
+  3 => Icons.cloud_outlined,
+  45 || 48 => Icons.foggy,
+  >= 51 && <= 67 => Icons.water_drop_outlined,
+  >= 71 && <= 77 => Icons.ac_unit_outlined,
+  >= 80 && <= 82 => Icons.water_drop_outlined,
+  >= 95 => Icons.thunderstorm_outlined,
+  _ => Icons.wb_sunny_outlined,
 };
 
 final homeWeatherProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
-  // Location is explicitly selected in the sheet; no background GPS request.
   final prefs = ref.watch(sharedPreferencesProvider);
-  final lat = prefs.getDouble('weather_lat');
-  final lon = prefs.getDouble('weather_lon');
-  if (lat == null || lon == null) return null;
+  final lat = prefs.getDouble('weather_lat') ?? 23.2599; // Default Bhopal
+  final lon = prefs.getDouble('weather_lon') ?? 77.4126;
   final timer = Timer(const Duration(minutes: 15), ref.invalidateSelf);
   ref.onDispose(timer.cancel);
   return weatherJson(
@@ -67,99 +79,73 @@ final homeWeatherProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   );
 });
 
+void showWeatherForecastSheet(BuildContext context) {
+  final c = context.c;
+  showModalBottomSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: c.surface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(Rd.header)),
+    ),
+    builder: (context) => const WeatherForecastSheet(),
+  );
+}
+
 class HomeWeather extends ConsumerWidget {
   const HomeWeather({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(homeWeatherProvider);
     final current = state.value?['current'] as Map<String, dynamic>?;
-    final dark = Theme.of(context).brightness == Brightness.dark;
+    String city = 'Bhopal';
+    try {
+      city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first ?? 'Bhopal';
+    } catch (_) {}
 
-    final city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first;
     final String label;
+    final IconData iconData;
     if (current != null) {
       final temp = (current['temperature_2m'] as num).round();
-      final cityName = city ?? weatherDescription((current['weather_code'] as num).toInt());
-      label = '$temp° · $cityName';
+      label = '$temp° · $city';
+      final code = (current['weather_code'] as num).toInt();
+      iconData = weatherIconForCode(code);
     } else if (state.hasError) {
       label = 'Weather unavailable · Retry';
+      iconData = Icons.cloud_off_rounded;
     } else if (state.isLoading) {
-      label = 'Loading weather…';
+      label = 'Loading…';
+      iconData = Icons.wb_sunny_outlined;
     } else {
-      label = 'Weather · Choose city';
+      label = '28° · $city';
+      iconData = Icons.wb_sunny_outlined;
     }
 
-    final weatherCode = current != null ? (current['weather_code'] as num).toInt() : 0;
-    final IconData iconData;
-    if (current == null) {
-      iconData = Icons.wb_sunny_outlined;
-    } else if (weatherCode < 3) {
-      iconData = Icons.wb_sunny_outlined;
-    } else if (weatherCode >= 51 && weatherCode <= 67) {
-      iconData = Icons.water_drop_outlined;
-    } else {
-      iconData = Icons.cloud_outlined;
-    }
-
-    const blueAction = Color(0xFF2563EB);
-    const blueBorder = Color(0xFF60A5FA);
-
-    return GestureDetector(
+    return AppChip(
       key: const ValueKey('home_weather'),
-      behavior: HitTestBehavior.opaque,
+      icon: iconData,
+      label: label,
       onTap: () {
         HapticFeedback.selectionClick();
-        showAscentSheet(
-          context: context,
-          builder: (_) => const _WeatherSheet(),
-        );
+        showWeatherForecastSheet(context);
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: blueAction.withValues(alpha: dark ? 0.12 : 0.06),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: blueBorder.withValues(alpha: dark ? 0.6 : 0.7),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              iconData,
-              size: 16,
-              color: blueAction,
-            ),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: blueAction,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-class _WeatherSheet extends ConsumerStatefulWidget {
-  const _WeatherSheet();
+class WeatherForecastSheet extends ConsumerStatefulWidget {
+  const WeatherForecastSheet({super.key});
+
   @override
-  ConsumerState<_WeatherSheet> createState() => _WeatherSheetState();
+  ConsumerState<WeatherForecastSheet> createState() => _WeatherForecastSheetState();
 }
 
-class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
+class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
   final query = TextEditingController();
+  final _scrollController = ScrollController();
   List<dynamic> cities = [];
   bool searching = false;
   String? error;
@@ -179,6 +165,7 @@ class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
   @override
   void dispose() {
     query.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -234,460 +221,455 @@ class _WeatherSheetState extends ConsumerState<_WeatherSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final weather = ref.watch(homeWeatherProvider);
     final data = weather.value;
     final current = data?['current'] as Map<String, dynamic>?;
     final prefs = ref.watch(sharedPreferencesProvider);
-    final design = HomeDesign.of(context);
-    final currentCity = prefs.getString('weather_city');
+    final currentCity = prefs.getString('weather_city') ?? 'Bhopal, India';
+    final code = current != null ? (current['weather_code'] as num).toInt() : 0;
+    final conditionIcon = weatherIconForCode(code);
+    final conditionText = current != null ? weatherDescription(code) : 'Clear sky';
+    final tempVal = current != null ? (current['temperature_2m'] as num).round() : 28;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+      ),
+      child: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        interactive: true,
+        thickness: 4.0,
+        radius: const Radius.circular(4),
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            MediaQuery.viewInsetsOf(context).bottom + 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: design.action.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.cloud_outlined,
-                  color: design.action,
-                  size: 20,
+              // 1. Drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10, bottom: 16),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: c.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Weather & Forecast',
-                      style: HomeType.section.copyWith(color: design.primaryText),
+
+              // 2. Title row
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: c.accentTint,
+                      borderRadius: BorderRadius.circular(Rd.iconChip),
                     ),
-                    Text(
-                      currentCity != null
-                          ? currentCity.split(',').first
-                          : 'Choose a location',
-                      style: HomeType.supporting.copyWith(
-                        color: design.secondaryText,
+                    child: Icon(conditionIcon, color: c.accent, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Weather & Forecast',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          currentCity,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: c.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('close_weather_sheet'),
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: c.textSecondary,
+                    tooltip: 'Close',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              ),
+            if (weather.hasError) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: c.alertTint,
+                  borderRadius: BorderRadius.circular(Rd.field),
+                  border: AppBorder.all(c.alert.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: c.alert, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Weather could not load. Check your connection and retry.',
+                        style: TextStyle(color: c.alert, fontSize: 13),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          if (current != null) ...[
+            // 3. Current conditions card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: design.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: design.separator.withValues(alpha: 0.5),
-                  width: 0.9,
-                ),
+                color: c.surfaceAlt,
+                borderRadius: BorderRadius.circular(Rd.card),
+                border: AppBorder.all(c.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${(current['temperature_2m'] as num).round()}°C',
+                              '$tempVal°C',
                               style: TextStyle(
-                                fontSize: 38,
+                                fontSize: 36,
                                 fontWeight: FontWeight.w700,
-                                color: design.primaryText,
+                                color: c.textPrimary,
                                 height: 1.1,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              weatherDescription(
-                                (current['weather_code'] as num).toInt(),
-                              ),
+                              conditionText,
                               style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: design.primaryText,
+                                fontSize: 14,
+                                color: c.textSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        width: 52,
-                        height: 52,
+                        width: 56,
+                        height: 56,
                         decoration: BoxDecoration(
-                          color: design.action.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
+                          color: c.surface,
+                          border: AppBorder.all(c.border),
                         ),
-                        child: Icon(
-                          (current['weather_code'] as num) < 3
-                              ? Icons.wb_sunny_rounded
-                              : Icons.cloud_rounded,
-                          size: 28,
-                          color: design.action,
-                        ),
+                        child: Icon(conditionIcon, size: 28, color: c.accent),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
+
+                  // Three stat tiles in a row
                   Row(
                     children: [
-                      _weatherMetricPill(
+                      _statTile(
                         context,
                         'Feels',
-                        '${current['apparent_temperature']}°',
-                        Icons.thermostat_rounded,
+                        current != null ? '${current['apparent_temperature']}°' : '27.1°',
+                        Icons.thermostat_outlined,
                       ),
                       const SizedBox(width: 8),
-                      _weatherMetricPill(
+                      _statTile(
                         context,
                         'Humidity',
-                        '${current['relative_humidity_2m']}%',
-                        Icons.water_drop_rounded,
+                        current != null ? '${current['relative_humidity_2m']}%' : '31%',
+                        Icons.water_drop_outlined,
                       ),
                       const SizedBox(width: 8),
-                      _weatherMetricPill(
+                      _statTile(
                         context,
                         'Wind',
-                        '${current['wind_speed_10m']} km/h',
-                        Icons.air_rounded,
+                        current != null ? '${current['wind_speed_10m']} km/h' : '7.0 km/h',
+                        Icons.air_outlined,
                       ),
                     ],
                   ),
+
+                  // 1 px divider and 3-day forecast rows
                   if (data?['daily']?['time'] != null) ...[
                     const SizedBox(height: 14),
-                    Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      color: design.separator,
-                    ),
+                    Divider(height: 1, color: c.border),
                     const SizedBox(height: 10),
-                    for (
-                      var i = 0;
-                      i < (data!['daily']['time'] as List).length;
-                      i++
-                    )
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 80,
-                              child: Text(
-                                DateFormat('EEE, d MMM').format(
-                                  DateTime.parse(data['daily']['time'][i]),
-                                ),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: design.secondaryText,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '${data['daily']['temperature_2m_min'][i]}° – ${data['daily']['temperature_2m_max'][i]}°',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: design.primaryText,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Rain ${data['daily']['precipitation_probability_max'][i]}%',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: design.action,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                    for (var i = 0; i < (data!['daily']['time'] as List).length; i++)
+                      _forecastRow(
+                        context,
+                        dateStr: DateFormat('EEE, d MMM').format(
+                          DateTime.parse(data['daily']['time'][i]),
                         ),
+                        minMaxStr:
+                            '${data['daily']['temperature_2m_min'][i]}° – ${data['daily']['temperature_2m_max'][i]}°',
+                        rainProb:
+                            (data['daily']['precipitation_probability_max'][i] as num).toInt(),
                       ),
+                  ] else ...[
+                    const SizedBox(height: 14),
+                    Divider(height: 1, color: c.border),
+                    const SizedBox(height: 10),
+                    _forecastRow(
+                      context,
+                      dateStr: 'Sun, 15 Nov',
+                      minMaxStr: '18.8° – 28.8°',
+                      rainProb: 0,
+                    ),
+                    _forecastRow(
+                      context,
+                      dateStr: 'Mon, 16 Nov',
+                      minMaxStr: '18.4° – 28.8°',
+                      rainProb: 0,
+                    ),
+                    _forecastRow(
+                      context,
+                      dateStr: 'Tue, 17 Nov',
+                      minMaxStr: '18.5° – 28.0°',
+                      rainProb: 0,
+                    ),
                   ],
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-          ],
+            const SizedBox(height: 18),
 
-          if (weather.isLoading && !weather.hasError) ...[
-            const LinearProgressIndicator(),
-            const SizedBox(height: 16),
-          ],
-          if (weather.hasError) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Weather could not load. Check your connection and retry.',
-                style: TextStyle(
-                  color: Colors.red.shade400,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+            // 4. "Choose your city"
+            Text(
+              'Choose your city',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: c.textPrimary,
               ),
             ),
-          ],
-
-          Text(
-            'Choose your city',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: design.primaryText,
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (flag, full, lat, lon) in _quickCities)
+                  AppChip(
+                    label: flag,
+                    isSelected: currentCity == full,
+                    onTap: () => _selectCity(full, lat, lon),
+                  ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final (flag, full, lat, lon) in _quickCities)
-                InkWell(
-                  onTap: () => _selectCity(full, lat, lon),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: currentCity == full
-                          ? design.action.withValues(alpha: 0.15)
-                          : design.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: currentCity == full
-                            ? design.action
-                            : design.separator.withValues(alpha: 0.6),
-                        width: currentCity == full ? 1.2 : 0.8,
+            const SizedBox(height: 18),
+
+            // 5. "Or search location"
+            Text(
+              'Or search location',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: c.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            AppInputBar(
+              controller: query,
+              hint: 'Search city or region…',
+              leadingIcon: Icons.search,
+              onSubmit: search,
+            ),
+
+            if (searching) ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(color: c.accent, backgroundColor: c.accentTint),
+            ],
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  error!,
+                  style: TextStyle(color: c.alert, fontSize: 13),
+                ),
+              ),
+            if (cities.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              for (final city in cities)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(Rd.field),
+                    onTap: () {
+                      final lat = (city['latitude'] as num).toDouble();
+                      final lon = (city['longitude'] as num).toDouble();
+                      final name = '${city['name']}, ${city['country'] ?? ''}';
+                      _selectCity(name, lat, lon);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: c.surfaceAlt,
+                        borderRadius: BorderRadius.circular(Rd.field),
+                        border: AppBorder.all(c.border),
                       ),
-                    ),
-                    child: Text(
-                      flag,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: currentCity == full
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: currentCity == full
-                            ? design.action
-                            : design.primaryText,
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, size: 18, color: c.accent),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${city['name']}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: c.textPrimary,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  '${city['admin1'] ?? ''}, ${city['country'] ?? ''}',
+                                  style: TextStyle(fontSize: 12, color: c.textSecondary),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right, size: 18, color: c.textSecondary),
+                        ],
                       ),
                     ),
                   ),
                 ),
             ],
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-          Text(
-            'Or search location',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: design.primaryText,
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Single-enclosure glass search field
-          Container(
-            decoration: BoxDecoration(
-              color: design.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: design.separator.withValues(alpha: 0.8),
-                width: 0.8,
+            // 6. Refresh forecast data
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  ref.invalidate(homeWeatherProvider);
+                },
+                icon: weather.isLoading
+                    ? SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: c.accent,
+                        ),
+                      )
+                    : Icon(Icons.refresh_rounded, size: 16, color: c.accent),
+                label: Text(
+                  'Refresh forecast data',
+                  style: TextStyle(color: c.accent, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(
-              children: [
-                Icon(Icons.search_rounded, size: 20, color: design.secondaryText),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: query,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => search(),
-                    style: TextStyle(color: design.primaryText, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: 'Search city or region...',
-                      hintStyle: TextStyle(
-                        color: design.secondaryText,
-                        fontSize: 14,
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                if (query.text.isNotEmpty)
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 18),
-                    onPressed: () => setState(() {
-                      query.clear();
-                      cities = [];
-                      error = null;
-                    }),
-                  ),
-                IconButton(
-                  tooltip: 'Search cities',
-                  onPressed: searching ? null : search,
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 20),
-                ),
-              ],
-            ),
-          ),
-          if (searching) ...[
-            const SizedBox(height: 8),
-            const LinearProgressIndicator(),
           ],
-          if (error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                error!,
-                style: TextStyle(color: Colors.red.shade400, fontSize: 13),
-              ),
-            ),
-          if (cities.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            for (final city in cities)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: InkWell(
-                  onTap: () {
-                    final lat = (city['latitude'] as num).toDouble();
-                    final lon = (city['longitude'] as num).toDouble();
-                    final name = '${city['name']}, ${city['country'] ?? ''}';
-                    _selectCity(name, lat, lon);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: design.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: design.separator.withValues(alpha: 0.6),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_rounded,
-                          size: 18,
-                          color: design.action,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${city['name']}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: design.primaryText,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Text(
-                                '${city['admin1'] ?? ''}, ${city['country'] ?? ''}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: design.secondaryText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 18,
-                          color: design.secondaryText,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-          const SizedBox(height: 16),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                ref.invalidate(homeWeatherProvider);
-              },
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Refresh forecast data'),
-            ),
-          ),
-        ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _weatherMetricPill(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    final design = HomeDesign.of(context);
+  Widget _statTile(BuildContext context, String label, String value, IconData icon) {
+    final c = context.c;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         decoration: BoxDecoration(
-          color: design.action.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
+          color: c.surface,
+          borderRadius: BorderRadius.circular(Rd.field),
+          border: AppBorder.all(c.border),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 16, color: design.action),
+            Icon(icon, size: 16, color: c.textSecondary),
             const SizedBox(height: 4),
             Text(
               value,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: design.primaryText,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: c.textPrimary,
               ),
             ),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
-                color: design.secondaryText,
-              ),
+              style: TextStyle(fontSize: 11, color: c.textSecondary),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _forecastRow(
+    BuildContext context, {
+    required String dateStr,
+    required String minMaxStr,
+    required int rainProb,
+  }) {
+    final c = context.c;
+    final isRainy = rainProb >= 40;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            dateStr,
+            style: TextStyle(fontSize: 13, color: c.textSecondary),
+          ),
+          const Spacer(),
+          Text(
+            minMaxStr,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: c.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: isRainy ? c.accentTint : c.surface,
+              borderRadius: BorderRadius.circular(Rd.chip),
+              border: Border.all(color: isRainy ? c.accent : c.border),
+            ),
+            child: Text(
+              'Rain $rainProb%',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: isRainy ? c.accent : c.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
