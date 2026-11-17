@@ -113,7 +113,7 @@ void main() {
       expect(find.text('What’s on your mind today?'), findsOneWidget);
     });
 
-    testWidgets('ThoughtWallHomePreview empty state renders centered container with spark chips', (tester) async {
+    testWidgets('ThoughtWallHomePreview empty state renders centered tranquil container without prompt chips', (tester) async {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -134,12 +134,12 @@ void main() {
 
       expect(find.text('Your mindspace is clear'), findsOneWidget);
       expect(
-        find.text('Capture a thought, win, or spark an idea above.'),
+        find.text('Capture what’s on your mind anytime.'),
         findsOneWidget,
       );
-      expect(find.text('Spark idea'), findsOneWidget);
-      expect(find.text('Daily win'), findsOneWidget);
-      expect(find.text('Self-reflection'), findsOneWidget);
+      expect(find.text('Spark idea'), findsNothing);
+      expect(find.text('Daily win'), findsNothing);
+      expect(find.text('Self-reflection'), findsNothing);
     });
 
     testWidgets('ThoughtWallHomePreview empty state renders without overflow at 320px width and 2.0x text scale', (tester) async {

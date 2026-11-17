@@ -79,7 +79,7 @@ void main() {
   );
 
   testWidgets(
-    'ThoughtWallHomePreview renders thought spark chips when thoughts are empty',
+    'ThoughtWallHomePreview empty state is tranquil and free of prompt spark chips',
     (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -102,14 +102,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Spark an idea'), findsOneWidget);
-      expect(find.text('Log a win'), findsOneWidget);
-      expect(find.text('Reflect'), findsOneWidget);
-
-      // Tap 'Spark an idea' and verify composer pre-fills
-      await tester.tap(find.text('Spark an idea'));
-      await tester.pump();
-      expect(find.text('💡 '), findsOneWidget);
+      expect(find.text('Spark an idea'), findsNothing);
+      expect(find.text('Log a win'), findsNothing);
+      expect(find.text('Reflect'), findsNothing);
+      expect(find.text('Your mindspace is clear'), findsOneWidget);
     },
   );
 
