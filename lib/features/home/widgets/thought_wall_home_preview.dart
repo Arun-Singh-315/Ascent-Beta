@@ -36,6 +36,7 @@ import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
 import '../../thought_wall/thought_wall_appearance_sheet.dart';
 import '../../thought_wall/board/board_actions.dart';
+import '../../thought_wall/board/board_logic.dart';
 import '../../../core/services/festival_service.dart';
 import 'dart:convert';
 
@@ -1354,16 +1355,19 @@ class _HomeThoughtBubble extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final isHighPriority = isHighPriorityContent(thought.content);
     final display = locked
         ? 'Private thought'
         : ThoughtExcerpt.displayContent(thought.content);
 
-    final heroBg = dark
-        ? c.surfaceAlt.withValues(alpha: 0.95)
-        : c.surface;
-    final heroBorderColor = dark
-        ? c.border.withValues(alpha: 0.95)
-        : c.border.withValues(alpha: 0.85);
+    final heroBg = isHighPriority
+        ? c.accent.withValues(alpha: dark ? 0.12 : 0.05)
+        : (dark ? c.surfaceAlt.withValues(alpha: 0.95) : c.surface);
+    final heroBorderColor = isHighPriority
+        ? c.accent.withValues(alpha: 0.6)
+        : (dark
+            ? c.border.withValues(alpha: 0.95)
+            : c.border.withValues(alpha: 0.85));
 
     return Material(
       color: Colors.transparent,
@@ -1374,100 +1378,162 @@ class _HomeThoughtBubble extends ConsumerWidget {
           decoration: BoxDecoration(
             color: heroBg,
             borderRadius: BorderRadius.circular(AppRadius.bubble),
-            border: AppBorder.all(heroBorderColor),
-            boxShadow: AppElevation.soft(dark ? Colors.black : c.border, dark: dark),
+            border: AppBorder.all(
+              heroBorderColor,
+              width: isHighPriority ? 1.5 : 1.0,
+            ),
+            boxShadow: [
+              if (isHighPriority)
+                BoxShadow(
+                  color: c.accent.withValues(alpha: dark ? 0.15 : 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                )
+              else
+                ...AppElevation.soft(dark ? Colors.black : c.border, dark: dark),
+            ],
           ),
           padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header row: category pill + timestamp + full thought done + more menu
+              // Header row: category pill + timestamp + full thought star + full thought done + more menu
               Row(
                 children: [
-                  if (locked) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: c.accentTint,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.lock_rounded, size: 12, color: c.accent),
-                          const SizedBox(width: 4),
-                          Text(
-                            'PRIVATE COMMITMENT',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: c.accent,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: c.accentTint,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              thought.mood == 'win'
-                                  ? Icons.emoji_events_outlined
-                                  : (thought.mood == 'spark'
-                                        ? Icons.lightbulb_outline_rounded
-                                        : Icons.bubble_chart_outlined),
-                              size: 12,
-                              color: c.accent,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                '#${thought.category}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: c.accent,
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (locked) ...[
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: c.accentTint,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.lock_rounded,
+                                      size: 12,
+                                      color: c.accent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'PRIVATE COMMITMENT',
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
+                                        color: c.accent,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
+                          ),
+                        ] else ...[
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: c.accentTint,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    thought.mood == 'win'
+                                        ? Icons.emoji_events_outlined
+                                        : (thought.mood == 'spark'
+                                              ? Icons.lightbulb_outline_rounded
+                                              : Icons.bubble_chart_outlined),
+                                    size: 12,
+                                    color: c.accent,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      '#${thought.category}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: c.accent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            timeAgo,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: c.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 8),
-                  Text(
-                    timeAgo,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: c.textSecondary,
-                      fontWeight: FontWeight.w500,
+                      ],
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    key: ValueKey('thought_${thought.id}_star_thought_btn'),
+                    tooltip: isHighPriority
+                        ? 'Unstar thought'
+                        : 'Star thought (important)',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                    icon: Icon(
+                      isHighPriority
+                          ? Icons.star_rounded
+                          : Icons.star_outline_rounded,
+                      size: 20,
+                      color: isHighPriority ? c.accent : c.textSecondary,
+                    ),
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      final newContent = toggleHighPriorityContent(
+                        thought.content,
+                      );
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .setContent(thought.id, newContent);
+                    },
+                  ),
+                  const SizedBox(width: 2),
                   IconButton(
                     key: ValueKey('thought_${thought.id}_full_done_btn'),
-                    tooltip: thought.isCompleted ? 'Mark uncompleted' : 'Mark thought done',
+                    tooltip: thought.isCompleted
+                        ? 'Mark uncompleted'
+                        : 'Mark thought done',
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
@@ -1484,10 +1550,19 @@ class _HomeThoughtBubble extends ConsumerWidget {
                     onPressed: () async {
                       HapticFeedback.lightImpact();
                       final newStatus = !thought.isCompleted;
-                      await ref.read(thoughtDaoProvider).setCompleted(thought.id, newStatus);
-                      if (ThoughtChecklistHelper.hasChecklistItems(thought.content)) {
-                        final newContent = ThoughtChecklistHelper.setAllDone(thought.content, newStatus);
-                        await ref.read(thoughtDaoProvider).setContent(thought.id, newContent);
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .setCompleted(thought.id, newStatus);
+                      if (ThoughtChecklistHelper.hasChecklistItems(
+                        thought.content,
+                      )) {
+                        final newContent = ThoughtChecklistHelper.setAllDone(
+                          thought.content,
+                          newStatus,
+                        );
+                        await ref
+                          .read(thoughtDaoProvider)
+                          .setContent(thought.id, newContent);
                       }
                     },
                   ),
@@ -1511,7 +1586,10 @@ class _HomeThoughtBubble extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
 
-              if (!locked && ThoughtChecklistHelper.hasChecklistItems(thought.content)) ...[
+              if (!locked &&
+                  ThoughtChecklistHelper.hasChecklistItems(
+                    thought.content,
+                  )) ...[
                 _buildChecklist(context, ref, c),
               ] else ...[
                 ThoughtExcerpt(
@@ -1522,7 +1600,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
                     fontStyle: locked ? FontStyle.italic : FontStyle.normal,
                     color: locked ? c.textSecondary : c.textPrimary,
                     fontWeight: FontWeight.w500,
-                    decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                    decoration:
+                        thought.isCompleted ? TextDecoration.lineThrough : null,
                   ),
                   maxLines: maxLines,
                   thoughtId: thought.id,
@@ -1546,55 +1625,111 @@ class _HomeThoughtBubble extends ConsumerWidget {
       children: [
         for (final item in items)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  key: ValueKey('thought_${thought.id}_check_${item.index}'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () async {
-                    HapticFeedback.selectionClick();
-                    final newText = ThoughtChecklistHelper.toggleItemDone(
-                      thought.content,
-                      item.index,
-                    );
-                    await ref
-                        .read(thoughtDaoProvider)
-                        .setContent(thought.id, newText);
-                    final updatedItems = ThoughtChecklistHelper.parseItems(newText);
-                    final allDone = ThoughtChecklistHelper.areAllDone(updatedItems);
-                    if (allDone != thought.isCompleted) {
+            padding: const EdgeInsets.symmetric(vertical: 2.5),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                vertical: 3,
+                horizontal: item.isHighlighted ? 6 : 0,
+              ),
+              decoration: item.isHighlighted
+                  ? BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: c.accent.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                    )
+                  : null,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    key: ValueKey('thought_${thought.id}_check_${item.index}'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      HapticFeedback.selectionClick();
+                      final newText = ThoughtChecklistHelper.toggleItemDone(
+                        thought.content,
+                        item.index,
+                      );
                       await ref
                           .read(thoughtDaoProvider)
-                          .setCompleted(thought.id, allDone);
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 8, top: 2, bottom: 2),
-                    child: Icon(
-                      item.isDone
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: 18,
-                      color: item.isDone ? c.accent : c.textSecondary,
+                          .setContent(thought.id, newText);
+                      final updatedItems =
+                          ThoughtChecklistHelper.parseItems(newText);
+                      final allDone =
+                          ThoughtChecklistHelper.areAllDone(updatedItems);
+                      if (allDone != thought.isCompleted) {
+                        await ref
+                            .read(thoughtDaoProvider)
+                            .setCompleted(thought.id, allDone);
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        right: 8,
+                        top: 2,
+                        bottom: 2,
+                      ),
+                      child: Icon(
+                        item.isDone
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: 18,
+                        color: item.isDone ? c.accent : c.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Text(
-                    item.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      height: 1.35,
-                      color: item.isDone ? c.textSecondary : c.textPrimary,
-                      decoration:
-                          item.isDone ? TextDecoration.lineThrough : null,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      item.text,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.35,
+                        color: item.isDone
+                            ? c.textSecondary
+                            : (item.isHighlighted ? c.accent : c.textPrimary),
+                        decoration:
+                            item.isDone ? TextDecoration.lineThrough : null,
+                        fontWeight:
+                            item.isHighlighted ? FontWeight.w600 : FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  GestureDetector(
+                    key: ValueKey('thought_${thought.id}_star_${item.index}'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      HapticFeedback.selectionClick();
+                      final newText =
+                          ThoughtChecklistHelper.toggleItemHighlight(
+                        thought.content,
+                        item.index,
+                      );
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .setContent(thought.id, newText);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 8,
+                        top: 2,
+                        bottom: 2,
+                      ),
+                      child: Icon(
+                        item.isHighlighted
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        size: 18,
+                        color: item.isHighlighted
+                            ? c.accent
+                            : c.textSecondary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         const SizedBox(height: 10),
@@ -1608,10 +1743,13 @@ class _HomeThoughtBubble extends ConsumerWidget {
               onTap: () async {
                 HapticFeedback.mediumImpact();
                 final now = DateTime.now();
+                final isFullHigh = isHighPriorityContent(thought.content);
                 for (final it in items) {
+                  final isHigh = it.isHighlighted || isFullHigh;
                   await ref.read(taskDaoProvider).insertTask(
                         TaskTableCompanion.insert(
                           title: it.text,
+                          priority: drift.Value(isHigh ? 'high' : 'medium'),
                           plannedDate: drift.Value(now),
                           actualCompletedDate: drift.Value(
                             it.isDone ? now : null,
@@ -1622,19 +1760,39 @@ class _HomeThoughtBubble extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Converted ${items.length} items to today’s activities',
-                      ),
-                      action: SnackBarAction(
-                        label: 'View',
-                        onPressed: () => context.push('/today'),
+                      content: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Converted ${items.length} items to today’s activities',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: TextButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).hideCurrentSnackBar();
+                                context.push('/today');
+                              },
+                              child: const Text('View'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 }
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: c.accentTint,
                   borderRadius: BorderRadius.circular(8),
@@ -1642,24 +1800,27 @@ class _HomeThoughtBubble extends ConsumerWidget {
                     color: c.accent.withValues(alpha: 0.25),
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.playlist_add_check_rounded,
-                      size: 15,
-                      color: c.accent,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Convert to activities',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.playlist_add_check_rounded,
+                        size: 15,
                         color: c.accent,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 5),
+                      Text(
+                        'Convert to activities',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: c.accent,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

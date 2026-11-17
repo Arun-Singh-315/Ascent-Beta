@@ -77,9 +77,15 @@ class ThoughtExcerpt extends StatefulWidget {
         .replaceAll('->', '• ');
   }
 
-  static String displayContent(String raw) => formatArrowContent(
-    raw,
-  ).replaceAll(RegExp(r'^[ \t]*→[ \t]*', multiLine: true), '').trimRight();
+  static String displayContent(String raw) {
+    var text = raw;
+    if (text.startsWith('[HIGH]')) {
+      text = text.substring(6).trimLeft();
+    }
+    return formatArrowContent(
+      text,
+    ).replaceAll(RegExp(r'^[ \t]*→[ \t]*', multiLine: true), '').trimRight();
+  }
 
   /// Builds a [TextSpan] that visually styles arrow indicators (`→ `), bullets (`• `),
   /// and numbered lists (`1. `, `2. `) with vibrant theme accent ink and readable typography.
