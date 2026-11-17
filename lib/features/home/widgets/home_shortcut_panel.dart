@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import 'home_shortcut_editor.dart';
@@ -69,10 +70,33 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
     return result;
   }
 
-  String _compactBadgeValue(String summary, int? explicitCount) {
-    if (explicitCount != null) return '$explicitCount';
+  String _compactBadgeValue(
+    String summary,
+    int? explicitCount, {
+    String? id,
+  }) {
+    if (explicitCount != null) {
+      if (id == 'hydration' || id == 'health') {
+        return '$explicitCount ml';
+      }
+      return '$explicitCount';
+    }
     final trimmed = summary.trim();
     if (trimmed.isEmpty || trimmed == '…') return '';
+    if (id == 'hydration' || id == 'health') {
+      final match = RegExp(
+        r'^(\d+(?:\.\d+)?)\s*(?:ml|l)?',
+        caseSensitive: false,
+      ).firstMatch(trimmed);
+      if (match != null) {
+        final val = match.group(1)!;
+        if (val == '0') return '';
+        final intVal = int.tryParse(val) ?? 0;
+        return intVal >= 1000
+            ? '${(intVal / 1000).toStringAsFixed(1)}L'
+            : '$val ml';
+      }
+    }
     final match = RegExp(
       r'^(\d+(?:\.\d+)?(?:\/\d+)?|\₹\S+)',
     ).firstMatch(trimmed);
@@ -426,9 +450,20 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                       : ref.watch(
                                           homeShortcutSummaryProvider(item.id),
                                         );
+                                  final isWater = item.id == 'hydration' || item.id == 'health';
+                                  final waterMl = isWater
+                                      ? (ref.watch(todayWaterMlStreamProvider).value ?? 0)
+                                      : 0;
+                                  final waterGoal = isWater
+                                      ? (ref.watch(dailyWaterGoalStreamProvider).value ?? 2500)
+                                      : 2500;
+                                  final waterProgress = isWater && waterGoal > 0
+                                      ? (waterMl / waterGoal).clamp(0.0, 1.0)
+                                      : null;
                                   final badge = _compactBadgeValue(
                                     summary,
                                     widget.badgeCounts?[item.id],
+                                    id: item.id,
                                   );
                                   final tintInk = HomeShortcutIcon.inkFor(
                                     item.id,
@@ -452,17 +487,17 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                                 widget.activeShortcutId ==
                                                 item.id,
                                             size: 54,
+                                            progress: waterProgress,
                                           ),
                                           if (badge.isNotEmpty)
                                             Positioned(
-                                              top: -4,
-                                              right: -4,
+                                              top: -5,
+                                              right: isWater ? -8 : -4,
                                               child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 5,
-                                                      vertical: 1.5,
-                                                    ),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: isWater ? 6.5 : 5,
+                                                  vertical: isWater ? 2.0 : 1.5,
+                                                ),
                                                 constraints:
                                                     const BoxConstraints(
                                                       minWidth: 18,
@@ -471,15 +506,15 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                                 alignment: Alignment.center,
                                                 decoration: BoxDecoration(
                                                   color: tintInk.withValues(
-                                                    alpha: dark ? 0.25 : 0.14,
+                                                    alpha: dark ? 0.28 : 0.15,
                                                   ),
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                   border: Border.all(
                                                     color: tintInk.withValues(
-                                                      alpha: 0.35,
+                                                      alpha: dark ? 0.45 : 0.35,
                                                     ),
-                                                    width: .8,
+                                                    width: .9,
                                                   ),
                                                 ),
                                                 child: Text(
@@ -489,7 +524,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                                   ),
                                                   style: TextStyle(
                                                     color: ink,
-                                                    fontSize: 11,
+                                                    fontSize: isWater ? 10 : 11,
                                                     fontWeight: FontWeight.w700,
                                                     fontFeatures: const [
                                                       FontFeature.tabularFigures(),
@@ -526,12 +561,16 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                             top: 3,
                                           ),
                                           child: Text(
-                                            badge.isNotEmpty &&
-                                                    summary.startsWith(badge)
-                                                ? summary
-                                                      .substring(badge.length)
-                                                      .trim()
-                                                : summary,
+                                            isWater
+                                                ? (waterMl > 0
+                                                    ? '$waterMl ml logged'
+                                                    : 'Goal ${(waterGoal / 1000).toStringAsFixed(1)}L')
+                                                : (badge.isNotEmpty &&
+                                                        summary.startsWith(badge)
+                                                    ? summary
+                                                          .substring(badge.length)
+                                                          .trim()
+                                                    : summary),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.center,

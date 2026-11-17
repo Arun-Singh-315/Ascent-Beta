@@ -135,15 +135,15 @@ class _BoardCardState extends State<BoardCard> {
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
         ? (dark
-            ? g.ink.withValues(alpha: .045)
+            ? const Color(0xFF171A21).withValues(alpha: 0.65)
             : Colors.white.withValues(alpha: .32))
         : Color.alphaBlend(
-            g.ink.withValues(alpha: dark ? .065 : .012),
-            dark ? g.bg : g.fill,
+            g.ink.withValues(alpha: dark ? .04 : .012),
+            dark ? const Color(0xFF171A21) : g.fill,
           );
     final borderColor = isSelected
-        ? SharedControlColors.actionBlue
-        : g.line.withValues(alpha: dark ? .35 : .26);
+        ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
+        : (dark ? const Color(0xFF2E323D) : g.line.withValues(alpha: .26));
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -444,7 +444,7 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final fill = dark
-        ? g.ink.withValues(alpha: .06)
+        ? const Color(0xFF1D212A)
         : Colors.white.withValues(alpha: .30);
     final onFill = g.ink;
     final text = displayContent(thought.content).trim();
@@ -464,18 +464,24 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0A5C4A3E),
+                color: (dark ? Colors.black : const Color(0x0A5C4A3E)).withValues(
+                  alpha: dark ? 0.35 : 1.0,
+                ),
                 blurRadius: 16,
-                offset: Offset(0, 4),
+                offset: const Offset(0, 4),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFBF5A36)
-                  : g.line.withValues(alpha: dark ? 0.35 : 0.25),
+                  ? (dark
+                      ? SharedControlColors.actionBlueDark
+                      : SharedControlColors.actionBlue)
+                  : (dark
+                      ? const Color(0xFF2E323D)
+                      : g.line.withValues(alpha: 0.25)),
               width: isSelected ? 1.5 : 1.0,
             ),
           ),

@@ -1066,6 +1066,7 @@ if (!mounted || result == null) return;
   }
 
   Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
+    final isDark = context.isDark;
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s10,
@@ -1074,8 +1075,12 @@ if (!mounted || result == null) return;
         AppSpace.s10,
       ),
       decoration: BoxDecoration(
-        color: g.bg,
-        border: Border(top: BorderSide(color: g.edge)),
+        color: isDark ? const Color(0xFF111317) : g.bg,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? const Color(0xFF222630) : g.edge,
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -1182,8 +1187,9 @@ if (!mounted || result == null) return;
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
-        glow1: c.accent.withValues(alpha: 0.12),
-        glow2: g.glow2,
+        backgroundColor: isDark ? const Color(0xFF111317) : null,
+        glow1: isDark ? Colors.transparent : c.accent.withValues(alpha: 0.12),
+        glow2: isDark ? Colors.transparent : g.glow2,
         showFeatureHelp: false,
         leading: _isSelectionMode
             ? IconButton(
@@ -1824,11 +1830,13 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final hardBorderColor = thought.isCompleted
         ? context.doneInk.withValues(alpha: isDark ? .35 : .25)
         : hasBubbleFraming
-        ? Color.lerp(
-            g.edge,
-            moodAccent.withValues(alpha: isDark ? 0.28 : 0.20),
-            0.40,
-          )!
+        ? (isDark
+            ? const Color(0xFF2E323D)
+            : Color.lerp(
+                g.edge,
+                moodAccent.withValues(alpha: 0.20),
+                0.40,
+              )!)
         : g.edge.withValues(alpha: isDark ? .34 : .38);
 
     final isHero = widget.role == ThoughtCardRole.hero;
@@ -1841,23 +1849,31 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
         ? Colors.transparent
         : thought.isCompleted
-        ? context.doneInk.withValues(alpha: isDark ? .06 : .04)
+        ? (isDark
+            ? const Color(0xFF14161C).withValues(alpha: 0.65)
+            : context.doneInk.withValues(alpha: .04))
         : isSelected
-        ? g.clay.withValues(alpha: isDark ? 0.12 : 0.08)
+        ? (isDark
+            ? SharedControlColors.actionBlueDark.withValues(alpha: 0.14)
+            : g.clay.withValues(alpha: 0.08))
         : isHero
-        ? Color.alphaBlend(
-            moodAccent.withValues(alpha: isDark ? 0.12 : 0.07),
-            isDark ? g.elevated : g.surface,
-          )
+        ? (isDark
+            ? const Color(0xFF1D212A)
+            : Color.alphaBlend(
+                moodAccent.withValues(alpha: 0.07),
+                g.surface,
+              ))
         : hasBubbleFraming
         ? (widget.role == ThoughtCardRole.compact
             ? (isDark
-                ? g.surface.withValues(alpha: 0.55)
+                ? const Color(0xFF171A21).withValues(alpha: 0.75)
                 : g.surface.withValues(alpha: 0.85))
-            : Color.alphaBlend(
-                moodAccent.withValues(alpha: isDark ? 0.07 : 0.04),
-                isDark ? g.elevated : g.surface,
-              ))
+            : (isDark
+                ? const Color(0xFF171A21)
+                : Color.alphaBlend(
+                    moodAccent.withValues(alpha: 0.04),
+                    g.surface,
+                  )))
         : Colors.transparent;
 
     return BoxDecoration(
@@ -1867,7 +1883,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isSelected
           ? [
               BoxShadow(
-                color: g.clay.withValues(alpha: isDark ? 0.36 : 0.18),
+                color: (isDark ? SharedControlColors.actionBlueDark : g.clay)
+                    .withValues(alpha: isDark ? 0.30 : 0.18),
                 blurRadius: 14,
                 spreadRadius: 1,
                 offset: const Offset(0, 2),
@@ -1877,7 +1894,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           ? [
               BoxShadow(
                 color: (isDark ? Colors.black : moodAccent).withValues(
-                  alpha: isDark ? 0.28 : 0.08,
+                  alpha: isDark ? 0.35 : 0.08,
                 ),
                 blurRadius: 14,
                 spreadRadius: 0,
@@ -1888,7 +1905,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           ? [
               BoxShadow(
                 color: (isDark ? Colors.black : moodAccent).withValues(
-                  alpha: isDark ? 0.12 : 0.03,
+                  alpha: isDark ? 0.20 : 0.03,
                 ),
                 blurRadius: 6,
                 spreadRadius: 0,
@@ -1903,7 +1920,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           widget.compact ? BorderRadius.zero : BorderRadius.circular(AppRadius.iconChip),
       },
       border: isSelected
-          ? Border.all(color: g.clay, width: 1.8)
+          ? Border.all(
+              color: isDark ? SharedControlColors.actionBlueDark : g.clay,
+              width: 1.8,
+            )
           : minimal && widget.compact
           ? Border(bottom: BorderSide(color: hardBorderColor, width: 1.0))
           : Border.all(color: hardBorderColor, width: borderWidth),
