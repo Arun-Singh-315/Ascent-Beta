@@ -28,6 +28,7 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
+import 'widgets/home_assistant_hero_card.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
@@ -282,11 +283,22 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: EdgeInsets.zero,
                         children: [
-                          // 1. HomeHeader
-                          HomeHeader(key: _headerKey, profile: profile),
+                          // 1. HomeHeader (keeps header spacious by setting includeAssistant: false)
+                          HomeHeader(
+                            key: _headerKey,
+                            profile: profile,
+                            includeAssistant: false,
+                          ),
                           const SizedBox(height: 12),
 
-                          // 2. Your space shortcuts row
+                          // 2. Gemini-illuminated AI Gateway (Ask Riya Hero Card)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: HomeAssistantHeroCard(),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // 3. Your space shortcuts row
                           HomeShortcutPanel(
                             shortcuts: layout.shortcuts,
                             showReminders: layout.visible.contains('reminders'),

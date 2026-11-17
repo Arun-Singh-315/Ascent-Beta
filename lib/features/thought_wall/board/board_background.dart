@@ -19,7 +19,7 @@ class BoardBackdropNotifier extends Notifier<BoardBackdrop> {
         .watch(sharedPreferencesProvider)
         .getString('thought_board_backdrop_v1');
     return BoardBackdrop.values.where((v) => v.name == raw).firstOrNull ??
-        BoardBackdrop.sky;
+        BoardBackdrop.paper;
   }
 
   Future<void> set(BoardBackdrop value) async {
@@ -54,8 +54,12 @@ class BoardBackground extends ConsumerWidget {
             : [const Color(0xFFFAFBFC), const Color(0xFFF0F4F8)],
       BoardBackdrop.paper =>
         dark
-            ? [const Color(0xFF242321), const Color(0xFF191A1C)]
-            : [const Color(0xFFF5F2EC), const Color(0xFFECE9E3)],
+            ? [const Color(0xFF161920), const Color(0xFF0F1218)]
+            : [
+                const Color(0xFFFAF7F2),
+                const Color(0xFFF3EFE7),
+                const Color(0xFFEAE5DC),
+              ],
       BoardBackdrop.dusk =>
         dark
             ? [const Color(0xFF222938), const Color(0xFF171A24)]

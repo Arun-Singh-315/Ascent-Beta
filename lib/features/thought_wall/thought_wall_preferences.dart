@@ -19,8 +19,8 @@ class ThoughtWallAppearance {
     this.style = ThoughtCardStyle.soft,
     this.tone = ThoughtCardTone.theme,
     this.density = ThoughtCardDensity.compact,
-    this.bubbleFilled = true,
-    this.bubbleBorderWidth = 1.8,
+    this.bubbleFilled = false,
+    this.bubbleBorderWidth = 1.0,
   });
   final ThoughtCardStyle style;
   final ThoughtCardTone tone;
@@ -87,9 +87,9 @@ class ThoughtWallAppearanceNotifier extends Notifier<ThoughtWallAppearance> {
           jsonDecode(raw) as Map<String, dynamic>,
         );
       }
-      final filled = prefs.getBool('home_thought_bubble_filled') ?? true;
+      final filled = prefs.getBool('home_thought_bubble_filled') ?? false;
       final border =
-          prefs.getDouble('home_thought_bubble_border_width') ?? 1.8;
+          prefs.getDouble('home_thought_bubble_border_width') ?? 1.0;
       return ThoughtWallAppearance(
         bubbleFilled: filled,
         bubbleBorderWidth: border,

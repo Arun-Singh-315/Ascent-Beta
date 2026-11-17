@@ -132,7 +132,7 @@ void main() {
 
         await tester.pump();
         expect(find.textContaining('Arun'), findsOneWidget);
-        expect(find.textContaining('Senior Flutter Architect'), findsOneWidget);
+        expect(find.byType(HomeHeader), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
@@ -148,7 +148,7 @@ void main() {
 
       await tester.pump();
       expect(find.text('Mind space'), findsNothing);
-      expect(find.textContaining("Capture an insight"), findsOneWidget);
+      expect(find.textContaining('Capture a thought'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 1));
@@ -165,7 +165,7 @@ void main() {
         expect(find.text('Hydration'), findsOneWidget);
         expect(find.text('250'), findsOneWidget);
         expect(find.text('Medicine'), findsOneWidget);
-        expect(find.text('Chai & Coffee Break'), findsOneWidget);
+        expect(find.text('Pause'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(seconds: 1));

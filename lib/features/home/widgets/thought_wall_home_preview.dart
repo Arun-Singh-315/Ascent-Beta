@@ -1155,11 +1155,34 @@ class _ThoughtWallHomePreviewState
       key: const ValueKey('home_mind_space_card'),
       icon: Icons.psychology_alt_outlined,
       title: 'Mindspace',
-      trailing: TextButton(
-        onPressed: () => context.push('/thought-wall'),
-        child: const Text('View all'),
+      trailing: InkWell(
+        key: const ValueKey('home_mind_space_view_all'),
+        onTap: () => context.push('/thought-wall'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'View all',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: c.accent,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: c.accent,
+              ),
+            ],
+          ),
+        ),
       ),
-      onOpen: () => context.push('/thought-wall'),
+      onOpen: null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
