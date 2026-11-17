@@ -69,15 +69,28 @@ class HomeTheme {
         ),
       ),
       textTheme: parent.textTheme.copyWith(
-        displaySmall: AscentTextStyles.interfaceDisplay.copyWith(color: ink),
-        titleLarge: AscentTextStyles.interfaceSection.copyWith(color: ink),
-        titleMedium: AscentTextStyles.interfaceTitle.copyWith(color: ink),
-        bodyLarge: AscentTextStyles.interfaceBody.copyWith(color: ink),
-        bodyMedium: AscentTextStyles.interfaceBody.copyWith(color: ink),
-        bodySmall: AscentTextStyles.interfaceSupporting.copyWith(
-          color: secondary,
+        displaySmall:
+            (parent.textTheme.displaySmall ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceDisplay.copyWith(color: ink),
         ),
-        labelLarge: AscentTextStyles.interfaceNavigation.copyWith(color: ink),
+        titleLarge: (parent.textTheme.titleLarge ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceSection.copyWith(color: ink),
+        ),
+        titleMedium: (parent.textTheme.titleMedium ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceTitle.copyWith(color: ink),
+        ),
+        bodyLarge: (parent.textTheme.bodyLarge ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceBody.copyWith(color: ink),
+        ),
+        bodyMedium: (parent.textTheme.bodyMedium ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceBody.copyWith(color: ink),
+        ),
+        bodySmall: (parent.textTheme.bodySmall ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceSupporting.copyWith(color: secondary),
+        ),
+        labelLarge: (parent.textTheme.labelLarge ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceNavigation.copyWith(color: ink),
+        ),
       ),
       appBarTheme: parent.appBarTheme.copyWith(
         backgroundColor: canvas,
@@ -102,7 +115,9 @@ class HomeTheme {
       popupMenuTheme: parent.popupMenuTheme.copyWith(
         color: design.elevated,
         surfaceTintColor: Colors.transparent,
-        textStyle: AscentTextStyles.interfaceBody.copyWith(color: ink),
+        textStyle: (parent.popupMenuTheme.textStyle ?? const TextStyle()).merge(
+          AscentTextStyles.interfaceBody.copyWith(color: ink),
+        ),
       ),
       iconTheme: parent.iconTheme.copyWith(color: ink),
       iconButtonTheme: IconButtonThemeData(

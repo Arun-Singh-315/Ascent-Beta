@@ -22,9 +22,51 @@ class ThoughtTheme {
   static const frozenCanvas = Color(0xFFF3F7FB);
   static const frozenSurface = Color(0xFFF8FAFD);
 
+  // Matte Charcoal + Premium Glass foundation in dark mode:
+  static const darkCanvas = Color(0xFF111317);
+  static const darkSurface = Color(0xFF171A21);
+  static const darkCardBorder = Color(0xFF282C37);
+  static const darkInk = Color(0xFFF1F3F5);
+  static const darkMuted = Color(0xFF8B92A0);
+
   static ThemeData from(ThemeData parent) {
     final glass = parent.extension<AscentGlass>();
-    if (glass == null || glass.merlot || parent.brightness == Brightness.dark) {
+    if (glass == null) return parent;
+
+    final isDark = parent.brightness == Brightness.dark;
+    if (isDark) {
+      final surfaces = parent.extension<AppSurfaces>() ?? AppSurfaces.night;
+      return parent.copyWith(
+        scaffoldBackgroundColor: darkCanvas,
+        extensions: [
+          ...parent.extensions.values.where(
+            (extension) =>
+                extension is! AscentGlass && extension is! AppSurfaces,
+          ),
+          glass.copyWith(
+            bg: darkCanvas,
+            fill: darkSurface,
+            ink: darkInk,
+            inkMuted: darkMuted,
+            edge: darkCardBorder,
+            line: const Color(0x1AFFFFFF),
+            glow1: Colors.transparent,
+            glow2: Colors.transparent,
+          ),
+          surfaces.copyWith(
+            cardFill: darkSurface,
+            tintFill: darkSurface,
+            cardBorderColor: darkCardBorder,
+            pillBorderColor: darkCardBorder,
+            ink: darkInk,
+            mutedText: darkMuted,
+            shadow: Colors.black.withValues(alpha: 0.40),
+          ),
+        ],
+      );
+    }
+
+    if (glass.merlot) {
       return parent;
     }
     final canvas = glass.frozen ? frozenCanvas : clayCanvas;

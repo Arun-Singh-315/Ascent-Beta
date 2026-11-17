@@ -220,7 +220,9 @@ void main() {
         );
         await tester.pumpAndSettle();
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
-        final expected = !dark && preset != DayThemePreset.merlotLinen
+        final expected = dark
+            ? ThoughtTheme.darkCanvas
+            : preset != DayThemePreset.merlotLinen
             ? (preset == DayThemePreset.nordicSky
                   ? ThoughtTheme.frozenCanvas
                   : ThoughtTheme.clayCanvas)

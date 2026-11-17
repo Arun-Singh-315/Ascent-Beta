@@ -41,10 +41,10 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == mode).key;
     await prefs.setString(_themeModeKey, key);
-    state = mode;
   }
 }
 
@@ -80,10 +80,10 @@ class DayThemePresetNotifier extends Notifier<DayThemePreset> {
   }
 
   Future<void> setPreset(DayThemePreset preset) async {
+    state = preset;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == preset).key;
     await prefs.setString(_dayThemePresetKey, key);
-    state = preset;
   }
 }
 
@@ -118,10 +118,10 @@ class GlassTranslucencyPresetNotifier extends Notifier<GlassTranslucencyPreset> 
   }
 
   Future<void> setPreset(GlassTranslucencyPreset preset) async {
+    state = preset;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == preset).key;
     await prefs.setString(_glassTranslucencyPresetKey, key);
-    state = preset;
   }
 }
 
