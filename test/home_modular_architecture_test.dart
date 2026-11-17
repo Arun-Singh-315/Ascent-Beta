@@ -187,7 +187,7 @@ void main() {
 
         // Verify key elements are in tree
         expect(find.byType(HomeScreen), findsOneWidget);
-        expect(find.byTooltip('Ask Riya'), findsOneWidget);
+        expect(find.byTooltip('Ask Aria'), findsOneWidget);
 
         // Flush 350ms post-frame timer in _HomeScreenState
         await tester.pump(const Duration(milliseconds: 500));
@@ -219,14 +219,14 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.byTooltip('Ask Riya'), findsOneWidget);
+        expect(find.byTooltip('Ask Aria'), findsOneWidget);
 
         // Change assistant identity to Jarvis
         await container.read(assistantNameProvider.notifier).setName('Jarvis');
         await tester.pump();
 
         expect(find.byTooltip('Ask Jarvis'), findsOneWidget);
-        expect(find.byTooltip('Ask Riya'), findsNothing);
+        expect(find.byTooltip('Ask Aria'), findsNothing);
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pumpWidget(const SizedBox());
         container.dispose();

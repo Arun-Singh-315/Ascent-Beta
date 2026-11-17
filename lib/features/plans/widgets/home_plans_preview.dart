@@ -146,15 +146,17 @@ class _HomePlansPreviewState extends ConsumerState<HomePlansPreview> {
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       style: FilledButton.styleFrom(
-                        backgroundColor: c.accent,
+                        backgroundColor: c.accent, // primary clay
                         foregroundColor: c.onAccent,
+                        elevation: 2,
+                        shadowColor: const Color(0x0A5C4A3E),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(Rd.field),
+                          borderRadius: BorderRadius.circular(Rd.chip),
                         ),
                         minimumSize: const Size(140, 44),
                       ),
                       onPressed: () => showPlanCollectionEditor(context),
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const Icon(Icons.add_rounded, size: 18),
                       label: const Text('Create a plan'),
                     ),
                   ],

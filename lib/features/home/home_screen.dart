@@ -352,9 +352,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               onAction: () => context.push('/more'),
                             ),
 
-                          // 9. Bottom spacer
+                          // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
                           SizedBox(
-                            height: 96 + MediaQuery.paddingOf(context).bottom,
+                            height:
+                                64 + MediaQuery.paddingOf(context).bottom + 16,
                           ),
                         ],
                       ),
@@ -419,7 +420,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   ) {
     final modules = <Widget>[];
     Widget spaced(Widget child) => Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: 12),
       child: HomeContentTransition(child: child),
     );
     if (!_heavierModulesReady) return modules;

@@ -49,17 +49,18 @@ void main() {
   }
 
   group('Ask Riya Gateway & Mindspace Alignment Tests', () {
-    testWidgets('HomeAssistantHeroCard renders outside header with glowing disc & tooltip', (tester) async {
+    testWidgets('HomeAssistantHeroCard renders minimal card without AI badge or glow', (tester) async {
       await tester.pumpWidget(
         buildApp(const Scaffold(body: HomeAssistantHeroCard())),
       );
       await tester.pump();
 
       expect(find.byKey(const ValueKey('home_assistant_button')), findsOneWidget);
-      expect(find.text('Ask Riya'), findsOneWidget);
-      expect(find.text('AI'), findsOneWidget);
+      expect(find.text('Ask Aria'), findsOneWidget);
+      expect(find.text('Plan your day or ask anything'), findsOneWidget);
+      expect(find.text('AI'), findsNothing);
       expect(find.text('Chat'), findsOneWidget);
-      expect(find.byTooltip('Ask Riya'), findsOneWidget);
+      expect(find.byTooltip('Ask Aria'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));
@@ -84,18 +85,16 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     });
 
-    testWidgets('Mindspace SectionCard View all > is right-aligned without duplicate chevrons', (tester) async {
+    testWidgets('Mindspace SectionCard has chevron right and removed mid-row View all', (tester) async {
       await tester.pumpWidget(
         buildApp(const Scaffold(body: ThoughtWallHomePreview(compact: true))),
       );
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('home_mind_space_view_all')), findsOneWidget);
-      expect(find.text('View all'), findsOneWidget);
-
-      // SectionCard chevron onOpen is null so no duplicate chevron icon
-      final viewAllFinder = find.byKey(const ValueKey('home_mind_space_view_all'));
-      expect(viewAllFinder, findsOneWidget);
+      // Header row has chevron right, same as Things/Plans
+      expect(find.byIcon(Icons.chevron_right), findsWidgets);
+      // Mid-row View all removed per requirement e
+      expect(find.text('View all'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));

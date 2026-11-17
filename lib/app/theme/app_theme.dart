@@ -127,18 +127,6 @@ class AscentTheme {
     final accentPrimary = isDark
         ? SharedControlColors.actionBlueDark
         : SharedControlColors.actionBlue;
-    final accentSecondary = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkSpark : MerlotPalette.antiqueGold)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : (isDark
-              ? AscentColors.accentSecondaryDark
-              : AscentColors.accentSecondary);
-    final accentInfo = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkWarning : MerlotPalette.warning)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
-        : (isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo);
     final stateDanger = isMerlotLinen
         ? (isDark ? MerlotPalette.darkDanger : MerlotPalette.danger)
         : isNordicSky
@@ -185,33 +173,47 @@ class AscentTheme {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: accentPrimary,
-      onPrimary: textOnPrimary,
-      primaryContainer: bgSurfaceElevated,
-      onPrimaryContainer: textPrimary,
-      secondary: accentSecondary,
-      onSecondary: textOnPrimary,
-      secondaryContainer: bgSurfaceElevated,
-      onSecondaryContainer: textPrimary,
-      tertiary: accentInfo,
-      onTertiary: textOnPrimary,
-      tertiaryContainer: bgSurfaceElevated,
-      onTertiaryContainer: textPrimary,
-      error: stateDanger,
-      onError: textOnPrimary,
-      errorContainer: bgSurfaceElevated,
-      onErrorContainer: stateDanger,
-      surface: bgSurface,
-      onSurface: textPrimary,
-      surfaceContainerHighest: bgSurfaceElevated,
-      onSurfaceVariant: textMuted,
-      outline: divider,
-      outlineVariant: divider,
-      shadow: isDark ? AscentColors.shadowDark : AscentColors.shadow,
-      scrim: isDark ? AscentColors.shadowDark : AscentColors.shadow,
-      inverseSurface: textPrimary,
-      onInverseSurface: bgBase,
-      inversePrimary: accentPrimary,
+      primary: isDark ? const Color(0xFFE28A6D) : const Color(0xFFBF5A36),
+      onPrimary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+      primaryContainer:
+          isDark ? const Color(0xFF4D2415) : const Color(0xFFFBE6DA),
+      onPrimaryContainer:
+          isDark ? const Color(0xFFFBE6DA) : const Color(0xFF6B2E14),
+      secondary: isDark ? const Color(0xFFA79BD6) : const Color(0xFF7C6FB0),
+      onSecondary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+      secondaryContainer:
+          isDark ? const Color(0xFF2D2545) : const Color(0xFFECE8F6),
+      onSecondaryContainer:
+          isDark ? const Color(0xFFECE8F6) : const Color(0xFF3A3266),
+      tertiary: isDark ? const Color(0xFFE3B863) : const Color(0xFFC99A3C),
+      onTertiary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+      tertiaryContainer:
+          isDark ? const Color(0xFF4A3B18) : const Color(0xFFF7EBCF),
+      onTertiaryContainer:
+          isDark ? const Color(0xFFF7EBCF) : const Color(0xFF5A4108),
+      error: isDark ? const Color(0xFFE2756E) : const Color(0xFFB3473F),
+      onError: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+      errorContainer:
+          isDark ? const Color(0xFF4D1D1B) : const Color(0xFFFDE8E8),
+      onErrorContainer:
+          isDark ? const Color(0xFFE2756E) : const Color(0xFFB3473F),
+      surface: isDark ? const Color(0xFF2A2420) : const Color(0xFFFFFDF9),
+      onSurface: isDark ? const Color(0xFFF5EFEB) : const Color(0xFF2A2521),
+      surfaceContainerHighest:
+          isDark ? const Color(0xFF352F2A) : const Color(0xFFF4EEE6),
+      onSurfaceVariant:
+          isDark ? const Color(0xFFBAAFA4) : const Color(0xFF6B635A),
+      outline: isDark ? const Color(0xFF433C35) : const Color(0xFFE9E1D5),
+      outlineVariant:
+          isDark ? const Color(0xFF433C35) : const Color(0xFFE9E1D5),
+      shadow: isDark ? const Color(0x331F1B18) : const Color(0x0A5C4A3E),
+      scrim: isDark ? const Color(0x331F1B18) : const Color(0x0A5C4A3E),
+      inverseSurface:
+          isDark ? const Color(0xFFF5EFEB) : const Color(0xFF2A2521),
+      onInverseSurface:
+          isDark ? const Color(0xFF1F1B18) : const Color(0xFFFBF8F3),
+      inversePrimary:
+          isDark ? const Color(0xFFBF5A36) : const Color(0xFFE28A6D),
     );
 
     final baseTextTheme = TextTheme(

@@ -16,6 +16,7 @@ import '../../shared/widgets/ascent_action_menu.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import '../../shared/widgets/app_text_field.dart';
 import '../home/widgets/activity_composer.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import '../home/widgets/activity_row_item.dart';
@@ -559,41 +560,21 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
     );
   }
 
-  Widget _buildSearch() => TextField(
+  Widget _buildSearch() => AppTextField(
     controller: _searchController,
     autofocus: true,
-    decoration: InputDecoration(
-      hintText: 'Search your things',
-      prefixIcon: const Icon(Icons.search_rounded, size: 20),
-      suffixIcon: _query.isNotEmpty
-          ? IconButton(
-              icon: const Icon(Icons.clear_rounded, size: 18),
-              tooltip: 'Clear search',
-              onPressed: () {
-                _searchController.clear();
-                setState(() => _query = '');
-              },
-            )
-          : null,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: context.glass.line, width: 0.8),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: context.glass.line, width: 0.8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: context.glass.isDark
-              ? SharedControlColors.actionBlueDark
-              : SharedControlColors.actionBlue,
-          width: 1.4,
-        ),
-      ),
-    ),
+    hintText: 'Search your things',
+    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+    suffixIcon: _query.isNotEmpty
+        ? IconButton(
+            icon: const Icon(Icons.clear_rounded, size: 18),
+            tooltip: 'Clear search',
+            onPressed: () {
+              _searchController.clear();
+              setState(() => _query = '');
+            },
+          )
+        : null,
     onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
   );
 

@@ -30,7 +30,7 @@ class AppElevation {
 
   static List<BoxShadow> soft(Color color, {bool dark = false}) => [
         BoxShadow(
-          color: (dark ? Colors.black : color).withValues(alpha: dark ? 0.20 : 0.05),
+          color: (dark ? const Color(0xFF1F1B18) : color).withValues(alpha: dark ? 0.20 : 0.05),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -38,7 +38,7 @@ class AppElevation {
 
   static List<BoxShadow> raised(Color color, {bool dark = false}) => [
         BoxShadow(
-          color: (dark ? Colors.black : color).withValues(alpha: dark ? 0.30 : 0.08),
+          color: (dark ? const Color(0xFF1F1B18) : color).withValues(alpha: dark ? 0.30 : 0.08),
           blurRadius: 16,
           offset: const Offset(0, 4),
         ),

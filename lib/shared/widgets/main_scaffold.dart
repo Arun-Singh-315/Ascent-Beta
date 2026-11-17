@@ -1,6 +1,5 @@
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
-import '../../app/theme/shared_control_tokens.dart';
 import 'ascent_button.dart';
 import '../../app/theme/home_design.dart';
 
@@ -10,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/monochrome_surfaces.dart';
 import '../../features/home/widgets/home_theme.dart';
 import '../../core/providers/calendar_view_mode_provider.dart';
 
@@ -202,15 +200,11 @@ class _AscentBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final neutral = Theme.of(context).extension<MonochromeSurfaces>();
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final blue = dark
-        ? SharedControlColors.actionBlueDark
-        : SharedControlColors.actionBlue;
-    final activeTileColor = blue.withValues(alpha: dark ? .18 : .09);
+    final colorScheme = Theme.of(context).colorScheme;
+    final activeTileColor = colorScheme.primaryContainer;
+    final activeFgColor = colorScheme.onPrimaryContainer;
 
     final c = context.c;
     return Padding(
@@ -222,13 +216,20 @@ class _AscentBottomNav extends StatelessWidget {
           color: c.surface,
           borderRadius: BorderRadius.circular(Rd.nav),
           border: Border.all(color: c.border),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A5C4A3E),
+              blurRadius: 16,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
             Widget tabAt(int index) {
               final tab = tabs[index];
               final active = index == currentIndex;
-              final fg = active ? blue : c.textSecondary;
+              final fg = active ? activeFgColor : c.textSecondary;
               return Semantics(
                 button: true,
                 selected: active,
@@ -276,7 +277,7 @@ class _AscentBottomNav extends StatelessWidget {
             }
 
             final scale = MediaQuery.textScalerOf(context).scale(1);
-            final columns = neutral != null && scale >= 1.45
+            final columns = scale >= 1.45
                 ? (scale > 2.2 ? 1 : 2)
                 : tabs.length;
             return Column(

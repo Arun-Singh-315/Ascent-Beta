@@ -29,10 +29,11 @@ class AppChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final bg = isSelected ? c.accentTint : c.surface;
-    final borderColor = isSelected ? c.accent : c.border;
-    final fg = textColor ?? (isSelected ? c.accent : c.textPrimary);
-    final iColor = iconColor ?? (isSelected ? c.accent : c.textSecondary);
+    final bg = isSelected ? c.primaryContainer : c.surfaceAlt;
+    final borderColor = isSelected ? c.primary : c.border;
+    final fg = textColor ?? (isSelected ? c.onPrimaryContainer : c.textPrimary);
+    final iColor =
+        iconColor ?? (isSelected ? c.onPrimaryContainer : c.textSecondary);
 
     return Material(
       color: bg,
