@@ -51,6 +51,23 @@ final _testProfile = UserProfile(
   lastOpenedAt: null,
 );
 
+final _sampleThought = Thought(
+  id: 1,
+  content: '''
+- [x] ★ Drink lemon tea & morning hydration
+- [ ] Deep focus study session (45m)
+- [ ] ★ Work on Ascent feature redesign
+- [ ] Evening mindful walk
+''',
+  mood: 'thought',
+  category: 'daily',
+  colorHex: '#2F6F6A',
+  isPinned: false,
+  isArchived: false,
+  isCompleted: false,
+  createdAt: DateTime(2026, 11, 17, 10, 30),
+);
+
 final _sampleActivities = [
   const TodayActivityItem(
     id: 'task_1',
@@ -167,7 +184,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     const outDir =
-        '/home/arunsinghvisen/.gemini/antigravity/brain/6e5c0915-9ec5-4033-bc23-e754a7671354';
+        '/home/arunsinghvisen/.gemini/antigravity/brain/c4562752-ff66-4729-a56a-7b6c5dbf97f2';
+    Directory(outDir).createSync(recursive: true);
 
     for (final isDark in [false, true]) {
       final repaintKey = GlobalKey();
@@ -189,7 +207,8 @@ void main() {
             activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
             activeMomentumChallengeStreamProvider.overrideWith((ref) => Stream.value(null)),
             todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
-            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value(<Thought>[])),
+            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value(<Thought>[_sampleThought])),
+            latestHomeThoughtProvider.overrideWith((ref) => Stream.value(_sampleThought)),
             nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
             userProfileStreamProvider.overrideWith((ref) => Stream.value(_testProfile)),
             todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
