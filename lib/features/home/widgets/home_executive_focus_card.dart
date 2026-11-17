@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
@@ -101,7 +102,7 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: completedTasks > 0
-                            ? const Color(0xFF10B981)
+                            ? g.sage
                             : SharedControlColors.actionBlue,
                       ),
                     ),
@@ -142,7 +143,7 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(2),
                     color: isFilled
                         ? (completedTasks >= totalTasks && totalTasks > 0
-                            ? const Color(0xFF10B981)
+                            ? g.sage
                             : SharedControlColors.actionBlue)
                         : g.line.withValues(alpha: context.isDark ? 0.35 : 0.5),
                   ),
@@ -164,7 +165,11 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                   sub: totalTasks > 0
                       ? '${totalTasks - completedTasks} pending'
                       : 'No tasks',
-                  color: const Color(0xFF10B981),
+                  color: g.sage,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/today');
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -176,6 +181,10 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                   value: '${(waterMl / 1000).toStringAsFixed(2)}L',
                   sub: '$waterPct% of ${waterGoal ~/ 1000}L',
                   color: SharedControlColors.actionBlue,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/hydration');
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -188,7 +197,11 @@ class HomeExecutiveFocusCard extends ConsumerWidget {
                   sub: totalMeds > 0
                       ? (takenMeds >= totalMeds ? 'All taken' : '${totalMeds - takenMeds} pending')
                       : 'Routine clean',
-                  color: const Color(0xFFF43F5E),
+                  color: g.coral,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    context.push('/medicine');
+                  },
                 ),
               ),
             ],
@@ -205,26 +218,33 @@ class _TelemetryBentoCell extends StatelessWidget {
     required this.value,
     required this.sub,
     required this.color,
+    this.onTap,
   });
 
   final String label;
   final String value;
   final String sub;
   final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: g.fill.withValues(alpha: context.isDark ? 0.25 : 0.45),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: g.line.withValues(alpha: 0.3),
-          width: 0.75,
-        ),
-      ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: g.fill.withValues(alpha: context.isDark ? 0.25 : 0.45),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: g.line.withValues(alpha: 0.3),
+              width: 0.75,
+            ),
+          ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -264,6 +284,8 @@ class _TelemetryBentoCell extends StatelessWidget {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }
