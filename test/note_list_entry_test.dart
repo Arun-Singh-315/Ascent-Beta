@@ -16,7 +16,7 @@ void main() {
   test('list button inserts a real new line and parser produces two items', () {
     final controller = TextEditingController(text: 'Read Java');
     NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'Read Java\n\n→ ');
+    expect(controller.text, 'Read Java\n• ');
     controller.text += 'Practise RAG';
     expect(PlanItemDraft.parseList(controller.text), [
       'Read Java',
@@ -27,10 +27,10 @@ void main() {
   test(
     'repeated taps reuse an empty list row rather than adding empty tasks',
     () {
-      final controller = TextEditingController(text: 'Read\n→ ');
+      final controller = TextEditingController(text: 'Read\n• ');
       NoteListButton.insertNextItem(controller);
       NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'Read\n→ ');
+      expect(controller.text, 'Read\n• ');
       controller.dispose();
     },
   );
@@ -38,7 +38,7 @@ void main() {
     final controller = TextEditingController(text: 'ReadApply')
       ..selection = const TextSelection.collapsed(offset: 4);
     NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'Read\n\n→ Apply');
+    expect(controller.text, 'Read\n• Apply');
     controller.dispose();
   });
   test(
@@ -81,7 +81,7 @@ void main() {
       );
       await t.tap(find.text('Add next item'));
       await t.pump();
-      expect(controller.text, 'First\n\n→ ');
+      expect(controller.text, 'First\n• ');
       expect(focus.hasFocus, isTrue);
       expect(
         find.text('One line per item. Tap Plan to review your list.'),
@@ -110,9 +110,9 @@ void main() {
       final input = find.byKey(const ValueKey('activity_quick_input'));
       await t.enterText(input, 'First task');
       await t.pump();
-      await t.tap(find.byType(InlineListAddButton));
+      await t.tap(find.byIcon(Icons.add));
       await t.pump();
-      expect(t.widget<TextField>(input).controller!.text, 'First task\n\n→ ');
+      expect(t.widget<TextField>(input).controller!.text, 'First task\n• ');
       await t.enterText(input, 'First task\n→ Second task');
       await t.pump();
       await t.tap(find.byTooltip('Add activity'));

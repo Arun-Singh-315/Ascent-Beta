@@ -72,7 +72,7 @@ class PlanItemDraft {
         .map(
           (l) => l
               .replaceFirst(
-                RegExp(r'^(?:-->|→|--|\[[ xX]\])\s*|^(?:[-•*]|\d+[.)])\s*'),
+                RegExp(r'^(?:-->|->|→|--|\[[ xX]\])\s*|^(?:[-•*]|\d+[.)])\s*'),
                 '',
               )
               .trim(),

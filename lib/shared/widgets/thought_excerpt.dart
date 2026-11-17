@@ -62,75 +62,75 @@ class ThoughtExcerpt extends StatefulWidget {
   final Key? textKey;
   final Key? toggleKey;
 
-  /// Formats raw text by replacing ASCII `-->` with clean `→ ` and `--` with `• `.
+  /// Formats raw text by replacing ASCII `-->` and `->` with clean `• ` and `--` with `• `.
   static String formatArrowContent(String raw) {
     return raw
         .replaceAllMapped(
-          RegExp(r'(^|\n)[ \t]*-->[ \t]*', multiLine: true),
-          (m) => '${m[1]}→ ',
+          RegExp(r'(^|\n)[ \t]*(?:-->|->)[ \t]*', multiLine: true),
+          (m) => '${m[1]}• ',
         )
         .replaceAllMapped(
           RegExp(r'(^|\n)[ \t]*--[ \t]*', multiLine: true),
           (m) => '${m[1]}• ',
         )
-        .replaceAll('-->', '→');
+        .replaceAll('-->', '• ')
+        .replaceAll('->', '• ');
   }
 
   static String displayContent(String raw) => formatArrowContent(
     raw,
   ).replaceAll(RegExp(r'^[ \t]*→[ \t]*', multiLine: true), '').trimRight();
 
-  /// Builds a [TextSpan] that visually styles arrow indicators (`→ `) and bullets (`• `)
-  /// with vibrant theme accent ink.
+  /// Builds a [TextSpan] that visually styles arrow indicators (`→ `), bullets (`• `),
+  /// and numbered lists (`1. `, `2. `) with vibrant theme accent ink and readable typography.
   static TextSpan buildRichArrowSpan({
     required BuildContext context,
     required String text,
     required TextStyle baseStyle,
     Color? arrowColor,
   }) {
-    // Planning markers remain in storage for editing/conversion, but are not note text.
-    final formatted = displayContent(text);
     final accent = arrowColor ?? context.glass.clay;
-    final lines = formatted.split('\n');
+    final lines = text.trimRight().split('\n');
     final List<InlineSpan> spans = [];
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
       if (i > 0) spans.add(const TextSpan(text: '\n'));
 
-      if (line.trimLeft().startsWith('→ ')) {
-        final leadingWhitespace = line.substring(0, line.indexOf('→ '));
-        final restOfLine = line.substring(line.indexOf('→ ') + 2);
-        if (leadingWhitespace.isNotEmpty) {
-          spans.add(TextSpan(text: leadingWhitespace, style: baseStyle));
-        }
-        spans.add(
-          TextSpan(
-            text: '→ ',
-            style: baseStyle.copyWith(
-              color: accent,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.1,
-            ),
-          ),
-        );
-        spans.add(TextSpan(text: restOfLine, style: baseStyle));
-      } else if (line.trimLeft().startsWith('• ')) {
-        final leadingWhitespace = line.substring(0, line.indexOf('• '));
-        final restOfLine = line.substring(line.indexOf('• ') + 2);
-        if (leadingWhitespace.isNotEmpty) {
-          spans.add(TextSpan(text: leadingWhitespace, style: baseStyle));
-        }
+      final arrowMatch =
+          RegExp(r'^(\s*)(?:-->|->|--|•|→)\s*(.*)$').firstMatch(line);
+      final numMatch =
+          RegExp(r'^(\s*)(\d+[\.\)])\s*(.*)$').firstMatch(line);
+
+      if (arrowMatch != null) {
+        final ws = arrowMatch.group(1) ?? '';
+        final rest = arrowMatch.group(2) ?? '';
+        if (ws.isNotEmpty) spans.add(TextSpan(text: ws, style: baseStyle));
         spans.add(
           TextSpan(
             text: '• ',
             style: baseStyle.copyWith(
               color: accent,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
         );
-        spans.add(TextSpan(text: restOfLine, style: baseStyle));
+        spans.add(TextSpan(text: rest, style: baseStyle));
+      } else if (numMatch != null) {
+        final ws = numMatch.group(1) ?? '';
+        final numPrefix = numMatch.group(2) ?? '';
+        final rest = numMatch.group(3) ?? '';
+        if (ws.isNotEmpty) spans.add(TextSpan(text: ws, style: baseStyle));
+        spans.add(
+          TextSpan(
+            text: '$numPrefix ',
+            style: baseStyle.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        );
+        spans.add(TextSpan(text: rest, style: baseStyle));
       } else {
         spans.add(TextSpan(text: line, style: baseStyle));
       }
@@ -176,13 +176,15 @@ class _ThoughtExcerptState extends State<ThoughtExcerpt> {
   Widget build(BuildContext context) {
     final formatted = ThoughtExcerpt.displayContent(widget.content.trimRight());
     final hasArrows = widget.content.contains('-->') ||
+        widget.content.contains('->') ||
         widget.content.contains('•') ||
-        widget.content.contains('→');
+        widget.content.contains('→') ||
+        RegExp(r'(^|\n)\s*\d+[\.\)]\s+').hasMatch(widget.content);
 
     final richSpan = ThoughtExcerpt.buildRichArrowSpan(
       context: context,
       text: widget.content.trimRight(),
-      baseStyle: widget.style,
+      baseStyle: widget.style.copyWith(height: 1.35),
       arrowColor: widget.arrowColor,
     );
 

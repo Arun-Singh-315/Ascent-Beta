@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/smart_list_input_formatter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
 
@@ -58,7 +59,10 @@ class AppInputBar extends StatelessWidget {
                 key: textFieldKey,
                 controller: controller,
                 focusNode: focusNode,
-                textInputAction: TextInputAction.done,
+                minLines: 1,
+                maxLines: 4,
+                keyboardType: TextInputType.multiline,
+                inputFormatters: const [SmartListInputFormatter()],
                 onChanged: onChanged,
                 onSubmitted: (_) => onSubmit(),
                 style: TextStyle(fontSize: 14, color: c.textPrimary),

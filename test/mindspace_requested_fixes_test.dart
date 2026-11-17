@@ -66,19 +66,19 @@ void main() {
     },
   );
 
-  test('arrow insertion respects existing spacing and cursor selection', () {
-    for (final text in ['First', 'First\n', 'First\n\n']) {
+  test('bullet insertion respects existing spacing and cursor selection without long gaps', () {
+    for (final text in ['First', 'First\n']) {
       final controller = TextEditingController(text: text);
       NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'First\n\n→ ');
+      expect(controller.text, 'First\n• ');
       NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'First\n\n→ ');
+      expect(controller.text, 'First\n• ');
       controller.dispose();
     }
     final controller = TextEditingController(text: 'FirstreplaceLast')
       ..selection = const TextSelection(baseOffset: 5, extentOffset: 12);
     NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'First\n\n→ Last');
+    expect(controller.text, 'First\n• Last');
     controller.dispose();
   });
 
