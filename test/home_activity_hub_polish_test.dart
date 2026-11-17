@@ -331,17 +331,17 @@ void main() {
       await tester.drag(dismissibleFinder, const Offset(-500, 0));
       await tester.pumpAndSettle();
 
-      final confirmBtn = find.text('Archive').evaluate().isNotEmpty
-          ? find.text('Archive').last
-          : find.text('Delete');
+      final confirmBtn = find.text('Delete').evaluate().isNotEmpty
+          ? find.text('Delete').last
+          : find.text('Archive');
       if (confirmBtn.evaluate().isNotEmpty) {
         await tester.tap(confirmBtn);
         await tester.pumpAndSettle();
       }
 
-      // Verify task is archived in database
+      // Verify task is deleted in database
       final taskAfter = await taskDao.getTaskById(taskId);
-      expect(taskAfter?.isArchived, isTrue);
+      expect(taskAfter, isNull);
 
       // Verify Undo snackbar appears
       expect(find.text('Undo'), findsOneWidget);
