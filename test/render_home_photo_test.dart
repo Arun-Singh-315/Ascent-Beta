@@ -15,6 +15,7 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/features/home/home_screen.dart';
+import 'package:ascent/features/home/widgets/home_weather.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
 import 'package:ascent/core/services/plan_collection_service.dart';
 
@@ -212,6 +213,12 @@ void main() {
             nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
             userProfileStreamProvider.overrideWith((ref) => Stream.value(_testProfile)),
             todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
+            homeWeatherProvider.overrideWith((ref) => Future.value({
+                  'current': {
+                    'temperature_2m': 24.0,
+                    'weather_code': 0,
+                  },
+                })),
             todayActivitiesProvider.overrideWith((ref) => Stream.value(_sampleActivities)),
             planCollectionsProvider.overrideWith((ref) => Stream.value(<PlanCollectionView>[])),
           ],
