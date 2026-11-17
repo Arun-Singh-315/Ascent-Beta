@@ -96,8 +96,15 @@ class _MessageComposerState extends State<MessageComposer> {
                     ? SharedControlColors.actionBlue
                     : const Color(0xFF90CAF9).withValues(alpha: 0.55));
 
-          return Container(
-            constraints: BoxConstraints(minHeight: widget.minHeight ?? 52),
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (!_focus.hasFocus) {
+                _focus.requestFocus();
+              }
+            },
+            child: Container(
+              constraints: BoxConstraints(minHeight: widget.minHeight ?? 52),
             decoration: BoxDecoration(
               color: containerBg,
               borderRadius: BorderRadius.circular(28),
@@ -231,6 +238,7 @@ class _MessageComposerState extends State<MessageComposer> {
                 ),
               ],
             ),
+          ),
           );
         },
       ),

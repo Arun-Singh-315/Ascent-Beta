@@ -21,7 +21,6 @@ class AppComposer extends StatefulWidget {
     required this.onSubmitted,
     this.assistantName = AppConstants.assistantName,
     this.onPlusPressed,
-    this.onMicPressed,
     this.isLoading = false,
   });
 
@@ -30,7 +29,6 @@ class AppComposer extends StatefulWidget {
   final ValueChanged<String> onSubmitted;
   final String assistantName;
   final VoidCallback? onPlusPressed;
-  final VoidCallback? onMicPressed;
   final bool isLoading;
 
   @override
@@ -105,135 +103,136 @@ class _AppComposerState extends State<AppComposer>
       top: false,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF16181F) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: _isFocused
-                  ? colorScheme.primary
-                  : (isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0)),
-              width: 1.0,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            if (!widget.focusNode.hasFocus) {
+              widget.focusNode.requestFocus();
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF16181F) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: _isFocused
+                    ? colorScheme.primary
+                    : (isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0)),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Leading "+" action button
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  key: const ValueKey('chat_plus_button'),
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.add_rounded,
-                    color: c.textSecondary,
-                    size: 22,
-                  ),
-                  tooltip: 'Actions',
-                  onPressed: widget.isLoading ? null : widget.onPlusPressed,
-                ),
-              ),
-              // Single borderless TextField in perfect horizontal & vertical sync
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: TextField(
-                    controller: widget.controller,
-                    focusNode: widget.focusNode,
-                    minLines: 1,
-                    maxLines: 5,
-                    textAlignVertical: TextAlignVertical.center,
-                    textCapitalization: TextCapitalization.sentences,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _handleSend(),
-                    cursorColor: colorScheme.primary,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: c.textPrimary,
-                      height: 1.30,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Leading "+" action button
+                SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: IconButton(
+                    key: const ValueKey('chat_plus_button'),
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      Icons.add_rounded,
+                      color: c.textSecondary,
+                      size: 22,
                     ),
-                    decoration: InputDecoration(
-                      hintText: 'Message ${widget.assistantName}…',
-                      hintStyle: TextStyle(
+                    tooltip: 'Actions',
+                    onPressed: widget.isLoading ? null : widget.onPlusPressed,
+                  ),
+                ),
+                // Single borderless TextField in perfect horizontal & vertical sync
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: widget.focusNode,
+                      minLines: 1,
+                      maxLines: 5,
+                      textAlignVertical: TextAlignVertical.center,
+                      textCapitalization: TextCapitalization.sentences,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _handleSend(),
+                      cursorColor: colorScheme.primary,
+                      style: TextStyle(
                         fontSize: 15,
-                        color: c.textTertiary,
+                        color: c.textPrimary,
+                        height: 1.30,
                       ),
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      focusedErrorBorder: InputBorder.none,
-                      isDense: true,
-                      filled: false,
-                      contentPadding: const EdgeInsets.fromLTRB(4, 7, 4, 9),
+                      decoration: InputDecoration(
+                        hintText: 'Message ${widget.assistantName}…',
+                        hintStyle: TextStyle(
+                          fontSize: 15,
+                          color: c.textTertiary,
+                        ),
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        isDense: true,
+                        filled: false,
+                        contentPadding: const EdgeInsets.fromLTRB(4, 7, 4, 9),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              // Trailing action: Mic or Scale-animated Send button
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Mic button when empty
-                    if (!_hasText)
-                      IconButton(
-                        key: const ValueKey('chat_mic_button'),
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          Icons.mic_none_rounded,
-                          color: c.textSecondary,
-                          size: 22,
-                        ),
-                        tooltip: 'Voice input',
-                        onPressed: widget.isLoading
-                            ? null
-                            : () {
-                                HapticFeedback.lightImpact();
-                                widget.onMicPressed?.call();
-                              },
+                // Trailing action: High-speed Send button (No dummy mic)
+                SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: Center(
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.90, end: 1.0).animate(
+                        _sendScaleAnimation,
                       ),
-                    // Scale-animated send button
-                    ScaleTransition(
-                      scale: _sendScaleAnimation,
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: colorScheme.primary,
+                          color: _hasText
+                              ? colorScheme.primary
+                              : (isDark
+                                  ? const Color(0xFF262933)
+                                  : const Color(0xFFE2E8F0)),
                         ),
                         child: IconButton(
                           key: const ValueKey('chat_send_button'),
                           padding: EdgeInsets.zero,
+                          tooltip: _hasText ? 'Send message' : null,
                           icon: Icon(
                             Icons.arrow_upward_rounded,
                             size: 18,
-                            color: colorScheme.onPrimary,
+                            color: _hasText
+                                ? colorScheme.onPrimary
+                                : (isDark
+                                    ? const Color(0xFF64748B)
+                                    : const Color(0xFF94A3B8)),
                           ),
-                          onPressed: widget.isLoading ? null : _handleSend,
+                          onPressed: (_hasText && !widget.isLoading)
+                              ? _handleSend
+                              : null,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

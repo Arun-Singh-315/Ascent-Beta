@@ -101,8 +101,39 @@ class BoardCard extends StatefulWidget {
   State<BoardCard> createState() => _BoardCardState();
 }
 
-class _BoardCardState extends State<BoardCard> {
+class _BoardCardState extends State<BoardCard>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
+  late final AnimationController _cardAnimController;
+  late final Animation<double> _cardFade;
+  late final Animation<Offset> _cardSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _cardAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _cardFade = CurvedAnimation(
+      parent: _cardAnimController,
+      curve: Curves.easeOut,
+    );
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.07),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _cardAnimController,
+      curve: Curves.easeOutCubic,
+    ));
+    _cardAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _cardAnimController.dispose();
+    super.dispose();
+  }
 
   Thought get thought => widget.thought;
   int get index => widget.index;
@@ -241,16 +272,22 @@ class _BoardCardState extends State<BoardCard> {
       );
     }
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: isLocked ? 'Private commitment' : displayContent(thought.content),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onLongPress: onLongPress,
-        onDoubleTap: isSelectionMode ? null : onDoubleTap,
-        child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+    return FadeTransition(
+      opacity: _cardFade,
+      child: SlideTransition(
+        position: _cardSlide,
+        child: Semantics(
+          button: true,
+          selected: isSelected,
+          label: isLocked ? 'Private commitment' : displayContent(thought.content),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            onLongPress: onLongPress,
+            onDoubleTap: isSelectionMode ? null : onDoubleTap,
+            child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+          ),
+        ),
       ),
     );
   }

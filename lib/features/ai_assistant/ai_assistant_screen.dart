@@ -1079,13 +1079,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           name,
                         );
                       },
-                      onMicPressed: () {
-                        HapticFeedback.lightImpact();
-                        AscentSnackBar.show(
-                          context,
-                          message: 'Voice input active',
-                        );
-                      },
                     ),
                   ],
                 );
@@ -1396,9 +1389,40 @@ class _ConversationMessageBubble extends ConsumerStatefulWidget {
 }
 
 class _ConversationMessageBubbleState
-    extends ConsumerState<_ConversationMessageBubble> {
+    extends ConsumerState<_ConversationMessageBubble>
+    with SingleTickerProviderStateMixin {
   bool _showTimestamp = false;
   bool _isSaved = false;
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    ));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1676,12 +1700,16 @@ class _ConversationMessageBubbleState
       ),
     );
 
-    return Column(
-      crossAxisAlignment: isUser
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: Column(
+          crossAxisAlignment: isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
         mainBubble,
 
         // Interactive Study Plan Card
@@ -2194,6 +2222,8 @@ class _ConversationMessageBubbleState
           ),
         ],
       ],
+    ),
+    ),
     );
   }
 }
