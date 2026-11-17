@@ -13,6 +13,7 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/plan_collection_service.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
 import '../planning_providers.dart';
+import '../screens/plan_creator_screen.dart';
 
 Future<void> showPlanCollectionEditor(
   BuildContext context, {
@@ -23,31 +24,9 @@ Future<void> showPlanCollectionEditor(
   PlanItemView? editing,
   List<PlanItemView>? scheduling,
   bool dailyTimes = false,
-}) => showModalBottomSheet<void>(
-  context: context,
-  useRootNavigator: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  constraints: BoxConstraints(
-    maxWidth: 600,
-    maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-  ),
-  backgroundColor: Colors.transparent,
-  builder: (ctx) => Container(
-    decoration: BoxDecoration(
-      color: ctx.bgSurfaceElevated,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      border: Border.all(color: ctx.glass.line),
-    ),
-    child: PlanCollectionEditor(
-      source: source,
-      initialText: initialText,
-      collectionId: collectionId,
-      draftKey: draftKey,
-      editing: editing,
-      scheduling: scheduling,
-      dailyTimes: dailyTimes,
-    ),
+}) => Navigator.of(context, rootNavigator: true).push<void>(
+  MaterialPageRoute(
+    builder: (_) => const PlanCreatorScreen(),
   ),
 );
 

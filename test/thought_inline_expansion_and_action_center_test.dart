@@ -1,5 +1,4 @@
 import 'package:ascent/core/theme/app_colors.dart';
-import 'package:ascent/core/theme/app_tokens.dart';
 import 'package:ascent/shared/widgets/ascent_action_menu.dart';
 import 'package:ascent/shared/widgets/thought_excerpt.dart';
 import 'package:flutter/material.dart';
@@ -237,9 +236,6 @@ void main() {
       await tester.pumpAndSettle();
 
       final error = tester.takeException();
-      if (error != null) {
-        print('FOUND EXCEPTION: $error');
-      }
       expect(error, isNull);
       expect(find.byType(Dialog), findsOneWidget);
     });

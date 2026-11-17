@@ -4,9 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/color_tokens.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';

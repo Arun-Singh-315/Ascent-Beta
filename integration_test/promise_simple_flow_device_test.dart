@@ -123,11 +123,11 @@ void main() {
       await until(find.text('Promise saved. One small step at a time.'));
       await t.pumpAndSettle();
       saved = (await repo.getActivePromises()).single;
-      expect(saved!.schedule!.repeat, PromiseRepeat.daily);
-      await repo.markDayDone(saved!.id);
-      saved = (await repo.getPromiseById(saved!.id))!;
-      expect(saved!.isActive, true);
-      expect(saved!.isDoneToday, true);
+      expect(saved.schedule!.repeat, PromiseRepeat.daily);
+      await repo.markDayDone(saved.id);
+      saved = (await repo.getPromiseById(saved.id))!;
+      expect(saved.isActive, true);
+      expect(saved.isDoneToday, true);
       await t.tap(find.text('Open promise'));
       await until(find.byKey(const ValueKey('promise_calendar')));
       await t.pumpAndSettle();

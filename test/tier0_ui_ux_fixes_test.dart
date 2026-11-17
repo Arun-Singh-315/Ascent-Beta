@@ -1,8 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/daily_briefing_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/daily_welcome_dialog.dart';

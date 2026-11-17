@@ -1,5 +1,4 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';

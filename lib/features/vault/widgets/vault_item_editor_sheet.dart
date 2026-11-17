@@ -48,6 +48,7 @@ class VaultItemEditorSheet extends ConsumerStatefulWidget {
 }
 
 class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
+  final _scrollController = ScrollController();
   late VaultCategory _selectedCategory;
   final _titleController = TextEditingController();
 
@@ -133,6 +134,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
     _loginUsernameController.dispose();
     _loginPasswordController.dispose();
     _noteContentController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -440,8 +442,10 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       child: SafeArea(
         top: false,
         child: Scrollbar(
+          controller: _scrollController,
           thumbVisibility: true,
           child: SingleChildScrollView(
+            controller: _scrollController,
             child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +564,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: _mediaPaths.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
                     itemBuilder: (ctx, idx) {
                       final path = _mediaPaths[idx];
                       return Stack(
@@ -572,7 +576,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                               width: 64,
                               height: 64,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
+                              errorBuilder: (context, error, stackTrace) => Container(
                                 width: 64,
                                 height: 64,
                                 color: g.line,
@@ -794,7 +798,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
     return Column(
       children: [
         DropdownButtonFormField<String>(
-          value: docTypes.contains(_selectedIdType) ? _selectedIdType : docTypes.first,
+          initialValue: docTypes.contains(_selectedIdType) ? _selectedIdType : docTypes.first,
           decoration: InputDecoration(
             labelText: 'Document Type',
             filled: true,

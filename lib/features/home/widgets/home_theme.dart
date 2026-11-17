@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/day_glass_material.dart';
 import '../../../app/theme/home_design.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
@@ -10,6 +11,7 @@ import '../../../app/theme/monochrome_surfaces.dart';
 /// and the person's explicit day/night choice remain independently owned.
 class HomeTheme {
   static ThemeData from(ThemeData parent) {
+    if (parent.extension<DayGlassMaterial>() != null) return parent;
     final dark = parent.brightness == Brightness.dark;
     final design = dark ? const HomeDesign.night() : const HomeDesign.day();
     final neutral = HomeControlSurfaces(design);

@@ -180,7 +180,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
     }
   }
 
-  Future<void> _saveAndShareCardImage(BuildContext context) async {
+  Future<void> _saveAndShareCardImage() async {
     if (_isExporting) return;
     HapticFeedback.mediumImpact();
     setState(() => _isExporting = true);
@@ -201,31 +201,41 @@ class _CredCardVisualState extends State<CredCardVisual> {
 
       widget.onCardSaved?.call(file.path);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle_outline_rounded, color: Colors.greenAccent, size: 20),
-                SizedBox(width: 10),
-                Text('CRED-style card image ready!'),
-              ],
-            ),
-            action: SnackBarAction(
-              label: 'Share',
-              textColor: Colors.amberAccent,
-              onPressed: () {
-                Share.shareXFiles([XFile(file.path)], text: '${widget.bankName} ${widget.cardTier} Card');
-              },
-            ),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+      if (!mounted) return;
 
-        // Also offer native share sheet directly
-        await Share.shareXFiles([XFile(file.path)], text: '${widget.bankName} ${widget.cardTier} Card');
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline_rounded, color: Colors.greenAccent, size: 20),
+              SizedBox(width: 10),
+              Text('CRED-style card image ready!'),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'Share',
+            textColor: Colors.amberAccent,
+            onPressed: () {
+              SharePlus.instance.share(
+                ShareParams(
+                  files: [XFile(file.path)],
+                  text: '${widget.bankName} ${widget.cardTier} Card',
+                ),
+              );
+            },
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
+      // Also offer native share sheet directly
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: '${widget.bankName} ${widget.cardTier} Card',
+        ),
+      );
     } catch (e) {
       debugPrint('Error exporting card image: $e');
     } finally {
@@ -525,7 +535,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
                             )
                           : Icon(Icons.download_rounded, size: 18, color: g.clay),
                       tooltip: 'Save card image (CRED style)',
-                      onPressed: () => _saveAndShareCardImage(context),
+                      onPressed: _saveAndShareCardImage,
                     ),
                   ],
                 ),

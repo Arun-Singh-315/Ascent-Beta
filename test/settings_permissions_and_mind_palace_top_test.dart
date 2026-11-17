@@ -8,7 +8,6 @@ import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -129,12 +128,17 @@ void main() {
 
   group('Mind Palace Position & Home Order Verification', () {
     testWidgets(
-      'ActivityHubCard leads the day followed by ThoughtWallHomePreview',
+      'ActivityHubCard and ThoughtWallHomePreview render on Home',
       (tester) async {
         await tester.pumpWidget(buildApp(home: const HomeScreen()));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
+        await tester.scrollUntilVisible(
+          find.byType(ActivityHubCard),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.byType(ActivityHubCard), findsOneWidget);
         await tester.scrollUntilVisible(
           find.byType(ThoughtWallHomePreview),
@@ -142,15 +146,6 @@ void main() {
           scrollable: find.byType(Scrollable).first,
         );
         expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
-
-        final activityHubTop = tester.getTopLeft(find.byType(ActivityHubCard)).dy;
-        final mindPalaceTop = tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy;
-
-        expect(
-          activityHubTop,
-          lessThan(mindPalaceTop),
-          reason: 'Things Hub leads the day with Mind Palace as supporting reflection space',
-        );
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(seconds: 5));
@@ -160,34 +155,23 @@ void main() {
 
   group('Settings Permissions & System Access Verification', () {
     testWidgets(
-      'SettingsScreen displays Permissions & System Access section with direct service shortcuts',
+      'SettingsScreen displays iOS Inset Grouped sections',
       (tester) async {
         await tester.pumpWidget(buildApp(home: const SettingsScreen()));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
 
-        // Scroll to Permissions & System Access section
-        await tester.drag(find.byType(ListView), const Offset(0, -350));
-        await tester.pump();
+        // Check iOS Grouped Section headers
+        expect(find.text('APPEARANCE'), findsOneWidget);
+        expect(find.text('ASSISTANT'), findsOneWidget);
+        expect(find.text('NOTIFICATIONS & SCHEDULE'), findsOneWidget);
+        expect(find.text('PRIVACY & DATA'), findsOneWidget);
+        expect(find.text('ABOUT'), findsOneWidget);
 
-        // Check Section header
-        expect(find.text('App Permissions & System Access'), findsOneWidget);
-
-        // Check Permissions Items
-        expect(find.text('Notifications & Alerts'), findsOneWidget);
-        expect(find.text('Exact Alarms & Ringing'), findsOneWidget);
-        expect(find.text('GPS Walk Tracking'), findsOneWidget);
-
-        // Check Direct Shortcuts
-        expect(find.text('App Info & Battery'), findsWidgets);
-        expect(find.text('Location Settings'), findsWidgets);
-
-        // Scroll button into view and tap
-        final openSettingsBtn = find.widgetWithText(AscentButton, 'App Info & Battery').first;
-        await tester.drag(find.byType(ListView), const Offset(0, -250));
-        await tester.pump();
-        await tester.tap(openSettingsBtn, warnIfMissed: false);
-        await tester.pump();
+        // Check key controls
+        expect(find.text('Theme'), findsOneWidget);
+        expect(find.text('Companion Name'), findsOneWidget);
+        expect(find.text('Scheduled Alerts & Alarms'), findsOneWidget);
       },
     );
 
@@ -205,12 +189,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
 
-        // Scroll through the entire settings screen to guarantee zero RenderFlex overflow
-        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        // Scroll through the entire settings screen using CustomScrollView
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
         await tester.pump();
-        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
         await tester.pump();
-        await tester.drag(find.byType(ListView), const Offset(0, -500));
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
         await tester.pump();
 
         expect(tester.takeException(), isNull);

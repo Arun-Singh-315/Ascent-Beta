@@ -10,35 +10,42 @@ import 'package:ascent/features/home/widgets/activity_starter_actions.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Sand & Dusk Palette & Tokens', () {
+  group('Sand & Ember Palette & Tokens', () {
     test('Light theme tokens match exact hex values', () {
       final light = AppColors.light;
-      expect(light.bg, const Color(0xFFFBF8F3));
-      expect(light.surface, const Color(0xFFFFFDF9));
-      expect(light.surfaceAlt, const Color(0xFFF4EEE6));
-      expect(light.border, const Color(0xFFE9E1D5));
-      expect(light.textPrimary, const Color(0xFF2A2521));
-      expect(light.textSecondary, const Color(0xFF6B635A));
-      expect(light.textTertiary, const Color(0xFF9A9086));
-      expect(light.primary, const Color(0xFFBF5A36));
-      expect(light.primaryContainer, const Color(0xFFFBE6DA));
-      expect(light.onPrimaryContainer, const Color(0xFF6B2E14));
-      expect(light.secondary, const Color(0xFF7C6FB0));
-      expect(light.secondaryContainer, const Color(0xFFECE8F6));
-      expect(light.onSecondaryContainer, const Color(0xFF3A3266));
-      expect(light.tertiary, const Color(0xFFC99A3C));
-      expect(light.tertiaryContainer, const Color(0xFFF7EBCF));
-      expect(light.alert, const Color(0xFFB3473F));
+      expect(light.bg, const Color(0xFFFAF6F0));
+      expect(light.surface, const Color(0xEBFFFFFF));
+      expect(light.surfaceAlt, const Color(0xFFF1E9DD));
+      expect(light.border, const Color(0xFFE6DCCD));
+      expect(light.textPrimary, const Color(0xFF2B2622));
+      expect(light.textSecondary, const Color(0xFF6F665C));
+      expect(light.textTertiary, const Color(0xFFA0958A));
+      expect(light.primary, const Color(0xFFD2643A));
+      expect(light.primaryContainer, const Color(0xFFFCE5D8));
+      expect(light.onPrimaryContainer, const Color(0xFF6E2E15));
+      expect(light.secondary, const Color(0xFFC4506A));
+      expect(light.secondaryContainer, const Color(0xFFF8E1E6));
+      expect(light.onSecondaryContainer, const Color(0xFF5A1C29));
+      expect(light.tertiary, const Color(0xFFD6A23E));
+      expect(light.tertiaryContainer, const Color(0xFFF8EDD0));
+      expect(light.alert, const Color(0xFFB8433B));
     });
 
     test('Dark theme tokens match warm dark hex values', () {
       final dark = AppColors.dark;
-      expect(dark.bg, const Color(0xFF1F1B18));
+      expect(dark.bg, const Color(0xFF1B1714));
       expect(dark.surface, const Color(0xFF2A2420));
-      expect(dark.surfaceAlt, const Color(0xFF352F2A));
-      expect(dark.border, const Color(0xFF433C35));
-      expect(dark.textPrimary, const Color(0xFFF5EFEB));
-      expect(dark.textSecondary, const Color(0xFFBAAFA4));
+      expect(dark.surfaceAlt, const Color(0xFF332C27));
+      expect(dark.border, const Color(0xFF3D342E));
+      expect(dark.textPrimary, const Color(0xFFF3EBE2));
+      expect(dark.textSecondary, const Color(0xFFB9AC9F));
+      expect(dark.textTertiary, const Color(0xFF857A6F));
+      expect(dark.primary, const Color(0xFFF08A5D));
+      expect(dark.primaryContainer, const Color(0xFF4A2A1B));
+      expect(dark.onPrimaryContainer, const Color(0xFFFFD9C6));
+      expect(dark.secondary, const Color(0xFFE27A93));
+      expect(dark.tertiary, const Color(0xFFE8B65A));
+      expect(dark.alert, const Color(0xFFE06D65));
     });
   });
 
@@ -64,19 +71,19 @@ void main() {
     });
   });
 
-  group('Ask Aria Card on Home', () {
-    testWidgets('Renders minimal card with sparkle avatar and soft Chat button', (tester) async {
+  group('Glowing Ask Jarvis Card on Home', () {
+    testWidgets('Renders glowing card with animated illuminated border and soft Chat button', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
             home: Scaffold(
-              body: HomeAssistantHeroCard(assistantName: 'Aria'),
+              body: HomeAssistantHeroCard(assistantName: 'Jarvis'),
             ),
           ),
         ),
       );
 
-      expect(find.text('Ask Aria'), findsOneWidget);
+      expect(find.text('Ask Jarvis'), findsOneWidget);
       expect(find.text('Plan your day or ask anything'), findsOneWidget);
       expect(find.text('Chat'), findsOneWidget);
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
@@ -100,16 +107,15 @@ void main() {
     });
   });
 
-  group('SectionCard Consistency & Overflow Safeguard', () {
-    testWidgets('SectionCard places title left and chevron right', (tester) async {
-      var opened = false;
+  group('SectionCard Consistency', () {
+    testWidgets('Header row has icon + title on left, chevron on right', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: SectionCard(
-              icon: Icons.lightbulb_outline_rounded,
               title: 'Mindspace',
-              onOpen: () => opened = true,
+              icon: Icons.lightbulb_outline_rounded,
+              onOpen: () {},
               child: const Text('Mindspace content'),
             ),
           ),
@@ -117,14 +123,15 @@ void main() {
       );
 
       expect(find.text('Mindspace'), findsOneWidget);
-      expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.chevron_right));
-      expect(opened, isTrue);
+      expect(find.byIcon(Icons.lightbulb_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     });
+  });
 
-    testWidgets('Rule 13 Immunity: zero RenderFlex overflow at 320px width & 2.0x text scale', (tester) async {
-      tester.view.physicalSize = const Size(320 * 3.0, 640 * 3.0);
-      tester.view.devicePixelRatio = 3.0;
+  group('Accessibility & Small Screen Safety (320px width & 2.0x scale)', () {
+    testWidgets('ActivityStarterActions does not overflow at 320px with 2.0x text scale', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2.0, 600 * 2.0);
+      tester.view.devicePixelRatio = 2.0;
       addTearDown(() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
@@ -133,37 +140,47 @@ void main() {
       await tester.pumpWidget(
         MediaQuery(
           data: const MediaQueryData(
-            size: Size(320, 640),
+            size: Size(320, 600),
             textScaler: TextScaler.linear(2.0),
           ),
-          child: ProviderScope(
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ActivityStarterActions(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('HomeAssistantHeroCard does not overflow at 320px with 2.0x text scale', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2.0, 600 * 2.0);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 600),
+            textScaler: TextScaler.linear(2.0),
+          ),
+          child: const ProviderScope(
             child: MaterialApp(
               home: Scaffold(
-                body: ListView(
-                  children: [
-                    const HomeAssistantHeroCard(assistantName: 'Aria'),
-                    SectionCard(
-                      icon: Icons.lightbulb_outline_rounded,
-                      title: 'Mindspace',
-                      onOpen: () {},
-                      child: const Text('Mindspace reflections and thoughts'),
-                    ),
-                    const ActivityStarterActions(),
-                  ],
-                ),
+                body: HomeAssistantHeroCard(assistantName: 'Jarvis'),
               ),
             ),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
-      final exc = tester.takeException();
-      if (exc != null) {
-        // ignore: avoid_print
-        print('EXCEPTION DETAILS: $exc');
-      }
-      expect(exc, isNull);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

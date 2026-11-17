@@ -13,118 +13,119 @@ class AscentColors {
 
   // ── Light mode ─────────────────────────────────────────────────────────────
 
-  /// Warm paper page background (Sand & Dusk).
-  static const Color bgBase = Color(0xFFFBF8F3);
+  /// Warm paper page background (Sand & Ember).
+  static const Color bgBase = Color(0xFFFAF6F0);
+  static const Color bgGrouped = Color(0xFFF3ECE2);
 
-  /// Card surface.
-  static const Color bgSurface = Color(0xFFFFFDF9);
+  /// Card surface (92% opaque white).
+  static const Color bgSurface = Color(0xEBFFFFFF);
 
   /// Elevated surface for inputs and empty states.
-  static const Color bgSurfaceElevated = Color(0xFFF4EEE6);
+  static const Color bgSurfaceElevated = Color(0xFFF1E9DD);
 
-  /// Primary warm clay CTA accent.
-  static const Color accentPrimary = Color(0xFFBF5A36);
-
-  /// Punchy clay for active/interactive buttons.
-  static const Color accentPrimaryBright = Color(0xFFBF5A36);
+  /// Primary warm ember CTA accent.
+  static const Color accentPrimary = Color(0xFFD2643A);
+  static const Color accentPrimaryBright = Color(0xFFD2643A);
 
   /// Primary container tint for soft buttons and selected chips.
-  static const Color accentPrimaryDim = Color(0xFFFBE6DA);
+  static const Color accentPrimaryDim = Color(0xFFFCE5D8);
 
-  /// Secondary cool dusk lavender accent (icons, links, focus ring).
-  static const Color accentSecondary = Color(0xFF7C6FB0);
+  /// Secondary rose clay accent.
+  static const Color accentSecondary = Color(0xFFC4506A);
+  static const Color accentSecondaryBright = Color(0xFFC4506A);
+  static const Color accentSecondaryDim = Color(0xFFF8E1E6);
 
-  /// Secondary tone for active focus markers.
-  static const Color accentSecondaryBright = Color(0xFF7C6FB0);
-
-  /// Tertiary soft gold informational accent.
-  static const Color accentInfo = Color(0xFFC99A3C);
+  /// Tertiary soft gold informational / streaks accent.
+  static const Color accentInfo = Color(0xFFD6A23E);
+  static const Color accentGold = Color(0xFFD6A23E);
+  static const Color accentGoldDim = Color(0xFFF8EDD0);
 
   /// Restrained error state.
-  static const Color stateDanger = Color(0xFFB3473F);
+  static const Color stateDanger = Color(0xFFB8433B);
+  static const Color stateDangerBright = Color(0xFFB8433B);
 
-  /// Saturated red for cancel and delete.
-  static const Color stateDangerBright = Color(0xFFB3473F);
+  /// Success state (soft olive gold, not green).
+  static const Color stateSuccess = Color(0xFFD6A23E);
 
-  /// Success state.
-  static const Color stateSuccess = Color(0xFF7C6FB0);
-
-  /// Tertiary soft gold warning.
-  static const Color stateWarning = Color(0xFFC99A3C);
+  /// Warning state.
+  static const Color stateWarning = Color(0xFFD6A23E);
 
   /// Warm charcoal primary text.
-  static const Color textPrimary = Color(0xFF2A2521);
+  static const Color textPrimary = Color(0xFF2B2622);
 
   /// Refined secondary text.
-  static const Color textSecondary = Color(0xFF6B635A);
+  static const Color textSecondary = Color(0xFF6F665C);
 
   /// Muted / placeholder / hint text.
-  static const Color textMuted = Color(0xFF9A9086);
+  static const Color textMuted = Color(0xFFA0958A);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
   /// 1px warm hairline border / outline.
-  static const Color divider = Color(0xFFE9E1D5);
+  static const Color divider = Color(0xFFE6DCCD);
 
   /// Very soft shadow (blur 16, 4% opacity warm brown).
   static const Color shadow = Color(0x0A5C4A3E);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
-  /// Warm dark page background (not black).
-  static const Color bgBaseDark = Color(0xFF1F1B18);
+  /// Warm graphite page background (never black).
+  static const Color bgBaseDark = Color(0xFF1B1714);
+  static const Color bgGroupedDark = Color(0xFF221D19);
 
-  /// Warm dark surface — cards, sheets.
+  /// Warm dark surface — cards, sheets (OPAQUE).
   static const Color bgSurfaceDark = Color(0xFF2A2420);
 
   /// Elevated dark surface for nested items, inputs and chips.
-  static const Color bgSurfaceElevatedDark = Color(0xFF352F2A);
+  static const Color bgSurfaceElevatedDark = Color(0xFF332C27);
 
-  /// Warm clay primary accent in dark mode.
-  static const Color accentPrimaryDark = Color(0xFFE28A6D);
-  static const Color accentPrimaryBrightDark = Color(0xFFE28A6D);
-  static const Color accentPrimaryDimDark = Color(0xFF4D2415);
+  /// Warm ember primary accent in dark mode.
+  static const Color accentPrimaryDark = Color(0xFFF08A5D);
+  static const Color accentPrimaryBrightDark = Color(0xFFF08A5D);
+  static const Color accentPrimaryDimDark = Color(0xFF4A2A1B);
 
-  /// Cool dusk lavender secondary accent.
-  static const Color accentSecondaryDark = Color(0xFFA79BD6);
-  static const Color accentSecondaryBrightDark = Color(0xFFA79BD6);
+  /// Rose clay secondary accent in dark mode.
+  static const Color accentSecondaryDark = Color(0xFFE27A93);
+  static const Color accentSecondaryBrightDark = Color(0xFFE27A93);
+  static const Color accentSecondaryDimDark = Color(0xFF4A222E);
 
-  /// Soft gold informational / tertiary accent.
-  static const Color accentInfoDark = Color(0xFFE3B863);
+  /// Soft gold informational / tertiary accent in dark mode.
+  static const Color accentInfoDark = Color(0xFFE8B65A);
+  static const Color accentGoldDark = Color(0xFFE8B65A);
+  static const Color accentGoldDimDark = Color(0xFF45351C);
 
   /// Error state in dark mode.
-  static const Color stateDangerDark = Color(0xFFE2756E);
-  static const Color stateDangerBrightDark = Color(0xFFE2756E);
+  static const Color stateDangerDark = Color(0xFFE06D65);
+  static const Color stateDangerBrightDark = Color(0xFFE06D65);
 
-  static const Color stateSuccessDark = Color(0xFFA79BD6);
-  static const Color stateWarningDark = Color(0xFFE3B863);
+  /// Success state in dark mode (soft gold).
+  static const Color stateSuccessDark = Color(0xFFE8B65A);
+  static const Color stateWarningDark = Color(0xFFE8B65A);
 
   /// Crisp warm text.
-  static const Color textPrimaryDark = Color(0xFFF5EFEB);
+  static const Color textPrimaryDark = Color(0xFFF3EBE2);
 
   /// Secondary text in dark mode.
-  static const Color textSecondaryDark = Color(0xFFBAAFA4);
+  static const Color textSecondaryDark = Color(0xFFB9AC9F);
 
   /// Muted / hint text in dark mode.
-  static const Color textMutedDark = Color(0xFF8C8176);
+  static const Color textMutedDark = Color(0xFF857A6F);
 
   /// Text on primary in dark mode.
-  static const Color textOnPrimaryDark = Color(0xFF1F1B18);
+  static const Color textOnPrimaryDark = Color(0xFF2B1408);
 
   /// Subtle warm dark border.
-  static const Color dividerDark = Color(0xFF433C35);
+  static const Color dividerDark = Color(0xFF3D342E);
 
   /// Shadow in dark mode — warm dark, not pure black.
   static const Color shadowDark = Color(0x331F1B18);
 
-  /// Water & Hydration accent tokens.
-  static const Color waterPrimary = Color(0xFF0284C7);
-  static const Color waterBright = Color(0xFF38BDF8);
-
-  /// Money & Finance accent tokens.
-  static const Color financePrimary = Color(0xFF059669);
-  static const Color financeBright = Color(0xFF34D399);
+  /// Warm accents for hydration and finance (no saturated blue/green).
+  static const Color waterPrimary = Color(0xFFD2643A);
+  static const Color waterBright = Color(0xFFF08A5D);
+  static const Color financePrimary = Color(0xFFD6A23E);
+  static const Color financeBright = Color(0xFFE8B65A);
 
   /// Translucent day surface highlight (e.g. thought bubble day backdrop)
   static const Color translucentSurfaceDay = Color(0x1AFFFFFF);

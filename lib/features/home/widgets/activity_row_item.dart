@@ -884,20 +884,21 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ? 'Finished ${_formatActivityTimestamp(activity.completedAt!)}'
         : null;
 
+    final String? timeLabel = (widget.hubStyle && activity.scheduledTime != null)
+        ? 'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
+        : (activity.sourceType == 'medicine' && activity.plannedDate != null)
+            ? DateFormat('h:mm a').format(activity.plannedDate!)
+            : createdLabel;
+
     final status = visualDone
         ? [
             if (finishedLabel != null) finishedLabel else 'Completed',
-            ?createdLabel,
+            if (finishedLabel == null && timeLabel != null) timeLabel,
           ].join(' · ')
         : [
             if (activity.sourceType == 'medicine') 'Medicine',
             if (lecture) 'Lecture',
-            if (widget.hubStyle && activity.scheduledTime != null)
-              'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
-            else if (activity.sourceType == 'medicine' &&
-                activity.plannedDate != null)
-              DateFormat('h:mm a').format(activity.plannedDate!),
-            ?createdLabel,
+            ?timeLabel,
           ].join(' · ');
 
     final actionLabel = done
