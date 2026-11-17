@@ -1,5 +1,6 @@
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import 'ascent_button.dart';
 import '../../app/theme/home_design.dart';
 
@@ -205,6 +206,12 @@ class _AscentBottomNav extends StatelessWidget {
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final blue = dark
+        ? SharedControlColors.actionBlueDark
+        : SharedControlColors.actionBlue;
+    final activeTileColor = blue.withValues(alpha: dark ? .18 : .09);
+
     final c = context.c;
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomInset),
@@ -221,7 +228,7 @@ class _AscentBottomNav extends StatelessWidget {
             Widget tabAt(int index) {
               final tab = tabs[index];
               final active = index == currentIndex;
-              final fg = active ? c.accent : c.textSecondary;
+              final fg = active ? blue : c.textSecondary;
               return Semantics(
                 button: true,
                 selected: active,
@@ -240,7 +247,7 @@ class _AscentBottomNav extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: active ? c.accentTint : Colors.transparent,
+                      color: active ? activeTileColor : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(

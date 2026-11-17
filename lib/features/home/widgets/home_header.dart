@@ -82,30 +82,30 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
 
     if (isRain) {
       return dark
-          ? (const Color(0xFF0F172A), const Color(0xFF1E293B))
-          : (const Color(0xFFE2E8F0), const Color(0xFFF1F5F9));
+          ? (const Color(0xFF101722), const Color(0xFF0B0F15))
+          : (const Color(0xFFDFE7F0), const Color(0xFFF1F4F8));
     }
 
     if (hour < 5 || hour >= 21) {
       // Night
       return dark
-          ? (const Color(0xFF030712), const Color(0xFF0F172A))
-          : (const Color(0xFFE0E7FF), const Color(0xFFF8FAFC));
+          ? (const Color(0xFF090D14), const Color(0xFF0B0F15))
+          : (const Color(0xFFE7EAF2), const Color(0xFFF1F4F8));
     } else if (hour >= 17) {
       // Evening
       return dark
-          ? (const Color(0xFF2E1065), const Color(0xFF0F172A))
-          : (const Color(0xFFFEF3C7), const Color(0xFFF8FAFC));
+          ? (const Color(0xFF181524), const Color(0xFF0B0F15))
+          : (const Color(0xFFECE7F4), const Color(0xFFF1F4F8));
     } else if (hour >= 12) {
       // Afternoon
       return dark
-          ? (const Color(0xFF0C4A6E), const Color(0xFF0F172A))
-          : (const Color(0xFFE0E7FF), const Color(0xFFF8FAFC));
+          ? (const Color(0xFF131A26), const Color(0xFF0B0F15))
+          : (const Color(0xFFE4EDF5), const Color(0xFFF1F4F8));
     } else {
       // Morning
       return dark
-          ? (const Color(0xFF1E293B), const Color(0xFF0F172A))
-          : (const Color(0xFFFFF7ED), const Color(0xFFF8FAFC));
+          ? (const Color(0xFF151D29), const Color(0xFF0B0F15))
+          : (const Color(0xFFE8EFF6), const Color(0xFFF1F4F8));
     }
   }
 
@@ -462,22 +462,15 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            c.accent.withValues(alpha: 0.25),
-                            const Color(0xFF818CF8).withValues(alpha: 0.15),
-                          ],
-                        ),
+                        color: c.accent.withValues(alpha: dark ? 0.12 : 0.08),
                         border: Border.all(
-                          color: c.accent.withValues(alpha: 0.4),
+                          color: c.accent.withValues(alpha: dark ? 0.22 : 0.16),
                           width: 1,
                         ),
                       ),
                       child: Icon(
                         Icons.auto_awesome_rounded,
-                        size: 16,
+                        size: 15,
                         color: c.accent,
                       ),
                     ),
@@ -995,11 +988,11 @@ class _IlluminatingBorderPainter extends CustomPainter {
       transform: GradientRotation(sweepAngle),
       colors: [
         accentColor.withValues(alpha: 0.0),
-        accentColor.withValues(alpha: 0.25),
-        secondaryColor.withValues(alpha: 0.85),
-        Colors.white.withValues(alpha: dark ? 0.95 : 0.80),
-        accentColor.withValues(alpha: 0.90),
-        accentColor.withValues(alpha: 0.15),
+        accentColor.withValues(alpha: 0.12),
+        secondaryColor.withValues(alpha: 0.35),
+        Colors.white.withValues(alpha: dark ? 0.45 : 0.35),
+        accentColor.withValues(alpha: 0.40),
+        accentColor.withValues(alpha: 0.10),
         accentColor.withValues(alpha: 0.0),
       ],
       stops: const [0.0, 0.55, 0.72, 0.82, 0.90, 0.96, 1.0],
@@ -1007,7 +1000,7 @@ class _IlluminatingBorderPainter extends CustomPainter {
 
     final glowPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
+      ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round
       ..shader = sweepGradient.createShader(rect);
 
@@ -1072,9 +1065,9 @@ class _AtmosphereCanvasPainter extends CustomPainter {
 
   void _paintRain(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (dark ? const Color(0xFF60A5FA) : const Color(0xFF3B82F6))
-          .withValues(alpha: dark ? 0.35 : 0.22)
-      ..strokeWidth = 1.2
+      ..color = (dark ? const Color(0xFF5B8AC4) : const Color(0xFF285A94))
+          .withValues(alpha: dark ? 0.22 : 0.16)
+      ..strokeWidth = 1.0
       ..strokeCap = StrokeCap.round;
 
     const streakCount = 28;

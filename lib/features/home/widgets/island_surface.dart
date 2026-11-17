@@ -16,27 +16,27 @@ class IslandPalette {
   static IslandPalette resolve(IslandFinish finish, bool dark) {
     if (finish == IslandFinish.midnight || dark) {
       return const IslandPalette(
-        Color(0xF0232326),
-        Color(0xF00F0F12),
-        Color(0xFFF5F5F7),
-        Color(0xFFAEAEB2),
-        Color(0xFF64ACFF),
+        Color(0xF0181F2A),
+        Color(0xF00D1219),
+        Color(0xFFF1F5F9),
+        Color(0xFF94A3B8),
+        Color(0xFF5B8AC4),
       );
     }
     return finish == IslandFinish.frost
         ? const IslandPalette(
             Color(0xF5FFFFFF),
-            Color(0xF0F2F2F7),
-            Color(0xFF1C1C1E),
-            Color(0xFF636366),
-            Color(0xFF006FE6),
+            Color(0xF0F1F4F8),
+            Color(0xFF0F172A),
+            Color(0xFF475569),
+            Color(0xFF285A94),
           )
         : const IslandPalette(
             Color(0xF5FFFFFF),
-            Color(0xF0EBF2FF),
-            Color(0xFF1C1C1E),
-            Color(0xFF636366),
-            Color(0xFF006FE6),
+            Color(0xF0EBF2FA),
+            Color(0xFF0F172A),
+            Color(0xFF475569),
+            Color(0xFF285A94),
           );
   }
 
