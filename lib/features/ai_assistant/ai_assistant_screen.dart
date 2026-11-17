@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
@@ -6,7 +7,6 @@ import 'riya_entity_card.dart';
 import 'riya_paragraph_text.dart';
 import 'riya_plan_cards.dart';
 import 'dart:convert';
-import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,13 +15,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
-import '../../app/theme/shared_control_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
-import '../../shared/widgets/message_composer.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/app_text_field.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/riya_learning_actions.dart';
 import '../../core/services/home_capture_service.dart';
@@ -738,6 +738,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = ref.watch(assistantNameProvider);
@@ -766,33 +767,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   ? MerlotPalette.canvas
                   : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: c.bg,
           elevation: 0,
           scrolledUnderElevation: 0,
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? context.bgBase.withValues(alpha: 0.72)
-                      : context.bgBase.withValues(alpha: 0.82),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: (isDark ? Colors.white : Colors.black).withValues(
-                        alpha: 0.06,
-                      ),
-                      width: 1.0,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           leading: IconButton(
             icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: context.textPrimary,
+              color: c.textPrimary,
               size: 19,
             ),
             onPressed: _isLoading
@@ -808,249 +789,41 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     }
                   },
           ),
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [
-                          accentColor.withValues(alpha: 0.25),
-                          context.glass.clay.withValues(alpha: 0.25),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.45),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.auto_awesome_rounded,
-                        color: accentColor,
-                        size: 17,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: context.glass.sage,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? context.bgBase : Colors.white,
-                          width: 1.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.glass.sage.withValues(alpha: 0.6),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: InkWell(
-                  key: const ValueKey('ai_assistant_identity_switcher'),
-                  onTap: _isLoading
-                      ? null
-                      : () => _showCompanionSelectorSheet(context, ref, name),
-                  borderRadius: AscentRadii.borderSm,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: context.textPrimary,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 18,
-                              color: context.textMuted,
-                            ),
-                          ],
-                        ),
-                        Text(
-                          'Intelligent · On-Device · Private',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          centerTitle: true,
+          title: Text(
+            name,
+            key: const ValueKey('ai_assistant_title'),
+            style: TextStyle(
+              color: c.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
           ),
           actions: [
-            if (widget.compact)
-              IconButton(
-                tooltip: 'Expand conversation',
-                icon: const Icon(Icons.open_in_full_rounded),
-                onPressed: _isLoading
-                    ? null
-                    : () {
-                        final router = GoRouter.of(context);
-                        Navigator.pop(context);
-                        router.push(
-                          Uri(
-                            path: '/ai-assistant',
-                            queryParameters: _textController.text.isEmpty
-                                ? null
-                                : {'prompt': _textController.text},
-                          ).toString(),
-                        );
-                      },
-              ),
-            IconButton(
-              icon: Icon(
-                Icons.delete_sweep_outlined,
-                color: context.textMuted,
-                size: 21,
-              ),
-              tooltip: 'Clear chat history',
-              onPressed: _isLoading
-                  ? null
-                  : () => _showClearHistoryDialog(context, name),
-            ),
             PopupMenuButton<String>(
               key: const ValueKey('ai_assistant_menu_button'),
               icon: Icon(
                 Icons.more_vert_rounded,
-                color: context.textMuted,
+                color: c.textSecondary,
                 size: 21,
               ),
               tooltip: 'More options',
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: isDark ? context.glass.edge : context.divider,
-                  width: 1,
-                ),
-              ),
-              color: isDark ? const Color(0xFF1A202C) : Colors.white,
-              onSelected: (value) async {
-                HapticFeedback.lightImpact();
-                if (value == 'identity') {
-                  _showCompanionSelectorSheet(context, ref, name);
-                } else if (value == 'clear') {
+              onSelected: (val) {
+                if (val == 'clear') {
                   _showClearHistoryDialog(context, name);
-                } else if (value == 'expand' && widget.compact) {
-                  final router = GoRouter.of(context);
-                  Navigator.pop(context);
-                  router.push(
-                    Uri(
-                      path: '/ai-assistant',
-                      queryParameters: _textController.text.isEmpty
-                          ? null
-                          : {'prompt': _textController.text},
-                    ).toString(),
-                  );
+                } else if (val == 'companion') {
+                  _showCompanionSelectorSheet(context, ref, name);
                 }
               },
               itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'identity',
-                  child: Row(
-                    children: [
-                      Icon(Icons.tune_rounded, size: 17, color: accentColor),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Change companion ($name)',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.compact)
-                  PopupMenuItem(
-                    value: 'expand',
-                    child: Row(
-                      children: [
-                        Icon(Icons.open_in_full_rounded,
-                            size: 17, color: context.textPrimary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Full screen',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'clear',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_sweep_outlined,
-                          size: 17, color: SharedControlColors.dueRed),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Clear history',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: SharedControlColors.dueRed,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Text('Clear chat history'),
+                ),
+                const PopupMenuItem(
+                  value: 'companion',
+                  child: Text('Change companion'),
                 ),
               ],
             ),
@@ -1218,10 +991,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                           : Alignment.centerLeft,
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
-                                          maxWidth:
-                                              (MediaQuery.sizeOf(context).width *
-                                                      0.88)
-                                                  .clamp(260.0, 560.0),
+                                          maxWidth: isUser
+                                              ? (MediaQuery.sizeOf(context).width *
+                                                      0.82)
+                                                  .clamp(240.0, 520.0)
+                                              : double.infinity,
                                         ),
                                         child: _ConversationMessageBubble(
                                           msg: msg,
@@ -1258,89 +1032,108 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             ),
                     ),
 
-                    // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
-                    if (!hasMessages) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: AscentSpacing.xs,
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
-                            children: [
-                              _buildQuickChip(
-                                'Study Plan',
-                                Icons.school_rounded,
-                                () => _handleSubmitted('Create a study plan for DSA'),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                'Meal Plan',
-                                Icons.restaurant_rounded,
-                                () => _handleSubmitted('Create a healthy meal plan'),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'Todos' : 'Plan my day',
-                                Icons.wb_sunny_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact ? 'Show todos' : 'Plan my day',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'Commitments' : 'Today\'s agenda',
-                                Icons.checklist_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact
-                                      ? 'Show promises'
-                                      : 'What are my tasks today?',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                              const SizedBox(width: 8),
-                              _buildQuickChip(
-                                widget.compact ? 'New Todo' : 'Medicines',
-                                widget.compact
-                                    ? Icons.add_rounded
-                                    : Icons.medication_rounded,
-                                () => _handleSubmitted(
-                                  widget.compact
-                                      ? 'New todo'
-                                      : 'What are my medicines today?',
-                                ),
-                                context,
-                                accentColor,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                    ] else ...[
-                      const SizedBox(height: 4),
-                    ],
-
-                    // Mindspace Consistent Input Box (Glass fill + Pill + Animated Send Circle)
+                    // Pinned minimal ChatGPT-style composer
                     Padding(
                       padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
                       child: SafeArea(
                         top: false,
-                        child: MessageComposer(
-                          controller: _textController,
-                          focusNode: _composerFocus,
-                          hint: 'Message $name...',
-                          busy: _isLoading,
-                          onSend: _handleSubmitted,
+                        child: Container(
+                          constraints: const BoxConstraints(minHeight: 50),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.surfaceAlt,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: c.border,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.add_rounded,
+                                  color: c.textSecondary,
+                                  size: 22,
+                                ),
+                                tooltip: 'Actions',
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        HapticFeedback.lightImpact();
+                                        _showCompanionSelectorSheet(
+                                          context,
+                                          ref,
+                                          name,
+                                        );
+                                      },
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  controller: _textController,
+                                  focusNode: _composerFocus,
+                                  minLines: 1,
+                                  maxLines: 5,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  textInputAction: TextInputAction.send,
+                                  onSubmitted: _handleSubmitted,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: c.textPrimary,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Message $name…',
+                                    hintStyle: TextStyle(
+                                      fontSize: 15,
+                                      color: c.textTertiary,
+                                    ),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 10,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (_hasInputText)
+                                Container(
+                                  margin: const EdgeInsets.only(right: 4),
+                                  child: IconButton(
+                                    key: const ValueKey('chat_send_button'),
+                                    icon: Icon(
+                                      Icons.arrow_upward_rounded,
+                                      size: 18,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimary,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                      shape: const CircleBorder(),
+                                      padding: const EdgeInsets.all(8),
+                                      minimumSize: const Size(36, 36),
+                                    ),
+                                    onPressed: _isLoading || !_hasInputText
+                                        ? null
+                                        : () {
+                                            final text =
+                                                _textController.text.trim();
+                                            if (text.isNotEmpty) {
+                                              _handleSubmitted(text);
+                                            }
+                                          },
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -1349,63 +1142,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickChip(
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-    BuildContext context,
-    Color accentColor,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: 7,
-            horizontal: 12,
-          ),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1E293B).withValues(alpha: 0.60)
-                : Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF334155).withValues(alpha: 0.70)
-                  : const Color(0xFFCBD5E1),
-              width: 1.0,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: accentColor),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? const Color(0xFFE2E8F0)
-                      : const Color(0xFF334155),
-                ),
-                maxLines: 1,
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -1456,20 +1192,18 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
-        final g = sheetContext.glass;
-        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: Container(
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF16181D) : const Color(0xFFF9F9FB),
+              color: sheetContext.c.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
               border: Border.all(
-                color: isDark ? g.edge : const Color(0x1F000000),
+                color: sheetContext.c.border,
                 width: 1,
               ),
             ),
@@ -1486,7 +1220,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white24 : Colors.black12,
+                          color: sheetContext.c.border,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1497,7 +1231,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: sheetContext.textPrimary,
+                        color: sheetContext.c.textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -1507,7 +1241,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: sheetContext.textMuted,
+                        color: sheetContext.c.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -1545,64 +1279,32 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
+                    AppTextField(
+                      controller: customController,
+                      hintText: 'Custom companion name...',
+                      suffixIcon: TextButton(
+                        onPressed: () {
+                          final trimmed = customController.text.trim();
+                          if (trimmed.isNotEmpty) {
+                            HapticFeedback.mediumImpact();
+                            ref
+                                .read(assistantNameProvider.notifier)
+                                .setName(trimmed);
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        child: const Text('Set'),
                       ),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E2129) : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark ? g.edge : const Color(0x1F000000),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: customController,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 14,
-                                color: sheetContext.textPrimary,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Custom companion name...',
-                                hintStyle: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  color: sheetContext.textMuted,
-                                ),
-                                isDense: true,
-                                border: InputBorder.none,
-                              ),
-                              onSubmitted: (val) {
-                                final trimmed = val.trim();
-                                if (trimmed.isNotEmpty) {
-                                  HapticFeedback.mediumImpact();
-                                  ref
-                                      .read(assistantNameProvider.notifier)
-                                      .setName(trimmed);
-                                  Navigator.pop(sheetContext);
-                                }
-                              },
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              final trimmed = customController.text.trim();
-                              if (trimmed.isNotEmpty) {
-                                HapticFeedback.mediumImpact();
-                                ref
-                                    .read(assistantNameProvider.notifier)
-                                    .setName(trimmed);
-                                Navigator.pop(sheetContext);
-                              }
-                            },
-                            child: const Text('Set'),
-                          ),
-                        ],
-                      ),
+                      onSubmitted: (val) {
+                        final trimmed = val.trim();
+                        if (trimmed.isNotEmpty) {
+                          HapticFeedback.mediumImpact();
+                          ref
+                              .read(assistantNameProvider.notifier)
+                              .setName(trimmed);
+                          Navigator.pop(sheetContext);
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -1759,46 +1461,38 @@ class _ConversationMessageBubble extends StatelessWidget {
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
-    // ── Unified Glass Cards (Zero double-ticks, calm Things Hub aesthetic) ──
+    final colorScheme = Theme.of(context).colorScheme;
+    final c = context.c;
+
+    // ── Minimal ChatGPT / Sand & Dusk styling ──
+    // User message = primaryContainer bubble right
+    // Assistant message = NO bubble, plain text left, full width
     final Color bubbleFill;
     final Color bubbleBorder;
     final Color messageTextColor;
     final Color timestampColor;
 
     if (isUser) {
-      bubbleFill = isDark
-          ? const Color(0xFF1E293B).withValues(alpha: 0.65)
-          : const Color(0xFFEFF6FF).withValues(alpha: 0.85);
-      bubbleBorder = isDark
-          ? const Color(0xFF334155).withValues(alpha: 0.70)
-          : const Color(0xFFBFDBFE).withValues(alpha: 0.85);
-      messageTextColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
-      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+      bubbleFill = colorScheme.primaryContainer;
+      bubbleBorder = colorScheme.primary.withValues(alpha: 0.25);
+      messageTextColor = colorScheme.onPrimaryContainer;
+      timestampColor = colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
     } else {
-      bubbleFill = isDark
-          ? const Color(0xFF0F172A).withValues(alpha: 0.60)
-          : Colors.white.withValues(alpha: 0.88);
-      bubbleBorder = isDark
-          ? const Color(0xFF1E293B).withValues(alpha: 0.85)
-          : const Color(0xFFE2E8F0);
-      messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+      bubbleFill = Colors.transparent;
+      bubbleBorder = Colors.transparent;
+      messageTextColor = c.textPrimary;
+      timestampColor = c.textTertiary;
     }
 
-    // Apple-grade asymmetric bubble corners for clear speaker direction
+    // Soft rounded corners for user bubble
     final borderRadius = isUser
         ? const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(6),
+            topLeft: Radius.circular(18),
+            topRight: Radius.circular(18),
+            bottomLeft: Radius.circular(18),
+            bottomRight: Radius.circular(4),
           )
-        : const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(6),
-            bottomRight: Radius.circular(20),
-          );
+        : BorderRadius.zero;
 
     final messageText = (actionData?['records'] as List? ?? []).isNotEmpty
         ? (msg.actionType?.startsWith('promises.') == true
@@ -1913,22 +1607,27 @@ class _ConversationMessageBubble extends StatelessWidget {
       ],
     );
 
-    final Widget mainBubble = Container(
-      padding: const EdgeInsets.fromLTRB(16, 13, 16, 11),
-      decoration: BoxDecoration(
-        color: bubbleFill,
-        borderRadius: borderRadius,
-        border: Border.all(color: bubbleBorder, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 1.5),
-          ),
-        ],
-      ),
-      child: bubbleContent,
-    );
+    final Widget mainBubble = isUser
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: bubbleFill,
+              borderRadius: borderRadius,
+              border: Border.all(color: bubbleBorder, width: 1.0),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A5C4A3E),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: bubbleContent,
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: bubbleContent,
+          );
 
     return Column(
       crossAxisAlignment: isUser
@@ -2543,85 +2242,33 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = context.c;
 
     return Align(
       alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.88,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0F172A).withValues(alpha: 0.60)
-                : Colors.white.withValues(alpha: 0.88),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFF1E293B).withValues(alpha: 0.85)
-                  : const Color(0xFFE2E8F0),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  final pulse = _pulseController.value;
-                  return Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: widget.accentColor.withValues(
-                        alpha: 0.70 + pulse * 0.30,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.accentColor.withValues(
-                            alpha: 0.35 + pulse * 0.35,
-                          ),
-                          blurRadius: 6 + pulse * 4,
-                          spreadRadius: 1 + pulse * 1.5,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 5,
-                        height: 5,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    '${widget.name} is thinking: ${_thinkingSteps[_stepIndex]}',
-                    key: ValueKey(_stepIndex),
-                    style: GoogleFonts.plusJakartaSans(
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF64748B),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                final delay = i * 0.25;
+                final t = ((_pulseController.value - delay) % 1.0);
+                final alpha = 0.25 + 0.70 * (math.sin(t * math.pi).abs());
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3.5),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.textSecondary.withValues(alpha: alpha),
                   ),
-                ),
-              ),
-            ],
-          ),
+                );
+              }),
+            );
+          },
         ),
       ),
     );
@@ -2650,422 +2297,119 @@ class _SoftChatWelcome extends StatefulWidget {
   State<_SoftChatWelcome> createState() => _SoftChatWelcomeState();
 }
 
-class _SoftChatWelcomeState extends State<_SoftChatWelcome>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _sparkleController;
-
-  @override
-  void initState() {
-    super.initState();
-    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
-      'Test',
-    );
-    _sparkleController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    );
-    if (!isTest) {
-      _sparkleController.repeat(reverse: true);
-    } else {
-      _sparkleController.value = 0.5;
-    }
-  }
-
-  @override
-  void dispose() {
-    _sparkleController.dispose();
-    super.dispose();
-  }
+class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
+  static const _suggestions = [
+    'Plan my day',
+    'Study plan',
+    'Meal plan',
+    "Today's agenda",
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final profile = ref.watch(userProfileStreamProvider).value;
-        final todayFestival = ref.watch(todayFestivalProvider);
-        final userName = profile?.name.isNotEmpty == true
-            ? profile!.name.split(' ').first
-            : 'there';
-        final accent = context.accentPrimary;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final c = context.c;
+        final colorScheme = Theme.of(context).colorScheme;
 
         return Center(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               20,
-              MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 20,
               20,
               24,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Clean Minimal AI Hero Icon
+                // Centered sparkle icon
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: accent.withValues(alpha: isDark ? 0.16 : 0.08),
-                    border: Border.all(
-                      color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
-                      width: 1.2,
-                    ),
+                    color: colorScheme.secondaryContainer,
                   ),
-                  child: Center(
-                    child: Icon(
-                      Icons.auto_awesome_rounded,
-                      color: accent,
-                      size: 26,
-                    ),
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 24,
+                    color: colorScheme.onSecondaryContainer,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-                // Minimal status indicator
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF1E293B).withValues(alpha: 0.50)
-                        : Colors.white.withValues(alpha: 0.80),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF334155).withValues(alpha: 0.60)
-                          : const Color(0xFFE2E8F0),
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: context.glass.sage,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          '${widget.assistantName} · Always by your side',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-
+                // One line: "How can I help?"
                 Text(
-                  'How can I help you\nascend today?',
+                  'How can I help?',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: context.textPrimary,
-                    letterSpacing: -0.6,
-                    height: 1.25,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: c.textPrimary,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Always by your side, $userName. Direct your thoughts, routines, and growth.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13.5,
-                    color: context.textMuted,
-                    height: 1.4,
-                  ),
-                ),
-                if (todayFestival != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    key: const ValueKey('riya_festive_wish_card'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          todayFestival.accentColor.withValues(
-                            alpha: isDark ? 0.22 : 0.12,
-                          ),
-                          context.glass.clay.withValues(
-                            alpha: isDark ? 0.16 : 0.08,
-                          ),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: todayFestival.accentColor.withValues(
-                          alpha: 0.35,
-                        ),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              todayFestival.emoji,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                'Happy ${todayFestival.name}, $userName!',
-                                key: const ValueKey('riya_festive_greeting'),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark
-                                      ? const Color(0xFFFDE68A)
-                                      : const Color(0xFF92400E),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          todayFestival.riyaWish,
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : const Color(0xFF78350F),
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 24),
 
-                const SizedBox(height: 20),
-
-                // 4 Crisp Contextual Accelerator Cards
+                // At most 4 suggestion tiles (2x2, surfaceAlt, no icons)
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isCompact = constraints.maxWidth < 360;
-                    final cardWidth = isCompact
+                    final cardWidth = constraints.maxWidth < 360
                         ? constraints.maxWidth
                         : (constraints.maxWidth - 10) / 2;
                     return Wrap(
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.bubble_chart_rounded,
-                          title: 'Unload Thought',
-                          subtitle: 'Clear mental clutter to Vault',
-                          prompt: 'Save thought: ',
-                          // Prefill: incomplete — needs user to type the thought
-                          onTap: widget.onPrefill,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.handshake_rounded,
-                          title: 'Sacred Promise',
-                          subtitle: 'Commit with daily check-ins',
-                          prompt: 'Create a promise to ',
-                          // Prefill: incomplete — needs user to describe the promise
-                          onTap: widget.onPrefill,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.coffee_rounded,
-                          title: 'Chai Reset',
-                          subtitle: '5-min mindful reflection',
-                          prompt: 'Start chai break',
-                          onTap: widget.onSelectPrompt,
-                        ),
-                        _buildAcceleratorCard(
-                          context: context,
-                          isDark: isDark,
-                          width: cardWidth,
-                          icon: Icons.medication_rounded,
-                          title: 'Health & Meds',
-                          subtitle: 'Review daily doses & water',
-                          prompt: 'What are my medicines today?',
-                          onTap: widget.onSelectPrompt,
-                        ),
+                        for (final title in _suggestions)
+                          SizedBox(
+                            width: cardWidth,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                key: ValueKey(
+                                  'ai_suggestion_${title.replaceAll(' ', '_')}',
+                                ),
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  widget.onSelectPrompt(title);
+                                },
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 14,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: c.surfaceAlt,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: c.border,
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    title,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: c.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                       ],
                     );
                   },
                 ),
-
-                const SizedBox(height: 18),
-
-                // Subtle lower suggestions
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    if (todayFestival != null)
-                      '${todayFestival.emoji} ${todayFestival.name} wish',
-                    'Study plan for DSA',
-                    'High protein meal plan',
-                    'Plan my day',
-                    'Log 250ml water',
-                    'What are my tasks today?',
-                  ].map((prompt) {
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          widget.onSelectPrompt(prompt);
-                        },
-                        borderRadius: AscentRadii.borderXl,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF1E293B).withValues(alpha: 0.45)
-                                : Colors.white.withValues(alpha: 0.75),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF334155).withValues(alpha: 0.55)
-                                  : const Color(0xFFE2E8F0),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Text(
-                            prompt,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w500,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAcceleratorCard({
-    required BuildContext context,
-    required bool isDark,
-    required double width,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String prompt,
-    required ValueChanged<String> onTap,
-  }) {
-    final accent = context.accentPrimary;
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap(prompt);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1E293B).withValues(alpha: 0.50)
-                  : Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF334155).withValues(alpha: 0.65)
-                    : const Color(0xFFE2E8F0),
-                width: 1.0,
+                ],
               ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
-                  ),
-                  child: Center(child: Icon(icon, color: accent, size: 16)),
-                ),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          title,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          color: context.textMuted,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+          );
+      },
     );
   }
 }
@@ -3115,17 +2459,17 @@ class _AtmosphericChatBackground extends StatelessWidget {
               MerlotPalette.canvas,
             ];
     } else {
-      // Default: Deep matte obsidian canvas in Dark; refined calm slate pearl in Light (not washed out)
+      // Default Sand & Dusk: Warm dark in Dark mode; warm paper (#FBF8F3) in Light mode
       gradientColors = isDark
           ? const [
-              Color(0xFF090D14), // serene obsidian
-              Color(0xFF0E131F), // midnight slate depth
-              Color(0xFF0A0D15), // grounded matte
+              Color(0xFF1F1B18), // warm dark charcoal base
+              Color(0xFF26211C), // subtle warm dusk elevation
+              Color(0xFF1F1B18),
             ]
           : const [
-              Color(0xFFF1F4F8), // soothing pearl slate
-              Color(0xFFE8EDF4), // subtle tinted slate
-              Color(0xFFEDF1F7), // balanced matte canvas
+              Color(0xFFFBF8F3), // warm paper Sand base
+              Color(0xFFF5EFEB), // soft warm sand wash
+              Color(0xFFFBF8F3),
             ];
     }
 

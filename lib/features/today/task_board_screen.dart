@@ -1156,7 +1156,7 @@ class _TaskItemTile extends ConsumerWidget {
               border: Border.all(color: g.line, width: AppBorderScale.w1),
               boxShadow: [
                 BoxShadow(
-                  color: AppPalette.black.withValues(alpha: 0.35),
+                  color: const Color(0x331F1B18),
                   blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),

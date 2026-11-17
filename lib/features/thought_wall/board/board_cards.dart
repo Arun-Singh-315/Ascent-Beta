@@ -464,17 +464,17 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: [
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withValues(alpha: dark ? .12 : .04),
+                color: Color(0x0A5C4A3E),
                 blurRadius: 16,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
             border: Border.all(
               color: isSelected
-                  ? SharedControlColors.actionBlue
+                  ? const Color(0xFFBF5A36)
                   : g.line.withValues(alpha: dark ? 0.35 : 0.25),
               width: isSelected ? 1.5 : 1.0,
             ),

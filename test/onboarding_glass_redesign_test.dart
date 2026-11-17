@@ -219,7 +219,8 @@ void main() {
           'Arun',
         );
         await tester.pumpAndSettle();
-        expect(find.text('Good morning, Arun.'), findsOneWidget);
+        // Dynamic time-based greeting preview
+        expect(find.textContaining(', Arun.'), findsOneWidget);
 
         // Advance to 3 · Birthday (3 of 4)
         await tester.ensureVisible(find.text('Continue'));

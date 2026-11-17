@@ -13,110 +13,110 @@ class AscentColors {
 
   // ── Light mode ─────────────────────────────────────────────────────────────
 
-  /// Crisp, misty cool-slate off-white — page background with glass depth.
-  static const Color bgBase = Color(0xFFEFF2F6);
+  /// Warm paper page background (Sand & Dusk).
+  static const Color bgBase = Color(0xFFFBF8F3);
 
-  /// Pure white surface — cards, sheets, inputs.
-  static const Color bgSurface = Color(0xFFFFFFFF);
+  /// Card surface.
+  static const Color bgSurface = Color(0xFFFFFDF9);
 
-  /// Slightly elevated surface for nested cards and chips.
-  static const Color bgSurfaceElevated = Color(0xFFFAF7F4);
+  /// Elevated surface for inputs and empty states.
+  static const Color bgSurfaceElevated = Color(0xFFF4EEE6);
 
-  /// Ascent signature terracotta clay — primary accent.
-  static const Color accentPrimary = Color(0xFFA4523A);
+  /// Primary warm clay CTA accent.
+  static const Color accentPrimary = Color(0xFFBF5A36);
 
-  /// Matte punchy clay for active/interactive buttons and rings.
-  static const Color accentPrimaryBright = Color(0xFF904530);
+  /// Punchy clay for active/interactive buttons.
+  static const Color accentPrimaryBright = Color(0xFFBF5A36);
 
-  /// Subtle soft tint for primary backgrounds and badges.
-  static const Color accentPrimaryDim = Color(0xFFF6E7E2);
+  /// Primary container tint for soft buttons and selected chips.
+  static const Color accentPrimaryDim = Color(0xFFFBE6DA);
 
-  /// Calm composed terracotta / amber cedar — secondary accent (soothing in day mode).
-  static const Color accentSecondary = Color(0xFF8A513E);
+  /// Secondary cool dusk lavender accent (icons, links, focus ring).
+  static const Color accentSecondary = Color(0xFF7C6FB0);
 
-  /// Composed cedar tone for active countdown and focus markers.
-  static const Color accentSecondaryBright = Color(0xFF9E5C47);
+  /// Secondary tone for active focus markers.
+  static const Color accentSecondaryBright = Color(0xFF7C6FB0);
 
-  /// Warm caramel — informational accent.
-  static const Color accentInfo = Color(0xFF9D734F);
+  /// Tertiary soft gold informational accent.
+  static const Color accentInfo = Color(0xFFC99A3C);
 
-  /// Restrained rose-crimson — destructive / error state (calm in day mode).
-  static const Color stateDanger = Color(0xFFBA433C);
+  /// Restrained error state.
+  static const Color stateDanger = Color(0xFFB3473F);
 
   /// Saturated red for cancel and delete.
-  static const Color stateDangerBright = Color(0xFFA83630);
+  static const Color stateDangerBright = Color(0xFFB3473F);
 
-  /// Success — matches primary forest sage.
-  static const Color stateSuccess = Color(0xFF38664D);
+  /// Success state.
+  static const Color stateSuccess = Color(0xFF7C6FB0);
 
-  /// Warning — soft warm honey / amber (calm and non-glaring in day mode).
-  static const Color stateWarning = Color(0xFFB46824);
+  /// Tertiary soft gold warning.
+  static const Color stateWarning = Color(0xFFC99A3C);
 
-  /// Deep near-black obsidian slate text.
-  static const Color textPrimary = Color(0xFF0F172A);
+  /// Warm charcoal primary text.
+  static const Color textPrimary = Color(0xFF2A2521);
 
-  /// Refined secondary slate text.
-  static const Color textSecondary = Color(0xFF334155);
+  /// Refined secondary text.
+  static const Color textSecondary = Color(0xFF6B635A);
 
-  /// Muted / placeholder slate text.
-  static const Color textMuted = Color(0xFF64748B);
+  /// Muted / placeholder / hint text.
+  static const Color textMuted = Color(0xFF9A9086);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
-  /// Ultra-thin hairline divider line.
-  static const Color divider = Color(0xFFE2E8F0);
+  /// 1px warm hairline border / outline.
+  static const Color divider = Color(0xFFE9E1D5);
 
-  /// Shadow tint for soft diffuse elevation.
-  static const Color shadow = Color(0xFF0F172A);
+  /// Very soft shadow (blur 16, 4% opacity warm brown).
+  static const Color shadow = Color(0x0A5C4A3E);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
-  /// Deep obsidian graphite — page background.
-  static const Color bgBaseDark = Color(0xFF16120F);
+  /// Warm dark page background (not black).
+  static const Color bgBaseDark = Color(0xFF1F1B18);
 
-  /// Matte dark charcoal surface — cards, sheets, inputs.
-  static const Color bgSurfaceDark = Color(0xFF221D18);
+  /// Warm dark surface — cards, sheets.
+  static const Color bgSurfaceDark = Color(0xFF2A2420);
 
-  /// Elevated dark surface for nested items and chips.
-  static const Color bgSurfaceElevatedDark = Color(0xFF322922);
+  /// Elevated dark surface for nested items, inputs and chips.
+  static const Color bgSurfaceElevatedDark = Color(0xFF352F2A);
 
-  /// Warm luminous clay / terracotta — primary accent in dark mode.
-  static const Color accentPrimaryDark = Color(0xFFE6A088);
-  static const Color accentPrimaryBrightDark = Color(0xFFF0B39F);
-  static const Color accentPrimaryDimDark = Color(0xFF3A241D);
+  /// Warm clay primary accent in dark mode.
+  static const Color accentPrimaryDark = Color(0xFFE28A6D);
+  static const Color accentPrimaryBrightDark = Color(0xFFE28A6D);
+  static const Color accentPrimaryDimDark = Color(0xFF4D2415);
 
-  /// Warm clay / terracotta — secondary accent.
-  static const Color accentSecondaryDark = Color(0xFFE88168);
-  static const Color accentSecondaryBrightDark = Color(0xFFF2957E);
+  /// Cool dusk lavender secondary accent.
+  static const Color accentSecondaryDark = Color(0xFFA79BD6);
+  static const Color accentSecondaryBrightDark = Color(0xFFA79BD6);
 
-  /// Soft sand — informational accent.
-  static const Color accentInfoDark = Color(0xFFC1A17C);
+  /// Soft gold informational / tertiary accent.
+  static const Color accentInfoDark = Color(0xFFE3B863);
 
-  /// Soft coral red — danger.
-  static const Color stateDangerDark = Color(0xFFE26D66);
-  static const Color stateDangerBrightDark = Color(0xFFEE8079);
+  /// Error state in dark mode.
+  static const Color stateDangerDark = Color(0xFFE2756E);
+  static const Color stateDangerBrightDark = Color(0xFFE2756E);
 
-  static const Color stateSuccessDark = Color(0xFF63BA8B);
-  static const Color stateWarningDark = Color(0xFFECA361);
+  static const Color stateSuccessDark = Color(0xFFA79BD6);
+  static const Color stateWarningDark = Color(0xFFE3B863);
 
-  /// Crisp off-white text.
-  static const Color textPrimaryDark = Color(0xFFEFF2F6);
+  /// Crisp warm text.
+  static const Color textPrimaryDark = Color(0xFFF5EFEB);
 
-  /// Secondary text in dark mode — soft clear silver (10+:1 contrast).
-  static const Color textSecondaryDark = Color(0xFFCBD5E1);
+  /// Secondary text in dark mode.
+  static const Color textSecondaryDark = Color(0xFFBAAFA4);
 
-  /// Muted text in dark mode — readable slate-oat (6.5+:1 contrast).
-  static const Color textMutedDark = Color(0xFFA89F96);
+  /// Muted / hint text in dark mode.
+  static const Color textMutedDark = Color(0xFF8C8176);
 
-  /// Text on primary in dark mode — dark ink on peach clay.
-  static const Color textOnPrimaryDark = Color(0xFF0D1812);
+  /// Text on primary in dark mode.
+  static const Color textOnPrimaryDark = Color(0xFF1F1B18);
 
-  /// Subtle dark divider line.
-  static const Color dividerDark = Color(0xFF372E26);
+  /// Subtle warm dark border.
+  static const Color dividerDark = Color(0xFF433C35);
 
-  /// Shadow in dark mode.
-  static const Color shadowDark = Color(0xFF000000);
+  /// Shadow in dark mode — warm dark, not pure black.
+  static const Color shadowDark = Color(0x331F1B18);
 
   /// Water & Hydration accent tokens.
   static const Color waterPrimary = Color(0xFF0284C7);

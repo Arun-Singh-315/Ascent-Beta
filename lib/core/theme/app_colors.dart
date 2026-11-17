@@ -29,44 +29,60 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color headerTop; // top colour of the header gradient
 
   static const light = AppColors(
-    bg: Color(0xFFF1F4F8),
-    surface: Color(0xFFFFFFFF),
-    surfaceAlt: Color(0xFFE8EEF5),
-    border: Color(0xFFD6DFE8),
-    textPrimary: Color(0xFF0F172A),
-    textSecondary: Color(0xFF475569),
-    textTertiary: Color(0xFF64748B),
-    accent: Color(0xFF285A94),
-    accentTint: Color(0xFFEBF2FA),
-    onAccent: Color(0xFFFFFFFF),
-    ok: Color(0xFF16A34A),
-    okTint: Color(0xFFF0FDF4),
-    warn: Color(0xFFD97706),
-    warnTint: Color(0xFFFFFBEB),
-    alert: Color(0xFFDC2626),
-    alertTint: Color(0xFFFEF2F2),
-    headerTop: Color(0xFFE8EFF6),
+    bg: Color(0xFFFBF8F3), // warm paper
+    surface: Color(0xFFFFFDF9), // cards
+    surfaceAlt: Color(0xFFF4EEE6), // inputs, empty states
+    border: Color(0xFFE9E1D5), // warm 1px hairline
+    textPrimary: Color(0xFF2A2521), // warm charcoal
+    textSecondary: Color(0xFF6B635A),
+    textTertiary: Color(0xFF9A9086), // hint
+    accent: Color(0xFFBF5A36), // primary warm clay
+    accentTint: Color(0xFFFBE6DA), // primaryContainer
+    onAccent: Color(0xFFFFFFFF), // onPrimary
+    ok: Color(0xFF7C6FB0), // secondary cool dusk lavender
+    okTint: Color(0xFFECE8F6), // secondaryContainer
+    warn: Color(0xFFC99A3C), // tertiary soft gold
+    warnTint: Color(0xFFF7EBCF), // tertiaryContainer
+    alert: Color(0xFFB3473F), // error
+    alertTint: Color(0xFFFDE8E8),
+    headerTop: Color(0xFFFBF8F3),
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF0B0F15),
-    surface: Color(0xFF131922),
-    surfaceAlt: Color(0xFF1A222E),
-    border: Color(0xFF222C3A),
-    textPrimary: Color(0xFFF1F5F9),
-    textSecondary: Color(0xFF94A3B8),
-    textTertiary: Color(0xFF64748B),
-    accent: Color(0xFF5B8AC4),
-    accentTint: Color(0xFF132030),
-    onAccent: Color(0xFFFFFFFF),
-    ok: Color(0xFF34D399),
-    okTint: Color(0xFF064E3B),
-    warn: Color(0xFFFBBF24),
-    warnTint: Color(0xFF451A03),
-    alert: Color(0xFFF87171),
-    alertTint: Color(0xFF450A0A),
-    headerTop: Color(0xFF151D29),
+    bg: Color(0xFF1F1B18), // warm dark (not black)
+    surface: Color(0xFF2A2420),
+    surfaceAlt: Color(0xFF352F2A),
+    border: Color(0xFF433C35),
+    textPrimary: Color(0xFFF5EFEB),
+    textSecondary: Color(0xFFBAAFA4),
+    textTertiary: Color(0xFF8C8176),
+    accent: Color(0xFFE28A6D), // primary warm clay
+    accentTint: Color(0xFF4D2415), // primaryContainer
+    onAccent: Color(0xFF1F1B18),
+    ok: Color(0xFFA79BD6), // secondary cool dusk lavender
+    okTint: Color(0xFF2D2545), // secondaryContainer
+    warn: Color(0xFFE3B863), // tertiary soft gold
+    warnTint: Color(0xFF4A3B18), // tertiaryContainer
+    alert: Color(0xFFE2756E), // error
+    alertTint: Color(0xFF4D1D1B),
+    headerTop: Color(0xFF1F1B18),
   );
+
+  // Semantic Sand & Dusk getters
+  Color get primary => accent;
+  Color get onPrimary => onAccent;
+  Color get primaryContainer => accentTint;
+  Color get onPrimaryContainer =>
+      this == light ? const Color(0xFF6B2E14) : const Color(0xFFFBE6DA);
+  Color get secondary => ok;
+  Color get onSecondary => onAccent;
+  Color get secondaryContainer => okTint;
+  Color get onSecondaryContainer =>
+      this == light ? const Color(0xFF3A3266) : const Color(0xFFECE8F6);
+  Color get tertiary => warn;
+  Color get tertiaryContainer => warnTint;
+  Color get textHint => textTertiary;
+  Color get warmShadow => const Color(0x0A5C4A3E);
 
   @override
   AppColors copyWith({

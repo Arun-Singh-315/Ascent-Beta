@@ -1,4 +1,3 @@
-import 'dart:ui' as ui;
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +12,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/services/cosmic_profile_service.dart';
+import '../../shared/widgets/app_text_field.dart';
 
 // ---------------------------------------------------------------------------
 // Onboarding State Model & Provider
@@ -280,6 +280,22 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
     }
   }
 
+  String _titleCase(String text) {
+    if (text.trim().isEmpty) return '';
+    return text.trim().split(RegExp(r'\s+')).map((w) {
+      if (w.isEmpty) return '';
+      return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+    }).join(' ');
+  }
+
+  String _timeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    if (hour < 21) return 'Good evening';
+    return 'Good night';
+  }
+
   Future<void> _handleNext() async {
     final notifier = ref.read(onboardingProvider.notifier);
     final state = ref.read(onboardingProvider);
@@ -306,7 +322,9 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
           return;
         }
         setState(() => _showNameError = false);
-        notifier.updateNameRole(name, state.focusArea);
+        final titleCasedName = _titleCase(name);
+        _nameController.text = titleCasedName;
+        notifier.updateNameRole(titleCasedName, state.focusArea);
         notifier.setStep(3);
         _resetScroll();
         break;
@@ -327,9 +345,11 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
         break;
       case 5:
         // Ready -> Finish & Enter Ascent
-        final cleanName = _nameController.text.trim().isNotEmpty
-            ? _nameController.text.trim()
-            : state.name.trim();
+        final cleanName = _titleCase(
+          _nameController.text.trim().isNotEmpty
+              ? _nameController.text.trim()
+              : state.name.trim(),
+        );
         notifier.updateNameRole(cleanName, state.focusArea);
         final saved = await notifier.submitAndSeedPlan(context, ref);
         if (!mounted) return;
@@ -809,95 +829,32 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
           ),
           const SizedBox(height: 10),
 
-          // Single-enclosure Glass Input
-          Container(
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0x33FFFFFF)
-                  : Colors.white.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _showNameError
-                    ? Colors.redAccent
-                    : (isNameValid
-                        ? _brandBlue
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.16)
-                            : const Color(0x330F1B3D))),
-                width: isNameValid ? 1.5 : 1.0,
-              ),
-              boxShadow: [
-                if (isNameValid)
-                  BoxShadow(
-                    color: _brandBlue.withValues(alpha: 0.16),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-              ],
+          // Single-enclosure Input via AppTextField
+          AppTextField(
+            key: const ValueKey('onboarding_name'),
+            controller: _nameController,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _handleNext(),
+            onChanged: (_) => setState(() {}),
+            prefixIcon: Icon(
+              Icons.person_outline_rounded,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.person_outline_rounded,
-                  size: 20,
-                  color: isDark ? const Color(0xFF93C5FD) : _brandBlue,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    key: const ValueKey('onboarding_name'),
-                    controller: _nameController,
-                    textCapitalization: TextCapitalization.words,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _handleNext(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: g.ink,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'What should we call you?',
-                      hintStyle: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        color: isDark
-                            ? const Color(0xFF718096)
-                            : const Color(0xFF8A99B5),
-                      ),
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ),
-                if (isNameValid)
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0x4734D399),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.check_rounded,
-                        size: 14,
-                        color: _accentEmerald,
-                      ),
-                    ),
+            hintText: 'What should we call you?',
+            suffixIcon: isNameValid
+                ? Icon(
+                    Icons.check_circle_rounded,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.secondary,
                   )
-                else if (nameTrimmed.isNotEmpty)
-                  GestureDetector(
-                    onTap: () => _nameController.clear(),
-                    child: const Icon(
-                      Icons.cancel_rounded,
-                      size: 18,
-                      color: Color(0xFF8A99B5),
-                    ),
-                  ),
-              ],
-            ),
+                : (nameTrimmed.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.cancel_rounded, size: 18),
+                        onPressed: () => _nameController.clear(),
+                      )
+                    : null),
           ),
 
           const SizedBox(height: 10),
@@ -933,13 +890,11 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
                     : const Color(0x120F1B3D),
                 width: 1,
               ),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.20)
-                      : const Color(0x143B82F6),
-                  blurRadius: 26,
-                  offset: const Offset(0, 10),
+                  color: Color(0x0A5C4A3E),
+                  blurRadius: 16,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
@@ -959,7 +914,7 @@ class _OnboardingNavigatorState extends ConsumerState<_OnboardingNavigator> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Good morning, ${nameTrimmed.isNotEmpty ? nameTrimmed : 'Arun'}.',
+                  '${_timeGreeting()}, ${nameTrimmed.isNotEmpty ? _titleCase(nameTrimmed) : 'Arun'}.',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,

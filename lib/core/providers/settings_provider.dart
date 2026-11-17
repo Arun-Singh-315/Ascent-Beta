@@ -170,16 +170,16 @@ Future<void> touchLastOpened(SharedPreferences prefs) async {
 
 const _assistantNameKey = 'ascent_assistant_name';
 
-/// The user-configurable name for the AI assistant. Defaults to 'Riya'.
+/// The user-configurable name for the AI assistant. Defaults to 'Aria'.
 /// Changing this updates all references throughout the app.
 class AssistantNameNotifier extends Notifier<String> {
   @override
   String build() {
     try {
       final prefs = ref.watch(sharedPreferencesProvider);
-      return prefs.getString(_assistantNameKey) ?? 'Riya';
+      return prefs.getString(_assistantNameKey) ?? 'Aria';
     } catch (_) {
-      return 'Riya';
+      return 'Aria';
     }
   }
 
@@ -194,7 +194,7 @@ class AssistantNameNotifier extends Notifier<String> {
   }
 
   void reset() {
-    setName('Riya');
+    setName('Aria');
   }
 }
 

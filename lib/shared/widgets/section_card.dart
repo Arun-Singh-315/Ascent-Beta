@@ -28,6 +28,13 @@ class SectionCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: AppBorder.all(c.border.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: c.warmShadow,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

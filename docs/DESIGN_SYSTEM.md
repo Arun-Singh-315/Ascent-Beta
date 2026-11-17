@@ -1,32 +1,58 @@
 # Ascent design system
 
-Current contributor guide · reviewed 12 October 2026. The definitions in `lib/app/theme/` and active component APIs are authoritative; this guide does not promise that every historical screen already follows every convention.
+Current contributor guide · reviewed November 2026. The definitions in `lib/app/theme/` and active component APIs are authoritative; this guide establishes the core rules and visual language across all screens.
 
-## Themes and surfaces
+## 1. Global Rules
 
-Resolve colors through `context.glass` and semantic color extensions. Use readable content surfaces over restrained atmospheric backgrounds. Keep glass effects bounded; avoid a blur or continuous animation for every row. Verify both light and dark modes rather than copying a dark-mode literal.
+- **INPUT RULE**: One input = one container. Use a single `TextField` with `InputDecoration` (filled, one border, `prefixIcon` inside decoration). NEVER put a bordered/filled field inside another bordered/filled box. Build and use the reusable `AppTextField` everywhere; no raw `TextField` with custom wrappers.
+- **No pure black (#000) fills, outlines or text anywhere**. No 2px dark outlines. Borders are 1px warm hairlines (`#E9E1D5`).
+- **Sticky headers/app bars must have an opaque (or blurred+opaque-tinted) background** so content never shows through.
+- **Scroll bottom padding** = bottom nav height + safe-area inset + 16. No fixed big spacers.
+- **All colors come from ThemeData/ColorScheme / AppColors tokens**. No hardcoded hex in widgets.
+- **Every section header uses the same pattern**: title left, "View all" or chevron right-aligned.
 
-Use `AscentScaffold` for ordinary feature pages where its framing fits, `AscentCard` for grouped surfaces and `GlassSurface` for appropriate floating glass treatments. Full-screen entry and specialized reading/player surfaces have their own layouts. `AscentCard` supports glass, solid, elevated and outlined variants.
+## 2. Palette "Sand & Dusk" (warm base, cool accent, no blue/green)
 
-## Typography and dimensions
+### Light Theme Tokens
+- `background`: `#FBF8F3` (warm paper)
+- `surface` (cards): `#FFFDF9`
+- `surfaceAlt` (inputs, empty states): `#F4EEE6`
+- `border/outline`: `#E9E1D5`
+- `text primary`: `#2A2521` (warm charcoal)
+- `text secondary`: `#6B635A`
+- `text hint`: `#9A9086`
+- `primary` (warm clay, CTAs): `#BF5A36`, `onPrimary` `#FFFFFF`
+- `primaryContainer` (soft buttons, selected chips): `#FBE6DA`, `onPrimaryContainer` `#6B2E14`
+- `secondary` (cool dusk lavender, icons, links, focus ring): `#7C6FB0`
+- `secondaryContainer`: `#ECE8F6`, `onSecondaryContainer` `#3A3266`
+- `tertiary` (soft gold, highlights/streaks): `#C99A3C`, `tertiaryContainer` `#F7EBCF`
+- `error`: `#B3473F`
 
-Use `AscentTextStyles` and `AscentDimensions`/`AscentRadii` rather than inventing scales at each call site. Shared typography includes Plus Jakarta Sans, Inter and JetBrains Mono; Home also uses Bricolage Grotesque and DM Sans. Reader typography has separate reading choices. Keep bundled font files, manifests and licenses together.
+### Dark Theme Tokens (Warm dark #1F1B18, not black)
+- `background`: `#1F1B18`
+- `surface`: `#2A2420`
+- `surfaceAlt`: `#352F2A`
+- `border/outline`: `#433C35`
+- `text primary`: `#F5EFEB`
+- `text secondary`: `#BAAFA4`
+- `text hint`: `#8C8176`
+- `primary`: `#E28A6D`, `onPrimary` `#1F1B18`
+- `primaryContainer`: `#4D2415`, `onPrimaryContainer` `#FBE6DA`
+- `secondary`: `#A79BD6`
+- `secondaryContainer`: `#2D2545`, `onSecondaryContainer` `#ECE8F6`
+- `tertiary`: `#E3B863`, `tertiaryContainer` `#4A3B18`
+- `error`: `#E2756E`
 
-Standard spacing tokens range from 4 px to 32 px. Consult `dimension_tokens.dart` for actual component dimensions and radii. Controls must remain usable with large text, long labels, screen readers and the keyboard; do not force their content into a fixed height that clips.
+### Surface & Dimension Rules
+- Cards = surface + 1px border + very soft shadow (blur 16, 4% opacity warm brown: `Color(0x0A5C4A3E)`).
+- Radii: 20 cards (`Rd.card`), 14 inputs (`Rd.field`), 999 chips/buttons (`Rd.chip`).
+- Icon tiles use container colors, not saturated fills.
+- Selected nav item = `primaryContainer` pill with `onPrimaryContainer` icon/label.
+- Spacing scale: 4 / 8 / 12 / 16 / 24 (`AppSpacing.xs` through `AppSpacing.xl`).
 
-## Controls and feedback
-
+## 3. Controls and Feedback
+- Use `AppTextField` for all form and modal input requirements.
+- Use `AppChip` for filter, selection, and quick-add chips.
 - Reuse `AscentButton` variants and appropriate tactile feedback.
-- `AscentDialog.confirm` returns the user's choice; `AscentDialog.alert` presents information. Check the actual named-argument API before calling.
-- `AscentSnackBar` and `showUndoSnackbar` provide common feedback patterns. Show success only after the relevant operation succeeds.
-- Use `MessageComposer` for shared chat input. Other forms use feature-specific Material text fields with semantic theme colors.
-- Feature sheets use `showModalBottomSheet`, with safe areas, keyboard insets, sensible height limits, scrolling and shared surface/radius tokens. There is no active generic `AscentBottomSheet` wrapper.
-- Give destructive/bulk actions a clear scope and recovery where supported. Avoid duplicate submission while a write is pending.
-
-## Home and navigation
-
-Keep Home previews bounded with explicit full-view destinations. Preserve access to capture, tools, Riya and running sessions. Back/navigation behavior belongs to the router and main scaffold. Hiding a presentation section must never disable its background service.
-
-Use concise labels, visible truncation affordances, accessible touch targets and reduced-motion alternatives. Keep implementation details out of everyday user flows unless they explain a meaningful state or choice.
-
-The [component catalog](COMPONENT_CATALOG.md) lists current shared widgets. The [Mind Space plan](MIND_SPACE_FEEDBACK_PLAN.md) and [next update plan](NEXT_UPDATE_PLAN.md) describe proposed experiences separately from today's components.
+- Feature sheets use `showModalBottomSheet`, with safe areas, keyboard insets, sensible height limits, scrolling and shared surface/radius tokens.
+- Back and navigation behavior belongs to the router and main scaffold.

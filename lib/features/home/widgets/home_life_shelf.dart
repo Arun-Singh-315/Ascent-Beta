@@ -242,40 +242,86 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         ),
         const SizedBox(height: 16),
 
-        // Action row: +250 ml, +500 ml, Custom
+        // Action row: +250 ml, +500 ml, Custom (unified chip style)
         Row(
           children: [
             Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: c.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(Rd.field),
+              child: Material(
+                color: c.surfaceAlt,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Rd.chip),
+                  side: BorderSide(color: c.border, width: 1.0),
+                ),
+                child: InkWell(
+                  key: const ValueKey('water_chip_250'),
+                  borderRadius: BorderRadius.circular(Rd.chip),
+                  onTap: _saving ? null : () => _logWater(250),
+                  child: Container(
+                    height: 38,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+250 ml',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
-                onPressed: _saving ? null : () => _logWater(250),
-                child: Text('+250 ml', style: TextStyle(color: c.textPrimary)),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: c.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(Rd.field),
+              child: Material(
+                color: c.surfaceAlt,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Rd.chip),
+                  side: BorderSide(color: c.border, width: 1.0),
+                ),
+                child: InkWell(
+                  key: const ValueKey('water_chip_500'),
+                  borderRadius: BorderRadius.circular(Rd.chip),
+                  onTap: _saving ? null : () => _logWater(500),
+                  child: Container(
+                    height: 38,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '+500 ml',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: c.textPrimary,
+                      ),
+                    ),
                   ),
                 ),
-                onPressed: _saving ? null : () => _logWater(500),
-                child: Text('+500 ml', style: TextStyle(color: c.textPrimary)),
               ),
             ),
             const SizedBox(width: 8),
-            TextButton(
-              onPressed: _saving ? null : _customWaterDialog,
-              child: Text(
-                'Custom',
-                style: TextStyle(color: c.accent, fontWeight: FontWeight.w600),
+            Material(
+              color: c.surfaceAlt,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(Rd.chip),
+                side: BorderSide(color: c.border, width: 1.0),
+              ),
+              child: InkWell(
+                key: const ValueKey('water_chip_custom'),
+                borderRadius: BorderRadius.circular(Rd.chip),
+                onTap: _saving ? null : _customWaterDialog,
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Custom',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: c.accent,
+                    ),
+                  ),
+                ),
               ),
             ),
           ],

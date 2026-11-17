@@ -76,46 +76,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     }
   }
 
-  (Color, Color) _getHeaderGradient(
-    int hour,
-    int? weatherCode,
-    bool dark,
-    dynamic c,
-  ) {
-    final isRain = weatherCode != null &&
-        ((weatherCode >= 51 && weatherCode <= 67) ||
-            (weatherCode >= 80 && weatherCode <= 82) ||
-            weatherCode >= 95);
-
-    if (isRain) {
-      return dark
-          ? (const Color(0xFF101722), const Color(0xFF0B0F15))
-          : (const Color(0xFFDFE7F0), const Color(0xFFF1F4F8));
-    }
-
-    if (hour < 5 || hour >= 21) {
-      // Night
-      return dark
-          ? (const Color(0xFF090D14), const Color(0xFF0B0F15))
-          : (const Color(0xFFE7EAF2), const Color(0xFFF1F4F8));
-    } else if (hour >= 17) {
-      // Evening
-      return dark
-          ? (const Color(0xFF181524), const Color(0xFF0B0F15))
-          : (const Color(0xFFECE7F4), const Color(0xFFF1F4F8));
-    } else if (hour >= 12) {
-      // Afternoon
-      return dark
-          ? (const Color(0xFF131A26), const Color(0xFF0B0F15))
-          : (const Color(0xFFE4EDF5), const Color(0xFFF1F4F8));
-    } else {
-      // Morning
-      return dark
-          ? (const Color(0xFF151D29), const Color(0xFF0B0F15))
-          : (const Color(0xFFE8EFF6), const Color(0xFFF1F4F8));
-    }
-  }
-
   void _showCosmicInsightDialog(BuildContext context, ZodiacSignInfo sign) {
     final c = context.c;
     final dob = widget.profile?.dateOfBirth;
@@ -435,7 +395,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final (greeting, periodIcon, periodSubtitle) = _getDayPeriodInfo(now.hour);
 
     final rawName = widget.profile?.name.trim() ?? '';
-    final name = rawName.replaceAll(';)', '').trim();
+    final cleaned = rawName.replaceAll(';)', '').trim();
+    final name = cleaned.isEmpty
+        ? ''
+        : cleaned.split(RegExp(r'\s+')).map((w) {
+            if (w.isEmpty) return '';
+            return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+          }).join(' ');
     final initial = name.isEmpty ? 'A' : name[0].toUpperCase();
     final dob = widget.profile?.dateOfBirth;
     final sign =
@@ -446,13 +412,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final weatherState = ref.watch(homeWeatherProvider);
     final current = weatherState.value?['current'] as Map<String, dynamic>?;
     final weatherCode = (current?['weather_code'] as num?)?.toInt();
-
-    final (headerGradientTop, headerGradientBottom) = _getHeaderGradient(
-      now.hour,
-      weatherCode,
-      dark,
-      c,
-    );
 
     final streak = math.max(
       ref.watch(studyStreakProvider).displayStreakDays,
@@ -475,18 +434,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     return Container(
       key: const ValueKey('home_day_header'),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            headerGradientTop,
-            headerGradientBottom,
-          ],
-        ),
+        color: c.surface,
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.header),
         ),
-        border: AppBorder.bottom(c.border.withValues(alpha: 0.8)),
+        border: AppBorder.bottom(c.border),
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(
