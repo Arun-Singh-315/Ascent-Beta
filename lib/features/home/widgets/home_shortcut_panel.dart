@@ -144,7 +144,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
 
     return Container(
       key: const ValueKey('home_shortcut_panel'),
-      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
