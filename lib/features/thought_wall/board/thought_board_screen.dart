@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -426,17 +427,21 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     );
   }
 
-  Widget _composer(AscentGlass g) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-    child: MessageComposer(
-      quiet: true,
-      controller: _input,
-      focusNode: _focus,
-      hint: 'Write a thought…',
-      busy: _saving,
-      onSend: (_) => _send(),
-    ),
-  );
+  Widget _composer(AscentGlass g) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16.0 + math.max(12.0, bottomInset)),
+      child: MessageComposer(
+        quiet: true,
+        controller: _input,
+        focusNode: _focus,
+        hint: 'Write a thought…',
+        busy: _saving,
+        minHeight: 56,
+        onSend: (_) => _send(),
+      ),
+    );
+  }
 
   // Board -------------------------------------------------------------------
 
@@ -493,7 +498,14 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       return Column(
         children: [
           for (var i = 0; i < thoughts.length; i++) ...[
-            card(thoughts[i], i),
+            Align(
+              alignment:
+                  i.isEven ? Alignment.centerLeft : Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: width * 0.92),
+                child: card(thoughts[i], i),
+              ),
+            ),
             const SizedBox(height: AppSpace.s10),
           ],
         ],

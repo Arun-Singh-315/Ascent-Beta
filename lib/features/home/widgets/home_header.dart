@@ -14,13 +14,20 @@ import '../../../core/services/festival_service.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
+import 'home_assistant_hero_card.dart';
 import 'home_day_design.dart';
 import 'home_weather.dart';
 
 class HomeHeader extends ConsumerStatefulWidget {
-  const HomeHeader({super.key, required this.profile, this.now});
+  const HomeHeader({
+    super.key,
+    required this.profile,
+    this.now,
+    this.includeAssistant = true,
+  });
   final UserProfile? profile;
   final DateTime? now;
+  final bool includeAssistant;
 
   @override
   ConsumerState<HomeHeader> createState() => _HomeHeaderState();
@@ -419,179 +426,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     );
   }
 
-  Widget _buildIlluminatedAssistantHero(
-    BuildContext context,
-    dynamic c,
-    bool dark,
-    String assistantName,
-  ) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final maxCardWidth = math.min(
-      math.max(0.0, screenWidth - 44),
-      336.0,
-    );
-
-    return Align(
-      alignment: Alignment.center,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxCardWidth),
-        child: AnimatedBuilder(
-          animation: _animController,
-          builder: (context, _) {
-            return CustomPaint(
-              painter: _IlluminatingBorderPainter(
-                progress: _animController.value,
-                accentColor: c.accent,
-                secondaryColor: const Color(0xFF818CF8),
-                dark: dark,
-              ),
-              child: Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  key: const ValueKey('home_assistant_button'),
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/ai-assistant');
-                  },
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 46),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: c.surfaceAlt.withValues(alpha: dark ? 0.45 : 0.60),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        // Glowing Icon Disc
-                        Container(
-                          width: 30,
-                          height: 30,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: c.accent.withValues(alpha: dark ? 0.12 : 0.08),
-                            border: Border.all(
-                              color: c.accent.withValues(alpha: dark ? 0.22 : 0.16),
-                              width: 1,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 15,
-                            color: c.accent,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // Title and Description
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      'Ask $assistantName',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: c.textPrimary,
-                                        letterSpacing: -0.1,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 5,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: c.accent.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: Text(
-                                      'AI',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                        color: c.accent,
-                                        letterSpacing: 0.3,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                'Brainstorm, ask questions or plan your day',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: c.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Action Pill / Arrow
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 9,
-                              vertical: 4.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: c.accent.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: c.accent.withValues(alpha: 0.25),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Chat',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: c.accent,
-                                  ),
-                                ),
-                                const SizedBox(width: 3),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 12,
-                                  color: c.accent,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -929,14 +763,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     ),
                   ],
 
-                  // Row 5: Illuminating AI Hero Gateway (Ask bot name with animated moving light border)
-                  const SizedBox(height: 12),
-                  _buildIlluminatedAssistantHero(
-                    context,
-                    c,
-                    dark,
-                    assistantName,
-                  ),
+                  // Optional embedded AI Gateway (spacious header keeps it outside by default)
+                  if (widget.includeAssistant) ...[
+                    const SizedBox(height: 12),
+                    HomeAssistantHeroCard(
+                      assistantName: assistantName,
+                    ),
+                  ],
 
                   // Row 6: Quote / Day Cue
                   const SizedBox(height: 12),
@@ -960,71 +793,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       ),
     );
   }
-}
-
-class _IlluminatingBorderPainter extends CustomPainter {
-  _IlluminatingBorderPainter({
-    required this.progress,
-    required this.accentColor,
-    required this.secondaryColor,
-    required this.dark,
-  });
-
-  final double progress;
-  final Color accentColor;
-  final Color secondaryColor;
-  final bool dark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(
-      rect.deflate(0.8),
-      const Radius.circular(20),
-    );
-
-    // Base subtle border outline
-    final basePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..color = (dark ? Colors.white : Colors.black)
-          .withValues(alpha: dark ? 0.12 : 0.08);
-    canvas.drawRRect(rrect, basePaint);
-
-    // Dynamic sweeping glow highlight around border
-    final sweepAngle = progress * 2 * math.pi;
-
-    final sweepGradient = SweepGradient(
-      center: Alignment.center,
-      transform: GradientRotation(sweepAngle),
-      colors: [
-        accentColor.withValues(alpha: 0.0),
-        accentColor.withValues(alpha: 0.12),
-        secondaryColor.withValues(alpha: 0.35),
-        Colors.white.withValues(alpha: dark ? 0.45 : 0.35),
-        accentColor.withValues(alpha: 0.40),
-        accentColor.withValues(alpha: 0.10),
-        accentColor.withValues(alpha: 0.0),
-      ],
-      stops: const [0.0, 0.55, 0.72, 0.82, 0.90, 0.96, 1.0],
-    );
-
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round
-      ..shader = sweepGradient.createShader(rect);
-
-    canvas.drawRRect(rrect, glowPaint);
-  }
-
-  @override
-  bool shouldRepaint(_IlluminatingBorderPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.accentColor != accentColor ||
-      oldDelegate.secondaryColor != secondaryColor ||
-      oldDelegate.dark != dark;
 }
 
 class _AtmosphereCanvasPainter extends CustomPainter {

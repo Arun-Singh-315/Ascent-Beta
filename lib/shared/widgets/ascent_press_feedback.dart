@@ -21,7 +21,7 @@ class _AscentPressFeedbackState extends State<AscentPressFeedback> {
   void _release() {
     _pointer = null;
     _origin = null;
-    if (_pressed) setState(() => _pressed = false);
+    if (mounted && _pressed) setState(() => _pressed = false);
   }
 
   @override

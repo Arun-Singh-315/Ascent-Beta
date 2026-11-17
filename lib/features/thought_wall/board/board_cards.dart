@@ -53,12 +53,11 @@ IconData? boardMoodIcon(String mood) => switch (mood) {
 };
 
 BorderRadius _boardRadius(ThoughtCardStyle style, int index) => switch (style) {
-  ThoughtCardStyle.soft => AppGeometry.roundedr18,
-  ThoughtCardStyle.bubble => BorderRadius.only(
-    topLeft: AppGeometry.radiusr18,
-    topRight: AppGeometry.radiusr18,
-    bottomLeft: index.isEven ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
-    bottomRight: index.isOdd ? AppGeometry.radiusr4 : AppGeometry.radiusr18,
+  ThoughtCardStyle.soft || ThoughtCardStyle.bubble => BorderRadius.only(
+    topLeft: index.isEven ? const Radius.circular(6) : const Radius.circular(18),
+    topRight: index.isOdd ? const Radius.circular(6) : const Radius.circular(18),
+    bottomLeft: const Radius.circular(18),
+    bottomRight: const Radius.circular(18),
   ),
   ThoughtCardStyle.minimal => AppGeometry.roundedr8,
 };
@@ -135,15 +134,17 @@ class _BoardCardState extends State<BoardCard> {
     final comfortable = appearance.density == ThoughtCardDensity.comfortable;
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
-        ? Colors.transparent
+        ? (dark
+            ? g.ink.withValues(alpha: .045)
+            : Colors.white.withValues(alpha: .32))
         : Color.alphaBlend(
             g.ink.withValues(alpha: dark ? .065 : .012),
             dark ? g.bg : g.fill,
           );
     final borderColor = isSelected
         ? SharedControlColors.actionBlue
-        : g.ink.withValues(alpha: dark ? .12 : .07);
-    final borderWidth = isSelected ? 1.8 : .7;
+        : g.line.withValues(alpha: dark ? .35 : .26);
+    final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
     final moodIcon = boardMoodIcon(thought.mood);
@@ -276,7 +277,7 @@ class _BoardCardState extends State<BoardCard> {
           overflow: TextOverflow.ellipsis,
           style: AscentTextStyles.cardTitle.copyWith(
             color: g.ink,
-            fontSize: 16,
+            fontSize: 15.5,
             fontWeight: FontWeight.w500,
             height: 1.4,
           ),
@@ -443,8 +444,8 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final fill = dark
-        ? Color.alphaBlend(g.ink.withValues(alpha: .07), g.bg)
-        : Color.alphaBlend(Colors.white.withValues(alpha: .88), g.fill);
+        ? g.ink.withValues(alpha: .06)
+        : Colors.white.withValues(alpha: .30);
     final onFill = g.ink;
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
