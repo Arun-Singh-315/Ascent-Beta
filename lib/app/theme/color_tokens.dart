@@ -13,60 +13,60 @@ class AscentColors {
 
   // ── Light mode ─────────────────────────────────────────────────────────────
 
-  /// Warm paper page background (Sand & Ember).
-  static const Color bgBase = Color(0xFFFAF6F0);
-  static const Color bgGrouped = Color(0xFFF3ECE2);
+  /// Clean, airy off-white page canvas (Apple Porcelain).
+  static const Color bgBase = Color(0xFFF8FAFC);
+  static const Color bgGrouped = Color(0xFFF1F5F9);
 
-  /// Card surface (92% opaque white).
-  static const Color bgSurface = Color(0xEBFFFFFF);
+  /// Card surface (100% opaque solid white with crisp contrast).
+  static const Color bgSurface = Color(0xFFFFFFFF);
 
   /// Elevated surface for inputs and empty states.
-  static const Color bgSurfaceElevated = Color(0xFFF1E9DD);
+  static const Color bgSurfaceElevated = Color(0xFFF1F5F9);
 
-  /// Primary warm ember CTA accent.
-  static const Color accentPrimary = Color(0xFFD2643A);
-  static const Color accentPrimaryBright = Color(0xFFD2643A);
+  /// Primary active Apple Blue CTA accent.
+  static const Color accentPrimary = Color(0xFF006FE6);
+  static const Color accentPrimaryBright = Color(0xFF006FE6);
 
   /// Primary container tint for soft buttons and selected chips.
-  static const Color accentPrimaryDim = Color(0xFFFCE5D8);
+  static const Color accentPrimaryDim = Color(0xFFEBF4FF);
 
-  /// Secondary rose clay accent.
-  static const Color accentSecondary = Color(0xFFC4506A);
-  static const Color accentSecondaryBright = Color(0xFFC4506A);
-  static const Color accentSecondaryDim = Color(0xFFF8E1E6);
+  /// Secondary sky accent.
+  static const Color accentSecondary = Color(0xFF0284C7);
+  static const Color accentSecondaryBright = Color(0xFF0284C7);
+  static const Color accentSecondaryDim = Color(0xFFE0F2FE);
 
-  /// Tertiary soft gold informational / streaks accent.
-  static const Color accentInfo = Color(0xFFD6A23E);
-  static const Color accentGold = Color(0xFFD6A23E);
-  static const Color accentGoldDim = Color(0xFFF8EDD0);
+  /// Tertiary amber informational / streaks accent.
+  static const Color accentInfo = Color(0xFFD97706);
+  static const Color accentGold = Color(0xFFD97706);
+  static const Color accentGoldDim = Color(0xFFFEF3C7);
 
   /// Restrained error state.
-  static const Color stateDanger = Color(0xFFB8433B);
-  static const Color stateDangerBright = Color(0xFFB8433B);
+  static const Color stateDanger = Color(0xFFDC2626);
+  static const Color stateDangerBright = Color(0xFFDC2626);
 
-  /// Success state (soft olive gold, not green).
-  static const Color stateSuccess = Color(0xFFD6A23E);
+  /// Success state (clean green).
+  static const Color stateSuccess = Color(0xFF16A34A);
 
-  /// Warning state.
-  static const Color stateWarning = Color(0xFFD6A23E);
+  /// Warning state (clean amber).
+  static const Color stateWarning = Color(0xFFD97706);
 
-  /// Warm charcoal primary text.
-  static const Color textPrimary = Color(0xFF2B2622);
+  /// Deep slate-black primary text.
+  static const Color textPrimary = Color(0xFF0F172A);
 
   /// Refined secondary text.
-  static const Color textSecondary = Color(0xFF6F665C);
+  static const Color textSecondary = Color(0xFF475569);
 
   /// Muted / placeholder / hint text.
-  static const Color textMuted = Color(0xFFA0958A);
+  static const Color textMuted = Color(0xFF94A3B8);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
-  /// 1px warm hairline border / outline.
-  static const Color divider = Color(0xFFE6DCCD);
+  /// 1px neutral hairline border / outline.
+  static const Color divider = Color(0xFFE2E8F0);
 
-  /// Very soft shadow (blur 16, 4% opacity warm brown).
-  static const Color shadow = Color(0x0A5C4A3E);
+  /// Very soft shadow (blur 16, natural neutral slate shadow).
+  static const Color shadow = Color(0x0E0F172A);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 

@@ -135,17 +135,23 @@ class SpacesShelf extends ConsumerWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: g.claySoft,
+                        color: isDark
+                            ? const Color(0xFF262933)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+                          color: isDark
+                              ? const Color(0xFF333846)
+                              : const Color(0xFFE2E8F0),
                           width: 0.8,
                         ),
                       ),
                       child: Text(
                         '${spaces.length}',
                         style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.clay,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF475569),
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
@@ -408,6 +414,7 @@ class _AllSpacesSheetState extends ConsumerState<_AllSpacesSheet> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final isDark = g.isDark;
     final pinned = ref.watch(pinnedSpacesProvider);
 
     final filtered = widget.spaces.where((s) {
@@ -454,13 +461,17 @@ class _AllSpacesSheetState extends ConsumerState<_AllSpacesSheet> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: g.claySoft.withValues(alpha: 0.35),
+                      color: isDark
+                          ? const Color(0xFF262933)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${widget.spaces.length}',
                       style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.clay,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF475569),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

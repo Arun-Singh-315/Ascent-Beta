@@ -109,7 +109,7 @@ class _AppComposerState extends State<AppComposer>
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF16181F) : Colors.white,
+            color: isDark ? const Color(0xFF16181F) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
               color: _isFocused
@@ -162,7 +162,7 @@ class _AppComposerState extends State<AppComposer>
                     style: TextStyle(
                       fontSize: 15,
                       color: c.textPrimary,
-                      height: 1.35,
+                      height: 1.30,
                     ),
                     decoration: InputDecoration(
                       hintText: 'Message ${widget.assistantName}…',
@@ -178,9 +178,7 @@ class _AppComposerState extends State<AppComposer>
                       focusedErrorBorder: InputBorder.none,
                       isDense: true,
                       filled: false,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                      ),
+                      contentPadding: const EdgeInsets.fromLTRB(4, 7, 4, 9),
                     ),
                   ),
                 ),

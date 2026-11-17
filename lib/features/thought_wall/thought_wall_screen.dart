@@ -1312,9 +1312,7 @@ if (!mounted || result == null) return;
                     ? Theme.of(context).colorScheme.surface
                     : (g.frozen
                           ? const Color(0xFFEDF4FA)
-                          : (g.merlot
-                                ? const Color(0xFFF3ECE0)
-                                : const Color(0xFFF5EFE9))),
+                          : const Color(0xFFF1F5F9)),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: g.edge.withValues(alpha: 0.6),

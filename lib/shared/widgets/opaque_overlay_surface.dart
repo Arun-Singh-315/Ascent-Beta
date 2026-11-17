@@ -36,7 +36,7 @@ class OpaqueOverlaySurface extends StatelessWidget {
 
     final solidColor = isDark
         ? (isSheet ? const Color(0xFF14171E) : const Color(0xFF16181F))
-        : (isSheet ? const Color(0xFFF3ECE2) : const Color(0xFFFFFDF9));
+        : (isSheet ? const Color(0xFFF8FAFC) : const Color(0xFFFFFFFF));
 
     final effectiveRadius = borderRadius ??
         (isSheet
@@ -46,7 +46,7 @@ class OpaqueOverlaySurface extends StatelessWidget {
     final effectiveShadows = shadows ??
         [
           BoxShadow(
-            color: isDark ? const Color(0x73000000) : const Color(0x1F2A2521),
+            color: isDark ? const Color(0x73000000) : const Color(0x1F0F172A),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),

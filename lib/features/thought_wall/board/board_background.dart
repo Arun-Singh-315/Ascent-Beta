@@ -44,24 +44,24 @@ class BoardBackground extends ConsumerWidget {
         dark
             ? [const Color(0xFF10141D), const Color(0xFF151B26)]
             : [
-                const Color(0xFFFAF9F6),
+                const Color(0xFFF8FAFC),
                 const Color(0xFFF1F5F9),
               ],
       BoardBackdrop.plain =>
         dark
             ? [context.glass.bg, context.glass.bg]
-            : [const Color(0xFFFAF9F6), const Color(0xFFF5F4F0)],
+            : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
       BoardBackdrop.paper =>
         dark
             ? [const Color(0xFF161920), const Color(0xFF0F1218)]
             : [
-                const Color(0xFFFAF7F2),
-                const Color(0xFFF5F2EC),
+                const Color(0xFFF8FAFC),
+                const Color(0xFFF1F5F9),
               ],
       BoardBackdrop.dusk =>
         dark
             ? [const Color(0xFF1E222B), const Color(0xFF171A21)]
-            : [const Color(0xFFF3F4F6), const Color(0xFFE5E7EB)],
+            : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
     };
     return DecoratedBox(
       decoration: BoxDecoration(

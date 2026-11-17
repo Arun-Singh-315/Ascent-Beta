@@ -176,42 +176,42 @@ class AscentTheme {
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: accentPrimary,
-      onPrimary: isDark ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF),
+      onPrimary: const Color(0xFFFFFFFF),
       primaryContainer:
-          isDark ? const Color(0xFF1E293B) : const Color(0xFFFCE5D8),
+          isDark ? const Color(0xFF1E293B) : const Color(0xFFEBF4FF),
       onPrimaryContainer:
-          isDark ? const Color(0xFF93C5FD) : const Color(0xFF6E2E15),
-      secondary: isDark ? const Color(0xFF60A5FA) : const Color(0xFFC4506A),
-      onSecondary: isDark ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFF93C5FD) : const Color(0xFF004CA6),
+      secondary: isDark ? const Color(0xFF60A5FA) : const Color(0xFF0284C7),
+      onSecondary: const Color(0xFFFFFFFF),
       secondaryContainer:
-          isDark ? const Color(0xFF1E293B) : const Color(0xFFF8E1E6),
+          isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
       onSecondaryContainer:
-          isDark ? const Color(0xFFF8E1E6) : const Color(0xFF5A1C29),
-      tertiary: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD6A23E),
-      onTertiary: isDark ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFF93C5FD) : const Color(0xFF0369A1),
+      tertiary: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706),
+      onTertiary: const Color(0xFFFFFFFF),
       tertiaryContainer:
-          isDark ? const Color(0xFF292014) : const Color(0xFFF8EDD0),
+          isDark ? const Color(0xFF292014) : const Color(0xFFFEF3C7),
       onTertiaryContainer:
-          isDark ? const Color(0xFFFDE68A) : const Color(0xFF5A4108),
-      error: isDark ? const Color(0xFFEF4444) : const Color(0xFFB8433B),
-      onError: isDark ? const Color(0xFFFFFFFF) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFFFDE68A) : const Color(0xFF78350F),
+      error: isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626),
+      onError: const Color(0xFFFFFFFF),
       errorContainer:
-          isDark ? const Color(0xFF2E1719) : const Color(0xFFFBEBEA),
+          isDark ? const Color(0xFF2E1719) : const Color(0xFFFEE2E2),
       onErrorContainer:
-          isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB8433B),
+          isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
       surface: bgSurface,
       onSurface: textPrimary,
       surfaceContainerHighest: bgSurfaceElevated,
       onSurfaceVariant: textMuted,
-      outline: isDark ? const Color(0xFF262933) : const Color(0xFFE6DCCD),
+      outline: isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
       outlineVariant:
-          isDark ? const Color(0xFF262933) : const Color(0xFFE6DCCD),
-      shadow: isDark ? const Color(0x40000000) : const Color(0x0A5C4A3E),
+          isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
+      shadow: isDark ? const Color(0x40000000) : const Color(0x0E0F172A),
       scrim: const Color(0x73000000), // black@45% for overlays
       inverseSurface:
-          isDark ? const Color(0xFFFAF6F0) : const Color(0xFF16181F),
+          isDark ? const Color(0xFFF8FAFC) : const Color(0xFF16181F),
       onInverseSurface:
-          isDark ? const Color(0xFF0F1115) : const Color(0xFFF8FAFC),
+          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       inversePrimary:
           isDark ? const Color(0xFF006FE6) : const Color(0xFF60A5FA),
     );
