@@ -14,6 +14,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
@@ -1356,7 +1357,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 // Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
-class _ConversationMessageBubble extends StatefulWidget {
+class _ConversationMessageBubble extends ConsumerStatefulWidget {
   final AiChatMessage msg;
   final bool isUser;
   final bool isFirstInRun;
@@ -1390,13 +1391,14 @@ class _ConversationMessageBubble extends StatefulWidget {
   });
 
   @override
-  State<_ConversationMessageBubble> createState() =>
+  ConsumerState<_ConversationMessageBubble> createState() =>
       _ConversationMessageBubbleState();
 }
 
 class _ConversationMessageBubbleState
-    extends State<_ConversationMessageBubble> {
+    extends ConsumerState<_ConversationMessageBubble> {
   bool _showTimestamp = false;
+  bool _isSaved = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1543,7 +1545,7 @@ class _ConversationMessageBubbleState
             ),
           ),
 
-        // Action row under each assistant reply: Copy, Regenerate, Thumbs
+        // Action row under each assistant reply: Copy, Share, Save to Mindspace, Regenerate
         if (!isUser) ...[
           const SizedBox(height: 6),
           Row(
@@ -1564,33 +1566,77 @@ class _ConversationMessageBubbleState
               ),
               const SizedBox(width: 4),
               IconButton(
+                icon: Icon(Icons.share_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Share',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  SharePlus.instance.share(ShareParams(text: messageText));
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(
+                  _isSaved
+                      ? Icons.bookmark_added_rounded
+                      : Icons.bookmark_add_outlined,
+                  size: 16,
+                  color: _isSaved
+                      ? (isDark
+                          ? SharedControlColors.actionBlueDark
+                          : SharedControlColors.actionBlue)
+                      : c.textTertiary,
+                ),
+                tooltip: _isSaved ? 'Saved to Mindspace' : 'Save to Mindspace',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () async {
+                  HapticFeedback.selectionClick();
+                  if (_isSaved) {
+                    if (!mounted) return;
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Already saved in Mindspace',
+                      actionLabel: 'View',
+                      onAction: () => context.push('/thought-wall'),
+                    );
+                    return;
+                  }
+                  try {
+                    final db = ref.read(databaseProvider);
+                    await db.thoughtDao.insertThought(
+                      ThoughtTableCompanion.insert(
+                        content: messageText,
+                        category: const drift.Value('general'),
+                        mood: const drift.Value('idea'),
+                        createdAt: drift.Value(DateTime.now()),
+                      ),
+                    );
+                    if (!context.mounted) return;
+                    setState(() => _isSaved = true);
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Saved to Mindspace',
+                      actionLabel: 'View',
+                      onAction: () => context.push('/thought-wall'),
+                    );
+                  } catch (_) {
+                    if (!context.mounted) return;
+                    AscentSnackBar.error(
+                      context,
+                      message: 'Could not save thought',
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
                 icon: Icon(Icons.refresh_rounded, size: 16, color: c.textTertiary),
                 tooltip: 'Regenerate',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: busy ? null : onRecover,
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.thumb_up_alt_outlined, size: 16, color: c.textTertiary),
-                tooltip: 'Helpful',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  AscentSnackBar.show(context, message: 'Thanks for the feedback!');
-                },
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.thumb_down_alt_outlined, size: 16, color: c.textTertiary),
-                tooltip: 'Not helpful',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  AscentSnackBar.show(context, message: 'Feedback recorded');
-                },
               ),
             ],
           ),
