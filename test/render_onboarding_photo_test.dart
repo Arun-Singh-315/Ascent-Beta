@@ -34,93 +34,93 @@ void main() {
     await db.close();
   });
 
-  testWidgets('Render high-fidelity Apple-style Onboarding photos', (tester) async {
+  testWidgets('Render high-fidelity Onboarding 6-Screen photos', (tester) async {
     tester.view.physicalSize = const Size(390 * 2, 844 * 2);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    const outDir = '/home/arunsinghvisen/.gemini/antigravity/brain/6e5c0915-9ec5-4033-bc23-e754a7671354';
+    const outDir = '/home/arunsinghvisen/.gemini/antigravity/brain/c4562752-ff66-4729-a56a-7b6c5dbf97f2';
 
-    for (final isDark in [true, false]) {
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-      );
-      addTearDown(container.dispose);
+    final container = ProviderContainer(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+    addTearDown(container.dispose);
 
-      final repaintKey = GlobalKey();
+    final repaintKey = GlobalKey();
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: isDark ? AscentTheme.dark() : AscentTheme.light(),
-            home: RepaintBoundary(
-              key: repaintKey,
-              child: const OnboardingShell(),
-            ),
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AscentTheme.light(),
+          home: RepaintBoundary(
+            key: repaintKey,
+            child: const OnboardingShell(),
           ),
         ),
-      );
+      ),
+    );
 
-      // Settle Step 0
+    Future<void> captureScreen(String fileName) async {
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
       }
-
-      // Capture Step 0 (Vision)
       await tester.runAsync(() async {
         final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
         if (boundary != null) {
           final image = await boundary.toImage(pixelRatio: 2.0);
           final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
           if (byteData != null) {
-            final fileName = isDark ? 'onboarding_apple_vision_dark.png' : 'onboarding_apple_vision_light.png';
             final file = File('$outDir/$fileName');
             await file.writeAsBytes(byteData.buffer.asUint8List());
           }
           image.dispose();
         }
       });
-
-      // Advance to Step 1 (Identity)
-      container.read(onboardingProvider.notifier).setStep(1);
-      container.read(onboardingProvider.notifier).updateNameRole('Arun', 'Study & Growth');
-      container.read(onboardingProvider.notifier).setDateOfBirth(DateTime(1998, 6, 15)); // Gemini / Mithuna
-      await tester.pump();
-
-      // Enter text into field so checkmark shows
-      final nameFinder = find.byKey(const ValueKey('onboarding_name'));
-      if (nameFinder.evaluate().isNotEmpty) {
-        await tester.enterText(nameFinder, 'Arun Singh');
-      }
-
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
-      }
-
-      // Capture Step 1 (Identity & Cosmic verification)
-      await tester.runAsync(() async {
-        final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-        if (boundary != null) {
-          final image = await boundary.toImage(pixelRatio: 2.0);
-          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-          if (byteData != null) {
-            final fileName = isDark ? 'onboarding_apple_identity_dark.png' : 'onboarding_apple_identity_light.png';
-            final file = File('$outDir/$fileName');
-            await file.writeAsBytes(byteData.buffer.asUint8List());
-          }
-          image.dispose();
-        }
-      });
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
     }
+
+    // Screen 1: Welcome
+    await captureScreen('onboarding_1_welcome.png');
+
+    // Screen 2: What you get
+    container.read(onboardingProvider.notifier).setStep(1);
+    await tester.pump();
+    await captureScreen('onboarding_2_what_you_get.png');
+
+    // Screen 3: Your Name
+    container.read(onboardingProvider.notifier).setStep(2);
+    container.read(onboardingProvider.notifier).updateNameRole('Arun', 'Study and growth');
+    await tester.pump();
+    final nameFinder = find.byKey(const ValueKey('onboarding_name'));
+    if (nameFinder.evaluate().isNotEmpty) {
+      await tester.enterText(nameFinder, 'Arun');
+      await tester.pump();
+    }
+    await captureScreen('onboarding_3_your_name.png');
+
+    // Screen 4: Birthday
+    container.read(onboardingProvider.notifier).setStep(3);
+    container.read(onboardingProvider.notifier).setDateOfBirth(DateTime(2000, 6, 18));
+    await tester.pump();
+    await captureScreen('onboarding_4_birthday.png');
+
+    // Screen 5: Your Climb
+    container.read(onboardingProvider.notifier).setStep(4);
+    container.read(onboardingProvider.notifier).setFocusArea('Focus and flow');
+    await tester.pump();
+    await captureScreen('onboarding_5_your_climb.png');
+
+    // Screen 6: Ready
+    container.read(onboardingProvider.notifier).setStep(5);
+    await tester.pump();
+    await captureScreen('onboarding_6_ready.png');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(Duration.zero);
   });
 }

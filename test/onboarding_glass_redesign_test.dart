@@ -34,9 +34,9 @@ void main() {
     await db.close();
   });
 
-  group('Onboarding Glass Redesign Tests', () {
+  group('Onboarding 6-Screen Journey Tests', () {
     testWidgets(
-      'Renders calm, cute glass vision card without childish scrapbook visuals',
+      'Screen 1 Welcome renders branding, ascending bars, and sanctuary pill',
       (tester) async {
         final router = GoRouter(
           initialLocation: '/onboarding',
@@ -63,36 +63,25 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Check stage capsule
-        expect(find.text('01 Vision'), findsOneWidget);
-
-        // Check calm cute vision pill and title
-        expect(find.text('Your Personal Sanctuary'), findsOneWidget);
+        // Check Ascent branding & Sanctuary Tag
         expect(find.text('Ascent'), findsOneWidget);
+        expect(find.text('Your personal sanctuary'), findsOneWidget);
+        expect(find.text('Climb a little,\nevery day.'), findsOneWidget);
         expect(
-          find.text('A quiet space for your mind & daily rhythm.'),
+          find.text('Plans, focus, routines and a gentle companion, all in one calm place.'),
           findsOneWidget,
         );
 
-        // Check the 3 vision pillars
-        expect(find.text('Daily Rhythm & Focus'), findsOneWidget);
-        expect(find.text('Study & Meal Plans'), findsOneWidget);
-        expect(find.text('Personal Companion'), findsOneWidget);
-
         // Check action button
         expect(find.text('Let’s begin'), findsOneWidget);
+        expect(find.text('Private, local and crafted for your peace of mind.'), findsOneWidget);
 
-        // Verify zero exceptions
-        final err3 = tester.takeException();
-        if (err3 != null) {
-          debugPrint('RULE 13 ERROR DETAILS: ${(err3 as FlutterError).toStringDeep()}');
-        }
-        expect(err3, isNull);
+        expect(tester.takeException(), isNull);
       },
     );
 
     testWidgets(
-      'Rule 13: Zero RenderFlex overflow at 320px width with 2.0x text scaling',
+      'Rule 13: Zero RenderFlex overflow at 320px width with 2.0x text scaling across screens',
       (tester) async {
         tester.view.physicalSize = const Size(320 * 2, 700 * 2);
         tester.view.devicePixelRatio = 2.0;
@@ -130,24 +119,40 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Must render cleanly without RenderFlex errors
+        // Screen 1: Welcome
         expect(tester.takeException(), isNull);
         expect(find.text('Let’s begin'), findsOneWidget);
 
-        // Scroll to button and navigate to Step 2 under 320px + 2.0x text scale
-        await tester.scrollUntilVisible(find.text('Let’s begin'), 100);
+        // Advance to Screen 2: What you get
+        await tester.ensureVisible(find.text('Let’s begin'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Let’s begin'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Step 2 of 2 · Customization'), findsOneWidget);
+        expect(find.text('1 of 4'), findsOneWidget);
+        expect(find.text('Everything for your day, in one calm place.'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        // Advance to Screen 3: Your Name
+        await tester.ensureVisible(find.text('Continue'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('2 of 4'), findsOneWidget);
+        expect(find.text('First, what should we call you?'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
 
     testWidgets(
-      'Navigates between Step 0 and Step 1 with Back button and saves focus role',
+      'Navigates through all 6 screens, supports back navigation, and saves profile',
       (tester) async {
+        tester.view.physicalSize = const Size(390 * 2, 844 * 2);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
         final router = GoRouter(
           initialLocation: '/onboarding',
           routes: [
@@ -177,50 +182,93 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Advance to step 1
+        // 1 · Welcome screen
+        expect(find.text('Your personal sanctuary'), findsOneWidget);
+        await tester.ensureVisible(find.text('Let’s begin'));
         await tester.tap(find.text('Let’s begin'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Step 2 of 2 · Customization'), findsOneWidget);
+        // 2 · What you get (1 of 4)
+        expect(find.text('1 of 4'), findsOneWidget);
+        expect(find.text('Daily rhythm'), findsOneWidget);
+        expect(find.text('Study and meals'), findsOneWidget);
+        expect(find.text('Riya, your companion'), findsOneWidget);
+        expect(find.text('Care and wealth'), findsOneWidget);
 
-        // Tap back to verify return to step 0
-        await tester.tap(find.text('Back'));
+        // Test Back to Welcome
+        await tester.tap(find.byKey(const ValueKey('onboarding_back')));
         await tester.pumpAndSettle();
-        expect(find.text('Your Personal Sanctuary'), findsOneWidget);
+        expect(find.text('Your personal sanctuary'), findsOneWidget);
 
-        // Return to step 1
+        // Advance to 1 of 4 again
+        await tester.ensureVisible(find.text('Let’s begin'));
         await tester.tap(find.text('Let’s begin'));
         await tester.pumpAndSettle();
+        expect(find.text('1 of 4'), findsOneWidget);
 
-        // Select a focus area
-        await tester.tap(find.text('Study & Growth'));
+        // Advance to 2 · Your Name (2 of 4)
+        await tester.ensureVisible(find.text('Continue'));
+        await tester.tap(find.text('Continue'));
         await tester.pumpAndSettle();
+        expect(find.text('2 of 4'), findsOneWidget);
+        expect(find.text('First, what should we call you?'), findsOneWidget);
 
-        // Enter name
+        // Enter Name
         await tester.enterText(
           find.byKey(const ValueKey('onboarding_name')),
           'Arun',
         );
         await tester.pumpAndSettle();
+        expect(find.text('Good morning, Arun.'), findsOneWidget);
 
-        // Pick date of birth
-        await tester.tap(find.byKey(const ValueKey('onboarding_dob')));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('OK'));
-        await tester.pumpAndSettle();
-
-        // Tap continue
+        // Advance to 3 · Birthday (3 of 4)
+        await tester.ensureVisible(find.text('Continue'));
         await tester.tap(find.text('Continue'));
         await tester.pumpAndSettle();
+        expect(find.text('3 of 4'), findsOneWidget);
+        expect(find.text('When is your birthday?'), findsOneWidget);
+        expect(find.text('DAY'), findsOneWidget);
+        expect(find.text('MONTH'), findsOneWidget);
+        expect(find.text('YEAR'), findsOneWidget);
+        expect(find.textContaining('Mithuna'), findsOneWidget);
 
-        // Check we navigated to /home
+        // Advance to 4 · Your Climb (4 of 4)
+        await tester.ensureVisible(find.text('Continue'));
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        expect(find.text('4 of 4'), findsOneWidget);
+        expect(find.text('What do you want most right now?'), findsOneWidget);
+        expect(find.text('Inner peace'), findsOneWidget);
+        expect(find.text('Focus and flow'), findsOneWidget);
+        expect(find.text('Study and growth'), findsOneWidget);
+        expect(find.text('Daily vitality'), findsOneWidget);
+
+        // Select 'Study and growth'
+        await tester.ensureVisible(find.text('Study and growth'));
+        await tester.tap(find.text('Study and growth'));
+        await tester.pumpAndSettle();
+
+        // Advance to 5 · Ready
+        await tester.ensureVisible(find.text('Continue'));
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        expect(find.text('You are all set, Arun.'), findsOneWidget);
+        expect(find.textContaining('study and growth'), findsOneWidget);
+
+        // Tap 'Enter Ascent'
+        await tester.ensureVisible(find.text('Enter Ascent'));
+        await tester.tap(find.text('Enter Ascent'));
+        await tester.pumpAndSettle();
+
+        // Check we reached /home
         expect(find.text('Home Destination'), findsOneWidget);
 
-        // Verify profile in DB has targetRole saved
+        // Verify profile in DB
         final profile = await db.userProfileDao.getProfile();
         expect(profile, isNotNull);
         expect(profile!.name, 'Arun');
-        expect(profile.targetRole, 'Study & Growth');
+        expect(profile.targetRole, 'Study and growth');
+        expect(profile.onboardingComplete, isTrue);
       },
     );
   });
