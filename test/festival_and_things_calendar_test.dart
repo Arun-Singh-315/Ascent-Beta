@@ -256,7 +256,7 @@ void main() {
       }
 
       await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 500));
     });
 
     testWidgets(

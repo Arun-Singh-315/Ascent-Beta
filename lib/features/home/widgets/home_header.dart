@@ -437,28 +437,28 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             child: InkWell(
               key: const ValueKey('home_assistant_button'),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               onTap: () {
                 HapticFeedback.selectionClick();
                 context.push('/ai-assistant');
               },
               child: Container(
-                constraints: const BoxConstraints(minHeight: 64),
+                constraints: const BoxConstraints(minHeight: 46),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
                 decoration: BoxDecoration(
-                  color: c.surfaceAlt.withValues(alpha: dark ? 0.5 : 0.65),
-                  borderRadius: BorderRadius.circular(20),
+                  color: c.surfaceAlt.withValues(alpha: dark ? 0.45 : 0.60),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
                     // Glowing Icon Disc
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 30,
+                      height: 30,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
@@ -477,11 +477,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       ),
                       child: Icon(
                         Icons.auto_awesome_rounded,
-                        size: 20,
+                        size: 16,
                         color: c.accent,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     // Title and Description
                     Expanded(
                       child: Column(
@@ -496,42 +496,42 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
                                     color: c.textPrimary,
-                                    letterSpacing: -0.2,
+                                    letterSpacing: -0.1,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 5),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 1.5,
+                                  horizontal: 5,
+                                  vertical: 1,
                                 ),
                                 decoration: BoxDecoration(
                                   color: c.accent.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
+                                  borderRadius: BorderRadius.circular(5),
                                 ),
                                 child: Text(
                                   'AI',
                                   style: TextStyle(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w800,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
                                     color: c.accent,
-                                    letterSpacing: 0.5,
+                                    letterSpacing: 0.3,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 1),
                           Text(
-                            'Brainstorm ideas, ask anything, or plan your day',
+                            'Brainstorm, ask questions or plan your day',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w500,
                               color: c.textSecondary,
                             ),
@@ -545,12 +545,12 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       fit: BoxFit.scaleDown,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                          horizontal: 9,
+                          vertical: 4.5,
                         ),
                         decoration: BoxDecoration(
                           color: c.accent.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: c.accent.withValues(alpha: 0.25),
                             width: 0.8,
@@ -562,7 +562,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                             Text(
                               'Chat',
                               style: TextStyle(
-                                fontSize: 11.5,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: c.accent,
                               ),
@@ -570,7 +570,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                             const SizedBox(width: 3),
                             Icon(
                               Icons.arrow_forward_rounded,
-                              size: 13,
+                              size: 12,
                               color: c.accent,
                             ),
                           ],

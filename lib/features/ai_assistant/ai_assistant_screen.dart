@@ -17,11 +17,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
-import '../../shared/widgets/ascent_atmosphere.dart';
 import '../../shared/widgets/message_composer.dart';
-import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/riya_learning_actions.dart';
@@ -949,39 +948,113 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               tooltip: 'Clear chat history',
               onPressed: _isLoading
                   ? null
-                  : () async {
-                      HapticFeedback.lightImpact();
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          title: const Text('Clear chat history?'),
-                          content: Text(
-                            'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Clear history'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed == true && mounted) {
-                        await ref
-                            .read(aiAssistantDaoProvider)
-                            .clearChatHistory();
-                        ref.read(riyaConversationProvider).resetConversation();
-                        await ref
-                            .read(sharedPreferencesProvider)
-                            .remove(riyaConversationKey);
-                      }
-                    },
+                  : () => _showClearHistoryDialog(context, name),
             ),
-            const SizedBox(width: 6),
+            PopupMenuButton<String>(
+              key: const ValueKey('ai_assistant_menu_button'),
+              icon: Icon(
+                Icons.more_vert_rounded,
+                color: context.textMuted,
+                size: 21,
+              ),
+              tooltip: 'More options',
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isDark ? context.glass.edge : context.divider,
+                  width: 1,
+                ),
+              ),
+              color: isDark ? const Color(0xFF1A202C) : Colors.white,
+              onSelected: (value) async {
+                HapticFeedback.lightImpact();
+                if (value == 'identity') {
+                  _showCompanionSelectorSheet(context, ref, name);
+                } else if (value == 'clear') {
+                  _showClearHistoryDialog(context, name);
+                } else if (value == 'expand' && widget.compact) {
+                  final router = GoRouter.of(context);
+                  Navigator.pop(context);
+                  router.push(
+                    Uri(
+                      path: '/ai-assistant',
+                      queryParameters: _textController.text.isEmpty
+                          ? null
+                          : {'prompt': _textController.text},
+                    ).toString(),
+                  );
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'identity',
+                  child: Row(
+                    children: [
+                      Icon(Icons.tune_rounded, size: 17, color: accentColor),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Change companion ($name)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (widget.compact)
+                  PopupMenuItem(
+                    value: 'expand',
+                    child: Row(
+                      children: [
+                        Icon(Icons.open_in_full_rounded,
+                            size: 17, color: context.textPrimary),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Full screen',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                PopupMenuItem(
+                  value: 'clear',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_sweep_outlined,
+                          size: 17, color: SharedControlColors.dueRed),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Clear history',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: SharedControlColors.dueRed,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 4),
           ],
         ),
         body: Stack(
@@ -1296,41 +1369,38 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           HapticFeedback.lightImpact();
           onTap();
         },
-        borderRadius: AscentRadii.borderLg,
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.symmetric(
-            vertical: 7.5,
-            horizontal: AscentSpacing.sm,
+            vertical: 7,
+            horizontal: 12,
           ),
           decoration: BoxDecoration(
             color: isDark
-                ? context.bgSurface.withValues(alpha: 0.88)
-                : Colors.white.withValues(alpha: 0.92),
-            borderRadius: AscentRadii.borderLg,
+                ? const Color(0xFF1E293B).withValues(alpha: 0.60)
+                : Colors.white.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? context.glass.edge : context.divider,
+              color: isDark
+                  ? const Color(0xFF334155).withValues(alpha: 0.70)
+                  : const Color(0xFFCBD5E1),
               width: 1.0,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: 14, color: accentColor),
-              const SizedBox(width: 5),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
+                  color: isDark
+                      ? const Color(0xFFE2E8F0)
+                      : const Color(0xFF334155),
                 ),
                 maxLines: 1,
               ),
@@ -1339,6 +1409,37 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _showClearHistoryDialog(
+    BuildContext context,
+    String name,
+  ) async {
+    HapticFeedback.lightImpact();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear chat history?'),
+        content: Text(
+          'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear history'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(aiAssistantDaoProvider).clearChatHistory();
+      ref.read(riyaConversationProvider).resetConversation();
+      await ref.read(sharedPreferencesProvider).remove(riyaConversationKey);
+    }
   }
 
   void _showCompanionSelectorSheet(
@@ -1653,7 +1754,6 @@ class _ConversationMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final timeString =
@@ -1667,18 +1767,22 @@ class _ConversationMessageBubble extends StatelessWidget {
 
     if (isUser) {
       bubbleFill = isDark
-          ? g.surface.withValues(alpha: 0.85)
-          : Colors.white.withValues(alpha: 0.90);
-      bubbleBorder = g.line.withValues(alpha: isDark ? 0.35 : 0.20);
-      messageTextColor = g.ink;
-      timestampColor = g.inkMuted;
+          ? const Color(0xFF1E293B).withValues(alpha: 0.65)
+          : const Color(0xFFEFF6FF).withValues(alpha: 0.85);
+      bubbleBorder = isDark
+          ? const Color(0xFF334155).withValues(alpha: 0.70)
+          : const Color(0xFFBFDBFE).withValues(alpha: 0.85);
+      messageTextColor = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
+      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     } else {
       bubbleFill = isDark
-          ? g.surface.withValues(alpha: 0.95)
-          : Colors.white.withValues(alpha: 0.98);
-      bubbleBorder = g.line.withValues(alpha: isDark ? 0.30 : 0.15);
-      messageTextColor = g.ink;
-      timestampColor = g.inkMuted;
+          ? const Color(0xFF0F172A).withValues(alpha: 0.60)
+          : Colors.white.withValues(alpha: 0.88);
+      bubbleBorder = isDark
+          ? const Color(0xFF1E293B).withValues(alpha: 0.85)
+          : const Color(0xFFE2E8F0);
+      messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     }
 
     // Apple-grade asymmetric bubble corners for clear speaker direction
@@ -1809,37 +1913,22 @@ class _ConversationMessageBubble extends StatelessWidget {
       ],
     );
 
-    final Widget mainBubble = isUser
-        ? GlassSurface(
-            borderRadius: borderRadius,
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            fillColor: bubbleFill,
-            customBorder: Border.all(color: bubbleBorder, width: 1.1),
-            enableBlur: true,
-            hasShadow: true,
-            child: bubbleContent,
-          )
-        : Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            decoration: BoxDecoration(
-              color: bubbleFill,
-              borderRadius: borderRadius,
-              border: Border.all(color: bubbleBorder, width: 1.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 3),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            child: bubbleContent,
-          );
+    final Widget mainBubble = Container(
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 11),
+      decoration: BoxDecoration(
+        color: bubbleFill,
+        borderRadius: borderRadius,
+        border: Border.all(color: bubbleBorder, width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 1.5),
+          ),
+        ],
+      ),
+      child: bubbleContent,
+    );
 
     return Column(
       crossAxisAlignment: isUser
@@ -2454,7 +2543,6 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Align(
@@ -2467,20 +2555,15 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: isDark
-                ? g.surface.withValues(alpha: 0.90)
-                : Colors.white.withValues(alpha: 0.94),
+                ? const Color(0xFF0F172A).withValues(alpha: 0.60)
+                : Colors.white.withValues(alpha: 0.88),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: g.line.withValues(alpha: isDark ? 0.35 : 0.20),
+              color: isDark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.85)
+                  : const Color(0xFFE2E8F0),
               width: 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -2528,7 +2611,9 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
                     '${widget.name} is thinking: ${_thinkingSteps[_stepIndex]}',
                     key: ValueKey(_stepIndex),
                     style: GoogleFonts.plusJakartaSans(
-                      color: g.inkSecondary,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2615,68 +2700,44 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Soft glowing breathing avatar
-                AnimatedBuilder(
-                  animation: _sparkleController,
-                  builder: (context, child) {
-                    final pulse = _sparkleController.value;
-                    return Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            accent.withValues(alpha: 0.25 + pulse * 0.15),
-                            context.glass.clay.withValues(
-                              alpha: 0.20 + pulse * 0.10,
-                            ),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: accent.withValues(alpha: 0.45 + pulse * 0.25),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: accent.withValues(
-                              alpha: isDark
-                                  ? (0.28 + pulse * 0.20)
-                                  : (0.16 + pulse * 0.12),
-                            ),
-                            blurRadius: 22 + pulse * 10,
-                            spreadRadius: 2 + pulse * 3,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.auto_awesome_rounded,
-                          color: accent,
-                          size: 30,
-                        ),
-                      ),
-                    );
-                  },
+                // Clean Minimal AI Hero Icon
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: isDark ? 0.16 : 0.08),
+                    border: Border.all(
+                      color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      color: accent,
+                      size: 26,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 // Minimal status indicator
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: AscentSpacing.xs,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? context.bgSurface.withValues(alpha: 0.85)
-                        : Colors.white.withValues(alpha: 0.90),
-                    borderRadius: AscentRadii.borderMd,
+                        ? const Color(0xFF1E293B).withValues(alpha: 0.50)
+                        : Colors.white.withValues(alpha: 0.80),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isDark ? context.glass.edge : context.divider,
-                      width: 0.8,
+                      color: isDark
+                          ? const Color(0xFF334155).withValues(alpha: 0.60)
+                          : const Color(0xFFE2E8F0),
+                      width: 1.0,
                     ),
                   ),
                   child: Row(
@@ -2889,14 +2950,14 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                           ),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? context.bgSurface.withValues(alpha: 0.6)
-                                : Colors.white.withValues(alpha: 0.7),
-                            borderRadius: AscentRadii.borderXl,
+                                ? const Color(0xFF1E293B).withValues(alpha: 0.45)
+                                : Colors.white.withValues(alpha: 0.75),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isDark
-                                  ? context.glass.edge
-                                  : context.divider.withValues(alpha: 0.5),
-                              width: 0.8,
+                                  ? const Color(0xFF334155).withValues(alpha: 0.55)
+                                  : const Color(0xFFE2E8F0),
+                              width: 1.0,
                             ),
                           ),
                           child: Text(
@@ -2945,20 +3006,15 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
               color: isDark
-                  ? context.bgSurface.withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.90),
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.50)
+                  : Colors.white.withValues(alpha: 0.85),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? context.glass.edge : context.divider,
+                color: isDark
+                    ? const Color(0xFF334155).withValues(alpha: 0.65)
+                    : const Color(0xFFE2E8F0),
                 width: 1.0,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3015,7 +3071,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
 }
 
 // ---------------------------------------------------------------------------
-// Warm Aurora Chat Background — Calm, Engaging, Soft
+// Minimal Serene Chat Background — Inspired by ChatGPT & Gemini
 // ---------------------------------------------------------------------------
 
 class _AtmosphericChatBackground extends StatelessWidget {
@@ -3031,68 +3087,46 @@ class _AtmosphericChatBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
 
-    // Theme-aware background palette
+    // Theme-aware background palette: Deep matte obsidian in Dark, soft slate pearl in Light
     final List<Color> gradientColors;
-    final Color aurora1;
-    final Color aurora2;
 
     if (g.frozen) {
       gradientColors = isDark
           ? const [
-              Color(0xFF0B1420), // deep nordic night
-              Color(0xFF0F1C30),
-              Color(0xFF0D1828),
+              Color(0xFF0A0F17),
+              Color(0xFF0F1724),
+              Color(0xFF0A0E17),
             ]
           : const [
               FrozenPalette.surface,
               FrozenPalette.canvas,
               FrozenPalette.elevated,
             ];
-      aurora1 = isDark
-          ? const Color(0xFF1E3A5F)
-          : FrozenPalette.action.withValues(alpha: 0.08);
-      aurora2 = isDark
-          ? const Color(0xFF0E2A45)
-          : FrozenPalette.action.withValues(alpha: 0.05);
     } else if (g.merlot) {
       gradientColors = isDark
           ? const [
-              Color(0xFF180F14), // deep merlot night
-              Color(0xFF1E1018),
-              Color(0xFF160D12),
+              Color(0xFF140A0F),
+              Color(0xFF1B0E15),
+              Color(0xFF13090E),
             ]
           : const [
               MerlotPalette.canvas,
               MerlotPalette.surface,
               MerlotPalette.canvas,
             ];
-      aurora1 = isDark
-          ? const Color(0xFF3D1828)
-          : MerlotPalette.action.withValues(alpha: 0.07);
-      aurora2 = isDark
-          ? const Color(0xFF2A1020)
-          : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
-      // Default: rich atmospheric fusion of twilight sapphire, amethyst, and warm dusk amber
+      // Default: Deep matte obsidian canvas in Dark; refined calm slate pearl in Light (not washed out)
       gradientColors = isDark
           ? const [
-              Color(0xFF090C16), // deep twilight base
-              Color(0xFF101326), // midnight sapphire
-              Color(0xFF140D22), // deep amethyst transition
-              Color(0xFF0B0E19), // grounded nocturnal depth
+              Color(0xFF090D14), // serene obsidian
+              Color(0xFF0E131F), // midnight slate depth
+              Color(0xFF0A0D15), // grounded matte
             ]
           : const [
-              Color(0xFFF7F6FD), // soft opalescent white
-              Color(0xFFF2EFFB), // subtle lavender mist
-              Color(0xFFFBF4F2), // warm dawn whisper
-              Color(0xFFF4F6FC), // crystal soft surface
+              Color(0xFFF1F4F8), // soothing pearl slate
+              Color(0xFFE8EDF4), // subtle tinted slate
+              Color(0xFFEDF1F7), // balanced matte canvas
             ];
-      aurora1 = isDark
-          ? const Color(0xFF381A5A).withValues(alpha: 0.65) // rich glowing amethyst
-          : accentColor.withValues(alpha: 0.08);
-      aurora2 = isDark
-          ? const Color(0xFF15335C).withValues(alpha: 0.55) // luminous oceanic sapphire
-          : const Color(0xFF8672E8).withValues(alpha: 0.06);
     }
 
     return DecoratedBox(
@@ -3103,74 +3137,7 @@ class _AtmosphericChatBackground extends StatelessWidget {
           colors: gradientColors,
         ),
       ),
-      child: AscentAtmosphereBackground(
-        glow1: aurora1,
-        glow2: aurora2,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
-          ],
-        ),
-      ),
+      child: const SizedBox.expand(),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Deterministic Micro Stardust & Pearl Shimmer Painter
-// ---------------------------------------------------------------------------
-
-class _CelestialStardustPainter extends CustomPainter {
-  final bool isDark;
-  const _CelestialStardustPainter({required this.isDark});
-
-  // Deterministic star coordinates so they never flicker or recompute randomly
-  static const _stars = [
-    Offset(0.12, 0.08),
-    Offset(0.28, 0.14),
-    Offset(0.45, 0.06),
-    Offset(0.72, 0.11),
-    Offset(0.88, 0.09),
-    Offset(0.18, 0.22),
-    Offset(0.62, 0.25),
-    Offset(0.82, 0.28),
-    Offset(0.08, 0.35),
-    Offset(0.38, 0.38),
-    Offset(0.76, 0.42),
-    Offset(0.92, 0.46),
-    Offset(0.15, 0.52),
-    Offset(0.52, 0.56),
-    Offset(0.85, 0.60),
-    Offset(0.22, 0.68),
-    Offset(0.68, 0.72),
-    Offset(0.10, 0.76),
-    Offset(0.40, 0.78),
-    Offset(0.80, 0.75),
-    Offset(0.25, 0.62),
-    Offset(0.55, 0.48),
-    Offset(0.90, 0.65),
-    Offset(0.33, 0.45),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    for (int i = 0; i < _stars.length; i++) {
-      final s = _stars[i];
-      final pos = Offset(s.dx * size.width, s.dy * size.height);
-      final radius = (i % 3 == 0) ? 1.4 : (i % 2 == 0 ? 1.0 : 0.7);
-      final alpha = isDark
-          ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
-          : ((i % 4 == 0) ? 0.16 : 0.08);
-
-      paint.color = (isDark ? Colors.white : AscentColors.accentSecondary)
-          .withValues(alpha: alpha);
-      canvas.drawCircle(pos, radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CelestialStardustPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
 }
