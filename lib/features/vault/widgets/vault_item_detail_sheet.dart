@@ -256,7 +256,7 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: item.mediaPaths.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (context, index) => const SizedBox(width: 10),
                     itemBuilder: (ctx, idx) {
                       final path = item.mediaPaths[idx];
                       return ClipRRect(
@@ -266,7 +266,7 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
                           width: 90,
                           height: 90,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (context, error, stackTrace) => Container(
                             width: 90,
                             height: 90,
                             color: g.line,

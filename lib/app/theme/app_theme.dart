@@ -124,9 +124,11 @@ class AscentTheme {
         : (isDark
               ? AscentColors.bgSurfaceElevatedDark
               : AscentColors.bgSurfaceElevated);
-    final accentPrimary = isDark
-        ? SharedControlColors.actionBlueDark
-        : SharedControlColors.actionBlue;
+    final accentPrimary = isMerlotLinen
+        ? (isDark ? AscentColors.accentPrimaryDark : MerlotPalette.action)
+        : isNordicSky
+        ? (isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
+        : (isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue);
     final stateDanger = isMerlotLinen
         ? (isDark ? MerlotPalette.darkDanger : MerlotPalette.danger)
         : isNordicSky
@@ -173,7 +175,7 @@ class AscentTheme {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: isDark ? const Color(0xFFF08A5D) : const Color(0xFFD2643A),
+      primary: accentPrimary,
       onPrimary: isDark ? const Color(0xFF2B1408) : const Color(0xFFFFFFFF),
       primaryContainer:
           isDark ? const Color(0xFF4A2A1B) : const Color(0xFFFCE5D8),
@@ -197,12 +199,10 @@ class AscentTheme {
           isDark ? const Color(0xFF4A1E1C) : const Color(0xFFFBEBEA),
       onErrorContainer:
           isDark ? const Color(0xFFE06D65) : const Color(0xFFB8433B),
-      surface: isDark ? const Color(0xFF2A2420) : const Color(0xFFFFFDF9),
-      onSurface: isDark ? const Color(0xFFF3EBE2) : const Color(0xFF2B2622),
-      surfaceContainerHighest:
-          isDark ? const Color(0xFF332C27) : const Color(0xFFF1E9DD),
-      onSurfaceVariant:
-          isDark ? const Color(0xFFB9AC9F) : const Color(0xFF6F665C),
+      surface: bgSurface,
+      onSurface: textPrimary,
+      surfaceContainerHighest: bgSurfaceElevated,
+      onSurfaceVariant: textMuted,
       outline: isDark ? const Color(0xFF3D342E) : const Color(0xFFE6DCCD),
       outlineVariant:
           isDark ? const Color(0xFF3D342E) : const Color(0xFFE6DCCD),

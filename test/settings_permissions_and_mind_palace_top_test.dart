@@ -8,7 +8,6 @@ import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';

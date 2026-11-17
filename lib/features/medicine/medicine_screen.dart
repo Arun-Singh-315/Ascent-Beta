@@ -598,7 +598,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                       onPressed: () async {
                         try {
                           await ref.read(medicineServiceProvider).scheduleRefillReminder(medicine);
-                          if (context.mounted) {
+                          if (mounted) {
                             AscentSnackBar.show(
                               context,
                               message: 'Refill reminder scheduled for ${medicine.name}',
@@ -606,7 +606,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                             );
                           }
                         } catch (_) {
-                          if (context.mounted) {
+                          if (mounted) {
                             AscentSnackBar.error(context, message: 'Could not schedule refill reminder');
                           }
                         }

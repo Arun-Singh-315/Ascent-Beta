@@ -1,4 +1,3 @@
-import 'package:ascent/core/ai/riya_capabilities.dart';
 import 'package:ascent/core/ai/riya_intents.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/features/ai_assistant/riya_entity_card.dart';

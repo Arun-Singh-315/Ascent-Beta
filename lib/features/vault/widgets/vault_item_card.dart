@@ -25,7 +25,7 @@ class VaultItemCard extends StatefulWidget {
 }
 
 class _VaultItemCardState extends State<VaultItemCard> {
-  bool _revealed = false;
+  final bool _revealed = false;
 
   void _copyToClipboard(BuildContext context, String text, String label) {
     HapticFeedback.lightImpact();

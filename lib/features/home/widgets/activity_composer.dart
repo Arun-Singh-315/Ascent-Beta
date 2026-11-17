@@ -492,12 +492,16 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          Text(
-                            enrichment.categoryLabel,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: g.ink,
+                          Flexible(
+                            child: Text(
+                              enrichment.categoryLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
                             ),
                           ),
                         ],

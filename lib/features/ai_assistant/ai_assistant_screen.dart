@@ -819,7 +819,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               onSelected: (val) {
                 if (val == 'clear') {
                   _showClearHistoryDialog(context, name);
-                } else if (val == 'tone') {
+                } else if (val == 'companion' || val == 'tone') {
                   _showCompanionSelectorSheet(context, ref, name);
                 } else if (val == 'voice') {
                   HapticFeedback.selectionClick();
@@ -831,16 +831,16 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               },
               itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: 'clear',
+                  value: 'companion',
                   child: Text(
-                    'Clear conversation',
+                    'Change companion ($name)',
                     style: TextStyle(color: c.textPrimary, fontSize: 14),
                   ),
                 ),
                 PopupMenuItem(
-                  value: 'tone',
+                  value: 'clear',
                   child: Text(
-                    'Tone selector',
+                    'Clear history',
                     style: TextStyle(color: c.textPrimary, fontSize: 14),
                   ),
                 ),
@@ -2313,9 +2313,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                 ),
                 const SizedBox(height: 16),
 
-                // One line: "How can I help?"
+                // Centered hero greeting
                 Text(
-                  'How can I help?',
+                  'How can I help you\nascend today?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,

@@ -119,7 +119,7 @@ void main() {
           ),
         );
 
-        final doseId = await db
+        await db
             .into(db.medicineLogTable)
             .insert(
               MedicineLogTableCompanion.insert(

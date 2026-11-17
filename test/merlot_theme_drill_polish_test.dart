@@ -7,8 +7,6 @@ import 'package:drift/drift.dart' as drift;
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/thought_theme.dart';
 import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
@@ -24,7 +22,6 @@ import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
-import 'package:ascent/shared/widgets/thought_excerpt.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override

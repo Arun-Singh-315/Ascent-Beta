@@ -2,7 +2,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
