@@ -21,94 +21,56 @@ class HomeShortcutIcon extends StatelessWidget {
   final double size;
   final double? progress;
 
-  /// Returns the vivid ink color associated with a shortcut identity.
+  /// Returns the solid black / white ink color for strong, consistent shortcut icons.
   static Color inkFor(String id, BuildContext context) {
-    final design = HomeDesign.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return switch (id) {
-      'hydration' || 'health' =>
-        isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
-      'walk' || 'medicine' || 'chai-break' => design.wellnessInk,
-      'assistant' =>
-        isDark ? SharedControlColors.actionBlueDark : const Color(0xFF006FE6),
-      'thought-wall' || 'mind' =>
-        isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-      'learning' || 'momentum' || 'promises' => design.learningInk,
-      'vault' => isDark ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
-      _ => isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue,
-    };
+    return isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final design = HomeDesign.of(context);
-    final isHydration = identity == 'hydration' || identity == 'health';
-    final accentInk = identity != null
-        ? inkFor(identity!, context)
-        : HomeShortcutStyle.ink(context);
+    final iconInk = selected
+        ? (isDark
+            ? SharedControlColors.actionBlueDark
+            : SharedControlColors.actionBlue)
+        : inkFor(identity ?? '', context);
 
     Widget coreIcon = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: identity == null
-            ? Colors.transparent
+        color: isDark
+            ? (selected
+                ? SharedControlColors.actionBlueDark.withValues(alpha: 0.22)
+                : const Color(0xFF1C2028))
             : (selected
-                ? (isDark
-                    ? SharedControlColors.actionBlueDark.withValues(alpha: 0.22)
-                    : SharedControlColors.actionBlue.withValues(alpha: 0.14))
-                : (isHydration
-                    ? (isDark
-                        ? const Color(0xFF0C1926).withValues(alpha: 0.70)
-                        : const Color(0xFFE0F2FE).withValues(alpha: 0.70))
-                    : (isDark
-                        ? accentInk.withValues(alpha: 0.12)
-                        : accentInk.withValues(alpha: 0.05)))),
+                ? SharedControlColors.actionBlue.withValues(alpha: 0.12)
+                : Colors.white),
         shape: BoxShape.circle,
-        border: !framed && !isHydration
-            ? null
-            : Border.all(
-                color: selected
-                    ? (isDark
-                          ? SharedControlColors.actionBlueDark
-                          : SharedControlColors.actionBlue)
-                    : (isHydration
-                        ? accentInk.withValues(alpha: isDark ? 0.35 : 0.28)
-                        : (identity != null
-                            ? accentInk.withValues(alpha: isDark ? 0.55 : 0.45)
-                            : design.separator)),
-                width: selected ? 1.5 : (isHydration ? 1.2 : 1.1),
-              ),
-        boxShadow: identity == null || isDark
-            ? (isHydration && isDark
-                ? [
-                    BoxShadow(
-                      color: accentInk.withValues(alpha: 0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null)
-            : [
-                BoxShadow(
-                  color: isHydration
-                      ? accentInk.withValues(alpha: 0.10)
-                      : Colors.black.withValues(alpha: 0.02),
-                  blurRadius: isHydration ? 8 : 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+        border: Border.all(
+          color: selected
+              ? (isDark
+                  ? SharedControlColors.actionBlueDark
+                  : SharedControlColors.actionBlue)
+              : (isDark
+                  ? const Color(0xFF2E3442)
+                  : const Color(0xFFE2E8F0)),
+          width: selected ? 1.6 : 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Icon(
         icon,
         size: size * .44,
-        color: selected
-            ? (isDark
-                  ? SharedControlColors.actionBlueDark
-                  : SharedControlColors.actionBlue)
-            : accentInk,
+        color: iconInk,
       ),
     );
 
@@ -123,8 +85,11 @@ class HomeShortcutIcon extends StatelessWidget {
               size: Size(size + 6, size + 6),
               painter: _ShortcutProgressRingPainter(
                 progress: progress!,
-                color: accentInk,
-                trackColor: accentInk.withValues(alpha: isDark ? 0.18 : 0.10),
+                color: isDark
+                    ? const Color(0xFF60A5FA)
+                    : const Color(0xFF2563EB),
+                trackColor: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.08),
                 strokeWidth: 2.5,
               ),
             ),

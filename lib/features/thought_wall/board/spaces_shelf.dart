@@ -72,6 +72,7 @@ class SpacesShelf extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final pinned = ref.watch(pinnedSpacesProvider);
 
     // Sort: pinned spaces first, then remaining spaces in original order
@@ -93,9 +94,19 @@ class SpacesShelf extends ConsumerWidget {
         key: const ValueKey('spaces_shelf'),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: g.surface,
+          color: isDark ? const Color(0xFF171A21) : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: g.controlOutline.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

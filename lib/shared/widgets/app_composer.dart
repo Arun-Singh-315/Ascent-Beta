@@ -109,30 +109,33 @@ class _AppComposerState extends State<AppComposer>
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF16181F) : c.surfaceAlt,
-            borderRadius: BorderRadius.circular(24),
+            color: isDark ? const Color(0xFF181A20) : Colors.white,
+            borderRadius: BorderRadius.circular(26),
             border: Border.all(
               color: _isFocused
                   ? colorScheme.primary
-                  : (isDark ? const Color(0xFF2C303B) : c.border),
+                  : (isDark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0)),
               width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark ? const Color(0x30000000) : c.warmShadow,
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Leading "+" action button
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 4),
+              SizedBox(
+                width: 38,
+                height: 38,
                 child: IconButton(
                   key: const ValueKey('chat_plus_button'),
+                  padding: EdgeInsets.zero,
                   icon: Icon(
                     Icons.add_rounded,
                     color: c.textSecondary,
@@ -142,15 +145,16 @@ class _AppComposerState extends State<AppComposer>
                   onPressed: widget.isLoading ? null : widget.onPlusPressed,
                 ),
               ),
-              // Single borderless TextField
+              // Single borderless TextField in perfect horizontal & vertical sync
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: TextField(
                     controller: widget.controller,
                     focusNode: widget.focusNode,
                     minLines: 1,
                     maxLines: 5,
+                    textAlignVertical: TextAlignVertical.center,
                     textCapitalization: TextCapitalization.sentences,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _handleSend(),
@@ -166,7 +170,6 @@ class _AppComposerState extends State<AppComposer>
                         fontSize: 15,
                         color: c.textTertiary,
                       ),
-                      // EXPLICITLY disable all inner borders
                       border: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       enabledBorder: InputBorder.none,
@@ -176,16 +179,16 @@ class _AppComposerState extends State<AppComposer>
                       isDense: true,
                       filled: false,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 6,
+                        vertical: 10,
                       ),
                     ),
                   ),
                 ),
               ),
               // Trailing action: Mic or Scale-animated Send button
-              Padding(
-                padding: const EdgeInsets.only(right: 6, bottom: 6),
+              SizedBox(
+                width: 38,
+                height: 38,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
@@ -193,6 +196,7 @@ class _AppComposerState extends State<AppComposer>
                     if (!_hasText)
                       IconButton(
                         key: const ValueKey('chat_mic_button'),
+                        padding: EdgeInsets.zero,
                         icon: Icon(
                           Icons.mic_none_rounded,
                           color: c.textSecondary,
@@ -210,8 +214,8 @@ class _AppComposerState extends State<AppComposer>
                     ScaleTransition(
                       scale: _sendScaleAnimation,
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: colorScheme.primary,
@@ -221,7 +225,7 @@ class _AppComposerState extends State<AppComposer>
                           padding: EdgeInsets.zero,
                           icon: Icon(
                             Icons.arrow_upward_rounded,
-                            size: 20,
+                            size: 18,
                             color: colorScheme.onPrimary,
                           ),
                           onPressed: widget.isLoading ? null : _handleSend,

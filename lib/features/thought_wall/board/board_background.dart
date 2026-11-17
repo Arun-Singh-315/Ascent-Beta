@@ -19,7 +19,7 @@ class BoardBackdropNotifier extends Notifier<BoardBackdrop> {
         .watch(sharedPreferencesProvider)
         .getString('thought_board_backdrop_v1');
     return BoardBackdrop.values.where((v) => v.name == raw).firstOrNull ??
-        BoardBackdrop.paper;
+        BoardBackdrop.plain;
   }
 
   Future<void> set(BoardBackdrop value) async {
@@ -44,26 +44,24 @@ class BoardBackground extends ConsumerWidget {
         dark
             ? [const Color(0xFF10141D), const Color(0xFF151B26)]
             : [
-                const Color(0xFFFCFDFF),
-                const Color(0xFFF1F6FD),
-                const Color(0xFFE4EEFA),
+                const Color(0xFFFAF9F6),
+                const Color(0xFFF1F5F9),
               ],
       BoardBackdrop.plain =>
         dark
             ? [context.glass.bg, context.glass.bg]
-            : [const Color(0xFFFAFBFC), const Color(0xFFF0F4F8)],
+            : [const Color(0xFFFAF9F6), const Color(0xFFF5F4F0)],
       BoardBackdrop.paper =>
         dark
             ? [const Color(0xFF161920), const Color(0xFF0F1218)]
             : [
                 const Color(0xFFFAF7F2),
-                const Color(0xFFF3EFE7),
-                const Color(0xFFEAE5DC),
+                const Color(0xFFF5F2EC),
               ],
       BoardBackdrop.dusk =>
         dark
-            ? [const Color(0xFF222938), const Color(0xFF171A24)]
-            : [const Color(0xFFE9EEF4), const Color(0xFFE9E5EE)],
+            ? [const Color(0xFF1E222B), const Color(0xFF171A21)]
+            : [const Color(0xFFF3F4F6), const Color(0xFFE5E7EB)],
     };
     return DecoratedBox(
       decoration: BoxDecoration(

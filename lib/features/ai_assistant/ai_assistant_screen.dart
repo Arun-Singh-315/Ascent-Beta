@@ -18,8 +18,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/app_composer.dart';
@@ -740,7 +739,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = ref.watch(assistantNameProvider);
     final messagesStream = _messagesStream;
@@ -764,11 +762,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         extendBodyBehindAppBar: true,
         backgroundColor: isDark
             ? context.bgBase
-            : (g.merlot
-                  ? MerlotPalette.canvas
-                  : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
+            : const Color(0xFFF8FAFC),
         appBar: AppBar(
-          backgroundColor: c.bg,
+          backgroundColor: isDark ? const Color(0xFF111317) : const Color(0xFFF8FAFC),
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -1422,7 +1418,6 @@ class _ConversationMessageBubbleState
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
-    final colorScheme = Theme.of(context).colorScheme;
     final c = context.c;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1435,16 +1430,14 @@ class _ConversationMessageBubbleState
     final BorderRadius borderRadius;
 
     if (isUser) {
-      bubbleFill =
-          isDark ? const Color(0x3DF08A5D) : colorScheme.primaryContainer;
+      bubbleFill = isDark
+          ? const Color(0xFF1D4ED8)
+          : const Color(0xFF006FE6);
       bubbleBorder = isDark
-          ? const Color(0x60F08A5D)
-          : colorScheme.primary.withValues(alpha: 0.25);
-      messageTextColor =
-          isDark ? const Color(0xFFFFE8DC) : colorScheme.onPrimaryContainer;
-      timestampColor = isDark
-          ? const Color(0xAAFFE8DC)
-          : colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
+          ? const Color(0xFF3B82F6).withValues(alpha: 0.40)
+          : const Color(0xFF005AC8);
+      messageTextColor = Colors.white;
+      timestampColor = const Color(0xD0FFFFFF);
       borderRadius = const BorderRadius.only(
         topLeft: Radius.circular(18),
         topRight: Radius.circular(18),
@@ -1452,12 +1445,14 @@ class _ConversationMessageBubbleState
         bottomRight: Radius.circular(4),
       );
     } else {
-      bubbleFill =
-          isDark ? const Color(0x40222630) : c.surfaceAlt.withValues(alpha: 0.55);
-      bubbleBorder =
-          isDark ? const Color(0x2EFFFFFF) : c.border.withValues(alpha: 0.6);
-      messageTextColor = c.textPrimary;
-      timestampColor = c.textTertiary;
+      bubbleFill = isDark
+          ? const Color(0xFF1E222B)
+          : Colors.white;
+      bubbleBorder = isDark
+          ? const Color(0xFF2E3442)
+          : const Color(0xFFE2E8F0);
+      messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
       borderRadius = const BorderRadius.only(
         topLeft: Radius.circular(18),
         topRight: Radius.circular(18),
@@ -1485,7 +1480,9 @@ class _ConversationMessageBubbleState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
+                color: isDark
+                    ? SharedControlColors.actionBlueDark
+                    : SharedControlColors.actionBlue,
                 letterSpacing: -0.2,
               ),
             ),
@@ -1537,7 +1534,9 @@ class _ConversationMessageBubbleState
               ),
               listBullet: TextStyle(
                 fontSize: 15,
-                color: colorScheme.primary,
+                color: isDark
+                    ? SharedControlColors.actionBlueDark
+                    : SharedControlColors.actionBlue,
                 fontWeight: FontWeight.w600,
               ),
               pPadding: const EdgeInsets.only(bottom: 8),

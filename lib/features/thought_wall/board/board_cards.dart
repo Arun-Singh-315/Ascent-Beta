@@ -136,14 +136,11 @@ class _BoardCardState extends State<BoardCard> {
     final fill = (!appearance.bubbleFilled || minimal)
         ? (dark
             ? const Color(0xFF171A21).withValues(alpha: 0.65)
-            : Colors.white.withValues(alpha: .32))
-        : Color.alphaBlend(
-            g.ink.withValues(alpha: dark ? .04 : .012),
-            dark ? const Color(0xFF171A21) : g.fill,
-          );
+            : Colors.white.withValues(alpha: .75))
+        : (dark ? const Color(0xFF171A21) : Colors.white);
     final borderColor = isSelected
         ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
-        : (dark ? const Color(0xFF2E323D) : g.line.withValues(alpha: .26));
+        : (dark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0));
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -159,6 +156,13 @@ class _BoardCardState extends State<BoardCard> {
         color: fill,
         borderRadius: radius,
         border: Border.all(color: borderColor, width: borderWidth),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.30 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: EdgeInsets.all(padding),
       child: Column(
@@ -445,8 +449,8 @@ class BoardHeroCard extends StatelessWidget {
     final dark = context.isDark;
     final fill = dark
         ? const Color(0xFF1D212A)
-        : Colors.white.withValues(alpha: .30);
-    final onFill = g.ink;
+        : Colors.white;
+    final onFill = dark ? const Color(0xFFF1F3F5) : const Color(0xFF0F172A);
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
 
@@ -466,11 +470,11 @@ class BoardHeroCard extends StatelessWidget {
             color: fill,
             boxShadow: [
               BoxShadow(
-                color: (dark ? Colors.black : const Color(0x0A5C4A3E)).withValues(
-                  alpha: dark ? 0.35 : 1.0,
+                color: Colors.black.withValues(
+                  alpha: dark ? 0.35 : 0.05,
                 ),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
@@ -481,7 +485,7 @@ class BoardHeroCard extends StatelessWidget {
                       : SharedControlColors.actionBlue)
                   : (dark
                       ? const Color(0xFF2E323D)
-                      : g.line.withValues(alpha: 0.25)),
+                      : const Color(0xFFE2E8F0)),
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
@@ -490,20 +494,37 @@ class BoardHeroCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (dark
+                              ? SharedControlColors.actionBlueDark
+                              : SharedControlColors.actionBlue)
+                          .withValues(alpha: dark ? 0.20 : 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Text(
                       label.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: onFill.withValues(alpha: .6),
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: dark
+                            ? SharedControlColors.actionBlueDark
+                            : SharedControlColors.actionBlue,
                       ),
                     ),
                   ),
+                  const Spacer(),
                   if (thought.isPinned)
-                    Icon(Icons.push_pin_rounded, size: 15, color: onFill),
+                    Icon(
+                      Icons.push_pin_rounded,
+                      size: 15,
+                      color: onFill.withValues(alpha: .6),
+                    ),
                   if (isSelectionMode)
                     Padding(
                       padding: const EdgeInsets.only(left: AppSpace.s8),

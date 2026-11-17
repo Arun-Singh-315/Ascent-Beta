@@ -150,49 +150,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
         children: [
           HomeSectionHeading(
             title: 'Your space',
-            leading: shouldShowButton
-                ? Stack(
-                    alignment: Alignment.topRight,
-                    children: [
-                      IconButton(
-                        key: const ValueKey('yesterday_report_button'),
-                        tooltip: 'Yesterday’s summary reflection',
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          setState(() {
-                            _showYesterdayReport = !_showYesterdayReport;
-                          });
-                          if (_showYesterdayReport) {
-                            prefs?.setString(
-                              'ascent_yesterday_report_seen_day',
-                              todayKey,
-                            );
-                          }
-                        },
-                        icon: Icon(
-                          _showYesterdayReport
-                              ? Icons.auto_stories_rounded
-                              : Icons.auto_stories_outlined,
-                          size: 20,
-                          color: _showYesterdayReport ? accentColor : ink,
-                        ),
-                      ),
-                      if (isUnread && !_showYesterdayReport)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: accentColor,
-                            ),
-                          ),
-                        ),
-                    ],
-                  )
-                : null,
+            showIndicator: false,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -214,16 +172,38 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                     color: HomeDesign.of(context).secondaryText,
                   ),
                   onSelected: (action) {
+                    if (action == 'report') {
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        _showYesterdayReport = !_showYesterdayReport;
+                      });
+                      if (_showYesterdayReport) {
+                        prefs?.setString(
+                          'ascent_yesterday_report_seen_day',
+                          todayKey,
+                        );
+                      }
+                    }
                     if (action == 'add') showHomeCaptureActions(context);
                     if (action == 'edit') showHomeShortcutEditor(context);
                   },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
+                  itemBuilder: (_) => [
+                    if (shouldShowButton)
+                      PopupMenuItem(
+                        value: 'report',
+                        key: const ValueKey('yesterday_report_menu_item'),
+                        child: Text(
+                          _showYesterdayReport
+                              ? 'Hide yesterday’s reflection'
+                              : 'Yesterday’s reflection',
+                        ),
+                      ),
+                    const PopupMenuItem(
                       value: 'add',
                       key: ValueKey('home_add'),
                       child: Text('Add something'),
                     ),
-                    PopupMenuItem(value: 'edit', child: Text('Edit shortcuts')),
+                    const PopupMenuItem(value: 'edit', child: Text('Edit shortcuts')),
                   ],
                 ),
               ],
@@ -465,10 +445,6 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                     widget.badgeCounts?[item.id],
                                     id: item.id,
                                   );
-                                  final tintInk = HomeShortcutIcon.inkFor(
-                                    item.id,
-                                    context,
-                                  );
 
                                   return Column(
                                     children: [
@@ -505,17 +481,25 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                                     ),
                                                 alignment: Alignment.center,
                                                 decoration: BoxDecoration(
-                                                  color: tintInk.withValues(
-                                                    alpha: dark ? 0.28 : 0.15,
-                                                  ),
+                                                  color: dark
+                                                      ? const Color(0xFF2E3442)
+                                                      : const Color(0xFF0F172A),
                                                   borderRadius:
                                                       BorderRadius.circular(10),
                                                   border: Border.all(
-                                                    color: tintInk.withValues(
-                                                      alpha: dark ? 0.45 : 0.35,
-                                                    ),
-                                                    width: .9,
+                                                    color: dark
+                                                        ? const Color(0xFF475569)
+                                                        : Colors.white,
+                                                    width: 1.0,
                                                   ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withValues(alpha: 0.18),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(0, 1),
+                                                    ),
+                                                  ],
                                                 ),
                                                 child: Text(
                                                   badge,
@@ -523,7 +507,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                                     'shortcut_badge_${item.id}',
                                                   ),
                                                   style: TextStyle(
-                                                    color: ink,
+                                                    color: Colors.white,
                                                     fontSize: isWater ? 10 : 11,
                                                     fontWeight: FontWeight.w700,
                                                     fontFeatures: const [
@@ -546,7 +530,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                         overflow: TextOverflow.ellipsis,
                                         style: AscentTextStyles.interfaceLabel
                                             .copyWith(
-                                              color: tintInk,
+                                              color: ink,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                             ),
