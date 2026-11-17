@@ -109,12 +109,12 @@ class _AppComposerState extends State<AppComposer>
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF181A20) : Colors.white,
+            color: isDark ? const Color(0xFF16181F) : Colors.white,
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
               color: _isFocused
                   ? colorScheme.primary
-                  : (isDark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0)),
+                  : (isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0)),
               width: 1.0,
             ),
             boxShadow: [

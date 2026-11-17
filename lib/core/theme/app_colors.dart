@@ -61,28 +61,28 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF1B1714), // warm graphite (not black)
-    groupedBg: Color(0xFF221D19),
-    surface: Color(0xFF2A2420), // cards (opaque)
-    surfaceAlt: Color(0xFF332C27),
-    border: Color(0xFF3D342E),
-    textPrimary: Color(0xFFF3EBE2),
-    textSecondary: Color(0xFFB9AC9F),
-    textTertiary: Color(0xFF857A6F),
-    accent: Color(0xFFF08A5D), // primary ember
-    accentTint: Color(0xFF4A2A1B), // primaryContainer
-    onAccent: Color(0xFF2B1408),
-    accent2: Color(0xFFE27A93), // rose clay
-    accent2Tint: Color(0xFF4A222E),
-    gold: Color(0xFFE8B65A), // soft gold
-    goldTint: Color(0xFF45351C),
-    ok: Color(0xFFE8B65A), // success
-    okTint: Color(0xFF45351C),
-    warn: Color(0xFFE8B65A),
-    warnTint: Color(0xFF45351C),
-    alert: Color(0xFFE06D65), // error
-    alertTint: Color(0xFF4A1E1C),
-    headerTop: Color(0xFF1B1714),
+    bg: Color(0xFF0F1115), // Deep matte charcoal / obsidian
+    groupedBg: Color(0xFF14171E),
+    surface: Color(0xFF16181F), // Cards (clean neutral obsidian)
+    surfaceAlt: Color(0xFF1E212B), // Inputs, chips, elevated wells
+    border: Color(0xFF262933), // 1px subtle neutral edge
+    textPrimary: Color(0xFFF8FAFC), // Cool crisp white
+    textSecondary: Color(0xFF94A3B8), // Slate secondary
+    textTertiary: Color(0xFF64748B), // Slate tertiary / hint
+    accent: Color(0xFF3B82F6), // Apple Blue in dark mode
+    accentTint: Color(0xFF1E293B), // Slate blue container
+    onAccent: Color(0xFFFFFFFF),
+    accent2: Color(0xFF60A5FA),
+    accent2Tint: Color(0xFF1E293B),
+    gold: Color(0xFFF59E0B),
+    goldTint: Color(0xFF292014),
+    ok: Color(0xFF10B981),
+    okTint: Color(0xFF132A22),
+    warn: Color(0xFFF59E0B),
+    warnTint: Color(0xFF292014),
+    alert: Color(0xFFEF4444),
+    alertTint: Color(0xFF2E1719),
+    headerTop: Color(0xFF0F1115),
   );
 
   // Semantic Sand & Ember getters
@@ -99,7 +99,8 @@ class AppColors extends ThemeExtension<AppColors> {
   Color get tertiary => gold;
   Color get tertiaryContainer => goldTint;
   Color get textHint => textTertiary;
-  Color get warmShadow => const Color(0x0A5C4A3E);
+  Color get warmShadow =>
+      this == light ? const Color(0x0A5C4A3E) : const Color(0x38000000);
 
   @override
   AppColors copyWith({

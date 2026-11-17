@@ -35,7 +35,7 @@ class OpaqueOverlaySurface extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final solidColor = isDark
-        ? (isSheet ? const Color(0xFF221D19) : const Color(0xFF2A2420))
+        ? (isSheet ? const Color(0xFF14171E) : const Color(0xFF16181F))
         : (isSheet ? const Color(0xFFF3ECE2) : const Color(0xFFFFFDF9));
 
     final effectiveRadius = borderRadius ??

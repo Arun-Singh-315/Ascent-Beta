@@ -94,10 +94,10 @@ class SpacesShelf extends ConsumerWidget {
         key: const ValueKey('spaces_shelf'),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF171A21) : Colors.white,
+          color: isDark ? const Color(0xFF16181F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isDark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0),
+            color: isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
             width: 1.0,
           ),
           boxShadow: [

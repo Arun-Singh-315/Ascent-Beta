@@ -135,12 +135,12 @@ class _BoardCardState extends State<BoardCard> {
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
         ? (dark
-            ? const Color(0xFF171A21).withValues(alpha: 0.65)
+            ? const Color(0xFF16181F).withValues(alpha: 0.65)
             : Colors.white.withValues(alpha: .75))
-        : (dark ? const Color(0xFF171A21) : Colors.white);
+        : (dark ? const Color(0xFF16181F) : Colors.white);
     final borderColor = isSelected
         ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
-        : (dark ? const Color(0xFF2E323D) : const Color(0xFFE2E8F0));
+        : (dark ? const Color(0xFF262933) : const Color(0xFFE2E8F0));
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -448,9 +448,9 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final fill = dark
-        ? const Color(0xFF1D212A)
+        ? const Color(0xFF1A1D26)
         : Colors.white;
-    final onFill = dark ? const Color(0xFFF1F3F5) : const Color(0xFF0F172A);
+    final onFill = dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
 
@@ -484,7 +484,7 @@ class BoardHeroCard extends StatelessWidget {
                       ? SharedControlColors.actionBlueDark
                       : SharedControlColors.actionBlue)
                   : (dark
-                      ? const Color(0xFF2E323D)
+                      ? const Color(0xFF262933)
                       : const Color(0xFFE2E8F0)),
               width: isSelected ? 1.5 : 1.0,
             ),

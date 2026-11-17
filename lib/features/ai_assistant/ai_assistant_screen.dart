@@ -764,7 +764,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             ? context.bgBase
             : const Color(0xFFF8FAFC),
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF111317) : const Color(0xFFF8FAFC),
+          backgroundColor: isDark ? const Color(0xFF0F1115) : const Color(0xFFF8FAFC),
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -1446,10 +1446,10 @@ class _ConversationMessageBubbleState
       );
     } else {
       bubbleFill = isDark
-          ? const Color(0xFF1E222B)
+          ? const Color(0xFF16181F)
           : Colors.white;
       bubbleBorder = isDark
-          ? const Color(0xFF2E3442)
+          ? const Color(0xFF262933)
           : const Color(0xFFE2E8F0);
       messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
       timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);

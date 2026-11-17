@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'glass_theme.dart';
 import 'surface_tokens.dart';
 
@@ -23,11 +24,11 @@ class ThoughtTheme {
   static const frozenSurface = Color(0xFFF8FAFD);
 
   // Matte Charcoal + Premium Glass foundation in dark mode:
-  static const darkCanvas = Color(0xFF111317);
-  static const darkSurface = Color(0xFF171A21);
-  static const darkCardBorder = Color(0xFF282C37);
-  static const darkInk = Color(0xFFF1F3F5);
-  static const darkMuted = Color(0xFF8B92A0);
+  static const darkCanvas = Color(0xFF0F1115);
+  static const darkSurface = Color(0xFF16181F);
+  static const darkCardBorder = Color(0xFF262933);
+  static const darkInk = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF94A3B8);
 
   static ThemeData from(ThemeData parent) {
     final glass = parent.extension<AscentGlass>();
@@ -41,15 +42,18 @@ class ThoughtTheme {
         extensions: [
           ...parent.extensions.values.where(
             (extension) =>
-                extension is! AscentGlass && extension is! AppSurfaces,
+                extension is! AscentGlass &&
+                extension is! AppSurfaces &&
+                extension is! AppColors,
           ),
+          AppColors.dark,
           glass.copyWith(
             bg: darkCanvas,
             fill: darkSurface,
             ink: darkInk,
             inkMuted: darkMuted,
             edge: darkCardBorder,
-            line: const Color(0x1AFFFFFF),
+            line: darkCardBorder,
             glow1: Colors.transparent,
             glow2: Colors.transparent,
           ),

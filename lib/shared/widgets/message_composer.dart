@@ -85,13 +85,13 @@ class _MessageComposerState extends State<MessageComposer> {
           final hasFocus = _focus.hasFocus;
 
           final containerBg = isDark
-              ? const Color(0xFF181A20)
+              ? const Color(0xFF16181F)
               : (g.merlot ? MerlotPalette.surface : const Color(0xFFFAFCFF));
 
           final borderColor = isDark
               ? (hasFocus
                     ? SharedControlColors.actionBlueDark
-                    : const Color(0xFF2E323D))
+                    : const Color(0xFF262933))
               : (hasFocus
                     ? SharedControlColors.actionBlue
                     : const Color(0xFF90CAF9).withValues(alpha: 0.55));

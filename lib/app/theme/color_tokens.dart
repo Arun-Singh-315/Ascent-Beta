@@ -70,56 +70,56 @@ class AscentColors {
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
-  /// Warm graphite page background (never black).
-  static const Color bgBaseDark = Color(0xFF1B1714);
-  static const Color bgGroupedDark = Color(0xFF221D19);
+  /// Deep matte charcoal / obsidian page foundation.
+  static const Color bgBaseDark = Color(0xFF0F1115);
+  static const Color bgGroupedDark = Color(0xFF14171E);
 
-  /// Warm dark surface — cards, sheets (OPAQUE).
-  static const Color bgSurfaceDark = Color(0xFF2A2420);
+  /// Clean neutral dark surface — cards, sheets (OPAQUE).
+  static const Color bgSurfaceDark = Color(0xFF16181F);
 
   /// Elevated dark surface for nested items, inputs and chips.
-  static const Color bgSurfaceElevatedDark = Color(0xFF332C27);
+  static const Color bgSurfaceElevatedDark = Color(0xFF1E212B);
 
-  /// Warm ember primary accent in dark mode.
-  static const Color accentPrimaryDark = Color(0xFFF08A5D);
-  static const Color accentPrimaryBrightDark = Color(0xFFF08A5D);
-  static const Color accentPrimaryDimDark = Color(0xFF4A2A1B);
+  /// Apple Action Blue primary accent in dark mode.
+  static const Color accentPrimaryDark = Color(0xFF3B82F6);
+  static const Color accentPrimaryBrightDark = Color(0xFF60A5FA);
+  static const Color accentPrimaryDimDark = Color(0xFF1E293B);
 
-  /// Rose clay secondary accent in dark mode.
-  static const Color accentSecondaryDark = Color(0xFFE27A93);
-  static const Color accentSecondaryBrightDark = Color(0xFFE27A93);
-  static const Color accentSecondaryDimDark = Color(0xFF4A222E);
+  /// Rose / secondary accent in dark mode.
+  static const Color accentSecondaryDark = Color(0xFF60A5FA);
+  static const Color accentSecondaryBrightDark = Color(0xFF93C5FD);
+  static const Color accentSecondaryDimDark = Color(0xFF1E293B);
 
   /// Soft gold informational / tertiary accent in dark mode.
-  static const Color accentInfoDark = Color(0xFFE8B65A);
-  static const Color accentGoldDark = Color(0xFFE8B65A);
-  static const Color accentGoldDimDark = Color(0xFF45351C);
+  static const Color accentInfoDark = Color(0xFFF59E0B);
+  static const Color accentGoldDark = Color(0xFFF59E0B);
+  static const Color accentGoldDimDark = Color(0xFF292014);
 
   /// Error state in dark mode.
-  static const Color stateDangerDark = Color(0xFFE06D65);
-  static const Color stateDangerBrightDark = Color(0xFFE06D65);
+  static const Color stateDangerDark = Color(0xFFEF4444);
+  static const Color stateDangerBrightDark = Color(0xFFF87171);
 
-  /// Success state in dark mode (soft gold).
-  static const Color stateSuccessDark = Color(0xFFE8B65A);
-  static const Color stateWarningDark = Color(0xFFE8B65A);
+  /// Success state in dark mode.
+  static const Color stateSuccessDark = Color(0xFF10B981);
+  static const Color stateWarningDark = Color(0xFFF59E0B);
 
-  /// Crisp warm text.
-  static const Color textPrimaryDark = Color(0xFFF3EBE2);
+  /// Cool crisp white text.
+  static const Color textPrimaryDark = Color(0xFFF8FAFC);
 
   /// Secondary text in dark mode.
-  static const Color textSecondaryDark = Color(0xFFB9AC9F);
+  static const Color textSecondaryDark = Color(0xFF94A3B8);
 
   /// Muted / hint text in dark mode.
-  static const Color textMutedDark = Color(0xFF857A6F);
+  static const Color textMutedDark = Color(0xFF64748B);
 
   /// Text on primary in dark mode.
-  static const Color textOnPrimaryDark = Color(0xFF2B1408);
+  static const Color textOnPrimaryDark = Color(0xFFFFFFFF);
 
-  /// Subtle warm dark border.
-  static const Color dividerDark = Color(0xFF3D342E);
+  /// Subtle neutral dark border (1px hairline).
+  static const Color dividerDark = Color(0xFF262933);
 
-  /// Shadow in dark mode — warm dark, not pure black.
-  static const Color shadowDark = Color(0x331F1B18);
+  /// Shadow in dark mode — clean neutral black shadow.
+  static const Color shadowDark = Color(0x40000000);
 
   /// Warm accents for hydration and finance (no saturated blue/green).
   static const Color waterPrimary = Color(0xFFD2643A);

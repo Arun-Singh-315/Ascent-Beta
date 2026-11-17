@@ -1075,10 +1075,10 @@ if (!mounted || result == null) return;
         AppSpace.s10,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF111317) : g.bg,
+        color: isDark ? const Color(0xFF0F1115) : g.bg,
         border: Border(
           top: BorderSide(
-            color: isDark ? const Color(0xFF222630) : g.edge,
+            color: isDark ? const Color(0xFF262933) : g.edge,
           ),
         ),
       ),
@@ -1187,7 +1187,7 @@ if (!mounted || result == null) return;
         subtitle: _isSelectionMode
             ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
-        backgroundColor: isDark ? const Color(0xFF111317) : null,
+        backgroundColor: isDark ? const Color(0xFF0F1115) : null,
         glow1: isDark ? Colors.transparent : c.accent.withValues(alpha: 0.12),
         glow2: isDark ? Colors.transparent : g.glow2,
         showFeatureHelp: false,
@@ -1831,7 +1831,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? context.doneInk.withValues(alpha: isDark ? .35 : .25)
         : hasBubbleFraming
         ? (isDark
-            ? const Color(0xFF2E323D)
+            ? const Color(0xFF262933)
             : Color.lerp(
                 g.edge,
                 moodAccent.withValues(alpha: 0.20),
@@ -1850,15 +1850,15 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? Colors.transparent
         : thought.isCompleted
         ? (isDark
-            ? const Color(0xFF14161C).withValues(alpha: 0.65)
+            ? const Color(0xFF121419).withValues(alpha: 0.65)
             : context.doneInk.withValues(alpha: .04))
         : isSelected
         ? (isDark
-            ? SharedControlColors.actionBlueDark.withValues(alpha: 0.14)
+            ? SharedControlColors.actionBlueDark.withValues(alpha: 0.16)
             : g.clay.withValues(alpha: 0.08))
         : isHero
         ? (isDark
-            ? const Color(0xFF1D212A)
+            ? const Color(0xFF1A1D26)
             : Color.alphaBlend(
                 moodAccent.withValues(alpha: 0.07),
                 g.surface,
@@ -1866,10 +1866,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         : hasBubbleFraming
         ? (widget.role == ThoughtCardRole.compact
             ? (isDark
-                ? const Color(0xFF171A21).withValues(alpha: 0.75)
+                ? const Color(0xFF16181F).withValues(alpha: 0.75)
                 : g.surface.withValues(alpha: 0.85))
             : (isDark
-                ? const Color(0xFF171A21)
+                ? const Color(0xFF16181F)
                 : Color.alphaBlend(
                     moodAccent.withValues(alpha: 0.04),
                     g.surface,
