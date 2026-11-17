@@ -33,17 +33,15 @@ class NoteListButton extends StatelessWidget {
     final lineEnd = nextBreak < 0 ? text.length : nextBreak;
     final currentLine = text.substring(lineStart, lineEnd);
     if (start == end &&
-        RegExp(r'^\s*(?:-->|→|--|-|•)\s*$').hasMatch(currentLine)) {
+        RegExp(r'^\s*(?:-->|->|→|--|-|•)\s*$').hasMatch(currentLine)) {
       controller.selection = TextSelection.collapsed(offset: lineEnd);
       return;
     }
     final before = text.substring(0, start);
-    final separator = before.isEmpty || before.endsWith('\n\n')
+    final separator = before.isEmpty || before.endsWith('\n')
         ? ''
-        : before.endsWith('\n')
-        ? '\n'
-        : '\n\n';
-    final marker = '$separator→ ';
+        : '\n';
+    final marker = '$separator• ';
     controller.value = TextEditingValue(
       text: text.replaceRange(start, end, marker),
       selection: TextSelection.collapsed(offset: start + marker.length),

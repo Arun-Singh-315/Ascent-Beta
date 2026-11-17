@@ -1,6 +1,7 @@
 import '../promises/promise_composer.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/note_list_button.dart';
+import '../../shared/utils/smart_list_input_formatter.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -467,6 +468,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                 autofocus: true,
                 readOnly: false,
                 maxLines: 4,
+                inputFormatters: const [SmartListInputFormatter()],
                 style: AscentTextStyles.bodyMedium.copyWith(
                   color: context.textPrimary,
                   height: 1.4,

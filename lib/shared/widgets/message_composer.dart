@@ -5,6 +5,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/text_styles.dart';
+import '../utils/smart_list_input_formatter.dart';
 import 'note_list_button.dart';
 
 class MessageComposer extends StatefulWidget {
@@ -143,6 +144,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       keyboardType: TextInputType.multiline,
                       textInputAction: TextInputAction.newline,
                       textCapitalization: TextCapitalization.sentences,
+                      inputFormatters: const [SmartListInputFormatter()],
                       cursorColor: isDark && g.merlot ? g.inkSecondary : g.clay,
                       style: AscentTextStyles.bodyLarge.copyWith(
                         color: g.ink,

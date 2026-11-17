@@ -1,5 +1,6 @@
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_input_bar.dart';
+import '../../../shared/widgets/note_list_button.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
@@ -541,6 +542,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           leadingIcon: Icons.add,
           onLeadingTap: () {
             HapticFeedback.lightImpact();
+            NoteListButton.insertNextItem(_text);
             _effectiveFocus.requestFocus();
           },
           extraAction: Tooltip(

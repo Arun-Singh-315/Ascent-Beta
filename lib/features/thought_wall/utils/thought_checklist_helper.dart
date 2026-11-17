@@ -34,13 +34,13 @@ class ThoughtChecklistHelper {
   ThoughtChecklistHelper._();
 
   static final RegExp _checkedBoxRegex = RegExp(
-    r'^\s*(?:[-*•]|\d+[\.\)])?\s*\[[xX]\]\s+(.*)$',
+    r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[[xX]\]\s+(.*)$',
   );
   static final RegExp _uncheckedBoxRegex = RegExp(
-    r'^\s*(?:[-*•]|\d+[\.\)])?\s*\[\s*\]\s+(.*)$',
+    r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[\s*\]\s+(.*)$',
   );
   static final RegExp _bulletOrNumberedRegex = RegExp(
-    r'^\s*(?:[-*•]|-->|\d+[\.\)])\s+(.*)$',
+    r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])\s+(.*)$',
   );
 
   /// Parses text into a list of [ThoughtChecklistItem]s.
