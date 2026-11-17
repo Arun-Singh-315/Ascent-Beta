@@ -77,12 +77,24 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
         key: const ValueKey('home_shortcut_panel'),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
-          color: c.surfaceAlt.withValues(alpha: dark ? 0.35 : 0.45),
+          color: dark
+              ? const Color(0xFF16181F)
+              : c.surfaceAlt.withValues(alpha: 0.45),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: c.border.withValues(alpha: 0.8),
+            color: dark
+                ? const Color(0xFF282C37)
+                : c.border.withValues(alpha: 0.8),
             width: 1,
           ),
+          boxShadow: [
+            if (dark)
+              const BoxShadow(
+                color: Color(0x30000000),
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -95,9 +107,15 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                 Tooltip(
                   message: 'Your space actions',
                   child: Material(
-                    color: c.surfaceAlt.withValues(alpha: 0.6),
+                    color: dark
+                        ? const Color(0xFF22252E)
+                        : c.surfaceAlt.withValues(alpha: 0.6),
                     shape: CircleBorder(
-                      side: BorderSide(color: c.border.withValues(alpha: 0.7)),
+                      side: BorderSide(
+                        color: dark
+                            ? const Color(0xFF323644)
+                            : c.border.withValues(alpha: 0.7),
+                      ),
                     ),
                     child: InkWell(
                       key: const ValueKey('home_add'),
@@ -109,7 +127,11 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                       child: SizedBox(
                         width: 32,
                         height: 32,
-                        child: Icon(Icons.add, size: 18, color: c.textPrimary),
+                        child: Icon(
+                          Icons.add,
+                          size: 18,
+                          color: dark ? const Color(0xFFE2E5EC) : c.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -203,18 +225,20 @@ class _ShortcutTile extends StatelessWidget {
     switch (id) {
       case 'focus':
         return Text(
-          '$focusMins min',
+          focusMins <= 0 ? '-' : '$focusMins min',
           style: TextStyle(fontSize: 12, color: c.textSecondary),
         );
       case 'hydration':
       case 'health':
         return Text(
-          '$waterMl ml',
+          waterMl <= 0 ? '-' : '$waterMl ml',
           style: TextStyle(fontSize: 12, color: c.textSecondary),
         );
       case 'assistant':
         return Text(
-          '$msgCount messages',
+          msgCount <= 0
+              ? '-'
+              : (msgCount == 1 ? '1 message' : '$msgCount messages'),
           style: TextStyle(fontSize: 12, color: c.textSecondary),
         );
       case 'vault':
@@ -241,6 +265,7 @@ class _ShortcutTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final iconData = _iconFor(item.id);
     final label = _labelFor(item.id);
 
@@ -253,16 +278,31 @@ class _ShortcutTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 56px circle, surfaceAlt fill, 1px border, icon 22px in accent
+            // 56px circle, refined charcoal glass in dark, surfaceAlt in light
             Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: c.surfaceAlt,
-                border: Border.all(color: c.border),
+                color: dark ? const Color(0xFF22252E) : c.surfaceAlt,
+                border: Border.all(
+                  color: dark ? const Color(0xFF323644) : c.border,
+                  width: 1.0,
+                ),
+                boxShadow: [
+                  if (dark)
+                    const BoxShadow(
+                      color: Color(0x20000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                ],
               ),
-              child: Icon(iconData, size: 22, color: c.accent),
+              child: Icon(
+                iconData,
+                size: 22,
+                color: dark ? const Color(0xFFE2E5EC) : c.accent,
+              ),
             ),
             const SizedBox(height: 8),
 

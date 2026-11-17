@@ -173,47 +173,47 @@ class AscentTheme {
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: isDark ? const Color(0xFFE28A6D) : const Color(0xFFBF5A36),
-      onPrimary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+      primary: isDark ? const Color(0xFFF08A5D) : const Color(0xFFD2643A),
+      onPrimary: isDark ? const Color(0xFF2B1408) : const Color(0xFFFFFFFF),
       primaryContainer:
-          isDark ? const Color(0xFF4D2415) : const Color(0xFFFBE6DA),
+          isDark ? const Color(0xFF4A2A1B) : const Color(0xFFFCE5D8),
       onPrimaryContainer:
-          isDark ? const Color(0xFFFBE6DA) : const Color(0xFF6B2E14),
-      secondary: isDark ? const Color(0xFFA79BD6) : const Color(0xFF7C6FB0),
-      onSecondary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFFFFD9C6) : const Color(0xFF6E2E15),
+      secondary: isDark ? const Color(0xFFE27A93) : const Color(0xFFC4506A),
+      onSecondary: isDark ? const Color(0xFF2B1408) : const Color(0xFFFFFFFF),
       secondaryContainer:
-          isDark ? const Color(0xFF2D2545) : const Color(0xFFECE8F6),
+          isDark ? const Color(0xFF4A222E) : const Color(0xFFF8E1E6),
       onSecondaryContainer:
-          isDark ? const Color(0xFFECE8F6) : const Color(0xFF3A3266),
-      tertiary: isDark ? const Color(0xFFE3B863) : const Color(0xFFC99A3C),
-      onTertiary: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFFF8E1E6) : const Color(0xFF5A1C29),
+      tertiary: isDark ? const Color(0xFFE8B65A) : const Color(0xFFD6A23E),
+      onTertiary: isDark ? const Color(0xFF2B1408) : const Color(0xFFFFFFFF),
       tertiaryContainer:
-          isDark ? const Color(0xFF4A3B18) : const Color(0xFFF7EBCF),
+          isDark ? const Color(0xFF45351C) : const Color(0xFFF8EDD0),
       onTertiaryContainer:
-          isDark ? const Color(0xFFF7EBCF) : const Color(0xFF5A4108),
-      error: isDark ? const Color(0xFFE2756E) : const Color(0xFFB3473F),
-      onError: isDark ? const Color(0xFF1F1B18) : const Color(0xFFFFFFFF),
+          isDark ? const Color(0xFFF8EDD0) : const Color(0xFF5A4108),
+      error: isDark ? const Color(0xFFE06D65) : const Color(0xFFB8433B),
+      onError: isDark ? const Color(0xFF2B1408) : const Color(0xFFFFFFFF),
       errorContainer:
-          isDark ? const Color(0xFF4D1D1B) : const Color(0xFFFDE8E8),
+          isDark ? const Color(0xFF4A1E1C) : const Color(0xFFFBEBEA),
       onErrorContainer:
-          isDark ? const Color(0xFFE2756E) : const Color(0xFFB3473F),
+          isDark ? const Color(0xFFE06D65) : const Color(0xFFB8433B),
       surface: isDark ? const Color(0xFF2A2420) : const Color(0xFFFFFDF9),
-      onSurface: isDark ? const Color(0xFFF5EFEB) : const Color(0xFF2A2521),
+      onSurface: isDark ? const Color(0xFFF3EBE2) : const Color(0xFF2B2622),
       surfaceContainerHighest:
-          isDark ? const Color(0xFF352F2A) : const Color(0xFFF4EEE6),
+          isDark ? const Color(0xFF332C27) : const Color(0xFFF1E9DD),
       onSurfaceVariant:
-          isDark ? const Color(0xFFBAAFA4) : const Color(0xFF6B635A),
-      outline: isDark ? const Color(0xFF433C35) : const Color(0xFFE9E1D5),
+          isDark ? const Color(0xFFB9AC9F) : const Color(0xFF6F665C),
+      outline: isDark ? const Color(0xFF3D342E) : const Color(0xFFE6DCCD),
       outlineVariant:
-          isDark ? const Color(0xFF433C35) : const Color(0xFFE9E1D5),
-      shadow: isDark ? const Color(0x331F1B18) : const Color(0x0A5C4A3E),
-      scrim: isDark ? const Color(0x331F1B18) : const Color(0x0A5C4A3E),
+          isDark ? const Color(0xFF3D342E) : const Color(0xFFE6DCCD),
+      shadow: isDark ? const Color(0x331B1714) : const Color(0x0A5C4A3E),
+      scrim: const Color(0x73000000), // black@45% for overlays
       inverseSurface:
-          isDark ? const Color(0xFFF5EFEB) : const Color(0xFF2A2521),
+          isDark ? const Color(0xFFFAF6F0) : const Color(0xFF2A2420),
       onInverseSurface:
-          isDark ? const Color(0xFF1F1B18) : const Color(0xFFFBF8F3),
+          isDark ? const Color(0xFF2B2622) : const Color(0xFFF3EBE2),
       inversePrimary:
-          isDark ? const Color(0xFFBF5A36) : const Color(0xFFE28A6D),
+          isDark ? const Color(0xFFD2643A) : const Color(0xFFF08A5D),
     );
 
     final baseTextTheme = TextTheme(
@@ -251,6 +251,13 @@ class AscentTheme {
       cupertinoOverrideTheme: CupertinoThemeData(
         primaryColor: accentPrimary,
         brightness: brightness,
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: isDark ? const Color(0xFFF08A5D) : const Color(0xFFD2643A),
+        selectionColor: (isDark ? const Color(0xFFF08A5D) : const Color(0xFFD2643A))
+            .withValues(alpha: 0.30),
+        selectionHandleColor:
+            isDark ? const Color(0xFFF08A5D) : const Color(0xFFD2643A),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

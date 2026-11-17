@@ -6,6 +6,7 @@ class AppConstants {
   const AppConstants._();
 
   // ── UI & Preview Scalability Limits ──────────────────────────────────────────
+  static const String assistantName = 'Jarvis';
   static const int homePreviewMaxItems = 4;
   static const int homeMindSpacePreviewMaxItems = 4;
   static const int titleMaxCharacters = 300;

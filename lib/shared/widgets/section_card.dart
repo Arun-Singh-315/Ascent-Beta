@@ -78,7 +78,7 @@ class SectionCard extends StatelessWidget {
                   radius: 22,
                   child: Padding(
                     padding: const EdgeInsets.all(6),
-                    child: Icon(Icons.chevron_right, size: 22, color: c.textSecondary),
+                    child: Icon(Icons.chevron_right_rounded, size: 22, color: c.textSecondary),
                   ),
                 ),
             ],

@@ -72,7 +72,7 @@ class AppTextField extends StatelessWidget {
 
     final resolvedFill = fillColor ?? c.surfaceAlt;
     final resolvedBorderColor = c.border;
-    final resolvedFocusColor = colorScheme.secondary;
+    final resolvedFocusColor = colorScheme.primary;
     final resolvedErrorColor = colorScheme.error;
 
     final defaultBorder = OutlineInputBorder(

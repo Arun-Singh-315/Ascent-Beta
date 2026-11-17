@@ -307,9 +307,6 @@ class _ThoughtWallHomePreviewState
     final bubbleFilled = appearance.bubbleFilled;
     final bubbleBorderWidth = appearance.bubbleBorderWidth;
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
-    final categories =
-        ref.watch(thoughtCategoriesStreamProvider).value ??
-        ThoughtDao.builtInCategories;
     final pendingDraft = _pendingDraft;
     final draftInPreview =
         pendingDraft != null &&
@@ -848,13 +845,7 @@ class _ThoughtWallHomePreviewState
                                   ),
                                 ),
                               ],
-                              Text(
-                                '#${categories[thought.category] ?? thought.category}',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: thoughtTextMutedColor,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
+
                               if (isPromiseLocked) ...[
                                 const SizedBox(height: 8),
                                 LockedCommitmentTile(
@@ -1438,48 +1429,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
                               ),
                             ),
                           ),
-                        ] else ...[
-                          Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: c.accentTint,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    thought.mood == 'win'
-                                        ? Icons.emoji_events_outlined
-                                        : (thought.mood == 'spark'
-                                              ? Icons.lightbulb_outline_rounded
-                                              : Icons.bubble_chart_outlined),
-                                    size: 12,
-                                    color: c.accent,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      '#${thought.category}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: c.accent,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          const SizedBox(width: 6),
                         ],
-                        const SizedBox(width: 6),
                         Flexible(
                           child: Text(
                             timeAgo,

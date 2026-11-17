@@ -145,6 +145,8 @@ class SpacesShelf extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _CompactNewSpaceButton(onTap: onNew),
+                    const SizedBox(width: 6),
                     TextButton.icon(
                       key: const ValueKey('space_tile_all'),
                       onPressed: () => _showAllSpacesSheet(context, ref, pinned),
@@ -157,8 +159,6 @@ class SpacesShelf extends ConsumerWidget {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    _CompactNewSpaceButton(onTap: onNew),
                   ],
                 ),
               ],

@@ -39,6 +39,9 @@ import '../features/thought_wall/board/thought_space_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
 import '../features/plans/plans_screen.dart';
+import '../features/plans/screens/plan_creator_screen.dart';
+import '../features/plans/screens/plan_detail_screen.dart';
+import '../features/today/screens/add_activity_screen.dart';
 import '../features/vault/vault_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../shared/widgets/feature_guide.dart';
@@ -80,6 +83,9 @@ class AscentRoutes {
   static const reminders = '/reminders';
   static const calendar = '/calendar';
   static const plans = '/plans';
+  static const createPlan = '/create-plan';
+  static const addActivity = '/add-activity';
+  static const planDetail = '/plan-detail/:id';
 }
 
 // ── Navigator key ─────────────────────────────────────────────────────────────
@@ -287,6 +293,24 @@ final ascentRouter = GoRouter(
       path: AscentRoutes.plans,
       builder: (context, state) =>
           PlansScreen(initialPlanId: state.uri.queryParameters['id']),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.createPlan,
+      builder: (context, state) => const PlanCreatorScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.addActivity,
+      builder: (context, state) => const AddActivityScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.planDetail,
+      builder: (context, state) {
+        final id = state.pathParameters['id'] ?? '';
+        return PlanDetailScreen(collectionId: id);
+      },
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

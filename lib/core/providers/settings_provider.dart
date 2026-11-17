@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/app_constants.dart';
 import '../database/app_database.dart';
 
 bool canEnterWorkspace(UserProfile? profile, SharedPreferences preferences) =>
@@ -170,16 +171,23 @@ Future<void> touchLastOpened(SharedPreferences prefs) async {
 
 const _assistantNameKey = 'ascent_assistant_name';
 
-/// The user-configurable name for the AI assistant. Defaults to 'Aria'.
+/// The user-configurable name for the AI assistant. Defaults to AppConstants.assistantName ('Jarvis').
 /// Changing this updates all references throughout the app.
 class AssistantNameNotifier extends Notifier<String> {
   @override
   String build() {
     try {
       final prefs = ref.watch(sharedPreferencesProvider);
-      return prefs.getString(_assistantNameKey) ?? 'Aria';
+      final stored = prefs.getString(_assistantNameKey);
+      if (stored == null ||
+          stored.isEmpty ||
+          stored == 'Aria' ||
+          stored == 'Riya') {
+        return AppConstants.assistantName;
+      }
+      return stored;
     } catch (_) {
-      return 'Aria';
+      return AppConstants.assistantName;
     }
   }
 
@@ -194,7 +202,7 @@ class AssistantNameNotifier extends Notifier<String> {
   }
 
   void reset() {
-    setName('Aria');
+    setName(AppConstants.assistantName);
   }
 }
 

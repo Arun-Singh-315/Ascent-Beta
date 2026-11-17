@@ -5,53 +5,53 @@ import 'package:flutter/material.dart';
 class SharedControlColors {
   SharedControlColors._();
 
-  // Semantic controls: blue = action/selection, red = overdue/destructive,
-  // grey = structure/disabled. Importance is a user-selected blue star.
-  static const actionBlue = Color(0xFF006FE6);
-  static const actionBlueDark = Color(0xFF64ACFF);
-  // Blue ink on a tinted action surface needs more contrast than an accent dot.
-  static const actionBlueInkLight = Color(0xFF005AC8);
-  static const dueRed = Color(0xFFD92D20);
-  static const dueRedDark = Color(0xFFFF6961);
-  static const neutralFillLight = Color(0xFFF2F2F7);
-  static const neutralFillDark = Color(0xFF2C2C2E);
-  static const labelLight = Color(0xFF1C1C1E);
-  static const labelDark = Color(0xFFF5F5F7);
+  // Semantic controls: ember = action/selection, red = overdue/destructive,
+  // grey = structure/disabled. Importance is a user-selected ember star.
+  static const actionBlue = Color(0xFFD2643A);
+  static const actionBlueDark = Color(0xFFF08A5D);
+  // Ink on a tinted action surface.
+  static const actionBlueInkLight = Color(0xFF6E2E15);
+  static const dueRed = Color(0xFFB8433B);
+  static const dueRedDark = Color(0xFFE06D65);
+  static const neutralFillLight = Color(0xFFF1E9DD);
+  static const neutralFillDark = Color(0xFF332C27);
+  static const labelLight = Color(0xFF2B2622);
+  static const labelDark = Color(0xFFF3EBE2);
 
   // ── Switch colors ─────────────────────────────────────────────────────────
   static const Color switchTrackOn = actionBlue;
   static const Color switchThumb = Color(0xFFFFFFFF);
-  static const Color switchTrackOffLight = Color(0xFFE5E5EA);
-  static const Color switchTrackOffDark = Color(0xFF39393D);
+  static const Color switchTrackOffLight = Color(0xFFE6DCCD);
+  static const Color switchTrackOffDark = Color(0xFF3D342E);
 
   // ── Disabled control colors ───────────────────────────────────────────────
-  static const Color disabledBgLight = Color(0xFFE5E7EB);
-  static const Color disabledBgDark = Color(0xFF292B2D);
-  static const Color disabledFgLight = Color(0xFF475467);
-  static const Color disabledFgDark = Color(0xFFA7ABB3);
+  static const Color disabledBgLight = Color(0xFFF1E9DD);
+  static const Color disabledBgDark = Color(0xFF2A2420);
+  static const Color disabledFgLight = Color(0xFFA0958A);
+  static const Color disabledFgDark = Color(0xFF857A6F);
 
   // ── Error / danger ink & soft bg ──────────────────────────────────────────
-  static const Color errorInkLight = Color(0xFFB42318);
-  static const Color errorInkDark = Color(0xFFFFB4AB);
-  static const Color errorSoftBgLight = Color(0xFFFEE4E2);
-  static const Color errorSoftBgDark = Color(0xFF4A2525);
+  static const Color errorInkLight = Color(0xFFB8433B);
+  static const Color errorInkDark = Color(0xFFE06D65);
+  static const Color errorSoftBgLight = Color(0xFFFBEBEA);
+  static const Color errorSoftBgDark = Color(0xFF4A1E1C);
 
   // ── Filled destructive action ─────────────────────────────────────────────
-  static const Color filledDestructiveBg = Color(0xFFB42318);
+  static const Color filledDestructiveBg = Color(0xFFB8433B);
   static const Color filledDestructiveFg = Color(0xFFFFFFFF);
   static const Color filledDestructivePressed = Color(0xFF912018);
 
-  // ── Success ink & soft bg ─────────────────────────────────────────────────
-  static const Color successInkLight = Color(0xFF166534);
-  static const Color successInkDark = Color(0xFF86EFAC);
-  static const Color successSoftBgLight = Color(0xFFE8F5EC);
-  static const Color successSoftBgDark = Color(0xFF173426);
+  // ── Success ink & soft bg (Soft olive-gold, never green) ───────────────────
+  static const Color successInkLight = Color(0xFFD6A23E);
+  static const Color successInkDark = Color(0xFFE8B65A);
+  static const Color successSoftBgLight = Color(0xFFF8EDD0);
+  static const Color successSoftBgDark = Color(0xFF45351C);
 
   // ── Warning ink & soft bg ─────────────────────────────────────────────────
-  static const Color warningInkLight = Color(0xFF854D0E);
-  static const Color warningInkDark = Color(0xFFFDE68A);
-  static const Color warningSoftBgLight = Color(0xFFFFF3CD);
-  static const Color warningSoftBgDark = Color(0xFF3B301B);
+  static const Color warningInkLight = Color(0xFFD6A23E);
+  static const Color warningInkDark = Color(0xFFE8B65A);
+  static const Color warningSoftBgLight = Color(0xFFF8EDD0);
+  static const Color warningSoftBgDark = Color(0xFF45351C);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   static Color errorSoftBg(bool isDark) =>

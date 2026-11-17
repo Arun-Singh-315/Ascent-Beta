@@ -4,7 +4,6 @@ import '../../core/ai/riya_conversation_provider.dart';
 import '../../features/promises/models/promise_model.dart';
 import '../../features/promises/services/promise_intent_parser.dart';
 import 'riya_entity_card.dart';
-import 'riya_paragraph_text.dart';
 import 'riya_plan_cards.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -14,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
@@ -22,6 +22,7 @@ import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/app_composer.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/riya_learning_actions.dart';
 import '../../core/services/home_capture_service.dart';
@@ -803,6 +804,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           actions: [
             PopupMenuButton<String>(
               key: const ValueKey('ai_assistant_menu_button'),
+              color: isDark ? const Color(0xFF16181E) : const Color(0xFFFFFDF9),
+              elevation: 8,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: c.border, width: 1.0),
+              ),
               icon: Icon(
                 Icons.more_vert_rounded,
                 color: c.textSecondary,
@@ -812,18 +819,44 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               onSelected: (val) {
                 if (val == 'clear') {
                   _showClearHistoryDialog(context, name);
-                } else if (val == 'companion') {
+                } else if (val == 'tone') {
                   _showCompanionSelectorSheet(context, ref, name);
+                } else if (val == 'voice') {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Voice output toggled');
+                } else if (val == 'export') {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Conversation exported');
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'clear',
-                  child: Text('Clear chat history'),
+                  child: Text(
+                    'Clear conversation',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
                 ),
-                const PopupMenuItem(
-                  value: 'companion',
-                  child: Text('Change companion'),
+                PopupMenuItem(
+                  value: 'tone',
+                  child: Text(
+                    'Tone selector',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'voice',
+                  child: Text(
+                    'Voice toggle',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'export',
+                  child: Text(
+                    'Export',
+                    style: TextStyle(color: c.textPrimary, fontSize: 14),
+                  ),
                 ),
               ],
             ),
@@ -1004,7 +1037,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                           assistantName: name,
                                           accentColor: accentColor,
                                           actionData: actionData,
-                                          messageQuickChips: messageQuickChips,
+                                          messageQuickChips: (index == messages.length - 1 && !isUser)
+                                              ? messageQuickChips.take(2).toList()
+                                              : const <String>[],
                                           onSelectChip: _handleSubmitted,
                                           busy: _isLoading,
                                           onEditDraft: () =>
@@ -1032,110 +1067,28 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             ),
                     ),
 
-                    // Pinned minimal ChatGPT-style composer
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
-                      child: SafeArea(
-                        top: false,
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 50),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: c.surfaceAlt,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: c.border,
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  Icons.add_rounded,
-                                  color: c.textSecondary,
-                                  size: 22,
-                                ),
-                                tooltip: 'Actions',
-                                onPressed: _isLoading
-                                    ? null
-                                    : () {
-                                        HapticFeedback.lightImpact();
-                                        _showCompanionSelectorSheet(
-                                          context,
-                                          ref,
-                                          name,
-                                        );
-                                      },
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _textController,
-                                  focusNode: _composerFocus,
-                                  minLines: 1,
-                                  maxLines: 5,
-                                  textCapitalization:
-                                      TextCapitalization.sentences,
-                                  textInputAction: TextInputAction.send,
-                                  onSubmitted: _handleSubmitted,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: c.textPrimary,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Message $name…',
-                                    hintStyle: TextStyle(
-                                      fontSize: 15,
-                                      color: c.textTertiary,
-                                    ),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 10,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (_hasInputText)
-                                Container(
-                                  margin: const EdgeInsets.only(right: 4),
-                                  child: IconButton(
-                                    key: const ValueKey('chat_send_button'),
-                                    icon: Icon(
-                                      Icons.arrow_upward_rounded,
-                                      size: 18,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onPrimary,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
-                                      shape: const CircleBorder(),
-                                      padding: const EdgeInsets.all(8),
-                                      minimumSize: const Size(36, 36),
-                                    ),
-                                    onPressed: _isLoading || !_hasInputText
-                                        ? null
-                                        : () {
-                                            final text =
-                                                _textController.text.trim();
-                                            if (text.isNotEmpty) {
-                                              _handleSubmitted(text);
-                                            }
-                                          },
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    // Single-enclosure floating AppComposer
+                    AppComposer(
+                      controller: _textController,
+                      focusNode: _composerFocus,
+                      assistantName: name,
+                      isLoading: _isLoading,
+                      onSubmitted: _handleSubmitted,
+                      onPlusPressed: () {
+                        HapticFeedback.lightImpact();
+                        _showCompanionSelectorSheet(
+                          context,
+                          ref,
+                          name,
+                        );
+                      },
+                      onMicPressed: () {
+                        HapticFeedback.lightImpact();
+                        AscentSnackBar.show(
+                          context,
+                          message: 'Voice input active',
+                        );
+                      },
                     ),
                   ],
                 );
@@ -1247,34 +1200,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     const SizedBox(height: 16),
                     _buildCompanionTile(
                       sheetContext: sheetContext,
-                      name: 'Aria',
-                      tagline: 'Reflective & Calm',
+                      name: 'Jarvis',
+                      tagline: 'Tactical & Thoughtful',
                       description:
-                          'Quiet clarity, intentional pacing, and mindful focus.',
+                          'Sharp, proactive planning with grounded intelligence and calm clarity.',
                       icon: Icons.auto_awesome_rounded,
-                      selected: currentName == 'Aria',
+                      selected: currentName == 'Jarvis' ||
+                          currentName.isEmpty ||
+                          currentName == 'Aria' ||
+                          currentName == 'Riya',
                       onSelect: () {
                         HapticFeedback.mediumImpact();
                         ref
                             .read(assistantNameProvider.notifier)
-                            .setName('Aria');
-                        Navigator.pop(sheetContext);
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildCompanionTile(
-                      sheetContext: sheetContext,
-                      name: 'Riya',
-                      tagline: 'Vibrant & Action-Driven',
-                      description:
-                          'High energy, proactive habits, and relentless momentum.',
-                      icon: Icons.bolt_rounded,
-                      selected: currentName == 'Riya',
-                      onSelect: () {
-                        HapticFeedback.mediumImpact();
-                        ref
-                            .read(assistantNameProvider.notifier)
-                            .setName('Riya');
+                            .setName('Jarvis');
                         Navigator.pop(sheetContext);
                       },
                     ),
@@ -1421,7 +1360,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 // Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
-class _ConversationMessageBubble extends StatelessWidget {
+class _ConversationMessageBubble extends StatefulWidget {
   final AiChatMessage msg;
   final bool isUser;
   final bool isFirstInRun;
@@ -1455,8 +1394,30 @@ class _ConversationMessageBubble extends StatelessWidget {
   });
 
   @override
+  State<_ConversationMessageBubble> createState() =>
+      _ConversationMessageBubbleState();
+}
+
+class _ConversationMessageBubbleState
+    extends State<_ConversationMessageBubble> {
+  bool _showTimestamp = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final msg = widget.msg;
+    final isUser = widget.isUser;
+    final isFirstInRun = widget.isFirstInRun;
+    final assistantName = widget.assistantName;
+    final accentColor = widget.accentColor;
+    final actionData = widget.actionData;
+    final messageQuickChips = widget.messageQuickChips;
+    final onSelectChip = widget.onSelectChip;
+    final onRecover = widget.onRecover;
+    final onReview = widget.onReview;
+    final onEditDraft = widget.onEditDraft;
+    final onOpenCourse = widget.onOpenCourse;
+    final onOpenHub = widget.onOpenHub;
+    final busy = widget.busy;
 
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
@@ -1464,35 +1425,46 @@ class _ConversationMessageBubble extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final c = context.c;
 
-    // ── Minimal ChatGPT / Sand & Dusk styling ──
-    // User message = primaryContainer bubble right
-    // Assistant message = NO bubble, plain text left, full width
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // ── iOS Glass Message Bubbles (Sand & Ember / Charcoal Black) ──
     final Color bubbleFill;
     final Color bubbleBorder;
     final Color messageTextColor;
     final Color timestampColor;
+    final BorderRadius borderRadius;
 
     if (isUser) {
-      bubbleFill = colorScheme.primaryContainer;
-      bubbleBorder = colorScheme.primary.withValues(alpha: 0.25);
-      messageTextColor = colorScheme.onPrimaryContainer;
-      timestampColor = colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
+      bubbleFill =
+          isDark ? const Color(0x3DF08A5D) : colorScheme.primaryContainer;
+      bubbleBorder = isDark
+          ? const Color(0x60F08A5D)
+          : colorScheme.primary.withValues(alpha: 0.25);
+      messageTextColor =
+          isDark ? const Color(0xFFFFE8DC) : colorScheme.onPrimaryContainer;
+      timestampColor = isDark
+          ? const Color(0xAAFFE8DC)
+          : colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(18),
+        topRight: Radius.circular(18),
+        bottomLeft: Radius.circular(18),
+        bottomRight: Radius.circular(4),
+      );
     } else {
-      bubbleFill = Colors.transparent;
-      bubbleBorder = Colors.transparent;
+      bubbleFill =
+          isDark ? const Color(0x40222630) : c.surfaceAlt.withValues(alpha: 0.55);
+      bubbleBorder =
+          isDark ? const Color(0x2EFFFFFF) : c.border.withValues(alpha: 0.6);
       messageTextColor = c.textPrimary;
       timestampColor = c.textTertiary;
+      borderRadius = const BorderRadius.only(
+        topLeft: Radius.circular(18),
+        topRight: Radius.circular(18),
+        bottomRight: Radius.circular(18),
+        bottomLeft: Radius.circular(4),
+      );
     }
-
-    // Soft rounded corners for user bubble
-    final borderRadius = isUser
-        ? const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomLeft: Radius.circular(18),
-            bottomRight: Radius.circular(4),
-          )
-        : BorderRadius.zero;
 
     final messageText = (actionData?['records'] as List? ?? []).isNotEmpty
         ? (msg.actionType?.startsWith('promises.') == true
@@ -1504,130 +1476,160 @@ class _ConversationMessageBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Assistant Header Pill — only on first message in a run
+        // Small 13px bold assistant name at start of turn
         if (!isUser && isFirstInRun) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              assistantName,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.primary,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ],
+
+        // Message Body: styled with flutter_markdown for assistant, plain for user
+        if (isUser)
+          Text(
+            messageText,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: messageTextColor,
+              height: 1.4,
+              letterSpacing: -0.1,
+            ),
+          )
+        else
+          MarkdownBody(
+            data: messageText,
+            selectable: true,
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+              p: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: c.textPrimary,
+                height: 1.5,
+              ),
+              strong: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h1: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h2: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              h3: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: c.textPrimary,
+              ),
+              listBullet: TextStyle(
+                fontSize: 15,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+              pPadding: const EdgeInsets.only(bottom: 8),
+            ),
+          ),
+
+        // Action row under each assistant reply: Copy, Regenerate, Thumbs
+        if (!isUser) ...[
+          const SizedBox(height: 6),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: isDark ? 0.18 : 0.10),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, size: 12, color: accentColor),
-                    const SizedBox(width: 5),
-                    Text(
-                      assistantName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: accentColor,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-        ],
-
-        // Message Body formatted with paragraph spacing, lists, headers & code
-        RiyaParagraphText(
-          text: messageText,
-          baseStyle: GoogleFonts.plusJakartaSans(
-            fontSize: 14.5,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
-            color: messageTextColor,
-            height: 1.58,
-            letterSpacing: 0.15,
-          ),
-          accentColor: accentColor,
-          isUser: isUser,
-        ),
-
-        const SizedBox(height: 8),
-
-        // Footer: Copy shortcut for long responses + Micro Timestamp
-        Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: isUser
-              ? MainAxisAlignment.end
-              : MainAxisAlignment.spaceBetween,
-          children: [
-            if (!isUser && messageText.length > 70)
-              InkWell(
-                borderRadius: BorderRadius.circular(6),
-                onTap: () async {
+              IconButton(
+                icon: Icon(Icons.copy_rounded, size: 16, color: c.textTertiary),
+                tooltip: 'Copy',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () async {
                   HapticFeedback.lightImpact();
                   await Clipboard.setData(ClipboardData(text: messageText));
                   if (context.mounted) {
-                    AscentSnackBar.show(
-                      context,
-                      message: 'Copied to clipboard',
-                      icon: Icons.check_circle_outline_rounded,
-                    );
+                    AscentSnackBar.show(context, message: 'Copied to clipboard');
                   }
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.copy_rounded, size: 11, color: timestampColor),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Copy',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: timestampColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else if (!isUser)
-              const SizedBox.shrink(),
-            Text(
-              timeString,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 9.5,
-                color: timestampColor,
               ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.refresh_rounded, size: 16, color: c.textTertiary),
+                tooltip: 'Regenerate',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: busy ? null : onRecover,
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.thumb_up_alt_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Helpful',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Thanks for the feedback!');
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(Icons.thumb_down_alt_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Not helpful',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  AscentSnackBar.show(context, message: 'Feedback recorded');
+                },
+              ),
+            ],
+          ),
+        ],
+
+        // Micro Timestamp: revealed on tap or for user bubble
+        if (_showTimestamp) ...[
+          const SizedBox(height: 4),
+          Text(
+            timeString,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 10,
+              color: timestampColor,
             ),
-          ],
-        ),
+          ),
+        ],
       ],
     );
 
-    final Widget mainBubble = isUser
-        ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: bubbleFill,
-              borderRadius: borderRadius,
-              border: Border.all(color: bubbleBorder, width: 1.0),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x0A5C4A3E),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
+    final Widget mainBubble = GestureDetector(
+      onTap: () => setState(() => _showTimestamp = !_showTimestamp),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bubbleFill,
+          borderRadius: borderRadius,
+          border: Border.all(color: bubbleBorder, width: 1.0),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? const Color(0x30000000) : const Color(0x0A5C4A3E),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: bubbleContent,
-          )
-        : Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: bubbleContent,
-          );
+          ],
+        ),
+        child: bubbleContent,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: isUser
@@ -1640,16 +1642,16 @@ class _ConversationMessageBubble extends StatelessWidget {
         // Interactive Study Plan Card
         if (!isUser &&
             actionData != null &&
-            (actionData!['type'] == 'study_plan' ||
+            (actionData['type'] == 'study_plan' ||
                 msg.actionType == 'studyPlanCreated'))
-          RiyaStudyPlanCard(planData: actionData!, accentColor: accentColor),
+          RiyaStudyPlanCard(planData: actionData, accentColor: accentColor),
 
         // Interactive Meal Plan Card
         if (!isUser &&
             actionData != null &&
-            (actionData!['type'] == 'meal_plan' ||
+            (actionData['type'] == 'meal_plan' ||
                 msg.actionType == 'mealPlanCreated'))
-          RiyaMealPlanCard(planData: actionData!, accentColor: accentColor),
+          RiyaMealPlanCard(planData: actionData, accentColor: accentColor),
 
         if (!isUser && actionData?['executionStatus'] == 'proposed')
           Padding(
@@ -1916,12 +1918,13 @@ class _ConversationMessageBubble extends StatelessWidget {
                 busy: busy,
               ),
         if (!isUser &&
-            ['tasks', 'promises'].contains(actionData?['entityType']) &&
-            actionData?['entityId'] is int &&
-            (actionData?['records'] as List? ?? []).isEmpty)
+            actionData != null &&
+            ['tasks', 'promises'].contains(actionData['entityType']) &&
+            actionData['entityId'] is int &&
+            (actionData['records'] as List? ?? []).isEmpty)
           RiyaEntityCard(
-            type: actionData!['entityType'] as String,
-            id: actionData!['entityId'] as int,
+            type: actionData['entityType'] as String,
+            id: actionData['entityId'] as int,
             onCommand: onSelectChip,
             busy: busy,
           ),
@@ -1985,11 +1988,11 @@ class _ConversationMessageBubble extends StatelessWidget {
         // Attached Action Confirmation Capsule (Executed Directly)
         if (!isUser &&
             msg.actionType != null &&
-            !['tasks', 'promises'].contains(actionData?['entityType']) &&
-            (actionData?['records'] as List? ?? []).isEmpty &&
             actionData != null &&
-            actionData!['executionStatus'] == 'verified' &&
-            actionData!['title'] != null) ...[
+            !['tasks', 'promises'].contains(actionData['entityType']) &&
+            (actionData['records'] as List? ?? []).isEmpty &&
+            actionData['executionStatus'] == 'verified' &&
+            actionData['title'] != null) ...[
           const SizedBox(height: 6),
           Builder(
             builder: (context) {
@@ -2014,7 +2017,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      actionData?['write'] == true
+                      actionData['write'] == true
                           ? Icons.check_circle_rounded
                           : Icons.info_outline_rounded,
                       size: 15,
@@ -2027,7 +2030,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            actionData!['title'].toString(),
+                            actionData['title'].toString(),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -2038,9 +2041,9 @@ class _ConversationMessageBubble extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (actionData!['summary'] != null)
+                          if (actionData['summary'] != null)
                             Text(
-                              actionData!['summary'].toString(),
+                              actionData['summary'].toString(),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 color: isDark
@@ -2103,74 +2106,44 @@ class _ConversationMessageBubble extends StatelessWidget {
           ),
         ],
 
-        // Clarifying Interactive Quick Action Chips
+        // Subtle contextual follow-up pills (at most 2 on latest message)
         if (!isUser && messageQuickChips.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: messageQuickChips.map((chipText) {
-              return Builder(
-                builder: (context) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        onSelectChip(chipText);
-                      },
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E2430)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.45),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accentColor.withValues(alpha: 0.10),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.bolt_rounded,
-                              size: 12,
-                              color: accentColor,
-                            ),
-                            const SizedBox(width: 5),
-                            Flexible(
-                              child: Text(
-                                chipText,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFFD0D8F0)
-                                      : const Color(0xFF1A2233),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+            spacing: 8,
+            runSpacing: 8,
+            children: messageQuickChips.take(2).map((chipText) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onSelectChip(chipText);
+                  },
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: c.surfaceAlt,
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: c.border,
+                        width: 1.0,
                       ),
                     ),
-                  );
-                },
+                    child: Text(
+                      chipText,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
               );
             }).toList(),
           ),
@@ -2311,6 +2284,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
       builder: (context, ref, _) {
         final c = context.c;
         final colorScheme = Theme.of(context).colorScheme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Center(
           child: SingleChildScrollView(
@@ -2323,18 +2297,18 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Centered sparkle icon
+                // Centered sparkle icon in primaryContainer
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: colorScheme.secondaryContainer,
+                    color: colorScheme.primaryContainer,
                   ),
                   child: Icon(
                     Icons.auto_awesome_rounded,
                     size: 24,
-                    color: colorScheme.onSecondaryContainer,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -2382,12 +2356,24 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                                     vertical: 14,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: c.surfaceAlt,
+                                    color: isDark
+                                        ? const Color(0x35222630)
+                                        : c.surfaceAlt,
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: c.border,
+                                      color: isDark
+                                          ? const Color(0x28FFFFFF)
+                                          : c.border,
                                       width: 1.0,
                                     ),
+                                    boxShadow: [
+                                      if (isDark)
+                                        const BoxShadow(
+                                          color: Color(0x20000000),
+                                          blurRadius: 8,
+                                          offset: Offset(0, 2),
+                                        ),
+                                    ],
                                   ),
                                   child: Text(
                                     title,
@@ -2429,48 +2415,23 @@ class _AtmosphericChatBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-
-    // Theme-aware background palette: Deep matte obsidian in Dark, soft slate pearl in Light
+    // Theme-aware background palette: Deep smoky charcoal black in Dark, soft warm paper in Light
     final List<Color> gradientColors;
 
-    if (g.frozen) {
-      gradientColors = isDark
-          ? const [
-              Color(0xFF0A0F17),
-              Color(0xFF0F1724),
-              Color(0xFF0A0E17),
-            ]
-          : const [
-              FrozenPalette.surface,
-              FrozenPalette.canvas,
-              FrozenPalette.elevated,
-            ];
-    } else if (g.merlot) {
-      gradientColors = isDark
-          ? const [
-              Color(0xFF140A0F),
-              Color(0xFF1B0E15),
-              Color(0xFF13090E),
-            ]
-          : const [
-              MerlotPalette.canvas,
-              MerlotPalette.surface,
-              MerlotPalette.canvas,
-            ];
+    if (isDark) {
+      // Pure refined smoky charcoal black (Zero violet/plum)
+      gradientColors = const [
+        Color(0xFF0E0F12), // deep smoky charcoal black
+        Color(0xFF141519), // charcoal elevation
+        Color(0xFF0F1013), // deep charcoal base
+      ];
     } else {
-      // Default Sand & Dusk: Warm dark in Dark mode; warm paper (#FBF8F3) in Light mode
-      gradientColors = isDark
-          ? const [
-              Color(0xFF1F1B18), // warm dark charcoal base
-              Color(0xFF26211C), // subtle warm dusk elevation
-              Color(0xFF1F1B18),
-            ]
-          : const [
-              Color(0xFFFBF8F3), // warm paper Sand base
-              Color(0xFFF5EFEB), // soft warm sand wash
-              Color(0xFFFBF8F3),
-            ];
+      // Warm Sand base in Light mode
+      gradientColors = const [
+        Color(0xFFFAF6F0), // warm paper Sand base
+        Color(0xFFF3ECE2), // soft warm grouped wash
+        Color(0xFFFAF6F0),
+      ];
     }
 
     return DecoratedBox(

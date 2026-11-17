@@ -652,52 +652,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 ),
               ]
             : [
-                if (MediaQuery.sizeOf(context).width >= 360 &&
-                    MediaQuery.textScalerOf(context).scale(1) < 1.45)
-                  Tooltip(
-                    message: layout == ThoughtBoardLayout.board
-                        ? 'Switch to List view'
-                        : 'Switch to Grid view',
-                    child: TextButton.icon(
-                      key: const ValueKey('board_layout_toggle'),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(48, 40),
-                      ),
-                      icon: Icon(
-                        layout == ThoughtBoardLayout.board
-                            ? Icons.view_agenda_outlined
-                            : Icons.dashboard_outlined,
-                        size: 16,
-                        color: g.clay,
-                      ),
-                      label: Text(
-                        layout == ThoughtBoardLayout.board ? 'List' : 'Grid',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.clay,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      onPressed: () async {
-                        try {
-                          await ref
-                              .read(thoughtBoardLayoutProvider.notifier)
-                              .set(
-                                layout == ThoughtBoardLayout.board
-                                    ? ThoughtBoardLayout.stream
-                                    : ThoughtBoardLayout.board,
-                              );
-                        } catch (_) {
-                          if (context.mounted) {
-                            AscentSnackBar.error(
-                              context,
-                              message: 'Could not save the layout.',
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
                 IconButton(
                   key: const ValueKey('board_top_promises'),
                   tooltip: 'Commitments',

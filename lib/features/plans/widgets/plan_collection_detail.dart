@@ -13,28 +13,15 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../core/services/plan_collection_service.dart';
 import '../planning_providers.dart';
 import 'plan_collection_editor.dart';
+import '../screens/plan_detail_screen.dart';
 
 Future<void> showPlanCollectionDetail(
   BuildContext context,
   String id, {
   String? initialAction,
-}) => showModalBottomSheet<void>(
-  context: context,
-  useRootNavigator: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  constraints: BoxConstraints(
-    maxWidth: 600,
-    maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-  ),
-  backgroundColor: Colors.transparent,
-  builder: (ctx) => Container(
-    decoration: BoxDecoration(
-      color: ctx.bgSurfaceElevated,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      border: Border.all(color: ctx.glass.line),
-    ),
-    child: PlanCollectionDetail(id: id, initialAction: initialAction),
+}) => Navigator.of(context, rootNavigator: true).push<void>(
+  MaterialPageRoute(
+    builder: (_) => PlanDetailScreen(collectionId: id),
   ),
 );
 

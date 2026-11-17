@@ -477,66 +477,23 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Row 1: Date & Period badge (Left) | Day/Night Toggle + Profile Avatar (Right)
+                  // Row 1: Date (Left) | Day/Night Toggle + Profile Avatar (Right)
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Left: Date & Diurnal Period
+                      // Left: Date
                       Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                DateFormat('EEE, d MMM').format(now),
-                                key: const ValueKey('home_date'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: c.textPrimary,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: c.accentTint,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: c.accent.withValues(alpha: 0.25),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(periodIcon, size: 11, color: c.accent),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        periodSubtitle,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: c.accent,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          DateFormat('EEE, d MMM').format(now),
+                          key: const ValueKey('home_date'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            color: c.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
 
