@@ -1,15 +1,13 @@
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../../shared/widgets/capped_chip_wrap.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../../shared/widgets/app_input_bar.dart';
-import '../../../shared/widgets/app_chip.dart';
 import 'home_record_actions.dart';
 import 'home_capture_entrance.dart';
 import 'home_outline_surface.dart';
 import 'home_section_heading.dart';
-import '../../../app/theme/home_design.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
+import '../../thought_wall/utils/thought_checklist_helper.dart';
 import '../../../app/theme/thought_theme.dart';
 import '../../plans/widgets/plan_collection_editor.dart';
 import '../../../shared/widgets/note_list_button.dart';
@@ -547,72 +545,6 @@ class _ThoughtWallHomePreviewState
                         ),
                       ),
                     ],
-                    if (!widget.compact)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          if (todayFestival != null)
-                            _buildSparkChip(
-                              icon: Icons.auto_awesome_rounded,
-                              label:
-                                  '${todayFestival.emoji} ${todayFestival.name}',
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                _controller.text =
-                                    '${todayFestival.emoji} ${todayFestival.name}: ';
-                                _controller
-                                    .selection = TextSelection.fromPosition(
-                                  TextPosition(offset: _controller.text.length),
-                                );
-                                _focusNode.requestFocus();
-                              },
-                              g: g,
-                            ),
-                          _buildSparkChip(
-                            icon: Icons.lightbulb_outline_rounded,
-                            label: 'Spark an idea',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _controller.text = '💡 ';
-                              _controller
-                                  .selection = TextSelection.fromPosition(
-                                TextPosition(offset: _controller.text.length),
-                              );
-                              _focusNode.requestFocus();
-                            },
-                            g: g,
-                          ),
-                          _buildSparkChip(
-                            icon: Icons.emoji_events_outlined,
-                            label: 'Log a win',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _controller.text = '🎯 Win: ';
-                              _controller
-                                  .selection = TextSelection.fromPosition(
-                                TextPosition(offset: _controller.text.length),
-                              );
-                              _focusNode.requestFocus();
-                            },
-                            g: g,
-                          ),
-                          _buildSparkChip(
-                            icon: Icons.edit_note_rounded,
-                            label: 'Reflect',
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _controller.text = 'Reflecting on: ';
-                              _controller
-                                  .selection = TextSelection.fromPosition(
-                                TextPosition(offset: _controller.text.length),
-                              );
-                              _focusNode.requestFocus();
-                            },
-                            g: g,
-                          ),
-                        ],
-                      ),
                   ],
                 ),
               );
@@ -1243,71 +1175,50 @@ class _ThoughtWallHomePreviewState
             },
             onSubmit: _send,
           ),
-          const SizedBox(height: 12),
-
-          // 2. Wrap of AppChips capped at 2 rows with "+N more" expansion
-          CappedChipWrap(
-            maxRows: 2,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              AppChip(
-                icon: Icons.lightbulb_outline_rounded,
-                label: 'Spark an idea',
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _controller.text = '💡 ';
-                  _controller.selection = TextSelection.fromPosition(
-                    TextPosition(offset: _controller.text.length),
-                  );
-                  _focusNode.requestFocus();
-                },
-              ),
-              AppChip(
-                icon: Icons.emoji_events_outlined,
-                label: 'Log a win',
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _controller.text = '🎯 Win: ';
-                  _controller.selection = TextSelection.fromPosition(
-                    TextPosition(offset: _controller.text.length),
-                  );
-                  _focusNode.requestFocus();
-                },
-              ),
-              AppChip(
-                icon: Icons.edit_note_rounded,
-                label: 'Reflect',
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _controller.text = 'Reflecting on: ';
-                  _controller.selection = TextSelection.fromPosition(
-                    TextPosition(offset: _controller.text.length),
-                  );
-                  _focusNode.requestFocus();
-                },
-              ),
-            ],
-          ),
           const SizedBox(height: 14),
 
-          // 3. Latest entry as premium bubble OR Empty state
+          // 2. Latest entry as premium bubble OR Empty state
           if (latest != null) ...[
             HomeCaptureEntrance(
               key: ValueKey('home_thought_entrance_${latest.id}'),
               animate: false,
               child: Dismissible(
                 key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
-                direction: DismissDirection.endToStart,
-                confirmDismiss: (_) async {
+                direction: DismissDirection.horizontal,
+                confirmDismiss: (direction) async {
                   HapticFeedback.mediumImpact();
-                  ThoughtExpandedRegistry.collapse(latest.id);
-                  if (context.mounted) {
-                    await deleteThoughtsWithUndo(context, ref, [latest]);
+                  if (direction == DismissDirection.endToStart) {
+                    ThoughtExpandedRegistry.collapse(latest.id);
+                    if (context.mounted) {
+                      await deleteThoughtsWithUndo(context, ref, [latest]);
+                    }
+                    return true;
+                  } else {
+                    final newDone = !latest.isCompleted;
+                    await ref.read(thoughtDaoProvider).setCompleted(latest.id, newDone);
+                    if (ThoughtChecklistHelper.hasChecklistItems(latest.content)) {
+                      final newText = ThoughtChecklistHelper.setAllDone(latest.content, newDone);
+                      await ref.read(thoughtDaoProvider).setContent(latest.id, newText);
+                    }
+                    return false;
                   }
-                  return true;
                 },
                 background: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 20),
+                  decoration: BoxDecoration(
+                    color: c.accentTint,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    latest.isCompleted
+                        ? Icons.undo_rounded
+                        : Icons.check_circle_outline_rounded,
+                    color: c.accent,
+                    size: 22,
+                  ),
+                ),
+                secondaryBackground: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
@@ -1339,7 +1250,7 @@ class _ThoughtWallHomePreviewState
           ] else ...[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
                 color: c.surfaceAlt,
                 borderRadius: BorderRadius.circular(Rd.card),
@@ -1366,7 +1277,7 @@ class _ThoughtWallHomePreviewState
                       color: c.accent,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   Text(
                     'Your mindspace is clear',
                     style: TextStyle(
@@ -1379,7 +1290,7 @@ class _ThoughtWallHomePreviewState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Capture a thought, win, or spark an idea above.',
+                    'Capture what’s on your mind anytime.',
                     style: TextStyle(
                       color: c.textSecondary,
                       fontSize: 12.5,
@@ -1387,96 +1298,11 @@ class _ThoughtWallHomePreviewState
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      AppChip(
-                        icon: Icons.lightbulb_outline_rounded,
-                        label: 'Spark idea',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          _controller.text = '💡 ';
-                          _controller.selection = TextSelection.fromPosition(
-                            TextPosition(offset: _controller.text.length),
-                          );
-                          _focusNode.requestFocus();
-                        },
-                      ),
-                      AppChip(
-                        icon: Icons.auto_awesome_rounded,
-                        label: 'Daily win',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          _controller.text = '✨ Today’s win: ';
-                          _controller.selection = TextSelection.fromPosition(
-                            TextPosition(offset: _controller.text.length),
-                          );
-                          _focusNode.requestFocus();
-                        },
-                      ),
-                      AppChip(
-                        icon: Icons.psychology_outlined,
-                        label: 'Self-reflection',
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          _controller.text = '🧠 Realization: ';
-                          _controller.selection = TextSelection.fromPosition(
-                            TextPosition(offset: _controller.text.length),
-                          );
-                          _focusNode.requestFocus();
-                        },
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildSparkChip({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required AscentGlass g,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
-            color: HomeDesign.of(context).mindTint.withValues(alpha: .28),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: HomeDesign.of(context).mindInk.withValues(alpha: .35),
-              width: 1.0,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: HomeDesign.of(context).mindInk),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: HomeDesign.of(context).mindInk,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -1506,7 +1332,7 @@ class _ThoughtWallHomePreviewState
 /// with a soft overshoot and fades in. Thoughts already on screen (first load,
 /// reorders) are shown instantly. Honors the system "reduce motion" setting.
 
-class _HomeThoughtBubble extends StatelessWidget {
+class _HomeThoughtBubble extends ConsumerWidget {
   const _HomeThoughtBubble({
     super.key,
     required this.thought,
@@ -1525,7 +1351,7 @@ class _HomeThoughtBubble extends StatelessWidget {
   final int maxLines;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final dark = Theme.of(context).brightness == Brightness.dark;
     final display = locked
@@ -1556,7 +1382,7 @@ class _HomeThoughtBubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header row: category pill + timestamp + more menu
+              // Header row: category pill + timestamp + full thought done + more menu
               Row(
                 children: [
                   if (locked) ...[
@@ -1638,7 +1464,34 @@ class _HomeThoughtBubble extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const Spacer(),
+                  IconButton(
+                    key: ValueKey('thought_${thought.id}_full_done_btn'),
+                    tooltip: thought.isCompleted ? 'Mark uncompleted' : 'Mark thought done',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 28,
+                      minHeight: 28,
+                    ),
+                    icon: Icon(
+                      thought.isCompleted
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 20,
+                      color: thought.isCompleted ? c.accent : c.textSecondary,
+                    ),
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      final newStatus = !thought.isCompleted;
+                      await ref.read(thoughtDaoProvider).setCompleted(thought.id, newStatus);
+                      if (ThoughtChecklistHelper.hasChecklistItems(thought.content)) {
+                        final newContent = ThoughtChecklistHelper.setAllDone(thought.content, newStatus);
+                        await ref.read(thoughtDaoProvider).setContent(thought.id, newContent);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 2),
                   IconButton(
                     tooltip: 'Thought actions',
                     visualDensity: VisualDensity.compact,
@@ -1658,26 +1511,161 @@ class _HomeThoughtBubble extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // Thought content via shared ThoughtExcerpt component
-              ThoughtExcerpt(
-                content: display,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  height: 1.45,
-                  fontStyle: locked ? FontStyle.italic : FontStyle.normal,
-                  color: locked ? c.textSecondary : c.textPrimary,
-                  fontWeight: FontWeight.w500,
+              if (!locked && ThoughtChecklistHelper.hasChecklistItems(thought.content)) ...[
+                _buildChecklist(context, ref, c),
+              ] else ...[
+                ThoughtExcerpt(
+                  content: display,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    height: 1.45,
+                    fontStyle: locked ? FontStyle.italic : FontStyle.normal,
+                    color: locked ? c.textSecondary : c.textPrimary,
+                    fontWeight: FontWeight.w500,
+                    decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                  ),
+                  maxLines: maxLines,
+                  thoughtId: thought.id,
+                  textKey: const ValueKey('home_latest_thought_text'),
+                  toggleKey: const ValueKey('home_thought_expand_toggle'),
+                  arrowColor: c.accent,
                 ),
-                maxLines: maxLines,
-                thoughtId: thought.id,
-                textKey: const ValueKey('home_latest_thought_text'),
-                toggleKey: const ValueKey('home_thought_expand_toggle'),
-                arrowColor: c.accent,
-              ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildChecklist(BuildContext context, WidgetRef ref, dynamic c) {
+    final items = ThoughtChecklistHelper.parseItems(thought.content);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  key: ValueKey('thought_${thought.id}_check_${item.index}'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () async {
+                    HapticFeedback.selectionClick();
+                    final newText = ThoughtChecklistHelper.toggleItemDone(
+                      thought.content,
+                      item.index,
+                    );
+                    await ref
+                        .read(thoughtDaoProvider)
+                        .setContent(thought.id, newText);
+                    final updatedItems = ThoughtChecklistHelper.parseItems(newText);
+                    final allDone = ThoughtChecklistHelper.areAllDone(updatedItems);
+                    if (allDone != thought.isCompleted) {
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .setCompleted(thought.id, allDone);
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8, top: 2, bottom: 2),
+                    child: Icon(
+                      item.isDone
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 18,
+                      color: item.isDone ? c.accent : c.textSecondary,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    item.text,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.35,
+                      color: item.isDone ? c.textSecondary : c.textPrimary,
+                      decoration:
+                          item.isDone ? TextDecoration.lineThrough : null,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: ValueKey('thought_${thought.id}_convert_to_activities'),
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                HapticFeedback.mediumImpact();
+                final now = DateTime.now();
+                for (final it in items) {
+                  await ref.read(taskDaoProvider).insertTask(
+                        TaskTableCompanion.insert(
+                          title: it.text,
+                          plannedDate: drift.Value(now),
+                          actualCompletedDate: drift.Value(
+                            it.isDone ? now : null,
+                          ),
+                        ),
+                      );
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Converted ${items.length} items to today’s activities',
+                      ),
+                      action: SnackBarAction(
+                        label: 'View',
+                        onPressed: () => context.push('/today'),
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: c.accentTint,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: c.accent.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.playlist_add_check_rounded,
+                      size: 15,
+                      color: c.accent,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Convert to activities',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: c.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
