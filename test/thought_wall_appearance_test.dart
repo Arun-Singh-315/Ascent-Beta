@@ -176,7 +176,7 @@ void main() {
         );
         await settleDb();
         final compactHeight = tester
-            .getSize(find.byType(ThoughtCardBubble).first)
+            .getSize(find.byType(ThoughtCardBubble).at(1))
             .height;
         await tester.tap(find.byTooltip('Wall appearance'));
         await tester.pumpAndSettle();
@@ -204,7 +204,7 @@ void main() {
           expect(card.appearance.density, ThoughtCardDensity.comfortable);
         }
         expect(
-          tester.getSize(find.byType(ThoughtCardBubble).first).height,
+          tester.getSize(find.byType(ThoughtCardBubble).at(1)).height,
           greaterThan(compactHeight),
         );
         expect(
