@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/actions/expense_actions.dart';
@@ -15,13 +17,20 @@ import '../../shared/widgets/ascent_switch_row.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
+  final FinanceTransaction? transactionToEdit;
   final Future<void> Function(int)? onSaved;
 
-  const AddTransactionSheet({super.key, this.initialData, this.onSaved});
+  const AddTransactionSheet({
+    super.key,
+    this.initialData,
+    this.transactionToEdit,
+    this.onSaved,
+  });
 
   static Future<void> show(
     BuildContext context, {
     Map<String, dynamic>? initialData,
+    FinanceTransaction? transactionToEdit,
     Future<void> Function(int)? onSaved,
   }) {
     return showAscentCenteredForm<void>(
@@ -32,7 +41,11 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
         color: ctx.elevatedSurface,
         borderRadius: BorderRadius.circular(28),
         clipBehavior: Clip.antiAlias,
-        child: AddTransactionSheet(initialData: initialData, onSaved: onSaved),
+        child: AddTransactionSheet(
+          initialData: initialData,
+          transactionToEdit: transactionToEdit,
+          onSaved: onSaved,
+        ),
       ),
     );
   }
@@ -83,14 +96,27 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   void initState() {
     super.initState();
     final prefs = ref.read(sharedPreferencesProvider);
-    if (widget.initialData == null) {
+    if (widget.transactionToEdit != null) {
+      final tx = widget.transactionToEdit!;
+      _amountController.text = tx.amount.truncateToDouble() == tx.amount
+          ? tx.amount.toInt().toString()
+          : tx.amount.toString();
+      _titleController.text = tx.title;
+      _type = tx.type;
+      if (_categories.contains(tx.category)) _category = tx.category;
+      if (_accounts.contains(tx.account)) _account = tx.account;
+      _date = tx.date;
+      _isRecurring = tx.isRecurring;
+      if (tx.notes != null) _notesController.text = tx.notes!;
+    } else if (widget.initialData == null) {
       _drafts.addAll([
         NoteDraftBinding(_amountController, prefs, 'expense_amount'),
         NoteDraftBinding(_titleController, prefs, 'expense_title'),
         NoteDraftBinding(_notesController, prefs, 'expense_notes'),
       ]);
     }
-    if (widget.initialData == null &&
+    if (widget.transactionToEdit == null &&
+        widget.initialData == null &&
         (_amountController.text.isNotEmpty ||
             _titleController.text.isNotEmpty)) {
       try {
@@ -113,7 +139,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         }
       } catch (_) {}
     }
-    if (widget.initialData != null) {
+    if (widget.transactionToEdit == null && widget.initialData != null) {
       final data = widget.initialData!;
       if (data['amount'] != null) {
         _amountController.text = data['amount'].toString();
@@ -210,6 +236,37 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         if (_notesController.text.trim().isNotEmpty) _notesController.text.trim(),
       ];
       final combinedNotes = noteParts.isEmpty ? null : noteParts.join(' · ');
+
+      if (widget.transactionToEdit != null) {
+        await ref.read(financeDaoProvider).updateTransaction(
+          FinanceTransactionTableCompanion(
+            id: drift.Value(widget.transactionToEdit!.id),
+            title: drift.Value(title),
+            amount: drift.Value(amount),
+            date: drift.Value(_date),
+            type: drift.Value(_type),
+            category: drift.Value(_category),
+            account: drift.Value(_account),
+            notes: drift.Value(combinedNotes),
+            isRecurring: drift.Value(_isRecurring),
+          ),
+        );
+        try {
+          await widget.onSaved?.call(widget.transactionToEdit!.id);
+        } catch (_) {}
+        if (mounted) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Updated ₹${amount.toStringAsFixed(0)} for $title'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
 
       final arguments = jsonEncode({
         'title': title,
@@ -309,7 +366,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             LayoutBuilder(
               builder: (context, constraints) {
                 final title = Text(
-                  'Record transaction',
+                  widget.transactionToEdit != null ? 'Edit transaction' : 'Record transaction',
                   style: TextStyle(
                     color: context.textPrimary,
                     fontSize: 20,
@@ -541,7 +598,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   onPressed: _saving ? null : () => Navigator.pop(context),
                 ),
                 AscentButton.tonal(
-                  label: 'Save transaction',
+                  label: widget.transactionToEdit != null
+                      ? 'Update Transaction'
+                      : 'Save transaction',
                   compact: true,
                   loading: _saving,
                   onPressed: _saving ? null : _saveTransaction,
