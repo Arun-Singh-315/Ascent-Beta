@@ -1,7 +1,6 @@
 import '../../shared/widgets/ascent_switch_row.dart';
 import '../../shared/widgets/ascent_switch.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
-import '../home/widgets/island_customization_sheet.dart';
 import '../../core/security/app_lock_provider.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -1238,20 +1237,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         .setPreset(value),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            AscentCard(
-              padding: EdgeInsets.zero,
-              child: ListTile(
-                leading: Icon(Icons.blur_on_rounded, color: g.clay),
-                title: const Text('Dynamic Island'),
-                subtitle: const Text(
-                  'Glass finish, compact view and what appears',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => showIslandCustomization(context),
               ),
             ),
             const SizedBox(height: 20),
