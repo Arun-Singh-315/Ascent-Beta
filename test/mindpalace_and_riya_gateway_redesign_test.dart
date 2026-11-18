@@ -56,11 +56,11 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const ValueKey('home_assistant_button')), findsOneWidget);
-      expect(find.text('Ask Aria'), findsOneWidget);
+      expect(find.text('Ask Riya'), findsOneWidget);
       expect(find.text('Plan your day or ask anything'), findsOneWidget);
       expect(find.text('AI'), findsNothing);
       expect(find.text('Chat'), findsOneWidget);
-      expect(find.byTooltip('Ask Aria'), findsOneWidget);
+      expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));
@@ -92,7 +92,7 @@ void main() {
       await tester.pump();
 
       // Header row has chevron right, same as Things/Plans
-      expect(find.byIcon(Icons.chevron_right), findsWidgets);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
       // Mid-row View all removed per requirement e
       expect(find.text('View all'), findsNothing);
 
@@ -125,7 +125,7 @@ void main() {
   });
 
   group('Mind Palace Style & Typography Tests', () {
-    testWidgets('Default BoardBackdrop is paper with subtle off-white gradient', (tester) async {
+    testWidgets('Default BoardBackdrop is plain', (tester) async {
       final container = ProviderContainer(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -134,7 +134,7 @@ void main() {
       addTearDown(container.dispose);
 
       final backdrop = container.read(boardBackdropProvider);
-      expect(backdrop, BoardBackdrop.paper);
+      expect(backdrop, BoardBackdrop.plain);
     });
 
     testWidgets('ThoughtWallAppearance bubbleFilled defaults to false', (tester) async {
