@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/message_composer.dart';
 import '../models/promise_model.dart';
@@ -121,7 +123,6 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
       _saving = true;
       _error = null;
     });
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final saved = await ref
           .read(promiseRepositoryProvider)
@@ -144,13 +145,13 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
       await _draftWrites.catchError((_) {});
       await preferences.remove(_draftKey);
       if (!mounted) return;
+      final rootContext = Navigator.of(context, rootNavigator: true).context;
       Navigator.of(context).pop();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
+      HapticFeedback.lightImpact();
+      AscentSnackBar.show(
+        rootContext,
+        message:
             saved.reminderIssue ?? 'Promise saved. One small step at a time.',
-          ),
-        ),
       );
     } catch (error) {
       if (mounted) {
@@ -230,7 +231,7 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  'Write it as it comes to mind. You can choose when on the next step.',
+                                  'Write it, or tap an idea. Pick when on the next step.',
                                   style: TextStyle(
                                     color: g.inkMuted,
                                     fontSize: 14,
@@ -238,33 +239,30 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                PopupMenuButton<String>(
-                                  tooltip: 'Need an idea?',
-                                  onSelected: (text) {
-                                    _controller.text = text;
-                                    _focus.requestFocus();
-                                  },
-                                  itemBuilder: (_) => const [
-                                    PopupMenuItem(
-                                      value: 'Read for 20 minutes every day',
-                                      child: Text('Read a little each day'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'Call my parents every Sunday',
-                                      child: Text('Make time for family'),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'Exercise 3 times a week',
-                                      child: Text('Move a few times a week'),
-                                    ),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    for (final idea in const [
+                                      ('Read daily', 'Read for 20 minutes every day'),
+                                      ('Call family', 'Call my parents every Sunday'),
+                                      ('Exercise', 'Exercise 3 times a week'),
+                                    ])
+                                      ActionChip(
+                                        key: ValueKey('promise_idea_${idea.$1}'),
+                                        avatar: Icon(
+                                          Icons.add_rounded,
+                                          size: 16,
+                                          color: g.clay,
+                                        ),
+                                        label: Text(idea.$1),
+                                        onPressed: () {
+                                          HapticFeedback.selectionClick();
+                                          _controller.text = idea.$2;
+                                          _continue(idea.$2);
+                                        },
+                                      ),
                                   ],
-                                  child: const Chip(
-                                    label: Text('Need an idea?'),
-                                    avatar: Icon(
-                                      Icons.lightbulb_outline,
-                                      size: 17,
-                                    ),
-                                  ),
                                 ),
                               ],
                             )
