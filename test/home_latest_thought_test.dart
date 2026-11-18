@@ -141,8 +141,6 @@ void main() {
         rendered.dispose();
       });
       await tester.tap(bubble);
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(bubble);
       await tester.pumpAndSettle();
       expect(find.text('Opened $latestId'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());

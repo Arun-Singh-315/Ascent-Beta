@@ -1134,7 +1134,14 @@ class _ThoughtWallHomePreviewState
   Widget _compactHome(BuildContext context) {
     final c = context.c;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final latest = ref.watch(latestHomeThoughtProvider).value;
+    final latestRaw = ref.watch(latestHomeThoughtProvider).value;
+    final recent = ref.watch(recentThoughtsStreamProvider).value ?? [];
+    // Prefer the latest active thought; if none active, activeThought is null
+    final Thought? activeThought = (latestRaw != null && !latestRaw.isCompleted)
+        ? latestRaw
+        : recent.where((t) => !t.isCompleted).firstOrNull;
+    final bool allDone = latestRaw != null && activeThought == null;
+    final latest = activeThought;
     final privateIds = ref.watch(privatePromiseIdsProvider);
     final unlocked = ref.watch(unlockedPromiseIdsProvider);
     final locked =
@@ -1193,7 +1200,12 @@ class _ThoughtWallHomePreviewState
                     if (direction == DismissDirection.endToStart) {
                       ThoughtExpandedRegistry.collapse(latest.id);
                       if (context.mounted) {
-                        await deleteThoughtsWithUndo(context, ref, [latest]);
+                        await deleteThoughtsWithUndo(
+                          context,
+                          ref,
+                          [latest],
+                          confirm: false,
+                        );
                       }
                       return true;
                     } else {
@@ -1280,6 +1292,68 @@ class _ThoughtWallHomePreviewState
                       latest,
                       locked: locked,
                     ),
+                  ),
+                ),
+              ),
+            ),
+          ] else if (allDone) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(Rd.card),
+                onTap: () => context.push('/thought-wall'),
+                child: Container(
+                  key: const ValueKey('home_no_active_thoughts'),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: c.surfaceAlt,
+                    borderRadius: BorderRadius.circular(Rd.card),
+                    border: Border.all(color: c.border),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: c.accent.withValues(alpha: 0.10),
+                          border: Border.all(
+                            color: c.accent.withValues(alpha: 0.25),
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.task_alt_rounded,
+                          size: 22,
+                          color: c.accent,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No active thoughts',
+                        style: TextStyle(
+                          color: c.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'All thoughts completed · Tap to open Mind Palace',
+                        style: TextStyle(
+                          color: c.textSecondary,
+                          fontSize: 12.5,
+                          height: 1.35,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1411,9 +1485,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppRadius.bubble),
         onTap: () {
           HapticFeedback.selectionClick();
-          ThoughtExpandedRegistry.toggle(thought.id);
+          onTap();
         },
-        onDoubleTap: onTap,
         onLongPress: onAction,
         child: Container(
           decoration: BoxDecoration(

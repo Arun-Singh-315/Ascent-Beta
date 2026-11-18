@@ -81,6 +81,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   final _scrollController = ScrollController();
   bool _isLoading = false;
   bool _hasInputText = false;
+  bool _initialScrolled = false;
+  int? _lastMessageCount;
   RiyaIntentResolver? _resolver;
   final _composerFocus = FocusNode();
   RiyaIntentResolver get _conversation {
@@ -142,6 +144,21 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
+      }
+    });
+  }
+
+  void _jumpToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients &&
+              _scrollController.position.pixels <
+                  _scrollController.position.maxScrollExtent) {
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          }
+        });
       }
     });
   }
@@ -888,6 +905,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 }
 
                 final messages = snapshot.data ?? [];
+                if (!_initialScrolled && messages.isNotEmpty) {
+                  _initialScrolled = true;
+                  _lastMessageCount = messages.length;
+                  _jumpToBottom();
+                } else if (_lastMessageCount != null &&
+                    messages.length > _lastMessageCount!) {
+                  _lastMessageCount = messages.length;
+                  _scrollToBottom();
+                } else if (_lastMessageCount == null && messages.isNotEmpty) {
+                  _lastMessageCount = messages.length;
+                }
                 final hasMessages = messages.isNotEmpty;
                 final todayFestival = ref.watch(todayFestivalProvider);
 

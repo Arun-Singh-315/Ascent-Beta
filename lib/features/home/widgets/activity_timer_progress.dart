@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
-import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 
@@ -35,29 +34,9 @@ class _ActivityTimerProgressState extends ConsumerState<ActivityTimerProgress> {
     var elapsed = a.elapsedSecondsToday;
     var target = (a.targetMinutes ?? 0) * 60;
     if (a.sourceType == 'lecture') {
-      final playback = ref.watch(
-        learningHubProvider.select((s) {
-          final course = s.courses
-              .where((c) => c.id == a.learningCourseId)
-              .firstOrNull;
-          final lecture = course?.modules
-              .expand((m) => m.lectures)
-              .where((l) => l.id == a.learningLectureId)
-              .firstOrNull;
-          final active =
-              s.activeCourseId == a.learningCourseId &&
-              s.activeLectureId == a.learningLectureId;
-          return (
-            elapsed: active
-                ? s.currentElapsedSeconds
-                : lecture?.elapsedSeconds ?? 0,
-            target: lecture?.durationSeconds ?? 0,
-          );
-        }),
-      );
-      elapsed = playback.elapsed;
-      target = playback.target;
-    } else if (a.status == TodayActivityStatus.inProgress ||
+      return const SizedBox.shrink();
+    }
+    if (a.status == TodayActivityStatus.inProgress ||
         a.status == TodayActivityStatus.paused) {
       final live = ref.watch(
         timeTrackingProvider.select((s) {

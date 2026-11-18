@@ -666,7 +666,9 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   tooltip: 'Settings',
                   icon: Icon(Icons.tune_rounded, color: g.ink),
                   onSelected: (value) async {
-                    if (value == 'history') {
+                    if (value == 'archive') {
+                      context.push(thoughtSpaceLocation(archiveSpaceKey));
+                    } else if (value == 'history') {
                       context.push('/history?module=thoughts');
                     } else if (value == 'promises') {
                       context.push('/promises');
@@ -707,7 +709,26 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value:'history',child:Text('History')),
+                    const PopupMenuItem(
+                      value: 'archive',
+                      child: Row(
+                        children: [
+                          Icon(Icons.archive_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Archive'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'history',
+                      child: Row(
+                        children: [
+                          Icon(Icons.history_rounded, size: 18),
+                          SizedBox(width: 10),
+                          Text('History ledger'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'background',
                       child: Row(
