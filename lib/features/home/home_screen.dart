@@ -2,6 +2,8 @@ import '../../core/theme/app_colors.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
 import 'widgets/home_content_transition.dart';
+import 'widgets/home_quick_expense_card.dart';
+import 'widgets/home_reveal.dart';
 import '../../core/providers/local_day_provider.dart';
 import 'widgets/home_promise_section.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -16,7 +18,6 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
-import '../money/add_transaction_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
@@ -321,10 +322,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           if (layout.visible.contains('life') && layout.tools.isNotEmpty)
                             const HomeLifeShelf(),
 
-                          // 6. Plans & Routines SectionCard
-                          const HomePlansPreview(
-                            key: ValueKey('home_plans_big_card'),
-                          ),
+                          // 6. Plans & Routines SectionCard. Things already has a
+                          // Plans tab, so this standalone card only appears
+                          // when Things is hidden from Home.
+                          if (!layout.visible.contains('today'))
+                            const HomePlansPreview(
+                              key: ValueKey('home_plans_big_card'),
+                            ),
 
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
@@ -421,7 +425,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final modules = <Widget>[];
     Widget spaced(Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: HomeContentTransition(child: child),
+      child: HomeReveal(child: HomeContentTransition(child: child)),
     );
     if (!_heavierModulesReady) return modules;
     final growthModules = <Widget>[
@@ -440,16 +444,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       modules.add(spaced(const VaultHomePreview()));
     }
     if (layout.visible.contains('money')) {
-      modules.add(
-        spaced(
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet_outlined),
-            title: const Text('Quick expense'),
-            trailing: const Icon(Icons.add_rounded),
-            onTap: () => AddTransactionSheet.show(context),
-          ),
-        ),
-      );
+      modules.add(spaced(const HomeQuickExpenseCard()));
     }
     return modules;
   }

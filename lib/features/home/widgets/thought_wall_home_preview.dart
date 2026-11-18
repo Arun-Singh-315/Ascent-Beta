@@ -1156,7 +1156,7 @@ class _ThoughtWallHomePreviewState
           AppInputBar(
             controller: _controller,
             focusNode: _focusNode,
-            hint: "What's on your mind?",
+            hint: 'Jot a thought…',
             submitTooltip: 'Send capture',
             leadingIcon: Icons.add,
             onLeadingTap: () {

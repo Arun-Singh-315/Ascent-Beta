@@ -200,7 +200,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Unable to refresh activities. Your tasks are safely preserved.',
+                                      'Couldn’t refresh. Your tasks are safe.',
                                       style: TextStyle(
                                         color: g.inkMuted,
                                         fontSize: 13,
@@ -372,8 +372,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                           const SizedBox(height: 4),
                                           Text(
                                             _showCompleted
-                                                ? 'Tasks and focus blocks you finish today will appear here.'
-                                                : 'All caught up! Tap below to add a new task.',
+                                                ? 'Finished items show up here.'
+                                                : 'All clear for today.',
                                             style: TextStyle(
                                               color: context.c.textSecondary,
                                               fontSize: 12.5,
