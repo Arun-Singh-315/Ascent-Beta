@@ -14,12 +14,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/app_composer.dart';
@@ -740,7 +740,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = ref.watch(assistantNameProvider);
     final messagesStream = _messagesStream;
@@ -764,11 +763,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         extendBodyBehindAppBar: true,
         backgroundColor: isDark
             ? context.bgBase
-            : (g.merlot
-                  ? MerlotPalette.canvas
-                  : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
+            : const Color(0xFFF8FAFC),
         appBar: AppBar(
-          backgroundColor: c.bg,
+          backgroundColor: isDark ? const Color(0xFF0F1115) : const Color(0xFFF8FAFC),
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -819,7 +816,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               onSelected: (val) {
                 if (val == 'clear') {
                   _showClearHistoryDialog(context, name);
-                } else if (val == 'tone') {
+                } else if (val == 'companion' || val == 'tone') {
                   _showCompanionSelectorSheet(context, ref, name);
                 } else if (val == 'voice') {
                   HapticFeedback.selectionClick();
@@ -831,16 +828,16 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               },
               itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: 'clear',
+                  value: 'companion',
                   child: Text(
-                    'Clear conversation',
+                    'Change companion ($name)',
                     style: TextStyle(color: c.textPrimary, fontSize: 14),
                   ),
                 ),
                 PopupMenuItem(
-                  value: 'tone',
+                  value: 'clear',
                   child: Text(
-                    'Tone selector',
+                    'Clear history',
                     style: TextStyle(color: c.textPrimary, fontSize: 14),
                   ),
                 ),
@@ -1080,13 +1077,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           context,
                           ref,
                           name,
-                        );
-                      },
-                      onMicPressed: () {
-                        HapticFeedback.lightImpact();
-                        AscentSnackBar.show(
-                          context,
-                          message: 'Voice input active',
                         );
                       },
                     ),
@@ -1360,7 +1350,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 // Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
-class _ConversationMessageBubble extends StatefulWidget {
+class _ConversationMessageBubble extends ConsumerStatefulWidget {
   final AiChatMessage msg;
   final bool isUser;
   final bool isFirstInRun;
@@ -1394,13 +1384,45 @@ class _ConversationMessageBubble extends StatefulWidget {
   });
 
   @override
-  State<_ConversationMessageBubble> createState() =>
+  ConsumerState<_ConversationMessageBubble> createState() =>
       _ConversationMessageBubbleState();
 }
 
 class _ConversationMessageBubbleState
-    extends State<_ConversationMessageBubble> {
+    extends ConsumerState<_ConversationMessageBubble>
+    with SingleTickerProviderStateMixin {
   bool _showTimestamp = false;
+  bool _isSaved = false;
+  late final AnimationController _animController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    ));
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1422,7 +1444,6 @@ class _ConversationMessageBubbleState
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
-    final colorScheme = Theme.of(context).colorScheme;
     final c = context.c;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1435,16 +1456,14 @@ class _ConversationMessageBubbleState
     final BorderRadius borderRadius;
 
     if (isUser) {
-      bubbleFill =
-          isDark ? const Color(0x3DF08A5D) : colorScheme.primaryContainer;
+      bubbleFill = isDark
+          ? const Color(0xFF1D4ED8)
+          : const Color(0xFF006FE6);
       bubbleBorder = isDark
-          ? const Color(0x60F08A5D)
-          : colorScheme.primary.withValues(alpha: 0.25);
-      messageTextColor =
-          isDark ? const Color(0xFFFFE8DC) : colorScheme.onPrimaryContainer;
-      timestampColor = isDark
-          ? const Color(0xAAFFE8DC)
-          : colorScheme.onPrimaryContainer.withValues(alpha: 0.70);
+          ? const Color(0xFF3B82F6).withValues(alpha: 0.40)
+          : const Color(0xFF005AC8);
+      messageTextColor = Colors.white;
+      timestampColor = const Color(0xD0FFFFFF);
       borderRadius = const BorderRadius.only(
         topLeft: Radius.circular(18),
         topRight: Radius.circular(18),
@@ -1452,12 +1471,14 @@ class _ConversationMessageBubbleState
         bottomRight: Radius.circular(4),
       );
     } else {
-      bubbleFill =
-          isDark ? const Color(0x40222630) : c.surfaceAlt.withValues(alpha: 0.55);
-      bubbleBorder =
-          isDark ? const Color(0x2EFFFFFF) : c.border.withValues(alpha: 0.6);
-      messageTextColor = c.textPrimary;
-      timestampColor = c.textTertiary;
+      bubbleFill = isDark
+          ? const Color(0xFF16181F)
+          : Colors.white;
+      bubbleBorder = isDark
+          ? const Color(0xFF262933)
+          : const Color(0xFFE2E8F0);
+      messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
+      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
       borderRadius = const BorderRadius.only(
         topLeft: Radius.circular(18),
         topRight: Radius.circular(18),
@@ -1485,7 +1506,9 @@ class _ConversationMessageBubbleState
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
+                color: isDark
+                    ? SharedControlColors.actionBlueDark
+                    : SharedControlColors.actionBlue,
                 letterSpacing: -0.2,
               ),
             ),
@@ -1537,14 +1560,16 @@ class _ConversationMessageBubbleState
               ),
               listBullet: TextStyle(
                 fontSize: 15,
-                color: colorScheme.primary,
+                color: isDark
+                    ? SharedControlColors.actionBlueDark
+                    : SharedControlColors.actionBlue,
                 fontWeight: FontWeight.w600,
               ),
               pPadding: const EdgeInsets.only(bottom: 8),
             ),
           ),
 
-        // Action row under each assistant reply: Copy, Regenerate, Thumbs
+        // Action row under each assistant reply: Copy, Share, Save to Mindspace, Regenerate
         if (!isUser) ...[
           const SizedBox(height: 6),
           Row(
@@ -1565,33 +1590,77 @@ class _ConversationMessageBubbleState
               ),
               const SizedBox(width: 4),
               IconButton(
+                icon: Icon(Icons.share_outlined, size: 16, color: c.textTertiary),
+                tooltip: 'Share',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  SharePlus.instance.share(ShareParams(text: messageText));
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: Icon(
+                  _isSaved
+                      ? Icons.bookmark_added_rounded
+                      : Icons.bookmark_add_outlined,
+                  size: 16,
+                  color: _isSaved
+                      ? (isDark
+                          ? SharedControlColors.actionBlueDark
+                          : SharedControlColors.actionBlue)
+                      : c.textTertiary,
+                ),
+                tooltip: _isSaved ? 'Saved to Mindspace' : 'Save to Mindspace',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                onPressed: () async {
+                  HapticFeedback.selectionClick();
+                  if (_isSaved) {
+                    if (!mounted) return;
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Already saved in Mindspace',
+                      actionLabel: 'View',
+                      onAction: () => context.push('/thought-wall'),
+                    );
+                    return;
+                  }
+                  try {
+                    final db = ref.read(databaseProvider);
+                    await db.thoughtDao.insertThought(
+                      ThoughtTableCompanion.insert(
+                        content: messageText,
+                        category: const drift.Value('general'),
+                        mood: const drift.Value('idea'),
+                        createdAt: drift.Value(DateTime.now()),
+                      ),
+                    );
+                    if (!context.mounted) return;
+                    setState(() => _isSaved = true);
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Saved to Mindspace',
+                      actionLabel: 'View',
+                      onAction: () => context.push('/thought-wall'),
+                    );
+                  } catch (_) {
+                    if (!context.mounted) return;
+                    AscentSnackBar.error(
+                      context,
+                      message: 'Could not save thought',
+                    );
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+              IconButton(
                 icon: Icon(Icons.refresh_rounded, size: 16, color: c.textTertiary),
                 tooltip: 'Regenerate',
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: busy ? null : onRecover,
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.thumb_up_alt_outlined, size: 16, color: c.textTertiary),
-                tooltip: 'Helpful',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  AscentSnackBar.show(context, message: 'Thanks for the feedback!');
-                },
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(Icons.thumb_down_alt_outlined, size: 16, color: c.textTertiary),
-                tooltip: 'Not helpful',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  AscentSnackBar.show(context, message: 'Feedback recorded');
-                },
               ),
             ],
           ),
@@ -1631,12 +1700,16 @@ class _ConversationMessageBubbleState
       ),
     );
 
-    return Column(
-      crossAxisAlignment: isUser
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: Column(
+          crossAxisAlignment: isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
         mainBubble,
 
         // Interactive Study Plan Card
@@ -2149,6 +2222,8 @@ class _ConversationMessageBubbleState
           ),
         ],
       ],
+    ),
+    ),
     );
   }
 }
@@ -2313,9 +2388,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                 ),
                 const SizedBox(height: 16),
 
-                // One line: "How can I help?"
+                // Centered hero greeting
                 Text(
-                  'How can I help?',
+                  'How can I help you\nascend today?',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,

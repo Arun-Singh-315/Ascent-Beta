@@ -195,15 +195,15 @@ void main() {
         expect(find.text('Mark as Done'), findsOneWidget);
         expect(find.text('Move to Tomorrow'), findsOneWidget);
         expect(find.text('Edit Activity'), findsOneWidget);
-        expect(find.text('Archive activity'), findsOneWidget);
+        expect(find.text('Delete activity'), findsOneWidget);
 
         // Tap Delete from Today -> verify confirmation dialog appears
-        await tester.tap(find.text('Archive activity'));
+        await tester.tap(find.text('Delete activity'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Archive activity?'), findsOneWidget);
+        expect(find.text('Delete activity?'), findsOneWidget);
         expect(find.text('Keep'), findsOneWidget);
-        expect(find.text('Archive'), findsOneWidget);
+        expect(find.text('Delete'), findsOneWidget);
 
         // Tap Keep -> cancels deletion safely
         await tester.tap(find.text('Keep'));
@@ -256,7 +256,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Mark as Done'), findsOneWidget);
-        expect(find.text('Archive activity'), findsOneWidget);
+        expect(find.text('Delete activity'), findsOneWidget);
       },
     );
 

@@ -15,7 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
-  for (final dark in [false, true])
+  for (final dark in [false, true]) {
     testWidgets(
       'promise list completes a one-time promise, opens completed tab and fits large text dark=$dark',
       (t) async {
@@ -103,4 +103,5 @@ void main() {
         }
       },
     );
+  }
 }

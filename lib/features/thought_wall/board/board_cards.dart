@@ -101,8 +101,39 @@ class BoardCard extends StatefulWidget {
   State<BoardCard> createState() => _BoardCardState();
 }
 
-class _BoardCardState extends State<BoardCard> {
+class _BoardCardState extends State<BoardCard>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
+  late final AnimationController _cardAnimController;
+  late final Animation<double> _cardFade;
+  late final Animation<Offset> _cardSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _cardAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _cardFade = CurvedAnimation(
+      parent: _cardAnimController,
+      curve: Curves.easeOut,
+    );
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.07),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _cardAnimController,
+      curve: Curves.easeOutCubic,
+    ));
+    _cardAnimController.forward();
+  }
+
+  @override
+  void dispose() {
+    _cardAnimController.dispose();
+    super.dispose();
+  }
 
   Thought get thought => widget.thought;
   int get index => widget.index;
@@ -135,15 +166,12 @@ class _BoardCardState extends State<BoardCard> {
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
         ? (dark
-            ? g.ink.withValues(alpha: .045)
-            : Colors.white.withValues(alpha: .32))
-        : Color.alphaBlend(
-            g.ink.withValues(alpha: dark ? .065 : .012),
-            dark ? g.bg : g.fill,
-          );
+            ? const Color(0xFF16181F).withValues(alpha: 0.65)
+            : Colors.white.withValues(alpha: .75))
+        : (dark ? const Color(0xFF16181F) : Colors.white);
     final borderColor = isSelected
-        ? SharedControlColors.actionBlue
-        : g.line.withValues(alpha: dark ? .35 : .26);
+        ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
+        : (dark ? const Color(0xFF262933) : const Color(0xFFE2E8F0));
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -159,6 +187,13 @@ class _BoardCardState extends State<BoardCard> {
         color: fill,
         borderRadius: radius,
         border: Border.all(color: borderColor, width: borderWidth),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.30 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       padding: EdgeInsets.all(padding),
       child: Column(
@@ -237,16 +272,22 @@ class _BoardCardState extends State<BoardCard> {
       );
     }
 
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: isLocked ? 'Private commitment' : displayContent(thought.content),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onLongPress: onLongPress,
-        onDoubleTap: isSelectionMode ? null : onDoubleTap,
-        child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+    return FadeTransition(
+      opacity: _cardFade,
+      child: SlideTransition(
+        position: _cardSlide,
+        child: Semantics(
+          button: true,
+          selected: isSelected,
+          label: isLocked ? 'Private commitment' : displayContent(thought.content),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            onLongPress: onLongPress,
+            onDoubleTap: isSelectionMode ? null : onDoubleTap,
+            child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+          ),
+        ),
       ),
     );
   }
@@ -444,9 +485,9 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final fill = dark
-        ? g.ink.withValues(alpha: .06)
-        : Colors.white.withValues(alpha: .30);
-    final onFill = g.ink;
+        ? const Color(0xFF1A1D26)
+        : Colors.white;
+    final onFill = dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
 
@@ -464,18 +505,24 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color(0x0A5C4A3E),
-                blurRadius: 16,
-                offset: Offset(0, 4),
+                color: Colors.black.withValues(
+                  alpha: dark ? 0.35 : 0.05,
+                ),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFBF5A36)
-                  : g.line.withValues(alpha: dark ? 0.35 : 0.25),
+                  ? (dark
+                      ? SharedControlColors.actionBlueDark
+                      : SharedControlColors.actionBlue)
+                  : (dark
+                      ? const Color(0xFF262933)
+                      : const Color(0xFFE2E8F0)),
               width: isSelected ? 1.5 : 1.0,
             ),
           ),
@@ -484,20 +531,37 @@ class BoardHeroCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: (dark
+                              ? SharedControlColors.actionBlueDark
+                              : SharedControlColors.actionBlue)
+                          .withValues(alpha: dark ? 0.20 : 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     child: Text(
                       label.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: onFill.withValues(alpha: .6),
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: dark
+                            ? SharedControlColors.actionBlueDark
+                            : SharedControlColors.actionBlue,
                       ),
                     ),
                   ),
+                  const Spacer(),
                   if (thought.isPinned)
-                    Icon(Icons.push_pin_rounded, size: 15, color: onFill),
+                    Icon(
+                      Icons.push_pin_rounded,
+                      size: 15,
+                      color: onFill.withValues(alpha: .6),
+                    ),
                   if (isSelectionMode)
                     Padding(
                       padding: const EdgeInsets.only(left: AppSpace.s8),

@@ -7,7 +7,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/widgets/home_day_glance_card.dart';
 import 'package:ascent/features/home/widgets/home_executive_focus_card.dart';
 import 'package:ascent/features/home/widgets/home_top_reminders_glance.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';

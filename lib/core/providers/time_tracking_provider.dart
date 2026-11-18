@@ -1119,7 +1119,7 @@ Future<void> deleteTodayActivity(
 
   // 3. If linked to a task, cascade delete
   if (activity.linkedTaskId != null) {
-    await ref.read(taskDaoProvider).archiveTask(activity.linkedTaskId!);
+    await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
     return;
   }
 

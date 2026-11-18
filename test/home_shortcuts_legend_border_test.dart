@@ -36,9 +36,8 @@ void main() {
       // Enclosure has panel key
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
 
-      // 'Your space' heading is cleanly removed per user request
-      expect(find.text('Your space'), findsNothing);
-      expect(find.byKey(const ValueKey('home_add')), findsOneWidget);
+      expect(find.byTooltip('Edit shortcuts'), findsOneWidget);
+      expect(find.text('Your space'), findsOneWidget);
 
       // Contains shortcut items
       expect(find.byKey(const ValueKey('shortcut_today')), findsOneWidget);

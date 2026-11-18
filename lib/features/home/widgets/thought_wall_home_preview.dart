@@ -21,6 +21,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import 'package:drift/drift.dart' as drift;
@@ -1132,6 +1133,7 @@ class _ThoughtWallHomePreviewState
 
   Widget _compactHome(BuildContext context) {
     final c = context.c;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final latest = ref.watch(latestHomeThoughtProvider).value;
     final privateIds = ref.watch(privatePromiseIdsProvider);
     final unlocked = ref.watch(unlockedPromiseIdsProvider);
@@ -1170,67 +1172,104 @@ class _ThoughtWallHomePreviewState
             HomeCaptureEntrance(
               key: ValueKey('home_thought_entrance_${latest.id}'),
               animate: false,
-              child: Dismissible(
-                key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
-                direction: DismissDirection.horizontal,
-                confirmDismiss: (direction) async {
-                  HapticFeedback.mediumImpact();
-                  if (direction == DismissDirection.endToStart) {
-                    ThoughtExpandedRegistry.collapse(latest.id);
-                    if (context.mounted) {
-                      await deleteThoughtsWithUndo(context, ref, [latest]);
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.bubble),
+                clipBehavior: Clip.antiAlias,
+                child: Dismissible(
+                  key: ValueKey('home_latest_thought_dismissible_${latest.id}'),
+                  direction: DismissDirection.horizontal,
+                  confirmDismiss: (direction) async {
+                    HapticFeedback.mediumImpact();
+                    if (direction == DismissDirection.endToStart) {
+                      ThoughtExpandedRegistry.collapse(latest.id);
+                      if (context.mounted) {
+                        await deleteThoughtsWithUndo(context, ref, [latest]);
+                      }
+                      return true;
+                    } else {
+                      final newDone = !latest.isCompleted;
+                      await ref.read(thoughtDaoProvider).setCompleted(latest.id, newDone);
+                      if (ThoughtChecklistHelper.hasChecklistItems(latest.content)) {
+                        final newText = ThoughtChecklistHelper.setAllDone(latest.content, newDone);
+                        await ref.read(thoughtDaoProvider).setContent(latest.id, newText);
+                      }
+                      return false;
                     }
-                    return true;
-                  } else {
-                    final newDone = !latest.isCompleted;
-                    await ref.read(thoughtDaoProvider).setCompleted(latest.id, newDone);
-                    if (ThoughtChecklistHelper.hasChecklistItems(latest.content)) {
-                      final newText = ThoughtChecklistHelper.setAllDone(latest.content, newDone);
-                      await ref.read(thoughtDaoProvider).setContent(latest.id, newText);
-                    }
-                    return false;
-                  }
-                },
-                background: Container(
-                  alignment: Alignment.centerLeft,
-                  padding: const EdgeInsets.only(left: 20),
-                  decoration: BoxDecoration(
-                    color: c.accentTint,
-                    borderRadius: BorderRadius.circular(16),
+                  },
+                  background: Container(
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 20),
+                    decoration: BoxDecoration(
+                      color: SharedControlColors.actionBlue.withValues(
+                        alpha: dark ? 0.20 : 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.bubble),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          latest.isCompleted
+                              ? Icons.undo_rounded
+                              : Icons.check_circle_rounded,
+                          color: SharedControlColors.actionBlue,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          latest.isCompleted ? 'Mark open' : 'Complete',
+                          style: TextStyle(
+                            color: SharedControlColors.actionBlue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Icon(
-                    latest.isCompleted
-                        ? Icons.undo_rounded
-                        : Icons.check_circle_outline_rounded,
-                    color: c.accent,
-                    size: 22,
+                  secondaryBackground: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    decoration: BoxDecoration(
+                      color: SharedControlColors.dueRed.withValues(
+                        alpha: dark ? 0.20 : 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.bubble),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: SharedControlColors.dueRed,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          color: SharedControlColors.dueRed,
+                          size: 22,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                secondaryBackground: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
-                  decoration: BoxDecoration(
-                    color: c.alertTint,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    Icons.delete_outline_rounded,
-                    color: c.alert,
-                    size: 22,
-                  ),
-                ),
-                child: _HomeThoughtBubble(
-                  key: const ValueKey('home_latest_thought_bubble'),
-                  thought: latest,
-                  locked: locked,
-                  timeAgo: _formatTimeAgo(latest.createdAt),
-                  maxLines: widget.previewLimit == 1 ? 2 : 4,
-                  onTap: () => context.push('/thought-wall?thought=${latest.id}'),
-                  onAction: () => showHomeThoughtActions(
-                    context,
-                    ref,
-                    latest,
+                  child: _HomeThoughtBubble(
+                    key: const ValueKey('home_latest_thought_bubble'),
+                    thought: latest,
                     locked: locked,
+                    timeAgo: _formatTimeAgo(latest.createdAt),
+                    maxLines: widget.previewLimit == 1 ? 2 : 4,
+                    onTap: () => context.push('/thought-wall?thought=${latest.id}'),
+                    onAction: () => showHomeThoughtActions(
+                      context,
+                      ref,
+                      latest,
+                      locked: locked,
+                    ),
                   ),
                 ),
               ),

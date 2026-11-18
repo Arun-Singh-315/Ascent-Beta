@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -84,19 +85,26 @@ class _MessageComposerState extends State<MessageComposer> {
           final hasFocus = _focus.hasFocus;
 
           final containerBg = isDark
-              ? (g.merlot ? const Color(0xFF1E171E) : const Color(0xFF181C25))
+              ? const Color(0xFF16181F)
               : (g.merlot ? MerlotPalette.surface : const Color(0xFFFAFCFF));
 
           final borderColor = isDark
               ? (hasFocus
-                    ? const Color(0xFF64B5F6)
-                    : const Color(0xFF64B5F6).withValues(alpha: 0.28))
+                    ? SharedControlColors.actionBlueDark
+                    : const Color(0xFF262933))
               : (hasFocus
-                    ? const Color(0xFF2196F3)
+                    ? SharedControlColors.actionBlue
                     : const Color(0xFF90CAF9).withValues(alpha: 0.55));
 
-          return Container(
-            constraints: BoxConstraints(minHeight: widget.minHeight ?? 52),
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (!_focus.hasFocus) {
+                _focus.requestFocus();
+              }
+            },
+            child: Container(
+              constraints: BoxConstraints(minHeight: widget.minHeight ?? 52),
             decoration: BoxDecoration(
               color: containerBg,
               borderRadius: BorderRadius.circular(28),
@@ -105,13 +113,14 @@ class _MessageComposerState extends State<MessageComposer> {
                 width: hasFocus ? 1.5 : 1.0,
               ),
               boxShadow: [
-                BoxShadow(
-                  color: const Color(
-                    0xFF1E88E5,
-                  ).withValues(alpha: isDark ? 0.12 : 0.07),
-                  blurRadius: 18,
-                  offset: const Offset(0, 4),
-                ),
+                if (!isDark)
+                  BoxShadow(
+                    color: const Color(
+                      0xFF1E88E5,
+                    ).withValues(alpha: 0.07),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
+                  ),
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.04),
                   blurRadius: 10,
@@ -148,7 +157,9 @@ class _MessageComposerState extends State<MessageComposer> {
                       textInputAction: TextInputAction.newline,
                       textCapitalization: TextCapitalization.sentences,
                       inputFormatters: const [SmartListInputFormatter()],
-                      cursorColor: isDark && g.merlot ? g.inkSecondary : g.clay,
+                      cursorColor: isDark
+                          ? SharedControlColors.actionBlueDark
+                          : g.clay,
                       style: AscentTextStyles.bodyLarge.copyWith(
                         color: g.ink,
                         height: 1.35,
@@ -182,10 +193,18 @@ class _MessageComposerState extends State<MessageComposer> {
                     onPressed: canSend ? _send : null,
                     style: IconButton.styleFrom(
                       backgroundColor: canSend
-                          ? (widget.quiet ? g.tonalBg : g.clay)
+                          ? (widget.quiet
+                              ? g.tonalBg
+                              : (isDark
+                                  ? SharedControlColors.actionBlueDark
+                                  : g.clay))
                           : Colors.transparent,
                       foregroundColor: canSend
-                          ? (widget.quiet ? g.tonalFg : AppPalette.white)
+                          ? (widget.quiet
+                              ? g.tonalFg
+                              : (isDark
+                                  ? const Color(0xFF0F172A)
+                                  : AppPalette.white))
                           : Colors.transparent,
                       shape: const CircleBorder(),
                       padding: EdgeInsets.zero,
@@ -203,11 +222,13 @@ class _MessageComposerState extends State<MessageComposer> {
                             child: canSend
                                 ? Icon(
                                     Icons.arrow_upward_rounded,
-                                    key: ValueKey('send_icon'),
+                                    key: const ValueKey('send_icon'),
                                     size: 20,
                                     color: widget.quiet
                                         ? g.tonalFg
-                                        : AppPalette.white,
+                                        : (isDark
+                                            ? const Color(0xFF0F172A)
+                                            : AppPalette.white),
                                   )
                                 : const SizedBox.shrink(
                                     key: ValueKey('blank_icon'),
@@ -217,6 +238,7 @@ class _MessageComposerState extends State<MessageComposer> {
                 ),
               ],
             ),
+          ),
           );
         },
       ),

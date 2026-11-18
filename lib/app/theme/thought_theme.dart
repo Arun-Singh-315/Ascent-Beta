@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import 'glass_theme.dart';
 import 'surface_tokens.dart';
 
@@ -15,16 +16,61 @@ enum ThoughtCardRole {
 class ThoughtTheme {
   // Luminous backgrounds blended with white:
   // "clay dont paint its shade and ink like background use shade with white not whole screen of same colour"
-  static const clayCanvas = Color(0xFFF5EFE6);
-  static const claySurface = Color(0xFFFFFDFB);
+  static const clayCanvas = Color(0xFFF8FAFC);
+  static const claySurface = Color(0xFFFBFBFE);
 
   // "same with frozen sky dont blue it whole yr shade and white blue effect in background with bubble transparent keep bordr hard man"
   static const frozenCanvas = Color(0xFFF3F7FB);
   static const frozenSurface = Color(0xFFF8FAFD);
 
+  // Matte Charcoal + Premium Glass foundation in dark mode:
+  static const darkCanvas = Color(0xFF0F1115);
+  static const darkSurface = Color(0xFF16181F);
+  static const darkCardBorder = Color(0xFF262933);
+  static const darkInk = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF94A3B8);
+
   static ThemeData from(ThemeData parent) {
     final glass = parent.extension<AscentGlass>();
-    if (glass == null || glass.merlot || parent.brightness == Brightness.dark) {
+    if (glass == null) return parent;
+
+    final isDark = parent.brightness == Brightness.dark;
+    if (isDark) {
+      final surfaces = parent.extension<AppSurfaces>() ?? AppSurfaces.night;
+      return parent.copyWith(
+        scaffoldBackgroundColor: darkCanvas,
+        extensions: [
+          ...parent.extensions.values.where(
+            (extension) =>
+                extension is! AscentGlass &&
+                extension is! AppSurfaces &&
+                extension is! AppColors,
+          ),
+          AppColors.dark,
+          glass.copyWith(
+            bg: darkCanvas,
+            fill: darkSurface,
+            ink: darkInk,
+            inkMuted: darkMuted,
+            edge: darkCardBorder,
+            line: darkCardBorder,
+            glow1: Colors.transparent,
+            glow2: Colors.transparent,
+          ),
+          surfaces.copyWith(
+            cardFill: darkSurface,
+            tintFill: darkSurface,
+            cardBorderColor: darkCardBorder,
+            pillBorderColor: darkCardBorder,
+            ink: darkInk,
+            mutedText: darkMuted,
+            shadow: Colors.black.withValues(alpha: 0.40),
+          ),
+        ],
+      );
+    }
+
+    if (glass.merlot) {
       return parent;
     }
     final canvas = glass.frozen ? frozenCanvas : clayCanvas;

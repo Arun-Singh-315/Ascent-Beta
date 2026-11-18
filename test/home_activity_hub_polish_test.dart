@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
@@ -332,17 +331,17 @@ void main() {
       await tester.drag(dismissibleFinder, const Offset(-500, 0));
       await tester.pumpAndSettle();
 
-      final confirmBtn = find.text('Archive').evaluate().isNotEmpty
-          ? find.text('Archive').last
-          : find.text('Delete');
+      final confirmBtn = find.text('Delete').evaluate().isNotEmpty
+          ? find.text('Delete').last
+          : find.text('Archive');
       if (confirmBtn.evaluate().isNotEmpty) {
         await tester.tap(confirmBtn);
         await tester.pumpAndSettle();
       }
 
-      // Verify task is archived in database
+      // Verify task is deleted in database
       final taskAfter = await taskDao.getTaskById(taskId);
-      expect(taskAfter?.isArchived, isTrue);
+      expect(taskAfter, isNull);
 
       // Verify Undo snackbar appears
       expect(find.text('Undo'), findsOneWidget);

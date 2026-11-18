@@ -110,6 +110,68 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     }
   }
 
+  Future<void> _skipDose(MedicineLog log, Medicine medicine) async {
+    final reasons = [
+      'Fasting / Empty stomach constraint',
+      'Physician advised pause',
+      'Side effect / Discomfort',
+      'Feeling recovered',
+      'Other',
+    ];
+    final selectedReason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Skip dose for ${medicine.name}?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select a clinical or personal reason to log why this dose was skipped:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            for (final r in reasons)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(r, style: const TextStyle(fontSize: 13)),
+                onTap: () => Navigator.pop(ctx, r),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedReason == null || !mounted) return;
+
+    if (_updating.contains(log.id)) return;
+    setState(() => _updating.add(log.id));
+    try {
+      await ref.read(medicineServiceProvider).skipDose(log.id, reason: selectedReason);
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        AscentSnackBar.show(
+          context,
+          message: 'Dose marked skipped ($selectedReason)',
+          icon: Icons.skip_next_rounded,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not skip dose. Try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _updating.remove(log.id));
+    }
+  }
+
   Future<void> _delete(Medicine medicine) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -384,13 +446,20 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         runSpacing: 6,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          if (isOverdue)
+          if (isOverdue) ...[
             GlassChip(
               label: 'Snooze 30m',
               icon: Icons.snooze_rounded,
               tooltip: 'Push reminder 30 minutes forward',
               onTap: () => _snoozeDose(log, const Duration(minutes: 30)),
             ),
+            GlassChip(
+              label: 'Skip',
+              icon: Icons.skip_next_rounded,
+              tooltip: 'Skip dose with clinical/personal reason',
+              onTap: () => _skipDose(log, medicine),
+            ),
+          ],
           GlassChip(
             label: _updating.contains(log.id) ? 'Saving…' : 'Take',
             tooltip: 'Mark taken',
@@ -598,7 +667,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                       onPressed: () async {
                         try {
                           await ref.read(medicineServiceProvider).scheduleRefillReminder(medicine);
-                          if (context.mounted) {
+                          if (mounted) {
                             AscentSnackBar.show(
                               context,
                               message: 'Refill reminder scheduled for ${medicine.name}',
@@ -606,7 +675,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                             );
                           }
                         } catch (_) {
-                          if (context.mounted) {
+                          if (mounted) {
                             AscentSnackBar.error(context, message: 'Could not schedule refill reminder');
                           }
                         }

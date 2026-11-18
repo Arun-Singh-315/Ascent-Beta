@@ -101,177 +101,187 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
         : null;
 
-    return Dismissible(
-      key: ValueKey(activity.id),
-      direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        if (activity.linkedTaskId != null) {
-          final taskDao = ref.read(taskDaoProvider);
-          final protection = await taskDao.getTaskProtection(
-            activity.linkedTaskId!,
-          );
-          if (protection != null) {
-            HapticFeedback.mediumImpact();
-            if (context.mounted) {
-              await showPlanProtectionDialog(context, ref, protection);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: Dismissible(
+          key: ValueKey(activity.id),
+          direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
+          confirmDismiss: (direction) async {
+            if (activity.linkedTaskId != null) {
+              final taskDao = ref.read(taskDaoProvider);
+              final protection = await taskDao.getTaskProtection(
+                activity.linkedTaskId!,
+              );
+              if (protection != null) {
+                HapticFeedback.mediumImpact();
+                if (context.mounted) {
+                  await showPlanProtectionDialog(context, ref, protection);
+                }
+                return false;
+              }
             }
-            return false;
-          }
-        }
-        if (context.mounted) {
-          final confirmed = await AscentDialog.confirm(
-            context: context,
-            title: _removesFromTodayOnly(activity)
-                ? 'Remove from today?'
-                : 'Archive activity?',
-            content: _removesFromTodayOnly(activity)
-                ? 'Hide this activity for today? Its history stays saved.'
-                : 'Archive this activity? Its history stays saved and you can undo.',
-            confirmLabel: _removesFromTodayOnly(activity)
-                ? 'Remove'
-                : 'Archive',
-            cancelLabel: 'Keep',
-            isDestructive: true,
-            icon: Icons.delete_outline_rounded,
-          );
-          return confirmed == true;
-        }
-        return true;
-      },
-      onDismissed: (_) async {
-        HapticFeedback.mediumImpact();
-        // Capture dependencies before the row disappears from its parent stream.
-        final container = ProviderScope.containerOf(context, listen: false);
-        final messenger = ScaffoldMessenger.of(context);
-        final removedActivity = activity;
-        final taskDao = container.read(taskDaoProvider);
-        final dismissed = container.read(
-          dismissedTodayActivityIdsProvider.notifier,
-        );
-        // Never leave a dismissed Dismissible in the tree while awaiting I/O.
-        setState(() => _removed = true);
-        try {
-          await deleteTodayActivity(container, removedActivity);
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                removedActivity.sourceType == 'lecture'
-                    ? "Removed from today's activities"
-                    : 'Activity "${removedActivity.title}" archived',
-              ),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () async {
-                  try {
-                    if (removedActivity.linkedTaskId != null &&
-                        removedActivity.sourceType != 'lecture') {
-                      final restored = await taskDao.restoreDeletedTask(
-                        removedActivity.linkedTaskId!,
-                      );
-                      if (!restored) {
+            if (context.mounted) {
+              final confirmed = await AscentDialog.confirm(
+                context: context,
+                title: _removesFromTodayOnly(activity)
+                    ? 'Remove from today?'
+                    : 'Delete activity?',
+                content: _removesFromTodayOnly(activity)
+                    ? 'Hide this activity for today? Its history stays saved.'
+                    : 'Delete "${activity.title}"? You can undo this action from the notification.',
+                confirmLabel: _removesFromTodayOnly(activity)
+                    ? 'Remove'
+                    : 'Delete',
+                cancelLabel: 'Keep',
+                isDestructive: true,
+                icon: Icons.delete_outline_rounded,
+              );
+              return confirmed == true;
+            }
+            return true;
+          },
+          onDismissed: (_) async {
+            HapticFeedback.mediumImpact();
+            // Capture dependencies before the row disappears from its parent stream.
+            final container = ProviderScope.containerOf(context, listen: false);
+            final messenger = ScaffoldMessenger.of(context);
+            final removedActivity = activity;
+            final taskDao = container.read(taskDaoProvider);
+            final dismissed = container.read(
+              dismissedTodayActivityIdsProvider.notifier,
+            );
+            // Never leave a dismissed Dismissible in the tree while awaiting I/O.
+            setState(() => _removed = true);
+            try {
+              await deleteTodayActivity(container, removedActivity);
+              if (!messenger.mounted) return;
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    removedActivity.sourceType == 'lecture'
+                        ? "Removed from today's activities"
+                        : 'Activity "${removedActivity.title}" deleted',
+                  ),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () async {
+                      try {
+                        if (removedActivity.linkedTaskId != null &&
+                            removedActivity.sourceType != 'lecture') {
+                          final restored = await taskDao.restoreDeletedTask(
+                            removedActivity.linkedTaskId!,
+                          );
+                          if (!restored) {
+                            if (!messenger.mounted) return;
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not restore this activity.'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                        await dismissed.unDismissActivityId(removedActivity.id);
+                        if (mounted) setState(() => _removed = false);
+                      } catch (_) {
                         if (!messenger.mounted) return;
                         messenger.showSnackBar(
                           const SnackBar(
                             content: Text('Could not restore this activity.'),
                           ),
                         );
-                        return;
                       }
-                    }
-                    await dismissed.unDismissActivityId(removedActivity.id);
-                    if (mounted) setState(() => _removed = false);
-                  } catch (_) {
-                    if (!messenger.mounted) return;
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not restore this activity.'),
-                      ),
-                    );
-                  }
-                },
+                    },
+                  ),
+                ),
+              );
+            } catch (_) {
+              await dismissed.unDismissActivityId(removedActivity.id);
+              if (mounted) setState(() => _removed = false);
+              if (!messenger.mounted) return;
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Could not delete this activity. Try again.'),
+                ),
+              );
+            }
+          },
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: AppSpace.s16),
+            decoration: BoxDecoration(
+              color: SharedControlColors.actionBlue.withValues(
+                alpha: context.isDark ? 0.20 : 0.12,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: SharedControlColors.actionBlue,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Complete',
+                    style: TextStyle(
+                      color: SharedControlColors.actionBlue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
-          );
-        } catch (_) {
-          await dismissed.unDismissActivityId(removedActivity.id);
-          if (mounted) setState(() => _removed = false);
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Could not archive this activity. Try again.'),
+          ),
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: AppSpace.s16),
+            decoration: BoxDecoration(
+              color: SharedControlColors.dueRed.withValues(
+                alpha: context.isDark ? 0.20 : 0.12,
+              ),
+              borderRadius: BorderRadius.circular(14),
             ),
-          );
-        }
-      },
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: AppSpace.s16),
-        decoration: BoxDecoration(
-          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: SharedControlColors.actionBlue,
-                size: 22,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: SharedControlColors.dueRed,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.delete_outline_rounded,
+                    color: SharedControlColors.dueRed,
+                    size: 20,
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Complete',
-                style: TextStyle(
-                  color: SharedControlColors.actionBlue,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: AppSpace.s16),
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(
-            g.primaryButtonBg.withValues(alpha: 0.12),
-            g.surface,
-          ),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerRight,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Archive',
-                style: TextStyle(
-                  color: g.primaryButtonBg,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-            ],
-          ),
-        ),
-      ),
-      child: GestureDetector(
-        onLongPress: () => showActivityActions(context, ref, activity),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          constraints: const BoxConstraints(minHeight: 58),
-          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: GestureDetector(
+            onLongPress: () => showActivityActions(context, ref, activity),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              constraints: const BoxConstraints(minHeight: 58),
+              margin: EdgeInsets.zero,
           decoration: BoxDecoration(
             color: isDone
                 ? g.sage.withValues(alpha: .10)
@@ -837,7 +847,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
         ),
       ),
-    );
+    )));
   }
 
   Future<void> _setStar(bool selected) async {
@@ -1313,12 +1323,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     ? g.fill.withValues(alpha: 0.18)
                     : Theme.of(context).colorScheme.surface));
 
-    final rowContent = Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: timed ? 4 : (widget.ground ? 0 : 2.5),
-      ),
-      child: AscentPressFeedback(
-        child: Material(
+    final rowContent = AscentPressFeedback(
+      child: Material(
           color: widget.featured
               ? Colors.transparent
               : timed && !done && (running || paused)
@@ -1538,190 +1544,201 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    return Dismissible(
-      key: ValueKey('activity_dismiss_${activity.id}'),
-      direction: done || _completing
-          ? DismissDirection.none
-          : DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        if (activity.linkedTaskId != null) {
-          final taskDao = ref.read(taskDaoProvider);
-          final protection = await taskDao.getTaskProtection(
-            activity.linkedTaskId!,
-          );
-          if (protection != null) {
-            HapticFeedback.mediumImpact();
-            if (context.mounted) {
-              await showPlanProtectionDialog(context, ref, protection);
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        vertical: timed ? 4 : (widget.ground ? 0 : 2.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: Dismissible(
+          key: ValueKey('activity_dismiss_${activity.id}'),
+          direction: done || _completing
+              ? DismissDirection.none
+              : DismissDirection.endToStart,
+          confirmDismiss: (direction) async {
+            if (activity.linkedTaskId != null) {
+              final taskDao = ref.read(taskDaoProvider);
+              final protection = await taskDao.getTaskProtection(
+                activity.linkedTaskId!,
+              );
+              if (protection != null) {
+                HapticFeedback.mediumImpact();
+                if (context.mounted) {
+                  await showPlanProtectionDialog(context, ref, protection);
+                }
+                return false;
+              }
             }
-            return false;
-          }
-        }
-        if (context.mounted) {
-          final confirmed = await AscentDialog.confirm(
-            context: context,
-            title: _removesFromTodayOnly(activity)
-                ? 'Remove from today?'
-                : 'Archive activity?',
-            content: _removesFromTodayOnly(activity)
-                ? 'Hide this activity for today? Its history stays saved.'
-                : 'Archive this activity? Its history stays saved and you can undo.',
-            confirmLabel: _removesFromTodayOnly(activity)
-                ? 'Remove'
-                : 'Archive',
-            cancelLabel: 'Keep',
-            isDestructive: true,
-            icon: Icons.delete_outline_rounded,
-          );
-          return confirmed == true;
-        }
-        return true;
-      },
-      onDismissed: (_) async {
-        HapticFeedback.mediumImpact();
-        final container = ProviderScope.containerOf(context, listen: false);
-        final messenger = ScaffoldMessenger.of(context);
-        final removedActivity = activity;
-        final taskDao = container.read(taskDaoProvider);
-        final dismissed = container.read(
-          dismissedTodayActivityIdsProvider.notifier,
-        );
-        setState(() => _removed = true);
-        try {
-          await deleteTodayActivity(container, removedActivity);
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                removedActivity.sourceType == 'lecture'
-                    ? "Removed from today's activities"
-                    : 'Activity "${removedActivity.title}" archived',
-              ),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () async {
-                  try {
-                    if (removedActivity.linkedTaskId != null &&
-                        removedActivity.sourceType != 'lecture') {
-                      final restored = await taskDao.restoreDeletedTask(
-                        removedActivity.linkedTaskId!,
-                      );
-                      if (!restored) {
+            if (context.mounted) {
+              final confirmed = await AscentDialog.confirm(
+                context: context,
+                title: _removesFromTodayOnly(activity)
+                    ? 'Remove from today?'
+                    : 'Delete activity?',
+                content: _removesFromTodayOnly(activity)
+                    ? 'Hide this activity for today? Its history stays saved.'
+                    : 'Delete "${activity.title}"? You can undo this action from the notification.',
+                confirmLabel: _removesFromTodayOnly(activity)
+                    ? 'Remove'
+                    : 'Delete',
+                cancelLabel: 'Keep',
+                isDestructive: true,
+                icon: Icons.delete_outline_rounded,
+              );
+              return confirmed == true;
+            }
+            return true;
+          },
+          onDismissed: (_) async {
+            HapticFeedback.mediumImpact();
+            final container = ProviderScope.containerOf(context, listen: false);
+            final messenger = ScaffoldMessenger.of(context);
+            final removedActivity = activity;
+            final taskDao = container.read(taskDaoProvider);
+            final dismissed = container.read(
+              dismissedTodayActivityIdsProvider.notifier,
+            );
+            setState(() => _removed = true);
+            try {
+              await deleteTodayActivity(container, removedActivity);
+              if (!messenger.mounted) return;
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    removedActivity.sourceType == 'lecture'
+                        ? "Removed from today's activities"
+                        : 'Activity "${removedActivity.title}" deleted',
+                  ),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () async {
+                      try {
+                        if (removedActivity.linkedTaskId != null &&
+                            removedActivity.sourceType != 'lecture') {
+                          final restored = await taskDao.restoreDeletedTask(
+                            removedActivity.linkedTaskId!,
+                          );
+                          if (!restored) {
+                            if (!messenger.mounted) return;
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Could not restore this activity.'),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                        await dismissed.unDismissActivityId(removedActivity.id);
+                        if (mounted) setState(() => _removed = false);
+                      } catch (_) {
                         if (!messenger.mounted) return;
                         messenger.showSnackBar(
                           const SnackBar(
                             content: Text('Could not restore this activity.'),
                           ),
                         );
-                        return;
                       }
-                    }
-                    await dismissed.unDismissActivityId(removedActivity.id);
-                    if (mounted) setState(() => _removed = false);
-                  } catch (_) {
-                    if (!messenger.mounted) return;
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Could not restore this activity.'),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-          );
-        } catch (_) {
-          await dismissed.unDismissActivityId(removedActivity.id);
-          if (mounted) setState(() => _removed = false);
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Could not archive this activity. Try again.'),
-            ),
-          );
-        }
-      },
-      background: Container(
-        alignment: Alignment.centerLeft,
-        margin: const EdgeInsets.symmetric(vertical: 2.5),
-        padding: const EdgeInsets.only(left: 16),
-        decoration: BoxDecoration(
-          color: SharedControlColors.actionBlue.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: SharedControlColors.actionBlue,
-                size: 20,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Complete',
-                style: TextStyle(
-                  color: SharedControlColors.actionBlue,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        margin: const EdgeInsets.symmetric(vertical: 2.5),
-        padding: const EdgeInsets.only(right: 16),
-        decoration: BoxDecoration(
-          color: Color.alphaBlend(
-            g.primaryButtonBg.withValues(alpha: 0.12),
-            g.surface,
-          ),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerRight,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Archive',
-                style: TextStyle(
-                  color: g.primaryButtonBg,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+              );
+            } catch (_) {
+              await dismissed.unDismissActivityId(removedActivity.id);
+              if (mounted) setState(() => _removed = false);
+              if (!messenger.mounted) return;
+              messenger.showSnackBar(
+                const SnackBar(
+                  content: Text('Could not delete this activity. Try again.'),
                 ),
+              );
+            }
+          },
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 16),
+            decoration: BoxDecoration(
+              color: SharedControlColors.actionBlue.withValues(
+                alpha: context.isDark ? 0.20 : 0.12,
               ),
-              const SizedBox(width: 6),
-              Icon(Icons.archive_outlined, color: g.primaryButtonBg, size: 20),
-            ],
-          ),
-        ),
-      ),
-      child: IgnorePointer(
-        ignoring: _completing,
-        child: AnimatedSlide(
-          offset: _completing ? const Offset(0, -.025) : Offset.zero,
-          duration: Duration(
-            milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
-          ),
-          curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            opacity: _completing ? .55 : 1,
-            duration: Duration(
-              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: rowContent,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: SharedControlColors.actionBlue,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Complete',
+                    style: TextStyle(
+                      color: SharedControlColors.actionBlue,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: SharedControlColors.dueRed.withValues(
+                alpha: context.isDark ? 0.20 : 0.12,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: SharedControlColors.dueRed,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.delete_outline_rounded,
+                    color: SharedControlColors.dueRed,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          child: IgnorePointer(
+            ignoring: _completing,
+            child: AnimatedSlide(
+              offset: _completing ? const Offset(0, -.025) : Offset.zero,
+              duration: Duration(
+                milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+              ),
+              curve: Curves.easeOutCubic,
+              child: AnimatedOpacity(
+                opacity: _completing ? .55 : 1,
+                duration: Duration(
+                  milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 180,
+                ),
+                child: rowContent,
+              ),
+            ),
           ),
         ),
       ),
@@ -2063,7 +2080,7 @@ Future<void> showActivityActions(
         'delete',
         _removesFromTodayOnly(activity)
             ? 'Remove from today'
-            : 'Archive activity',
+            : 'Delete activity',
         Icons.delete_outline_rounded,
         destructive: true,
       ),
@@ -2161,11 +2178,11 @@ Future<void> showActivityActions(
         context: context,
         title: _removesFromTodayOnly(activity)
             ? 'Remove from today?'
-            : 'Archive activity?',
+            : 'Delete activity?',
         content: _removesFromTodayOnly(activity)
             ? 'Hide this activity for today? Its history stays saved.'
-            : 'Archive this activity? Its history stays saved and you can undo.',
-        confirmLabel: _removesFromTodayOnly(activity) ? 'Remove' : 'Archive',
+            : 'Delete "${activity.title}"? You can undo this action from the notification.',
+        confirmLabel: _removesFromTodayOnly(activity) ? 'Remove' : 'Delete',
         cancelLabel: 'Keep',
         isDestructive: true,
         icon: Icons.delete_outline_rounded,
@@ -2178,7 +2195,11 @@ Future<void> showActivityActions(
       if (!messenger.mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: const Text('Removed from Today'),
+          content: Text(
+            removed.sourceType == 'lecture'
+                ? "Removed from today's activities"
+                : 'Activity "${removed.title}" deleted',
+          ),
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () async {
@@ -2210,7 +2231,7 @@ Future<void> showActivityActions(
     if (context.mounted) {
       AscentSnackBar.error(
         context,
-        message: 'Could not update this activity. Please retry.',
+        message: 'Could not delete this activity. Try again.',
       );
     }
   }

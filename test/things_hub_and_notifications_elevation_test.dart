@@ -4,6 +4,7 @@ import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
+import 'package:ascent/shared/widgets/ascent_star_button.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ void main() {
   });
 
   group('Screenshot Bug Fixes: Root Navigator on Bottom Sheets', () {
-    testWidgets('ActivityRowItem priority sheet uses root navigator and glass style', (
+    testWidgets('ActivityRowItem priority star uses AscentStarButton', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 800);
@@ -41,7 +42,7 @@ void main() {
         categoryTag: 'tasks',
         elapsedSecondsToday: 0,
         linkedTaskId: 1,
-        priority: 'medium',
+        priority: 'high',
       );
 
       await tester.pumpWidget(
@@ -59,20 +60,9 @@ void main() {
         ),
       );
 
-      // Verify compact priority micro-badge exists without the verbose "Priority:" prefix
+      // Verify star button exists per AGENTS.md rule: "Importance uses a user-selected star, not a yellow priority badge"
       expect(find.byKey(const ValueKey('activity_priority_task_1')), findsOneWidget);
-      expect(find.text('Important'), findsOneWidget);
-      expect(find.text('Priority: Important'), findsNothing);
-
-      // Tap to open priority sheet
-      await tester.tap(find.byKey(const ValueKey('activity_priority_task_1')));
-      await tester.pumpAndSettle();
-
-      // Priority sheet header & options should be visible
-      expect(find.text('Change priority'), findsOneWidget);
-      expect(find.text('Urgent'), findsOneWidget);
-      expect(find.text('Important'), findsNWidgets(2));
-      expect(find.text('Normal'), findsOneWidget);
+      expect(find.byType(AscentStarButton), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
@@ -117,12 +107,12 @@ void main() {
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Urgent'), findsOneWidget);
+      expect(find.byKey(const ValueKey('activity_priority_task_2')), findsOneWidget);
     });
   });
 
   group('Things Hub Hero Activity Composer', () {
-    testWidgets('Hero mode toggle between To-do and Timer with fast duration presets', (
+    testWidgets('Hero mode options allow configuring To-do, Timer, and schedule', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 800);
@@ -145,36 +135,27 @@ void main() {
         ),
       );
 
-      // Defaults to To-do mode
-      expect(find.text('To-do'), findsOneWidget);
-
-      // Switch to Timer via Activity type selector
-      await tester.tap(find.byTooltip('Activity type'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Timer').last);
-      await tester.pumpAndSettle();
-
-      // Duration selector should be active
-      expect(find.text('30 min'), findsOneWidget);
-
-      // Entering text expands interactive mode switcher and duration chips
+      // Entering text displays the Activity options button
       await tester.enterText(
         find.byKey(const ValueKey('activity_quick_input')),
         'Study algorithms',
       );
       await tester.pumpAndSettle();
 
-      // Quick duration preset 25m Pomodoro should be visible and selectable
-      expect(find.text('25m'), findsOneWidget);
-      await tester.tap(find.text('25m'));
+      expect(find.byKey(const ValueKey('activity_options')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('activity_options')));
       await tester.pumpAndSettle();
-      expect(find.text('25 min'), findsOneWidget);
 
-      // Can switch back to To-do easily while typing
-      expect(find.text('To-do'), findsWidgets);
-      await tester.tap(find.text('To-do').first);
+      // Options sheet contains To-do, Timer, Flexible
+      expect(find.text('To-do'), findsOneWidget);
+      expect(find.text('Timer'), findsOneWidget);
+      expect(find.text('Flexible'), findsOneWidget);
+
+      // Tap Timer
+      await tester.tap(find.text('Timer'));
       await tester.pumpAndSettle();
-      expect(find.text('Checklist to-do · Quick tap completion'), findsOneWidget);
+      expect(find.text('Duration'), findsOneWidget);
+      expect(find.text('30 min'), findsOneWidget);
     });
 
     testWidgets('ActivityRowItem detail dialog allows switching task between To-do and Focus Timer', (

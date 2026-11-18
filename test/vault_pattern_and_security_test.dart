@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ascent/features/vault/models/vault_item_model.dart';
 import 'package:ascent/features/vault/services/vault_pattern_extractor.dart';
 import 'package:ascent/features/vault/services/vault_security_service.dart';
 

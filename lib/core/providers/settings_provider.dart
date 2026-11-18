@@ -41,10 +41,10 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
+    state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == mode).key;
     await prefs.setString(_themeModeKey, key);
-    state = mode;
   }
 }
 
@@ -80,10 +80,10 @@ class DayThemePresetNotifier extends Notifier<DayThemePreset> {
   }
 
   Future<void> setPreset(DayThemePreset preset) async {
+    state = preset;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == preset).key;
     await prefs.setString(_dayThemePresetKey, key);
-    state = preset;
   }
 }
 
@@ -118,10 +118,10 @@ class GlassTranslucencyPresetNotifier extends Notifier<GlassTranslucencyPreset> 
   }
 
   Future<void> setPreset(GlassTranslucencyPreset preset) async {
+    state = preset;
     final prefs = ref.read(sharedPreferencesProvider);
     final key = _values.entries.firstWhere((e) => e.value == preset).key;
     await prefs.setString(_glassTranslucencyPresetKey, key);
-    state = preset;
   }
 }
 
@@ -171,7 +171,7 @@ Future<void> touchLastOpened(SharedPreferences prefs) async {
 
 const _assistantNameKey = 'ascent_assistant_name';
 
-/// The user-configurable name for the AI assistant. Defaults to AppConstants.assistantName ('Jarvis').
+/// The user-configurable name for the AI assistant. Defaults to AppConstants.assistantName ('Riya').
 /// Changing this updates all references throughout the app.
 class AssistantNameNotifier extends Notifier<String> {
   @override
@@ -179,10 +179,7 @@ class AssistantNameNotifier extends Notifier<String> {
     try {
       final prefs = ref.watch(sharedPreferencesProvider);
       final stored = prefs.getString(_assistantNameKey);
-      if (stored == null ||
-          stored.isEmpty ||
-          stored == 'Aria' ||
-          stored == 'Riya') {
+      if (stored == null || stored.isEmpty) {
         return AppConstants.assistantName;
       }
       return stored;

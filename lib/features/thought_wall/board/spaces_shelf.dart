@@ -72,6 +72,7 @@ class SpacesShelf extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final pinned = ref.watch(pinnedSpacesProvider);
 
     // Sort: pinned spaces first, then remaining spaces in original order
@@ -93,9 +94,19 @@ class SpacesShelf extends ConsumerWidget {
         key: const ValueKey('spaces_shelf'),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: g.surface,
+          color: isDark ? const Color(0xFF16181F) : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: g.controlOutline.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,17 +135,23 @@ class SpacesShelf extends ConsumerWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: g.claySoft,
+                        color: isDark
+                            ? const Color(0xFF262933)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
+                          color: isDark
+                              ? const Color(0xFF333846)
+                              : const Color(0xFFE2E8F0),
                           width: 0.8,
                         ),
                       ),
                       child: Text(
                         '${spaces.length}',
                         style: AscentTextStyles.labelSmall.copyWith(
-                          color: g.clay,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF475569),
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
@@ -397,6 +414,7 @@ class _AllSpacesSheetState extends ConsumerState<_AllSpacesSheet> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final isDark = g.isDark;
     final pinned = ref.watch(pinnedSpacesProvider);
 
     final filtered = widget.spaces.where((s) {
@@ -443,13 +461,17 @@ class _AllSpacesSheetState extends ConsumerState<_AllSpacesSheet> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: g.claySoft.withValues(alpha: 0.35),
+                      color: isDark
+                          ? const Color(0xFF262933)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '${widget.spaces.length}',
                       style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.clay,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF475569),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

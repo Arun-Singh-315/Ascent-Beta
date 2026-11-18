@@ -313,6 +313,46 @@ class MedicineService {
     await _alerts();
   }
 
+  /// Mark dose as skipped with a clinical or personal reason (e.g. fasting, doctor advised).
+  /// Silences linked reminder, records note on linked task, marks dose completed so it does not stay overdue.
+  Future<void> skipDose(int logId, {String reason = 'Skipped by user'}) async {
+    await db.transaction(() async {
+      final log = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
+      if (log == null) throw StateError('This dose no longer exists');
+
+      if (log.linkedReminderId != null) {
+        await (db.update(db.reminderTable)..where((r) => r.id.equals(log.linkedReminderId!))).write(
+          const ReminderTableCompanion(
+            isActive: Value(false),
+            alertSyncPending: Value(true),
+          ),
+        );
+      }
+
+      if (log.linkedTaskId != null) {
+        final task = await db.taskDao.getTaskById(log.linkedTaskId!);
+        if (task != null) {
+          final noteBase = task.notes ?? '';
+          final updatedNotes = noteBase.isEmpty ? 'Skipped: $reason' : '$noteBase • Skipped: $reason';
+          await (db.update(db.taskTable)..where((t) => t.id.equals(task.id))).write(
+            TaskTableCompanion(
+              notes: Value(updatedNotes),
+              actualCompletedDate: Value(clock()),
+            ),
+          );
+        }
+      }
+
+      await (db.update(db.medicineLogTable)..where((l) => l.id.equals(logId))).write(
+        MedicineLogTableCompanion(
+          isTaken: const Value(true),
+          takenAt: Value(clock()),
+        ),
+      );
+    });
+    await _alerts();
+  }
+
   Future<void> snoozeDose(int logId, {Duration duration = const Duration(minutes: 30)}) async {
     await db.transaction(() async {
       final log = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();

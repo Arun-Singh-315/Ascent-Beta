@@ -19,6 +19,7 @@ import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_switch.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_transaction_sheet.dart';
@@ -161,79 +162,360 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     }
   }
 
-  Widget _transactionRow(FinanceTransaction tx) {
-    final g = context.glass;
-    final isExpense = tx.type == 'expense';
-    final categoryColor = _categoryColor(context, tx.category);
-    return Padding(
-      key: ValueKey('transaction_${tx.id}'),
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: categoryColor.withValues(alpha: .12),
-              borderRadius: AppGeometry.roundedr10,
+  Future<void> _deleteTransaction(FinanceTransaction tx) async {
+    await ref.read(financeDaoProvider).deleteTransaction(tx.id);
+    if (mounted) {
+      AscentSnackBar.undo(
+        context,
+        message: '${tx.title} removed',
+        onUndo: () async {
+          await ref.read(financeDaoProvider).insertTransaction(
+            FinanceTransactionTableCompanion.insert(
+              id: drift.Value(tx.id),
+              title: tx.title,
+              amount: tx.amount,
+              date: tx.date,
+              type: drift.Value(tx.type),
+              category: drift.Value(tx.category),
+              account: drift.Value(tx.account),
+              notes: drift.Value(tx.notes),
+              isRecurring: drift.Value(tx.isRecurring),
             ),
-            child: Icon(
-              _categoryIcon(tx.category),
-              color: categoryColor,
-              size: 20,
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _deleteSavingsGoal(SavingsGoal goal) async {
+    await ref.read(financeDaoProvider).deleteSavingsGoal(goal.id);
+    if (mounted) {
+      AscentSnackBar.undo(
+        context,
+        message: 'Goal "${goal.title}" removed',
+        onUndo: () async {
+          await ref.read(financeDaoProvider).insertSavingsGoal(
+            SavingsGoalTableCompanion.insert(
+              id: drift.Value(goal.id),
+              title: goal.title,
+              targetAmount: goal.targetAmount,
+              savedAmount: drift.Value(goal.savedAmount),
+              targetDate: drift.Value(goal.targetDate),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  tx.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: g.ink,
-                    fontWeight: FontWeight.w600,
+          );
+        },
+      );
+    }
+  }
+
+  void _showEditGoalDialog(SavingsGoal goal) {
+    final titleController = TextEditingController(text: goal.title);
+    final targetController = TextEditingController(
+      text: goal.targetAmount.truncateToDouble() == goal.targetAmount
+          ? goal.targetAmount.toInt().toString()
+          : goal.targetAmount.toString(),
+    );
+
+    showAscentCenteredForm<void>(
+      context: context,
+      maxWidth: 420,
+      builder: (ctx) => Material(
+        color: ctx.bgSurface,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Edit Savings Goal',
+                    style: AscentTextStyles.displaySmall
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole1),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Goal Title',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: targetController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Target Amount (₹)',
+                  prefixText: '₹ ',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: AscentButton.outlined(
+                      label: 'Cancel',
+                      compact: true,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AscentButton.tonal(
+                      label: 'Save Changes',
+                      compact: true,
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        final target = double.tryParse(targetController.text.trim());
+                        if (title.isNotEmpty && target != null && target > 0) {
+                          await ref.read(financeDaoProvider).updateSavingsGoal(
+                            SavingsGoalTableCompanion(
+                              id: drift.Value(goal.id),
+                              title: drift.Value(title),
+                              targetAmount: drift.Value(target),
+                              savedAmount: drift.Value(goal.savedAmount),
+                              targetDate: drift.Value(goal.targetDate),
+                            ),
+                          );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDepositWithdrawDialog(SavingsGoal goal) {
+    final amountController = TextEditingController();
+    bool isDeposit = true;
+
+    showAscentCenteredForm<void>(
+      context: context,
+      maxWidth: 420,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Material(
+          color: ctx.bgSurface,
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpace.s20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      tx.category,
-                      style: TextStyle(color: g.inkMuted, fontSize: 12),
+                      'Fund Goal',
+                      style: AscentTextStyles.displaySmall
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole1),
                     ),
-                    Text(
-                      tx.account,
-                      style: TextStyle(color: g.inkMuted, fontSize: 12),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
-                  style: AscentTextStyles.monoCode.copyWith(
-                    color: isExpense ? g.coral : g.sage,
-                    fontWeight: FontWeight.w700,
+                  '${goal.title} · ₹${goal.savedAmount.toStringAsFixed(0)} of ₹${goal.targetAmount.toStringAsFixed(0)}',
+                  style: TextStyle(color: context.textMuted, fontSize: 13),
+                ),
+                const SizedBox(height: 14),
+                AscentSegmentedControl<bool>(
+                  segments: const [
+                    AscentSegment(value: true, label: 'Deposit (+)'),
+                    AscentSegment(value: false, label: 'Withdraw (−)'),
+                  ],
+                  selected: isDeposit,
+                  accented: true,
+                  onChanged: (val) => setDialogState(() => isDeposit = val),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: isDeposit ? 'Deposit Amount (₹)' : 'Withdraw Amount (₹)',
+                    prefixText: '₹ ',
+                    filled: true,
+                    fillColor: context.bgBase,
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  children: [500, 1000, 2000].map((amt) => ActionChip(
+                    label: Text('+₹$amt', style: const TextStyle(fontSize: 12)),
+                    onPressed: () => setDialogState(() {
+                      amountController.text = '$amt';
+                    }),
+                  )).toList(),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AscentButton.outlined(
+                        label: 'Cancel',
+                        compact: true,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AscentButton.tonal(
+                        label: isDeposit ? 'Add Funds' : 'Withdraw',
+                        compact: true,
+                        onPressed: () async {
+                          final amt = double.tryParse(amountController.text.trim());
+                          if (amt != null && amt > 0) {
+                            final newTotal = isDeposit
+                                ? goal.savedAmount + amt
+                                : (goal.savedAmount - amt).clamp(0.0, double.infinity);
+                            await ref.read(financeDaoProvider).updateSavingsGoal(
+                              SavingsGoalTableCompanion(
+                                id: drift.Value(goal.id),
+                                title: drift.Value(goal.title),
+                                targetAmount: drift.Value(goal.targetAmount),
+                                savedAmount: drift.Value(newTotal),
+                                targetDate: drift.Value(goal.targetDate),
+                              ),
+                            );
+                            if (ctx.mounted) Navigator.pop(ctx);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Delete transaction',
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              size: 20,
-              color: g.inkMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _transactionRow(FinanceTransaction tx) {
+    final g = context.glass;
+    final isExpense = tx.type == 'expense';
+    final categoryColor = _categoryColor(context, tx.category);
+    return InkWell(
+      onTap: () => AddTransactionSheet.show(context, transactionToEdit: tx),
+      borderRadius: AppGeometry.roundedr10,
+      child: Padding(
+        key: ValueKey('transaction_${tx.id}'),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: categoryColor.withValues(alpha: .12),
+                borderRadius: AppGeometry.roundedr10,
+              ),
+              child: Icon(
+                _categoryIcon(tx.category),
+                color: categoryColor,
+                size: 20,
+              ),
             ),
-            onPressed: () async {
-              await ref.read(financeDaoProvider).deleteTransaction(tx.id);
-            },
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tx.title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        tx.category,
+                        style: TextStyle(color: g.inkMuted, fontSize: 12),
+                      ),
+                      Text(
+                        tx.account,
+                        style: TextStyle(color: g.inkMuted, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
+                    style: AscentTextStyles.monoCode.copyWith(
+                      color: isExpense ? g.coral : g.sage,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Edit transaction',
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: g.inkMuted,
+              ),
+              onPressed: () => AddTransactionSheet.show(
+                context,
+                transactionToEdit: tx,
+              ),
+            ),
+            IconButton(
+              tooltip: 'Delete transaction',
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 20,
+                color: g.inkMuted,
+              ),
+              onPressed: () => _deleteTransaction(tx),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -690,7 +972,124 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 ),
               ),
 
-              const SizedBox(height: 20),
+              // Spending by Category Breakdown
+              StreamBuilder<Map<String, double>>(
+                stream: ref
+                    .watch(financeDaoProvider)
+                    .watchCategorySpending(now.year, now.month),
+                builder: (context, snapshot) {
+                  final catMap = snapshot.data ?? const {};
+                  if (catMap.isEmpty) return const SizedBox.shrink();
+                  final totalCategorySpend = catMap.values.fold<double>(
+                    0.0,
+                    (sum, val) => sum + val,
+                  );
+                  final sorted = catMap.entries.toList()
+                    ..sort((a, b) => b.value.compareTo(a.value));
+                  return AscentCard(
+                    margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                    padding: const EdgeInsets.all(AppSpace.s16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.12),
+                                borderRadius: AppGeometry.roundedr8,
+                              ),
+                              child: Icon(
+                                Icons.pie_chart_outline_rounded,
+                                color: g.clay,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Spending by Category',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(
+                                      color: g.ink,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                            Text(
+                              '₹${totalCategorySpend.toStringAsFixed(0)}',
+                              style: AscentTextStyles.monoCode.copyWith(
+                                color: g.inkSecondary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        for (final entry in sorted.take(4)) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _categoryIcon(entry.key),
+                                      size: 14,
+                                      color: _categoryColor(context, entry.key),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        entry.key,
+                                        style: TextStyle(
+                                          color: g.ink,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${entry.value.toStringAsFixed(0)} (${totalCategorySpend > 0 ? ((entry.value / totalCategorySpend) * 100).toInt() : 0}%)',
+                                      style: TextStyle(
+                                        color: g.inkMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                ClipRRect(
+                                  borderRadius: AppGeometry.roundedr6,
+                                  child: LinearProgressIndicator(
+                                    value: totalCategorySpend > 0
+                                        ? (entry.value / totalCategorySpend)
+                                            .clamp(0.0, 1.0)
+                                        : 0.0,
+                                    minHeight: 5,
+                                    backgroundColor: context.bgBase,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _categoryColor(context, entry.key),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 4),
 
               // Recent Transactions Header
               Wrap(
@@ -1166,17 +1565,33 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  g.title,
-                                  style: AscentTextStyles.headlineMedium
-                                      .copyWith(color: context.textPrimary)
-                                      .merge(AppTypeRoles.typeRole10),
+                                Expanded(
+                                  child: Text(
+                                    g.title,
+                                    style: AscentTextStyles.headlineMedium
+                                        .copyWith(color: context.textPrimary)
+                                        .merge(AppTypeRoles.typeRole10),
+                                  ),
                                 ),
-                                Text(
-                                  '${(percent * 100).toInt()}%',
-                                  style: AscentTextStyles.monoCode
-                                      .copyWith(color: context.accentPrimary)
-                                      .merge(AppTypeRoles.typeRole9),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit_outlined,
+                                        size: 16,
+                                        color: context.textMuted,
+                                      ),
+                                      tooltip: 'Edit goal',
+                                      onPressed: () => _showEditGoalDialog(g),
+                                    ),
+                                    Text(
+                                      '${(percent * 100).toInt()}%',
+                                      style: AscentTextStyles.monoCode
+                                          .copyWith(color: context.accentPrimary)
+                                          .merge(AppTypeRoles.typeRole9),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1193,8 +1608,11 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                               ),
                             ),
                             const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 6,
                               children: [
                                 Text(
                                   '₹${g.savedAmount.toStringAsFixed(0)} of ₹${g.targetAmount.toStringAsFixed(0)}',
@@ -1202,8 +1620,19 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                     color: context.textMuted,
                                   ),
                                 ),
-                                Row(
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 4,
                                   children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.add_card_rounded,
+                                        size: 16,
+                                        color: context.accentPrimary,
+                                      ),
+                                      tooltip: 'Deposit or withdraw funds',
+                                      onPressed: () => _showDepositWithdrawDialog(g),
+                                    ),
                                     TextButton(
                                       onPressed: () async {
                                         // Quick add ₹500 to savings
@@ -1233,9 +1662,8 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                         size: 16,
                                         color: context.textMuted,
                                       ),
-                                      onPressed: () => ref
-                                          .read(financeDaoProvider)
-                                          .deleteSavingsGoal(g.id),
+                                      tooltip: 'Delete goal',
+                                      onPressed: () => _deleteSavingsGoal(g),
                                     ),
                                   ],
                                 ),
