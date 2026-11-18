@@ -14,13 +14,15 @@ import '../../study_plan/lecture_focus_player_sheet.dart';
 import 'home_outline_surface.dart';
 import 'home_section_heading.dart';
 
-/// A glanceable learning summary; full titles and details live in the player.
+/// An iOS media-player style learning card on the Ascent Home screen.
+/// Features a minimal, high-contrast, structured player layout with timeline scrubber.
 class LearningHubCard extends ConsumerWidget {
   const LearningHubCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final state = ref.watch(learningHubProvider);
     final course = state.course;
     final active = state.activeLecture;
@@ -52,7 +54,6 @@ class LearningHubCard extends ConsumerWidget {
     }
 
     Widget buildExploreButton() {
-      final isDark = Theme.of(context).brightness == Brightness.dark;
       final isMerlot = g.merlot;
       final isFrozen = g.frozen;
 
@@ -74,7 +75,7 @@ class LearningHubCard extends ConsumerWidget {
             : (isFrozen ? FrozenPalette.action : g.ink);
       }
 
-      return FilledButton(
+      return FilledButton.icon(
         onPressed: openPlayer,
         style: FilledButton.styleFrom(
           backgroundColor: bg,
@@ -83,7 +84,8 @@ class LearningHubCard extends ConsumerWidget {
           minimumSize: const Size(0, 36),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: const Text('Explore'),
+        icon: const Icon(Icons.play_arrow_rounded, size: 18),
+        label: const Text('Explore'),
       );
     }
 
@@ -105,63 +107,76 @@ class LearningHubCard extends ConsumerWidget {
             const SizedBox(height: 12),
             InkWell(
               onTap: openPlayer,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(22),
               child: HomeOutlineSurface(
-                padding: const EdgeInsets.all(16),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 10,
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: g.ink.withValues(alpha: 0.05),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.auto_stories_outlined,
-                            color: HomeDesign.of(context).learningInk,
-                            size: 24,
+                    // Media player idle badge
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: g.ink.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: g.ink.withValues(alpha: 0.10),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Start learning',
-                                key: const ValueKey('home_learning_title'),
-                                style: AscentTextStyles.interfaceSection.copyWith(
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: g.ink,
-                                ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_stories_outlined,
+                              size: 13,
+                              color: HomeDesign.of(context).learningInk,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'READY TO STUDY',
+                              style: TextStyle(
+                                color: g.inkSecondary,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Choose a course · Track lessons and resume here',
-                                key: const ValueKey('home_learning_course'),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: g.inkMuted,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    buildExploreButton(),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Start learning',
+                      key: const ValueKey('home_learning_title'),
+                      textAlign: TextAlign.center,
+                      style: AscentTextStyles.interfaceSection.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                        color: g.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choose a course · Track lessons and resume here',
+                      key: const ValueKey('home_learning_course'),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(child: buildExploreButton()),
                   ],
                 ),
               ),
@@ -170,6 +185,9 @@ class LearningHubCard extends ConsumerWidget {
         ),
       );
     }
+
+    // ── NOW STUDYING / MEDIA PLAYER CARD ──
+    final progressFraction = state.progressFraction.clamp(0.0, 1.0);
 
     return Padding(
       key: const ValueKey('home_learning_card'),
@@ -198,13 +216,13 @@ class LearningHubCard extends ConsumerWidget {
           const SizedBox(height: 12),
           InkWell(
             onTap: openPlayer,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             child: HomeOutlineSurface(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top badge & position counter
+                  // 1. Top row: Track course badge & exact position pill
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -212,18 +230,23 @@ class LearningHubCard extends ConsumerWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
-                            vertical: 3,
+                            vertical: 3.5,
                           ),
                           decoration: BoxDecoration(
                             color: g.ink.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: g.ink.withValues(alpha: 0.10),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.auto_stories_outlined,
-                                size: 13,
+                                state.isPlaying
+                                    ? Icons.graphic_eq_rounded
+                                    : Icons.auto_stories_outlined,
+                                size: 12.5,
                                 color: HomeDesign.of(context).learningInk,
                               ),
                               const SizedBox(width: 5),
@@ -235,8 +258,9 @@ class LearningHubCard extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: g.inkSecondary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
                                   ),
                                 ),
                               ),
@@ -245,15 +269,18 @@ class LearningHubCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Badge with exact position count (e.g. 2/5000)
+                      // Position counter pill (e.g. 2/5000)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 2,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: g.ink.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: g.ink.withValues(alpha: 0.10),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -269,7 +296,7 @@ class LearningHubCard extends ConsumerWidget {
                             const SizedBox(width: 4),
                             Icon(
                               Icons.arrow_forward_ios_rounded,
-                              size: 11,
+                              size: 10,
                               color: g.inkMuted,
                             ),
                           ],
@@ -279,21 +306,23 @@ class LearningHubCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 12),
 
-                  // Lecture Title
+                  // 2. Big bold Lecture Title
                   Text(
                     active.title,
                     key: const ValueKey('home_learning_title'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AscentTextStyles.interfaceSection.copyWith(
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
                       color: g.ink,
+                      height: 1.25,
                     ),
                   ),
                   const SizedBox(height: 4),
 
-                  // Concise meta description
+                  // 3. Concise meta description
                   Text(
                     'Lesson $displayPosition of ${lectures.length} · ${course.completedLectures} completed',
                     key: const ValueKey('home_learning_position'),
@@ -303,51 +332,160 @@ class LearningHubCard extends ConsumerWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Progress Indicator
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: state.progressFraction.clamp(0.0, 1.0),
-                      minHeight: 5,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF7BA0C6)
-                          : const Color(0xFF4A7097),
-                      backgroundColor: g.ink.withValues(alpha: 0.08),
-                      semanticsLabel: 'Lecture progress',
-                    ),
+                  // 4. iOS Media Player Scrubber with Scrub Handle & Tabular Timestamps
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final trackWidth = constraints.maxWidth;
+                      final progressWidth = (trackWidth * progressFraction).clamp(0.0, trackWidth);
+                      final thumbOffset = (progressWidth - 6).clamp(0.0, trackWidth - 12);
+
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          // Base background track
+                          Container(
+                            height: 6,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: g.ink.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          // Active filled track
+                          Container(
+                            height: 6,
+                            width: progressWidth,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF7BA0C6)
+                                  : const Color(0xFF3B6790),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          // iOS Media Scrubber thumb / head
+                          Positioned(
+                            left: thumbOffset,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.25),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 6),
 
-                  // Footer: Status label & Action button
+                  // Timestamps row: Elapsed (left) & Remaining (right)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        state.formattedElapsed,
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: g.inkSecondary,
+                        ),
+                      ),
+                      Text(
+                        '-${state.formattedRemaining}',
+                        style: TextStyle(
+                          fontFamily: 'JetBrainsMono',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // 5. Media Player Controls Row: Progress % & Sleek Action
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     spacing: 12,
                     runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text(
-                        active.isCompleted
-                            ? 'Lesson completed'
-                            : '${state.formattedElapsed} studied · ${(state.remainingSeconds / 60).ceil()} min left',
-                        style: TextStyle(
-                          color: g.inkSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: g.ink.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${(progressFraction * 100).toInt()}%',
+                              style: TextStyle(
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: g.ink,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            active.isCompleted
+                                ? 'Lesson completed'
+                                : (state.isPlaying
+                                      ? 'Studying now'
+                                      : '${(state.remainingSeconds / 60).ceil()} min left'),
+                            style: TextStyle(
+                              color: g.inkSecondary,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      AscentButton.tonal(
-                        compact: true,
-                        onPressed: resume,
-                        icon: state.isPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        label: active.isCompleted
-                            ? 'Review'
-                            : state.isPlaying
-                            ? 'Pause'
-                            : 'Resume',
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AscentButton.tonal(
+                            compact: true,
+                            onPressed: resume,
+                            icon: state.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            label: active.isCompleted
+                                ? 'Review'
+                                : state.isPlaying
+                                ? 'Pause'
+                                : 'Resume',
+                          ),
+                          const SizedBox(width: 6),
+                          IconButton(
+                            tooltip: 'Open in player',
+                            icon: Icon(
+                              Icons.open_in_new_rounded,
+                              size: 18,
+                              color: g.clay,
+                            ),
+                            onPressed: openPlayer,
+                          ),
+                        ],
                       ),
                     ],
                   ),
