@@ -1887,7 +1887,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? (widget.appearance.bubbleBorderWidth > 1.2 ? 1.2 : widget.appearance.bubbleBorderWidth)
         : 1.0;
 
-    final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
+    final bubbleFill =
+        (!widget.appearance.bubbleFilled || isDark) && hasBubbleFraming
         ? Colors.transparent
         : thought.isCompleted
         ? (isDark
@@ -1942,7 +1943,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 offset: isDark ? Offset.zero : const Offset(0, 3),
               ),
             ]
-          : isBubble && widget.appearance.bubbleFilled
+          : isBubble && widget.appearance.bubbleFilled && !isDark
           ? [
               BoxShadow(
                 color: (isDark ? Colors.black : moodAccent).withValues(

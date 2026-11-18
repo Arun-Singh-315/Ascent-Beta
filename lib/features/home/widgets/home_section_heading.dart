@@ -67,23 +67,6 @@ class HomeSectionHeading extends StatelessWidget {
               Flexible(child: titleWidget),
             ],
           )
-        else if (!centered && leading == null && showIndicator)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 3,
-                height: 16,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: context.accentPrimary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Flexible(child: titleWidget),
-            ],
-          )
         else
           titleWidget,
         if (subtitle != null) ...[

@@ -674,11 +674,10 @@ class _ReminderPreview extends ConsumerWidget {
         : tomorrow
         ? 'Tomorrow'
         : DateFormat('d MMM').format(time);
+    // Neutral grey card; only an overdue reminder picks up a warning color.
     final accentColor = overdue
         ? (dark ? SharedControlColors.dueRedDark : SharedControlColors.dueRed)
-        : (dark
-              ? SharedControlColors.actionBlueDark
-              : SharedControlColors.actionBlue);
+        : design.secondaryText;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -692,27 +691,19 @@ class _ReminderPreview extends ConsumerWidget {
           onTap: () => context.push('/reminders?reminder=${reminder.id}'),
           child: Container(
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: dark ? 0.1 : 0.06),
+              color: design.groupedFill,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: accentColor.withValues(alpha: dark ? 0.25 : 0.18),
-                width: 0.8,
+                color: overdue
+                    ? accentColor.withValues(alpha: 0.45)
+                    : design.separator,
+                width: 1,
               ),
             ),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(14),
-                        bottomLeft: Radius.circular(14),
-                      ),
-                    ),
-                  ),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(

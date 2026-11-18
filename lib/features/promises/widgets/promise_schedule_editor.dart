@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../shared/widgets/ascent_popup_menu.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
 import '../models/promise_model.dart';
 
@@ -105,10 +106,9 @@ class PromiseScheduleEditor extends StatelessWidget {
                 ),
                 onPressed: () => _date(context),
               ),
-              PopupMenuButton<PromiseRepeat>(
+              AscentPopupMenuButton<PromiseRepeat>(
                 key: const ValueKey('promise_repeat'),
                 tooltip: 'Repeat',
-                initialValue: s.repeat,
                 onSelected: (repeat) {
                   var next = proposal.copyWith(
                     schedule: s.copyWith(repeat: repeat),
@@ -135,22 +135,26 @@ class PromiseScheduleEditor extends StatelessWidget {
                   }
                   onChanged(next);
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
+                itemBuilder: (_) => [
+                  ascentChoiceItem(
                     value: PromiseRepeat.once,
-                    child: Text('Just once'),
+                    label: 'Just once',
+                    selected: s.repeat == PromiseRepeat.once,
                   ),
-                  PopupMenuItem(
+                  ascentChoiceItem(
                     value: PromiseRepeat.daily,
-                    child: Text('Every day'),
+                    label: 'Every day',
+                    selected: s.repeat == PromiseRepeat.daily,
                   ),
-                  PopupMenuItem(
+                  ascentChoiceItem(
                     value: PromiseRepeat.selectedDays,
-                    child: Text('Choose days'),
+                    label: 'Choose days',
+                    selected: s.repeat == PromiseRepeat.selectedDays,
                   ),
-                  PopupMenuItem(
+                  ascentChoiceItem(
                     value: PromiseRepeat.weekly,
-                    child: Text('A few times a week'),
+                    label: 'A few times a week',
+                    selected: s.repeat == PromiseRepeat.weekly,
                   ),
                 ],
                 child: Chip(
