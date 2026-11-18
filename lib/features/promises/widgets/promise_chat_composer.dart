@@ -148,11 +148,13 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
       final rootContext = Navigator.of(context, rootNavigator: true).context;
       Navigator.of(context).pop();
       HapticFeedback.lightImpact();
-      AscentSnackBar.show(
-        rootContext,
-        message:
-            saved.reminderIssue ?? 'Promise saved. One small step at a time.',
-      );
+      if (rootContext.mounted) {
+        AscentSnackBar.show(
+          rootContext,
+          message:
+              saved.reminderIssue ?? 'Promise saved. One small step at a time.',
+        );
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
