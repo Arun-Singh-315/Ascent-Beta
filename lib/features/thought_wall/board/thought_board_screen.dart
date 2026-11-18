@@ -454,12 +454,15 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     ),
     child: Row(
       children: [
-        Text(
-          label,
-          style: AscentTextStyles.sectionHeading.copyWith(
-            color: g.ink,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
+        Flexible(
+          child: Text(
+            label,
+            style: AscentTextStyles.sectionHeading.copyWith(
+              color: g.ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(width: AppSpace.s8),
@@ -817,6 +820,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                                           ),
                                           thought: hero,
                                           now: now,
+                                          appearance: appearance,
                                           label: _openedId == hero.id
                                               ? 'Opened'
                                               : 'Latest',

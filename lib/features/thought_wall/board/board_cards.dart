@@ -8,6 +8,7 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../thought_wall_preferences.dart';
+import '../utils/thought_checklist_helper.dart';
 import 'board_logic.dart';
 
 /// Accent colour for a thought, taken from the active theme so every theme
@@ -155,6 +156,63 @@ class _BoardCardState extends State<BoardCard>
     }
   }
 
+  /// Width that fits the text instead of always spanning the screen. Anything
+  /// that needs the full card (long text, checklists, prompts, promises,
+  /// selection mode) keeps the full width.
+  double _hugWidth(BuildContext context, double maxWidth) {
+    if (!maxWidth.isFinite ||
+        isSelectionMode ||
+        appearance.style == ThoughtCardStyle.minimal ||
+        thought.mood == 'promise') {
+      return maxWidth;
+    }
+    final content = isHighPriorityContent(thought.content)
+        ? thought.content.replaceFirst(RegExp(r'^\[HIGH\]\s*'), '')
+        : thought.content;
+    if (ThoughtChecklistHelper.hasChecklistItems(content)) return maxWidth;
+    final kind = isLocked ? BoardCardKind.note : boardCardKind(thought.content);
+    if (kind == BoardCardKind.list || kind == BoardCardKind.long || isLocked) {
+      return maxWidth;
+    }
+    final text = displayContent(thought.content).trim();
+    if (text.length > 220 || text.contains('\n\n')) {
+      return maxWidth;
+    }
+
+    final comfortable = appearance.density == ThoughtCardDensity.comfortable;
+    final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
+    final chrome = padding * 2 + 4; // padding, 1px borders and a small safety gap
+
+    final textStyle = kind == BoardCardKind.spark
+        ? AscentTextStyles.cardTitle.copyWith(
+            color: context.glass.ink,
+            fontSize: 15.5,
+            fontWeight: FontWeight.w500,
+            height: 1.4,
+          )
+        : AppTypography.thoughtContent(color: context.glass.ink);
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: textStyle,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 6,
+      textWidthBasis: TextWidthBasis.longestLine,
+    )..layout(maxWidth: (maxWidth - chrome).clamp(0.0, maxWidth));
+
+    final overflowed = painter.didExceedMaxLines;
+    final textWidth = painter.width + chrome;
+    painter.dispose();
+    if (overflowed) return maxWidth;
+
+    // Minimum floor so date & action indicators fit comfortably without wrapping.
+    final floor = maxWidth < 200.0 ? maxWidth : 200.0;
+    return textWidth.clamp(floor, maxWidth);
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -166,12 +224,24 @@ class _BoardCardState extends State<BoardCard>
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
     final fill = (!appearance.bubbleFilled || minimal)
         ? (dark
-            ? const Color(0xFF16181F).withValues(alpha: 0.65)
+            ? Colors.transparent
             : Colors.white.withValues(alpha: .75))
         : (dark ? const Color(0xFF16181F) : Colors.white);
     final borderColor = isSelected
         ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
-        : (dark ? const Color(0xFF262933) : const Color(0xFFE2E8F0));
+        : thought.isCompleted
+        ? context.doneInk.withValues(alpha: dark ? .35 : .25)
+        : (dark
+            // A visible hairline on the night canvas, softly tinted by mood.
+            ? Color.alphaBlend(
+                accent.withValues(alpha: 0.40),
+                g.ink.withValues(alpha: 0.26),
+              )
+            : Color.lerp(
+                g.edge,
+                accent.withValues(alpha: 0.20),
+                0.40,
+              )!);
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -187,13 +257,19 @@ class _BoardCardState extends State<BoardCard>
         color: fill,
         borderRadius: radius,
         border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.30 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: minimal
+            ? const []
+            : [
+                BoxShadow(
+                  color: (dark ? accent : Colors.black).withValues(
+                    alpha: dark
+                        ? (appearance.bubbleFilled ? 0.20 : 0.08)
+                        : 0.04,
+                  ),
+                  blurRadius: dark ? 12 : 8,
+                  offset: dark ? Offset.zero : const Offset(0, 2),
+                ),
+              ],
       ),
       padding: EdgeInsets.all(padding),
       child: Column(
@@ -272,23 +348,33 @@ class _BoardCardState extends State<BoardCard>
       );
     }
 
-    return FadeTransition(
-      opacity: _cardFade,
-      child: SlideTransition(
-        position: _cardSlide,
-        child: Semantics(
-          button: true,
-          selected: isSelected,
-          label: isLocked ? 'Private commitment' : displayContent(thought.content),
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: onTap,
-            onLongPress: onLongPress,
-            onDoubleTap: isSelectionMode ? null : onDoubleTap,
-            child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hugWidth = constraints.constrainWidth(
+          _hugWidth(context, constraints.maxWidth),
+        );
+        return SizedBox(
+          width: hugWidth,
+          child: FadeTransition(
+            opacity: _cardFade,
+            child: SlideTransition(
+              position: _cardSlide,
+              child: Semantics(
+                button: true,
+                selected: isSelected,
+                label: isLocked ? 'Private commitment' : displayContent(thought.content),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  onLongPress: onLongPress,
+                  onDoubleTap: isSelectionMode ? null : onDoubleTap,
+                  child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -461,6 +547,7 @@ class BoardHeroCard extends StatelessWidget {
     super.key,
     required this.thought,
     required this.now,
+    this.appearance = const ThoughtWallAppearance(),
     this.label = 'Latest',
     this.spaceName,
     this.isSelected = false,
@@ -472,6 +559,7 @@ class BoardHeroCard extends StatelessWidget {
 
   final Thought thought;
   final DateTime now;
+  final ThoughtWallAppearance appearance;
   final String label;
   final String? spaceName;
   final bool isSelected;
@@ -484,8 +572,11 @@ class BoardHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     final dark = context.isDark;
+    final heroAccent = boardAccentFor(g, thought);
     final fill = dark
-        ? const Color(0xFF1A1D26)
+        ? (appearance.bubbleFilled
+            ? const Color(0xFF1A1D26)
+            : Colors.transparent)
         : Colors.white;
     final onFill = dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final text = displayContent(thought.content).trim();
@@ -507,11 +598,14 @@ class BoardHeroCard extends StatelessWidget {
             color: fill,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: dark ? 0.35 : 0.05,
+                // Night: a faint mood glow instead of a dark halo, so the
+                // transparent bubble stays clean against the canvas.
+                color: (dark ? heroAccent : Colors.black).withValues(
+                  alpha: dark ? 0.12 : 0.05,
                 ),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
+                blurRadius: dark ? 18 : 12,
+                spreadRadius: 0,
+                offset: dark ? Offset.zero : const Offset(0, 3),
               ),
             ],
             borderRadius: AppGeometry.roundedr20,
@@ -521,7 +615,10 @@ class BoardHeroCard extends StatelessWidget {
                       ? SharedControlColors.actionBlueDark
                       : SharedControlColors.actionBlue)
                   : (dark
-                      ? const Color(0xFF262933)
+                      ? Color.alphaBlend(
+                          heroAccent.withValues(alpha: 0.40),
+                          g.ink.withValues(alpha: 0.26),
+                        )
                       : const Color(0xFFE2E8F0)),
               width: isSelected ? 1.5 : 1.0,
             ),

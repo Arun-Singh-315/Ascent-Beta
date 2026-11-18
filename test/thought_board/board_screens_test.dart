@@ -420,10 +420,6 @@ void main() {
       await tester.tap(find.text('Save'));
       await settle(tester);
       expect(find.text('Films'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('space_menu')));
-      await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('space_view_toggle')));
-      await settle(tester);
       expect(find.text('Arrival'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());

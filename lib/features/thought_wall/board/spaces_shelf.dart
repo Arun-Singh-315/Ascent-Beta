@@ -159,11 +159,12 @@ class SpacesShelf extends ConsumerWidget {
                     ),
                   ],
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _CompactNewSpaceButton(onTap: onNew),
-                    const SizedBox(width: 6),
                     TextButton.icon(
                       key: const ValueKey('space_tile_all'),
                       onPressed: () => _showAllSpacesSheet(context, ref, pinned),
