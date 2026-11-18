@@ -257,14 +257,12 @@ class _BoardCardState extends State<BoardCard>
         color: fill,
         borderRadius: radius,
         border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: minimal
+        boxShadow: (minimal || !appearance.bubbleFilled)
             ? const []
             : [
                 BoxShadow(
                   color: (dark ? accent : Colors.black).withValues(
-                    alpha: dark
-                        ? (appearance.bubbleFilled ? 0.20 : 0.08)
-                        : 0.04,
+                    alpha: dark ? 0.20 : 0.04,
                   ),
                   blurRadius: dark ? 12 : 8,
                   offset: dark ? Offset.zero : const Offset(0, 2),
@@ -596,18 +594,18 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: [
-              BoxShadow(
-                // Night: a faint mood glow instead of a dark halo, so the
-                // transparent bubble stays clean against the canvas.
-                color: (dark ? heroAccent : Colors.black).withValues(
-                  alpha: dark ? 0.12 : 0.05,
-                ),
-                blurRadius: dark ? 18 : 12,
-                spreadRadius: 0,
-                offset: dark ? Offset.zero : const Offset(0, 3),
-              ),
-            ],
+            boxShadow: !appearance.bubbleFilled
+                ? const []
+                : [
+                    BoxShadow(
+                      color: (dark ? heroAccent : Colors.black).withValues(
+                        alpha: dark ? 0.12 : 0.05,
+                      ),
+                      blurRadius: dark ? 18 : 12,
+                      spreadRadius: 0,
+                      offset: dark ? Offset.zero : const Offset(0, 3),
+                    ),
+                  ],
             borderRadius: AppGeometry.roundedr20,
             border: Border.all(
               color: isSelected
