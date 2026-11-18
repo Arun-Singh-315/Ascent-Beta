@@ -167,8 +167,8 @@ void main() {
         ),
       );
       expect(excerpt.maxLines, 2);
-      expect(find.text('View all'), findsOneWidget);
-      await tester.tap(find.text('View all'));
+      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
+      await tester.tap(find.byIcon(Icons.chevron_right_rounded).first);
       await tester.pumpAndSettle();
       expect(find.text('Full thought wall'), findsOneWidget);
       expect(
