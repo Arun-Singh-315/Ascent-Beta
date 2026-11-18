@@ -65,6 +65,17 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     return '${m}m';
   }
 
+  int? _targetSeconds(int? taskId, List<Task> tasks) {
+    if (taskId == null) return null;
+    for (final t in tasks) {
+      if (t.id == taskId) {
+        final m = t.estimatedMinutes;
+        return (m == null || m <= 0) ? null : m * 60;
+      }
+    }
+    return null;
+  }
+
   Future<void> _addTaskForToday(String title) async {
     if (title.trim().isEmpty) return;
     final taskDao = ref.read(taskDaoProvider);
@@ -95,12 +106,9 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
         .focusSecondsRemaining(active.id);
     if (!mounted) return;
     if (remaining > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Keep focusing: ${_formatDuration(remaining)} remaining before this activity can be completed.',
-          ),
-        ),
+      AscentSnackBar.show(
+        context,
+        message: 'Keep focusing: ${_formatDuration(remaining)} remaining before this activity can be completed.',
       );
       return;
     }
@@ -167,43 +175,37 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     BuildContext context,
     List<Task> tasks,
   ) async {
-    await showModalBottomSheet(
+    await showAscentFrostedDialog<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      backgroundColor: context.bgSurface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
       builder: (sheetCtx) {
         final activeTaskId = ref
             .watch(timeTrackingProvider)
             .activeSession
             ?.linkedTaskId;
         return SafeArea(
-          child: Padding(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 440,
+                maxHeight: MediaQuery.sizeOf(sheetCtx).height * 0.7,
+              ),
+              child: Material(
+                color: sheetCtx.glass.bg,
+                shape: ContinuousRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpace.s20,
-              AppSpace.s16,
               AppSpace.s20,
-              AppSpace.s24,
+              AppSpace.s20,
+              AppSpace.s20,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: sheetCtx.divider,
-                      borderRadius: AppGeometry.roundedr2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
                   'Switch Task',
                   style: AscentTextStyles.displaySmall.copyWith(
@@ -297,6 +299,9 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
               ],
             ),
           ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -360,7 +365,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
           GlassSurface(
             radius: 14,
             fillColor: g.isDark
-                ? const Color(0xFF14171C)
+                ? g.elevated
                 : g.fill.withValues(alpha: 0.5),
             customBorder: Border.all(
               color: g.line.withValues(alpha: 0.25),
@@ -410,6 +415,10 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
           _BigClockCard(
             trackingState: trackingState,
             formatDuration: _formatDuration,
+            targetSeconds: _targetSeconds(
+              trackingState.activeSession?.linkedTaskId,
+              todayTasks.value ?? const <Task>[],
+            ),
             onStart: () => showStartSessionSheet(context, ref),
             onPause: () =>
                 ref.read(timeTrackingProvider.notifier).pauseSession(),
@@ -606,6 +615,7 @@ final _todayTasksProvider = StreamProvider.family<List<Task>, DateTime>((
 class _BigClockCard extends StatelessWidget {
   final TimeTrackingState trackingState;
   final String Function(int) formatDuration;
+  final int? targetSeconds;
   final VoidCallback onStart;
   final VoidCallback onPause;
   final VoidCallback onResume;
@@ -620,6 +630,7 @@ class _BigClockCard extends StatelessWidget {
     required this.onResume,
     required this.onSwitchTask,
     required this.onComplete,
+    this.targetSeconds,
   });
 
   @override
@@ -629,218 +640,245 @@ class _BigClockCard extends StatelessWidget {
     final hasSession = trackingState.activeSession != null;
     final elapsed = trackingState.elapsedSeconds;
     final g = context.glass;
+    final target = targetSeconds;
+    final hasTarget = hasSession && target != null && target > 0;
+    final progress = hasTarget
+        ? (elapsed / target).clamp(0.0, 1.0)
+        : (hasSession ? (elapsed % 60) / 60.0 : 0.0);
+    final remaining = hasTarget ? (target - elapsed).clamp(0, target) : 0;
 
     return GlassSurface(
       radius: 28,
-      fillColor: g.isDark
-          ? const Color(0xFF14171C)
-          : g.fill.withValues(alpha: 0.65),
-      customBorder: Border.all(
-        color: isRunning
-            ? g.clay.withValues(alpha: 0.35)
-            : g.line.withValues(alpha: 0.25),
-        width: 1.0,
-      ),
+      fillColor: g.isDark ? g.elevated : g.fill.withValues(alpha: 0.65),
+      customBorder: Border.all(color: g.line.withValues(alpha: 0.3), width: 1.0),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s24,
-        vertical: 36,
+        horizontal: AppSpace.s20,
+        vertical: AppSpace.s24,
       ),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (isRunning)
-            Positioned(
-              top: 30,
-              child: Container(
-                width: 160,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: g.clay.withValues(alpha: 0.15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: g.clay.withValues(alpha: 0.22),
-                      blurRadius: 50,
-                      spreadRadius: 20,
-                    ),
-                  ],
-                ),
-              ),
+          // Task label
+          Text(
+            hasSession ? trackingState.activeSession!.label : 'Ready when you are',
+            style: AscentTextStyles.bodyMedium.copyWith(
+              color: hasSession ? g.ink : g.inkMuted,
+              fontWeight: hasSession ? FontWeight.w600 : FontWeight.w400,
             ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Task label pill
-              if (hasSession) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s12,
-                    vertical: AppSpace.s6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isRunning
-                        ? g.clay.withValues(alpha: 0.12)
-                        : g.ink.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isRunning
-                          ? g.clay.withValues(alpha: 0.35)
-                          : g.line.withValues(alpha: 0.3),
-                      width: 1.0,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpace.s20),
+
+          // Progress ring with the clock inside
+          SizedBox(
+            width: 240,
+            height: 240,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: progress),
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => CustomPaint(
+                    size: const Size.square(240),
+                    painter: _FocusRingPainter(
+                      progress: value,
+                      track: g.line.withValues(alpha: 0.35),
+                      color: isPaused ? g.amber : g.clay,
+                      active: hasSession,
                     ),
                   ),
-                  child: Row(
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 36),
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isRunning ? g.clay : g.amber,
-                          boxShadow: isRunning
-                              ? [
-                                  BoxShadow(
-                                    color: g.clay.withValues(alpha: 0.6),
-                                    blurRadius: 6,
-                                  ),
-                                ]
-                              : null,
+                      Semantics(
+                        label: 'Focus time',
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            hasSession ? formatDuration(elapsed) : '00:00',
+                            style: AscentTextStyles.focusTimer.copyWith(
+                              color: isPaused
+                                  ? g.inkMuted
+                                  : (hasSession ? g.ink : g.inkSecondary),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          trackingState.activeSession!.label,
-                          style: AppTypography.plusJakartaSans12W60073(
-                            color: g.ink,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 4),
+                      Text(
+                        isPaused
+                            ? 'Paused'
+                            : hasTarget
+                            ? (remaining > 0
+                                  ? '${formatDuration(remaining)} left'
+                                  : 'Target reached')
+                            : (isRunning ? 'Focusing' : 'No session'),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: isPaused ? g.amber : g.inkMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-              ] else ...[
-                Text(
-                  'No active session',
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: g.inkMuted,
-                  ),
-                ),
-                const SizedBox(height: 16),
               ],
-
-              // Clock digits in JetBrains Mono
-              Semantics(
-                label: 'Focus time',
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    hasSession ? formatDuration(elapsed) : '00:00',
-                    style: AscentTextStyles.focusTimer.copyWith(
-                      color: isPaused
-                          ? g.inkMuted
-                          : (isRunning ? g.ink : g.inkSecondary),
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ),
-              ),
-
-              if (isPaused) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: g.amberSoft,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'PAUSED',
-                    style: AppTypography.jetBrainsMono10W70075(
-                      color: g.amber,
-                    ),
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 24),
-
-              // Controls (Tactile buttons with selection haptics)
-              if (!hasSession)
-                AscentButton.primary(
-                  label: 'Start Focus Session',
-                  icon: Icons.play_arrow_rounded,
-                  compact: true,
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    onStart();
-                  },
-                )
-              else ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: isRunning
-                          ? AscentButton.secondary(
-                              label: 'Pause',
-                              icon: Icons.pause_rounded,
-                              compact: true,
-                              expanded: true,
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                onPause();
-                              },
-                            )
-                          : AscentButton.primary(
-                              label: 'Resume',
-                              icon: Icons.play_arrow_rounded,
-                              compact: true,
-                              expanded: true,
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                onResume();
-                              },
-                            ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: AscentButton.outlined(
-                        label: 'Switch Task',
-                        icon: Icons.swap_horiz_rounded,
-                        compact: true,
-                        expanded: true,
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          onSwitchTask();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                AscentButton.ghost(
-                  label: 'Complete Session',
-                  icon: Icons.check_circle_outline_rounded,
-                  compact: true,
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    onComplete();
-                  },
-                ),
-              ],
-            ],
+            ),
           ),
+          const SizedBox(height: AppSpace.s24),
+
+          // Controls
+          if (!hasSession)
+            AscentButton.primary(
+              label: 'Start Focus Session',
+              icon: Icons.play_arrow_rounded,
+              compact: true,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                onStart();
+              },
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _RoundControl(
+                  icon: Icons.swap_horiz_rounded,
+                  tooltip: 'Switch task',
+                  onTap: onSwitchTask,
+                ),
+                const SizedBox(width: AppSpace.s24),
+                _RoundControl(
+                  icon: isRunning
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  tooltip: isRunning ? 'Pause' : 'Resume',
+                  primary: true,
+                  onTap: isRunning ? onPause : onResume,
+                ),
+                const SizedBox(width: AppSpace.s24),
+                _RoundControl(
+                  icon: Icons.check_rounded,
+                  tooltip: 'Complete session',
+                  onTap: onComplete,
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
+}
+
+class _RoundControl extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool primary;
+
+  const _RoundControl({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  @override
+  State<_RoundControl> createState() => _RoundControlState();
+}
+
+class _RoundControlState extends State<_RoundControl> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final size = widget.primary ? 72.0 : 52.0;
+    return Tooltip(
+      message: widget.tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          widget.onTap();
+        },
+        child: AnimatedScale(
+          scale: _pressed ? 0.94 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.primary ? g.clay : g.claySoft,
+              border: widget.primary
+                  ? null
+                  : Border.all(color: g.line.withValues(alpha: 0.5), width: 1.0),
+            ),
+            child: Icon(
+              widget.icon,
+              size: widget.primary ? 34 : 24,
+              color: widget.primary ? g.bg : g.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusRingPainter extends CustomPainter {
+  final double progress;
+  final Color track;
+  final Color color;
+  final bool active;
+
+  const _FocusRingPainter({
+    required this.progress,
+    required this.track,
+    required this.color,
+    required this.active,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 8.0;
+    final rect = Rect.fromLTWH(
+      stroke / 2,
+      stroke / 2,
+      size.width - stroke,
+      size.height - stroke,
+    );
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = track;
+    canvas.drawArc(rect, 0, 6.283185307179586, false, base);
+    if (!active || progress <= 0) return;
+    final arc = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    canvas.drawArc(rect, -1.5707963267948966, 6.283185307179586 * progress, false, arc);
+  }
+
+  @override
+  bool shouldRepaint(_FocusRingPainter old) =>
+      old.progress != progress ||
+      old.track != track ||
+      old.color != color ||
+      old.active != active;
 }
 
 // ── Stats Panel ────────────────────────────────────────────────────────────────
@@ -879,7 +917,7 @@ class _StatsPanel extends ConsumerWidget {
         return GlassSurface(
           radius: 18,
           fillColor: g.isDark
-              ? const Color(0xFF14171C)
+              ? g.elevated
               : g.fill.withValues(alpha: 0.5),
           customBorder: Border.all(
             color: g.line.withValues(alpha: 0.25),
