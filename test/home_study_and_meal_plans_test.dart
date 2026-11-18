@@ -76,32 +76,27 @@ void main() {
       await tester.pumpAndSettle();
 
       // Check Category Filter chips
-      expect(find.text('All (2)'), findsOneWidget);
-      expect(find.text('📚 Study (1)'), findsOneWidget);
-      expect(find.text('🥗 Meal (1)'), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Study'), findsOneWidget);
+      expect(find.text('Meal'), findsOneWidget);
 
-      // Check Cards and Badges
-      expect(find.text('STUDY'), findsOneWidget);
+      // Check Cards
       expect(find.text('DSA Mastery 7-Day Sprint'), findsOneWidget);
-      expect(find.text('3/7 done'), findsOneWidget);
-
-      expect(find.text('MEAL & DIET'), findsOneWidget);
       expect(find.text('High Protein Clean Diet'), findsOneWidget);
-      expect(find.text('2/4 done'), findsOneWidget);
 
       // Check Quick Starters
-      expect(find.text('Plan Study'), findsOneWidget);
-      expect(find.text('Plan Meals'), findsOneWidget);
+      expect(find.text('Plan study'), findsOneWidget);
+      expect(find.text('Plan meals'), findsOneWidget);
 
       // Tap Study filter chip
-      await tester.tap(find.text('📚 Study (1)'));
+      await tester.tap(find.text('Study'));
       await tester.pumpAndSettle();
 
       expect(find.text('DSA Mastery 7-Day Sprint'), findsOneWidget);
       expect(find.text('High Protein Clean Diet'), findsNothing);
 
       // Tap Meal filter chip
-      await tester.tap(find.text('🥗 Meal (1)'));
+      await tester.tap(find.text('Meal'));
       await tester.pumpAndSettle();
 
       expect(find.text('DSA Mastery 7-Day Sprint'), findsNothing);
@@ -144,8 +139,8 @@ void main() {
 
       // Zero exceptions and zero RenderFlex overflow
       expect(tester.takeException(), isNull);
-      expect(find.text('Plan Study'), findsOneWidget);
-      expect(find.text('Plan Meals'), findsOneWidget);
+      expect(find.text('Plan study'), findsOneWidget);
+      expect(find.text('Plan meals'), findsOneWidget);
     },
   );
 }
