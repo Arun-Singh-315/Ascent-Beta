@@ -1159,9 +1159,14 @@ class _ThoughtWallHomePreviewState
             hint: 'Jot a thought…',
             submitTooltip: 'Send capture',
             leadingIcon: Icons.add,
+            // "+" opens the full capture sheet (moods, pin, checklist) and
+            // carries whatever was already typed.
             onLeadingTap: () {
               HapticFeedback.lightImpact();
-              _focusNode.requestFocus();
+              final draft = _controller.text;
+              _controller.clear();
+              FocusScope.of(context).unfocus();
+              DropThoughtSheet.show(context, initialText: draft);
             },
             onSubmit: _send,
           ),
@@ -1399,7 +1404,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.bubble),
-        onTap: onTap,
+        onDoubleTap: onTap,
+        onLongPress: onAction,
         child: Container(
           decoration: BoxDecoration(
             color: heroBg,

@@ -27,12 +27,14 @@ import '../../shared/widgets/ascent_dialog.dart';
 class DropThoughtSheet extends ConsumerStatefulWidget {
   final String? initialPrompt;
   final String? initialMood;
+  final String? initialText;
   final Thought? existingThought;
 
   const DropThoughtSheet({
     super.key,
     this.initialPrompt,
     this.initialMood,
+    this.initialText,
     this.existingThought,
   });
 
@@ -51,6 +53,7 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     String? initialPrompt,
     String? initialMood,
+    String? initialText,
     Thought? existingThought,
   }) {
     // Route promise entries to the dedicated centered dialog.
@@ -71,6 +74,7 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
       builder: (_) => DropThoughtSheet(
         initialPrompt: initialPrompt,
         initialMood: initialMood,
+        initialText: initialText,
         existingThought: existingThought,
       ),
     );
@@ -135,6 +139,13 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       _activePrompt = widget.existingThought!.promptQuestion;
     } else {
       _activePrompt = widget.initialPrompt;
+      final carried = widget.initialText;
+      if (carried != null && carried.trim().isNotEmpty) {
+        _contentController.text = carried;
+        _contentController.selection = TextSelection.collapsed(
+          offset: carried.length,
+        );
+      }
       if (widget.initialMood != null &&
           _moods.any((mood) => mood['key'] == widget.initialMood)) {
         _selectedMood = widget.initialMood!;
