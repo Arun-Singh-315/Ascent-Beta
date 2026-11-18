@@ -162,6 +162,21 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          recentThoughtsStreamProvider.overrideWith(
+            (ref) => Stream.value([
+              Thought(
+                id: 1,
+                content: 'Keep personal sacred promise',
+                mood: 'promise',
+                category: 'general',
+                colorHex: '#2D2D3A',
+                isPinned: false,
+                isArchived: false,
+                isCompleted: false,
+                createdAt: DateTime.now(),
+              ),
+            ]),
+          ),
           allThoughtsStreamProvider.overrideWith(
             (ref) => Stream.value([
               Thought(

@@ -23,29 +23,21 @@ class PromiseActionButton extends StatelessWidget {
     final g = context.glass;
 
     if (promise.isCompleted || promise.isDoneToday) {
+      final color = g.sage;
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: g.sage.withValues(alpha: 0.14),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: g.sage.withValues(alpha: 0.35), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_rounded, size: 15, color: g.sage),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                promise.isCompleted ? 'Completed' : 'Done today',
-                style: TextStyle(
-                  color: g.ink,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+        child: Text(
+          promise.isCompleted ? 'Completed' : 'Done today',
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       );
     }
@@ -95,6 +87,8 @@ class PromiseActionButton extends StatelessWidget {
 
     final canAct = !isLoading && promise.canActAt(DateTime.now());
 
+    final actionColor = g.actionInk;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -111,36 +105,34 @@ class PromiseActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
             color: canAct
-                ? g.ink.withValues(alpha: 0.88)
-                : g.ink.withValues(alpha: 0.12),
+                ? actionColor.withValues(alpha: 0.08)
+                : g.fill.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: canAct ? g.line : g.line.withValues(alpha: 0.4),
+              color: canAct ? actionColor : g.line.withValues(alpha: 0.4),
+              width: 1.0,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isLoading)
+              if (isLoading) ...[
                 SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: g.bg),
-                )
-              else ...[
-                Icon(
-                  promise.contextualActionIcon,
-                  size: 15,
-                  color: canAct ? g.bg : g.inkMuted,
+                  width: 13,
+                  height: 13,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: actionColor,
+                  ),
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 6),
               ],
               Flexible(
                 child: Text(
                   promise.contextualActionLabel,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: canAct ? g.bg : g.inkMuted,
+                    color: canAct ? actionColor : g.inkMuted,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.1,

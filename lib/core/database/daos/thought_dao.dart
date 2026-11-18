@@ -65,7 +65,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   /// Watch recent thoughts for Home preview (open first, then pinned and newest before limiting).
   Stream<List<Thought>> watchRecentThoughts({int limit = 10}) {
     return (select(thoughtTable)
-          ..where((t) => t.isArchived.equals(false))
+          ..where((t) => t.isArchived.equals(false) & t.mood.equals('promise').not())
           ..orderBy([
             (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
@@ -79,7 +79,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   /// Home shows the newest non-archived message, independent of wall pinning.
   Stream<Thought?> watchLatestThought() {
     return (select(thoughtTable)
-          ..where((t) => t.isArchived.equals(false))
+          ..where((t) => t.isArchived.equals(false) & t.mood.equals('promise').not())
           ..orderBy([
             (t) => OrderingTerm.desc(t.createdAt),
             (t) => OrderingTerm.desc(t.id),

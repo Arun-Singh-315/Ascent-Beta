@@ -12,6 +12,7 @@ import '../../../core/notifications/notification_service.dart';
 import '../../../core/notifications/reminder_alarm_bridge.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_switch.dart';
 
 enum ReminderRepeatSchedule {
@@ -148,38 +149,44 @@ class _IOSReminderDialogState extends ConsumerState<_IOSReminderDialog> {
   void _showRepeatPicker() {
     HapticFeedback.selectionClick();
     final g = context.glass;
-    showModalBottomSheet<void>(
+    showAscentFrostedDialog<void>(
       context: context,
-      backgroundColor: g.isDark ? const Color(0xFF1C1E22) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+      builder: (dialogCtx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 360),
+          decoration: BoxDecoration(
+            color: g.elevated,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: g.line,
+              width: 1,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: g.ink.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Text(
+                  'Repeat Schedule',
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Text(
-                'Repeat Schedule',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               for (final schedule in ReminderRepeatSchedule.values)
                 ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   leading: Icon(
                     schedule.icon,
                     color: _repeatSchedule == schedule
@@ -206,7 +213,7 @@ class _IOSReminderDialogState extends ConsumerState<_IOSReminderDialog> {
                   onTap: () {
                     HapticFeedback.selectionClick();
                     setState(() => _repeatSchedule = schedule);
-                    Navigator.pop(sheetCtx);
+                    Navigator.pop(dialogCtx);
                   },
                 ),
             ],
