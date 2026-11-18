@@ -14,14 +14,13 @@ enum ThoughtCardRole {
 /// Local colour treatment for thought spaces, including nested surface tokens.
 /// Keeping both token sets aligned prevents day surfaces reverting to white.
 class ThoughtTheme {
-  // Luminous backgrounds blended with white:
-  // "clay dont paint its shade and ink like background use shade with white not whole screen of same colour"
-  static const clayCanvas = Color(0xFFF8FAFC);
-  static const claySurface = Color(0xFFFBFBFE);
+  // Toned down soothing parchment & linen backgrounds:
+  static const clayCanvas = Color(0xFFEFECE6);
+  static const claySurface = Color(0xFFF7F5F0);
 
-  // "same with frozen sky dont blue it whole yr shade and white blue effect in background with bubble transparent keep bordr hard man"
-  static const frozenCanvas = Color(0xFFF3F7FB);
-  static const frozenSurface = Color(0xFFF8FAFD);
+  // Soft misty sky:
+  static const frozenCanvas = Color(0xFFE8EEF5);
+  static const frozenSurface = Color(0xFFF2F6FA);
 
   // Matte Charcoal + Premium Glass foundation in dark mode:
   static const darkCanvas = Color(0xFF0F1115);
