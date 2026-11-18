@@ -1,3 +1,5 @@
+import '../../shared/widgets/ascent_dialog.dart';
+import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/music_companion_card.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -16,7 +18,6 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
-import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/live_session_bar.dart';
@@ -103,43 +104,13 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       );
       return;
     }
-    final confirm = await showDialog<bool>(
+    final confirm = await AscentDialog.confirm(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: context.bgSurface,
-        shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr20),
-        title: Text(
-          'Complete session?',
-          style: AscentTextStyles.displaySmall.copyWith(
-            color: context.textPrimary,
-          ),
-        ),
-        content: Text(
-          'Complete session for "$taskTitle"?\nTotal duration: $totalTime',
-          style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
-          ),
-          ElevatedButton(
-            style: context.surfaces.buttonStyle(
-              ElevatedButton.styleFrom(
-                backgroundColor: context.accentPrimary,
-                foregroundColor: context.textOnPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppGeometry.roundedr10,
-                ),
-              ),
-              filled: true,
-              icon: false,
-            ),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Complete'),
-          ),
-        ],
-      ),
+      title: 'Complete session?',
+      content: 'Complete session for "$taskTitle"?\nTotal duration: $totalTime',
+      confirmLabel: 'Complete',
+      cancelLabel: 'Keep focusing',
+      icon: Icons.check_circle_outline_rounded,
     );
 
     if (confirm == true && mounted) {
@@ -386,29 +357,31 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
         padding: const EdgeInsets.symmetric(horizontal: AppSpace.s20),
         children: [
           // ── Today across all tasks strip ───────────────────────────
-          AppCard(
-            margin: const EdgeInsets.only(bottom: AppSpace.s16),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpace.s14,
-              vertical: AppSpace.s10,
+          GlassSurface(
+            radius: 14,
+            fillColor: g.isDark
+                ? const Color(0xFF14171C)
+                : g.fill.withValues(alpha: 0.5),
+            customBorder: Border.all(
+              color: g.line.withValues(alpha: 0.25),
+              width: 1.0,
             ),
-            nightDecoration: BoxDecoration(
-              color: context.bgSurface,
-              borderRadius: AppGeometry.roundedr12,
-              border: Border.all(color: context.divider),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16,
+              vertical: AppSpace.s12,
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.schedule_rounded,
                   size: 16,
-                  color: context.accentPrimary,
+                  color: g.clay,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Today across all tasks:',
                   style: AscentTextStyles.bodySmall.copyWith(
-                    color: context.textMuted,
+                    color: g.inkMuted,
                   ),
                 ),
                 const Spacer(),
@@ -416,19 +389,22 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   _formatHoursAndMinutes(totalLoggedTodaySeconds),
                   style: AppTypography.jetBrainsMonoInheritedRegular72(
                     textStyle: AscentTextStyles.labelMedium
-                        .copyWith(color: context.accentPrimary)
-                        .merge(AppTypeRoles.typeRole2),
+                        .copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w700,
+                        ),
                   ),
                 ),
                 Text(
                   ' logged',
                   style: AscentTextStyles.bodySmall.copyWith(
-                    color: context.textMuted,
+                    color: g.inkMuted,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 14),
 
           // ── Big Clock ──────────────────────────────────────────────
           _BigClockCard(
@@ -652,143 +628,215 @@ class _BigClockCard extends StatelessWidget {
     final isPaused = trackingState.isPaused;
     final hasSession = trackingState.activeSession != null;
     final elapsed = trackingState.elapsedSeconds;
-    final accent = context.accentPrimary;
+    final g = context.glass;
 
-    return AscentCard.solid(
+    return GlassSurface(
       radius: 28,
-      hasShadow: false,
-      hasBorder: false,
+      fillColor: g.isDark
+          ? const Color(0xFF14171C)
+          : g.fill.withValues(alpha: 0.65),
+      customBorder: Border.all(
+        color: isRunning
+            ? g.clay.withValues(alpha: 0.35)
+            : g.line.withValues(alpha: 0.25),
+        width: 1.0,
+      ),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.s24,
-        vertical: 40,
+        vertical: 36,
       ),
-      child: Column(
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          // Task label pill
-          if (hasSession) ...[
-            AppTag(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpace.s10,
-                vertical: AppSpace.s4,
-              ),
-              nightDecoration: BoxDecoration(
-                color: context.bgSurfaceElevated,
-                borderRadius: AppGeometry.roundedr10,
-                border: Border.all(
-                  color: context.divider,
-                  width: AppBorderScale.w0point8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isRunning ? accent : context.glass.amber,
+          if (isRunning)
+            Positioned(
+              top: 30,
+              child: Container(
+                width: 160,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: g.clay.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: g.clay.withValues(alpha: 0.22),
+                      blurRadius: 50,
+                      spreadRadius: 20,
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      trackingState.activeSession!.label,
-                      style: AppTypography.plusJakartaSans12W60073(
-                        color: context.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-          ] else ...[
-            Text(
-              'No active session',
-              style: AscentTextStyles.bodyMedium.copyWith(
-                color: context.textMuted,
-              ),
-            ),
-            const SizedBox(height: 14),
-          ],
-
-          // Clock digits in JetBrains Mono
-          Semantics(
-            label: 'Focus time',
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                hasSession ? formatDuration(elapsed) : '00:00',
-                style: AscentTextStyles.focusTimer.copyWith(
-                  color: isPaused ? context.textMuted : context.textPrimary,
+                  ],
                 ),
               ),
             ),
-          ),
-
-          if (isPaused) ...[
-            const SizedBox(height: 4),
-            Text(
-              'PAUSED',
-              style: AppTypography.jetBrainsMono10W70075(
-                color: context.accentSecondary,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 22),
-
-          // Controls (Compact, clean, professional)
-          if (!hasSession)
-            AscentButton.primary(
-              label: 'Start Focus Session',
-              icon: Icons.play_arrow_rounded,
-              compact: true,
-              onPressed: onStart,
-            )
-          else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: isRunning
-                      ? AscentButton.secondary(
-                          label: 'Pause',
-                          icon: Icons.pause_rounded,
-                          compact: true,
-                          expanded: true,
-                          onPressed: onPause,
-                        )
-                      : AscentButton.primary(
-                          label: 'Resume',
-                          icon: Icons.play_arrow_rounded,
-                          compact: true,
-                          expanded: true,
-                          onPressed: onResume,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Task label pill
+              if (hasSession) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isRunning
+                        ? g.clay.withValues(alpha: 0.12)
+                        : g.ink.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isRunning
+                          ? g.clay.withValues(alpha: 0.35)
+                          : g.line.withValues(alpha: 0.3),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isRunning ? g.clay : g.amber,
+                          boxShadow: isRunning
+                              ? [
+                                  BoxShadow(
+                                    color: g.clay.withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                  ),
+                                ]
+                              : null,
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          trackingState.activeSession!.label,
+                          style: AppTypography.plusJakartaSans12W60073(
+                            color: g.ink,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: AscentButton.outlined(
-                    label: 'Switch Task',
-                    icon: Icons.swap_horiz_rounded,
-                    compact: true,
-                    expanded: true,
-                    onPressed: onSwitchTask,
+                const SizedBox(height: 16),
+              ] else ...[
+                Text(
+                  'No active session',
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: g.inkMuted,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Clock digits in JetBrains Mono
+              Semantics(
+                label: 'Focus time',
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    hasSession ? formatDuration(elapsed) : '00:00',
+                    style: AscentTextStyles.focusTimer.copyWith(
+                      color: isPaused
+                          ? g.inkMuted
+                          : (isRunning ? g.ink : g.inkSecondary),
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ),
+              ),
+
+              if (isPaused) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.amberSoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'PAUSED',
+                    style: AppTypography.jetBrainsMono10W70075(
+                      color: g.amber,
+                    ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 10),
-            AscentButton.ghost(
-              label: 'Complete Session',
-              icon: Icons.check_circle_outline_rounded,
-              compact: true,
-              onPressed: onComplete,
-            ),
-          ],
+
+              const SizedBox(height: 24),
+
+              // Controls (Tactile buttons with selection haptics)
+              if (!hasSession)
+                AscentButton.primary(
+                  label: 'Start Focus Session',
+                  icon: Icons.play_arrow_rounded,
+                  compact: true,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    onStart();
+                  },
+                )
+              else ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: isRunning
+                          ? AscentButton.secondary(
+                              label: 'Pause',
+                              icon: Icons.pause_rounded,
+                              compact: true,
+                              expanded: true,
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                onPause();
+                              },
+                            )
+                          : AscentButton.primary(
+                              label: 'Resume',
+                              icon: Icons.play_arrow_rounded,
+                              compact: true,
+                              expanded: true,
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                onResume();
+                              },
+                            ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: AscentButton.outlined(
+                        label: 'Switch Task',
+                        icon: Icons.swap_horiz_rounded,
+                        compact: true,
+                        expanded: true,
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          onSwitchTask();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                AscentButton.ghost(
+                  label: 'Complete Session',
+                  icon: Icons.check_circle_outline_rounded,
+                  compact: true,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    onComplete();
+                  },
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
@@ -808,6 +856,7 @@ class _StatsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
     return todayTasksAsync.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
@@ -827,20 +876,24 @@ class _StatsPanel extends ConsumerWidget {
           }
         }
 
-        return AppCard(
-          padding: const EdgeInsets.all(AppSpace.s16),
-          nightDecoration: BoxDecoration(
-            color: context.bgSurface,
-            borderRadius: AppGeometry.roundedr16,
-            border: Border.all(color: context.divider),
+        return GlassSurface(
+          radius: 18,
+          fillColor: g.isDark
+              ? const Color(0xFF14171C)
+              : g.fill.withValues(alpha: 0.5),
+          customBorder: Border.all(
+            color: g.line.withValues(alpha: 0.25),
+            width: 1.0,
           ),
+          padding: const EdgeInsets.all(AppSpace.s16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 "Today's Stats",
                 style: AscentTextStyles.labelMedium.copyWith(
-                  color: context.textPrimary,
+                  color: g.ink,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 12),
@@ -849,21 +902,21 @@ class _StatsPanel extends ConsumerWidget {
                   _StatChip(
                     label: 'Study',
                     value: formatMinutes(studySeconds),
-                    color: context.accentPrimary,
+                    color: g.clay,
                     icon: Icons.school_rounded,
                   ),
                   const SizedBox(width: 10),
                   _StatChip(
                     label: 'Break',
                     value: formatMinutes(breakSeconds),
-                    color: context.accentSecondary,
+                    color: g.amber,
                     icon: Icons.sports_esports_rounded,
                   ),
                   const SizedBox(width: 10),
                   _StatChip(
                     label: 'Sessions',
                     value: '${sessions.length}',
-                    color: context.accentInfo,
+                    color: g.sage,
                     icon: Icons.repeat_rounded,
                   ),
                 ],
@@ -891,16 +944,20 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     return Expanded(
-      child: AppCard(
+      child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s10,
           vertical: AppSpace.s10,
         ),
-        nightDecoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: g.isDark ? 0.12 : 0.08),
           borderRadius: AppGeometry.roundedr12,
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(
+            color: color.withValues(alpha: 0.25),
+            width: 1.0,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -909,13 +966,14 @@ class _StatChip extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: AscentTextStyles.statMedium
-                  .copyWith(color: context.textPrimary)
-                  .merge(AppTypeRoles.typeRole30),
+              style: AscentTextStyles.statMedium.copyWith(
+                color: g.ink,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             Text(
               label,
-              style: AppTypeRoles.typeRole18.copyWith(color: context.textMuted),
+              style: AppTypeRoles.typeRole18.copyWith(color: g.inkMuted),
             ),
           ],
         ),

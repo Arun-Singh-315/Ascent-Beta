@@ -8,18 +8,22 @@ import '../../core/theme/app_tokens.dart';
 /// Registry that retains expanded states strictly by thought ID so that
 /// list scrolling, item insertions, deletions, and undos never expand the wrong card.
 class ThoughtExpandedRegistry {
+  static final ValueNotifier<int> notifier = ValueNotifier<int>(0);
   static final Set<int> _expandedIds = <int>{};
 
   static bool isExpanded(int id) => _expandedIds.contains(id);
 
   static bool toggle(int id) {
+    final bool result;
     if (_expandedIds.contains(id)) {
       _expandedIds.remove(id);
-      return false;
+      result = false;
     } else {
       _expandedIds.add(id);
-      return true;
+      result = true;
     }
+    notifier.value++;
+    return result;
   }
 
   static void setExpanded(int id, bool expanded) {
@@ -28,14 +32,17 @@ class ThoughtExpandedRegistry {
     } else {
       _expandedIds.remove(id);
     }
+    notifier.value++;
   }
 
   static void collapse(int id) {
     _expandedIds.remove(id);
+    notifier.value++;
   }
 
   static void clear() {
     _expandedIds.clear();
+    notifier.value++;
   }
 }
 
@@ -151,6 +158,22 @@ class ThoughtExcerpt extends StatefulWidget {
 
 class _ThoughtExcerptState extends State<ThoughtExcerpt> {
   bool _localExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ThoughtExpandedRegistry.notifier.addListener(_onRegistryChanged);
+  }
+
+  @override
+  void dispose() {
+    ThoughtExpandedRegistry.notifier.removeListener(_onRegistryChanged);
+    super.dispose();
+  }
+
+  void _onRegistryChanged() {
+    if (mounted) setState(() {});
+  }
 
   bool get _isExpanded {
     if (widget.thoughtId != null) {

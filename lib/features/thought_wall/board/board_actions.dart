@@ -250,8 +250,26 @@ Future<bool> moveThoughtsToSpace(
 Future<int> deleteThoughtsWithUndo(
   BuildContext context,
   WidgetRef ref,
-  List<Thought> thoughts,
-) async {
+  List<Thought> thoughts, {
+  bool confirm = true,
+}) async {
+  if (thoughts.isEmpty) return 0;
+  if (confirm) {
+    final confirmed = await AscentDialog.confirm(
+      context: context,
+      title: thoughts.length == 1
+          ? 'Delete this thought?'
+          : 'Delete ${thoughts.length} thoughts?',
+      content: thoughts.length == 1
+          ? 'Are you sure you want to delete this thought? You can undo this action.'
+          : 'Are you sure you want to delete ${thoughts.length} thoughts? You can undo this action.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
+    );
+    if (confirmed != true) return 0;
+  }
   HapticFeedback.mediumImpact();
   final dao = ref.read(thoughtDaoProvider);
   try {

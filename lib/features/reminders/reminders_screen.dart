@@ -3,12 +3,12 @@ import '../calendar/calendar_event_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
+import 'widgets/ios_reminder_dialog.dart';
 import 'reminder_action_ui.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
-import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/calendar_view_mode_provider.dart';
@@ -16,9 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:drift/drift.dart' as drift;
 
-import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/monochrome_surfaces.dart';
 import '../../app/theme/shared_control_tokens.dart';
@@ -33,36 +31,10 @@ import '../../core/services/festival_service.dart';
 import '../../shared/widgets/festive_sparkle_badge.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
-import '../../shared/widgets/ascent_switch_row.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:go_router/go_router.dart';
 import '../plans/widgets/plan_detail_sheet.dart';
-
-enum _ReminderRepeatMode {
-  none('One-time', 'Specific date only', Icons.event_rounded),
-  monthly(
-    'Monthly (SIP/Bills)',
-    'Same date every month for 12 months',
-    Icons.event_repeat_rounded,
-  ),
-  daily7('7 Days', 'Every day for next week', Icons.date_range_rounded),
-  daily30(
-    'Whole Month',
-    'Every day for next 30 days',
-    Icons.calendar_month_rounded,
-  ),
-  weekdays(
-    'Weekdays',
-    'Mon to Fri for next 4 weeks',
-    Icons.work_history_outlined,
-  );
-
-  final String label;
-  final String subtitle;
-  final IconData icon;
-  const _ReminderRepeatMode(this.label, this.subtitle, this.icon);
-}
 
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({
@@ -201,551 +173,25 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     }
   }
 
-  void _openAddEditReminderSheet([Reminder? existing, DateTime? initialDate]) {
-    final titleController = TextEditingController(text: existing?.title ?? '');
-    DateTime scheduledDate =
-        existing?.scheduledAt ??
-        (initialDate != null
-            ? DateTime(
-                initialDate.year,
-                initialDate.month,
-                initialDate.day,
-                DateTime.now().hour < 23 ? DateTime.now().hour + 1 : 9,
-              )
-            : DateTime.now().add(const Duration(hours: 1)));
-    TimeOfDay scheduledTime = TimeOfDay.fromDateTime(scheduledDate);
-    _ReminderRepeatMode repeatMode = _ReminderRepeatMode.none;
-    bool alarmEnabled = existing?.alarmEnabled ?? false;
-    bool saving = false;
-    String? alarmInfo;
-    String? titleError;
-
-    showAscentFrostedDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        final media = MediaQuery.of(dialogContext);
-        final keyboard = media.viewInsets.bottom;
-        final available =
-            media.size.height - keyboard - media.padding.vertical - 32;
-        return SafeArea(
-          child: AnimatedPadding(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + keyboard),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 440,
-                  maxHeight: available < 280 ? 280 : available,
-                ),
-                child: Material(
-                  color: dialogContext.glass.bg,
-                  clipBehavior: Clip.antiAlias,
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                    side: BorderSide(color: dialogContext.glass.line),
-                  ),
-                  child: StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: AppSpace.s20,
-                right: AppSpace.s20,
-                top: AppSpace.s20,
-                bottom: AppSpace.s20,
-              ),
-              child: Scrollbar(
-                                child: SingleChildScrollView(
-                  child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          existing == null ? 'New Reminder' : 'Edit Reminder',
-                          style: AscentTextStyles.displaySmall
-                              .copyWith(color: context.textPrimary)
-                              .merge(AppTypeRoles.typeRole21),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: titleController,
-                      autofocus: existing == null,
-                      style: AscentTextStyles.bodyMedium.copyWith(
-                        color: context.textPrimary,
-                      ),
-                      onChanged: (_) {
-                        if (titleError != null) {
-                          setSheetState(() => titleError = null);
-                        }
-                      },
-                      decoration: InputDecoration(
-                        labelText: 'Reminder Title *',
-                        hintText: 'e.g. Solve LeetCode DP, Review notes, Walk',
-                        errorText: titleError,
-                        border: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Starting Date & Time',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: context.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.calendar_today, size: 16),
-                            label: Text(
-                              DateFormat('EEE, MMM d').format(scheduledDate),
-                            ),
-                            style: context.surfaces.buttonStyle(
-                              OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpace.s14,
-                                ),
-                                backgroundColor: context.glass.fill,
-                                side: BorderSide(color: context.glass.edge),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: AppGeometry.roundedr12,
-                                ),
-                              ),
-                              filled: false,
-                              icon: false,
-                            ),
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: scheduledDate,
-                                firstDate: DateTime.now().subtract(
-                                  const Duration(days: 1),
-                                ),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 365),
-                                ),
-                              );
-                              if (picked != null) {
-                                setSheetState(() {
-                                  scheduledDate = DateTime(
-                                    picked.year,
-                                    picked.month,
-                                    picked.day,
-                                    scheduledTime.hour,
-                                    scheduledTime.minute,
-                                  );
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time, size: 16),
-                            label: Text(scheduledTime.format(context)),
-                            style: context.surfaces.buttonStyle(
-                              OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: AppSpace.s14,
-                                ),
-                                backgroundColor: context.glass.fill,
-                                side: BorderSide(color: context.glass.edge),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: AppGeometry.roundedr12,
-                                ),
-                              ),
-                              filled: false,
-                              icon: false,
-                            ),
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: scheduledTime,
-                              );
-                              if (picked != null) {
-                                setSheetState(() {
-                                  scheduledTime = picked;
-                                  scheduledDate = DateTime(
-                                    scheduledDate.year,
-                                    scheduledDate.month,
-                                    scheduledDate.day,
-                                    picked.hour,
-                                    picked.minute,
-                                  );
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (existing == null) ...[
-                      const SizedBox(height: 18),
-                      Text(
-                        'Repeat Schedule',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Schedule daily focus nudges across multiple days or the whole month',
-                        style: AscentTextStyles.bodySmall.copyWith(
-                          color: context.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _ReminderRepeatMode.values.map((mode) {
-                          final isSelected = repeatMode == mode;
-                          return AppPill.choice(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  mode.icon,
-                                  size: 14,
-                                  color: isSelected
-                                      ? context.glass.clay
-                                      : context.textPrimary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(mode.label),
-                              ],
-                            ),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setSheetState(() => repeatMode = mode);
-                              }
-                            },
-                            selectedColor: context.glass.claySoft,
-                            backgroundColor: context.glass.fill,
-                            side: BorderSide(
-                              color: isSelected
-                                  ? context.glass.clay
-                                  : context.glass.edge,
-                            ),
-                            labelStyle:
-                                AppStateTypography.stateType7(
-                                  state0: isSelected,
-                                ).copyWith(
-                                  color: isSelected
-                                      ? context.glass.clay
-                                      : context.glass.ink,
-                                ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 8),
-                      AppTag(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s12,
-                          vertical: AppSpace.s8,
-                        ),
-                        nightDecoration: BoxDecoration(
-                          color: context.glass.claySoft,
-                          borderRadius: AppGeometry.roundedr10,
-                          border: Border.all(
-                            color: context.glass.clay.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              size: 16,
-                              color: context.glass.clay,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                repeatMode == _ReminderRepeatMode.none
-                                    ? 'Fires once on the selected date.'
-                                    : repeatMode == _ReminderRepeatMode.daily7
-                                    ? 'Fires every day for the next 7 days at ${scheduledTime.format(context)}.'
-                                    : repeatMode == _ReminderRepeatMode.daily30
-                                    ? 'Fires every day for the next 30 days (whole month) at ${scheduledTime.format(context)}.'
-                                    : 'Fires every weekday (Mon-Fri) for the next 4 weeks at ${scheduledTime.format(context)}.',
-                                style: AscentTextStyles.bodySmall
-                                    .copyWith(color: context.textPrimary)
-                                    .merge(AppTypeRoles.typeRole27),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    AscentSwitchRow(
-                      title: 'Ring as an alarm',
-                      helper:
-                          'Optional. Rings until Snooze or Done. Off uses a normal notification.',
-                      value: alarmEnabled,
-                      enabled: !saving,
-                      onChanged: (value) =>
-                          setSheetState(() => alarmEnabled = value),
-                    ),
-                    if (alarmEnabled) ...[
-                      const Text(
-                        'Lock-screen popups require Android alarm access. Without popup access, use the alarm notification to open Snooze and Done.',
-                      ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.alarm_on_outlined),
-                        label: const Text('Enable alarm access'),
-                        onPressed: () async {
-                          try {
-                            if (!await NotificationService.instance
-                                .areNotificationsEnabled()) {
-                              await NotificationService.instance
-                                  .requestPermissions();
-                            }
-                            await ReminderAlarmBridge.requestAccess();
-                            final access = await ReminderAlarmBridge.access();
-                            if (context.mounted) {
-                              setSheetState(
-                                () => alarmInfo =
-                                    access['exact'] == true &&
-                                        access['fullScreen'] == true &&
-                                        access['notifications'] == true
-                                    ? 'Alarm access is ready.'
-                                    : 'Enable notification, exact alarm and popup access in Android settings, then return here.',
-                              );
-                            }
-                          } catch (_) {
-                            if (context.mounted) {
-                              setSheetState(
-                                () => alarmInfo =
-                                    'Alarm mode needs Android alarm access.',
-                              );
-                            }
-                          }
-                        },
-                      ),
-                    ],
-                    if (alarmInfo != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpace.s12),
-                        child: Text(alarmInfo!),
-                      ),
-                    AscentButton.primary(
-                      label: existing == null
-                          ? 'Set Reminder'
-                          : 'Update Reminder',
-                      expanded: true,
-                      onPressed: saving
-                          ? null
-                          : () async {
-                              if (saving) return;
-                              final title = titleController.text.trim();
-                              if (title.isEmpty) {
-                                setSheetState(
-                                  () =>
-                                      titleError = 'Title cannot be left empty',
-                                );
-                                HapticFeedback.lightImpact();
-                                return;
-                              }
-
-                              final dao = ref.read(reminderDaoProvider);
-                              final baseScheduled = DateTime(
-                                scheduledDate.year,
-                                scheduledDate.month,
-                                scheduledDate.day,
-                                scheduledTime.hour,
-                                scheduledTime.minute,
-                              );
-
-                              if (!baseScheduled.isAfter(DateTime.now())) {
-                                setSheetState(
-                                  () => alarmInfo =
-                                      'Choose a future date and time.',
-                                );
-                                return;
-                              }
-                              setSheetState(() => saving = true);
-                              var failedAlerts = 0;
-                              try {
-                                if (!await NotificationService.instance
-                                    .areNotificationsEnabled()) {
-                                  await NotificationService.instance
-                                      .requestPermissions();
-                                }
-                                if (existing == null) {
-                                  // Handle multi-day / recurring reminder insertion
-                                  List<DateTime> datesToSchedule = [];
-                                  if (repeatMode == _ReminderRepeatMode.none) {
-                                    datesToSchedule.add(baseScheduled);
-                                  } else if (repeatMode ==
-                                      _ReminderRepeatMode.monthly) {
-                                    // Schedule on specific day of month across next 12 months for SIP, bills, rent
-                                    for (int m = 0; m < 12; m++) {
-                                      final year =
-                                          baseScheduled.year +
-                                          ((baseScheduled.month - 1 + m) ~/ 12);
-                                      final month =
-                                          ((baseScheduled.month - 1 + m) % 12) +
-                                          1;
-                                      final maxDaysInMonth = DateTime(
-                                        year,
-                                        month + 1,
-                                        0,
-                                      ).day;
-                                      final day =
-                                          baseScheduled.day <= maxDaysInMonth
-                                          ? baseScheduled.day
-                                          : maxDaysInMonth;
-                                      datesToSchedule.add(
-                                        DateTime(
-                                          year,
-                                          month,
-                                          day,
-                                          baseScheduled.hour,
-                                          baseScheduled.minute,
-                                        ),
-                                      );
-                                    }
-                                  } else if (repeatMode ==
-                                      _ReminderRepeatMode.daily7) {
-                                    for (int i = 0; i < 7; i++) {
-                                      datesToSchedule.add(
-                                        baseScheduled.add(Duration(days: i)),
-                                      );
-                                    }
-                                  } else if (repeatMode ==
-                                      _ReminderRepeatMode.daily30) {
-                                    for (int i = 0; i < 30; i++) {
-                                      datesToSchedule.add(
-                                        baseScheduled.add(Duration(days: i)),
-                                      );
-                                    }
-                                  } else if (repeatMode ==
-                                      _ReminderRepeatMode.weekdays) {
-                                    int added = 0;
-                                    DateTime current = baseScheduled;
-                                    while (added < 20) {
-                                      if (current.weekday >= DateTime.monday &&
-                                          current.weekday <= DateTime.friday) {
-                                        datesToSchedule.add(current);
-                                        added++;
-                                      }
-                                      current = current.add(
-                                        const Duration(days: 1),
-                                      );
-                                    }
-                                  }
-
-                                  for (final d in datesToSchedule) {
-                                    final id = await dao.insertReminder(
-                                      ReminderTableCompanion(
-                                        title: drift.Value(title),
-                                        scheduledAt: drift.Value(d),
-                                        isActive: const drift.Value(true),
-                                        alarmEnabled: drift.Value(alarmEnabled),
-                                        createdAt: drift.Value(DateTime.now()),
-                                      ),
-                                    );
-
-                                    final scheduled = await NotificationService
-                                        .instance
-                                        .scheduleReminderNotificationChecked(
-                                          id: id,
-                                          title: title,
-                                          scheduledAt: d,
-                                          alarmEnabled: alarmEnabled,
-                                        );
-                                    if (!scheduled) failedAlerts++;
-                                  }
-                                } else {
-                                  await dao.updateReminder(
-                                    ReminderTableCompanion(
-                                      id: drift.Value(existing.id),
-                                      title: drift.Value(title),
-                                      scheduledAt: drift.Value(baseScheduled),
-                                      isActive: const drift.Value(true),
-                                      alarmEnabled: drift.Value(alarmEnabled),
-                                      createdAt: drift.Value(
-                                        existing.createdAt,
-                                      ),
-                                    ),
-                                  );
-
-                                  final scheduled = await NotificationService
-                                      .instance
-                                      .scheduleReminderNotificationChecked(
-                                        id: existing.id,
-                                        title: title,
-                                        scheduledAt: baseScheduled,
-                                        alarmEnabled: alarmEnabled,
-                                      );
-                                  if (!scheduled) failedAlerts++;
-                                }
-
-                                ref.invalidate(allRemindersProvider);
-                                ref.invalidate(nextUpcomingReminderProvider);
-
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    AscentSnackBar.build(
-                                      context,
-                                      content: Text(
-                                        failedAlerts > 0
-                                            ? 'Saved. $failedAlerts alerts need notification or alarm access. Enable access and tap Sync reminder alerts.'
-                                            : existing == null
-                                            ? (repeatMode ==
-                                                      _ReminderRepeatMode.none
-                                                  ? 'Reminder scheduled'
-                                                  : 'Recurring reminders scheduled (${repeatMode.label})')
-                                            : 'Reminder updated',
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } catch (_) {
-                                if (context.mounted) {
-                                  setSheetState(
-                                    () => alarmInfo =
-                                        'Could not finish saving. Check the saved reminders before retrying.',
-                                  );
-                                }
-                              } finally {
-                                if (context.mounted) {
-                                  setSheetState(() => saving = false);
-                                }
-                              }
-                            },
-                    ),
-                  ],
-                ),
-              ),
-              ),
-            );
-          },
-        ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
+  Future<void> _openAddEditReminderSheet([Reminder? existing, DateTime? initialDate]) async {
+    final result = await showIOSReminderDialog(
+      context,
+      existing: existing,
+      initialDate: initialDate,
     );
+    if (result != null && mounted) {
+      ref.invalidate(allRemindersProvider);
+      ref.invalidate(nextUpcomingReminderProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        AscentSnackBar.build(
+          context,
+          content: Text(
+            existing == null ? 'Reminder scheduled' : 'Reminder updated',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _finishReminder(Reminder row) async {
@@ -757,7 +203,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   }
 
   Future<void> _confirmDeleteReminder(Reminder row) async {
-    await runReminderAction(context, ref, row, ReminderRowAction.delete);
+    final confirmed = await AscentDialog.confirm(
+      context: context,
+      title: 'Delete this reminder?',
+      content:
+          'Are you sure you want to delete "${row.title}"? You can undo this immediately afterwards.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep reminder',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
+    );
+    if (confirmed == true && mounted) {
+      await runReminderAction(context, ref, row, ReminderRowAction.delete);
+    }
   }
 
   Widget _notificationPermissionNotice() {

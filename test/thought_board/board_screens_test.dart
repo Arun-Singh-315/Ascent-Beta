@@ -9,6 +9,7 @@ import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:ascent/features/thought_wall/board/thought_space_screen.dart';
 import 'package:ascent/features/thought_wall/board/board_background.dart';
 import 'package:ascent/features/thought_wall/board/board_logic.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -311,6 +312,10 @@ void main() {
       expect(find.text('None'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('select_delete')));
       await settle(tester);
+      if (find.text('Delete').evaluate().isNotEmpty) {
+        await tester.tap(find.widgetWithText(AscentButton, 'Delete'));
+        await settle(tester);
+      }
       await tester.runAsync(() async {
         expect(await db.thoughtDao.getThoughtById(ids.first), isNull);
         expect(
@@ -345,6 +350,10 @@ void main() {
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('select_delete')));
       await settle(tester);
+      if (find.text('Delete').evaluate().isNotEmpty) {
+        await tester.tap(find.widgetWithText(AscentButton, 'Delete'));
+        await settle(tester);
+      }
       await tester.runAsync(() async {
         expect((await db.select(db.thoughtTable).get()).length, 2);
       });

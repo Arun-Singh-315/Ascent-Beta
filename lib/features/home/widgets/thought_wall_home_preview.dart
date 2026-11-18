@@ -1409,6 +1409,10 @@ class _HomeThoughtBubble extends ConsumerWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.bubble),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          ThoughtExpandedRegistry.toggle(thought.id);
+        },
         onDoubleTap: onTap,
         onLongPress: onAction,
         child: Container(
