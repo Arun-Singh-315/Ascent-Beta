@@ -35,7 +35,7 @@ void main() {
     );
   });
 
-  test('newest open thought becomes the hero, rest grouped by day', () {
+  test('open thoughts are grouped by day newest first, pinned at top', () {
     final content = buildBoardContent([
       t(1, 'old', at: DateTime(2026, 10, 1)),
       t(2, 'today new', at: DateTime(2026, 10, 31, 9, 30)),
@@ -43,25 +43,12 @@ void main() {
       t(4, 'pinned', pinned: true, at: DateTime(2026, 10, 2)),
       t(5, 'finished', done: true),
     ], now: now);
-    expect(content.hero!.id, 2);
     expect(content.sections.first.label, 'Pinned');
-    expect(content.sections.map((s) => s.label), contains('Today'));
-    expect(content.done.single.id, 5);
-  });
+    expect(content.sections.first.thoughts.single.id, 4);
 
-  test('hero can be forced and locked thoughts are skipped', () {
-    final all = [t(1, 'a'), t(2, 'b', at: DateTime(2026, 10, 30))];
-    expect(buildBoardContent(all, now: now, heroId: 2).hero!.id, 2);
-    expect(
-      buildBoardContent(
-        all,
-        now: now,
-        heroId: 1,
-        excludedFromHero: {1},
-      ).hero!.id,
-      2,
-    );
-    expect(buildBoardContent(all, now: now, excludedFromHero: {1}).hero!.id, 2);
+    final todaySection = content.sections.firstWhere((s) => s.label == 'Today');
+    expect(todaySection.thoughts.map((th) => th.id), [2, 3]);
+    expect(content.done.single.id, 5);
   });
 
   test('balanceColumns fills the shorter column', () {

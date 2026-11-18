@@ -110,7 +110,7 @@ void main() {
       final text = tester.widget<Text>(
         find.byKey(const ValueKey('home_latest_thought_text')),
       );
-      expect(text.data, message);
+      expect(text.textSpan?.toPlainText() ?? text.data, message);
       expect(text.maxLines, 4);
       expect(text.overflow, TextOverflow.ellipsis);
 
@@ -140,8 +140,6 @@ void main() {
         ).writeAsBytes(bytes!.buffer.asUint8List());
         rendered.dispose();
       });
-      await tester.tap(bubble);
-      await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(bubble);
       await tester.pumpAndSettle();
       expect(find.text('Opened $latestId'), findsOneWidget);

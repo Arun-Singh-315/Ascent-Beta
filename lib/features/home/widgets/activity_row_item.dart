@@ -883,9 +883,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     final paused = activity.status == TodayActivityStatus.paused;
     final lecture = activity.sourceType == 'lecture';
     final timed =
-        lecture ||
-        activity.kind != ActivityKind.todo ||
-        (activity.targetMinutes ?? 0) > 0;
+        !lecture &&
+        (activity.kind != ActivityKind.todo ||
+            (activity.targetMinutes ?? 0) > 0);
 
     final String? createdLabel = activity.createdAt != null
         ? 'Created ${_formatActivityTimestamp(activity.createdAt!)}'
@@ -907,7 +907,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ].join(' · ')
         : [
             if (activity.sourceType == 'medicine') 'Medicine',
-            if (lecture) 'Lecture',
+            if (lecture) (running ? 'Lecture in progress' : 'Lecture'),
             ?timeLabel,
           ].join(' · ');
 
@@ -1033,11 +1033,15 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
 
     Widget buildLeadingTarget() {
       Widget content;
-      if (timed) {
+      if (lecture) {
         content = Icon(
-          lecture
-              ? Icons.school_outlined
-              : (running ? Icons.timer_rounded : Icons.timer_outlined),
+          Icons.school_outlined,
+          size: 20,
+          color: running ? SharedControlColors.actionBlue : g.inkMuted,
+        );
+      } else if (timed) {
+        content = Icon(
+          running ? Icons.timer_rounded : Icons.timer_outlined,
           size: 20,
           color: running
               ? SharedControlColors.actionBlue
@@ -1256,6 +1260,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 ))
         : null;
 
+    final Widget? lectureAction = (lecture && !done)
+        ? IconButton(
+            key: ValueKey('activity_lecture_open_${activity.id}'),
+            tooltip: 'Open in Learning Hub',
+            icon: Icon(
+              Icons.open_in_new_rounded,
+              size: 18,
+              color: g.clay,
+            ),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              _openActivityLecture(context, ref, activity);
+            },
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          )
+        : null;
+
     final Widget? scheduledBadge = (!timed && activity.isScheduledInFuture)
         ? Semantics(
             button: true,
@@ -1363,13 +1384,13 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             Text(
                               activity.title,
                               key: ValueKey('activity_title_${activity.id}'),
-                              maxLines: accessibleTitle
-                                  ? null
-                                  : (widget.featured ? 4 : 2),
-                              overflow: accessibleTitle
-                                  ? TextOverflow.visible
-                                  : TextOverflow.ellipsis,
-                              softWrap: true,
+                              maxLines: lecture
+                                  ? 1
+                                  : (accessibleTitle
+                                        ? null
+                                        : (widget.featured ? 4 : 2)),
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: !lecture,
                               style: TextStyle(
                                 color: visualDone ? g.inkMuted : g.ink,
                                 fontSize: widget.featured
@@ -1450,6 +1471,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             ),
                           ),
                         ),
+                      ],
+                      if (lectureAction != null) ...[
+                        const SizedBox(width: 4),
+                        lectureAction,
                       ],
                       InkResponse(
                         radius: 16,

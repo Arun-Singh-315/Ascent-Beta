@@ -64,8 +64,13 @@ class SpacesShelf extends ConsumerWidget {
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) =>
-          _AllSpacesSheet(spaces: spaces, onOpen: onOpen, onNew: onNew),
+      builder: (_) => _AllSpacesSheet(
+        spaces: spaces,
+        onOpen: onOpen,
+        onNew: onNew,
+        onOpenArchive: onOpenArchive,
+        archivedCount: archivedCount,
+      ),
     );
   }
 
@@ -399,11 +404,15 @@ class _AllSpacesSheet extends ConsumerStatefulWidget {
     required this.spaces,
     required this.onOpen,
     required this.onNew,
+    required this.onOpenArchive,
+    required this.archivedCount,
   });
 
   final List<SpaceSummary> spaces;
   final ValueChanged<SpaceSummary> onOpen;
   final VoidCallback onNew;
+  final VoidCallback onOpenArchive;
+  final int archivedCount;
 
   @override
   ConsumerState<_AllSpacesSheet> createState() => _AllSpacesSheetState();
@@ -595,6 +604,46 @@ class _AllSpacesSheetState extends ConsumerState<_AllSpacesSheet> {
                         },
                       ),
               ),
+              if (_query.isEmpty || 'archive'.contains(_query.toLowerCase())) ...[
+                const Divider(height: 1),
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s8,
+                    vertical: 2,
+                  ),
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: g.inkMuted.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.archive_outlined, size: 18, color: g.inkMuted),
+                  ),
+                  title: Text(
+                    'Archive',
+                    style: AscentTextStyles.labelLarge.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${widget.archivedCount} archived entries',
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: g.inkSecondary,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: g.inkMuted,
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    widget.onOpenArchive();
+                  },
+                ),
+              ],
             ],
           ),
         ),

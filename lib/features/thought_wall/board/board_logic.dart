@@ -131,15 +131,13 @@ class BoardSection {
 /// Everything the board draws, derived from the active wall thoughts.
 class BoardContent {
   const BoardContent({
-    required this.hero,
     required this.sections,
     required this.done,
   });
-  final Thought? hero;
   final List<BoardSection> sections;
   final List<Thought> done;
 
-  bool get isEmpty => hero == null && sections.isEmpty && done.isEmpty;
+  bool get isEmpty => sections.isEmpty && done.isEmpty;
 }
 
 DateTime _dayOf(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -161,11 +159,10 @@ int _newestFirst(Thought a, Thought b) {
 
 /// Builds the board from the non-archived thoughts that belong on the wall.
 ///
-/// * [heroId] (a thought opened from Home) or else the newest open thought
-///   becomes the hero card, unless it is in [excludedFromHero].
-/// * Pinned open thoughts form a "Pinned" section.
-/// * The rest are grouped by day, newest first.
-/// * Completed thoughts are returned separately.
+/// * Pinned open thoughts form a "Pinned" section at the top.
+/// * Non-pinned open thoughts are grouped by day (e.g. "Today"), sorted newest first.
+/// * Every thought uses the standard card format.
+/// * Completed thoughts are returned in [done].
 BoardContent buildBoardContent(
   List<Thought> wallThoughts, {
   required DateTime now,
@@ -177,22 +174,13 @@ BoardContent buildBoardContent(
   final done = wallThoughts.where((t) => t.isCompleted).toList()
     ..sort(_newestFirst);
 
-  Thought? hero;
-  if (heroId != null) {
-    hero = open
-        .where((t) => t.id == heroId && !excludedFromHero.contains(t.id))
-        .firstOrNull;
-  }
-  hero ??= open.where((t) => !excludedFromHero.contains(t.id)).firstOrNull;
-  final rest = open.where((t) => t.id != hero?.id).toList();
-
   final sections = <BoardSection>[];
-  final pinned = rest.where((t) => t.isPinned).toList();
+  final pinned = open.where((t) => t.isPinned).toList();
   if (pinned.isNotEmpty) sections.add(BoardSection('Pinned', pinned));
 
   final labels = <String>[];
   final byLabel = <String, List<Thought>>{};
-  for (final thought in rest.where((t) => !t.isPinned)) {
+  for (final thought in open.where((t) => !t.isPinned)) {
     final label = boardDayLabel(thought.createdAt, now);
     if (!byLabel.containsKey(label)) labels.add(label);
     byLabel.putIfAbsent(label, () => []).add(thought);
@@ -200,7 +188,7 @@ BoardContent buildBoardContent(
   for (final label in labels) {
     sections.add(BoardSection(label, byLabel[label]!));
   }
-  return BoardContent(hero: hero, sections: sections, done: done);
+  return BoardContent(sections: sections, done: done);
 }
 
 /// Summary of one space for the shelf.

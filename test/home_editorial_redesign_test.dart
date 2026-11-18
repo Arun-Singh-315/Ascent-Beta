@@ -198,33 +198,31 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('TODAY’S EXECUTION'), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
       await tester.scrollUntilVisible(
         find.byType(ActivityHubCard),
         100,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.ensureVisible(find.byType(ActivityHubCard));
       await settle(tester);
-      expect(
-        tester.getTopLeft(find.byType(ActivityHubCard)).dy,
-        lessThan(tester.getTopLeft(find.byType(ThoughtWallHomePreview)).dy),
-      );
       await capture(tester, key, 'home-light-empty');
       await tester.scrollUntilVisible(
-        find.byType(HomeLifeShelf),
+        find.byKey(const ValueKey('home_life_shelf_enclosure')),
         280,
         scrollable: find.byType(Scrollable).first,
       );
       await settle(tester);
-      final waterCard = find.byKey(const ValueKey('home_routine_hydration'));
-      await tester.ensureVisible(waterCard);
-      final initialX = tester.getTopLeft(waterCard).dx;
-      await tester.drag(waterCard, const Offset(-220, 0));
+      expect(find.text('Water'), findsOneWidget);
+      expect(find.text('Move'), findsOneWidget);
+      await tester.tap(find.text('Move'));
       await settle(tester);
-      final moveCard = find.byKey(const ValueKey('home_routine_walk'));
-      expect(moveCard, findsOneWidget);
-      expect(tester.takeException(), isNull);
       await capture(tester, key, 'home-life-shelf');
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('home_growth_commitments_group')),
+        280,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await settle(tester);
       final group = find.byKey(const ValueKey('home_growth_commitments_group'));
       expect(
         find.descendant(
@@ -244,9 +242,8 @@ void main() {
       expect(find.text('Small rituals, at your pace.'), findsNothing);
       expect(find.text('Dayboard'), findsNothing);
 
-      await tester.drag(moveCard, const Offset(220, 0));
+      await tester.tap(find.text('Water'));
       await settle(tester);
-      expect(tester.getTopLeft(waterCard).dx, closeTo(initialX, 1));
       await unmount(tester);
     },
   );

@@ -617,7 +617,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       onDoubleTap: () => toggleThoughtDone(context, ref, t),
     );
 
-    final hero = content.hero;
     return PopScope(
       canPop: !_selecting,
       onPopInvokedWithResult: (didPop, _) {
@@ -667,7 +666,9 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   tooltip: 'Settings',
                   icon: Icon(Icons.tune_rounded, color: g.ink),
                   onSelected: (value) async {
-                    if (value == 'history') {
+                    if (value == 'archive') {
+                      context.push(thoughtSpaceLocation(archiveSpaceKey));
+                    } else if (value == 'history') {
                       context.push('/history?module=thoughts');
                     } else if (value == 'promises') {
                       context.push('/promises');
@@ -708,7 +709,26 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(value:'history',child:Text('History')),
+                    const PopupMenuItem(
+                      value: 'archive',
+                      child: Row(
+                        children: [
+                          Icon(Icons.archive_outlined, size: 18),
+                          SizedBox(width: 10),
+                          Text('Archive'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'history',
+                      child: Row(
+                        children: [
+                          Icon(Icons.history_rounded, size: 18),
+                          SizedBox(width: 10),
+                          Text('History ledger'),
+                        ],
+                      ),
+                    ),
                     const PopupMenuItem(
                       value: 'background',
                       child: Row(
@@ -813,38 +833,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                                   ),
                                   sliver: SliverList.list(
                                     children: [
-                                      if (hero != null) ...[
-                                        BoardHeroCard(
-                                          key: ValueKey(
-                                            'board_hero_${hero.id}',
-                                          ),
-                                          thought: hero,
-                                          now: now,
-                                          appearance: appearance,
-                                          label: _openedId == hero.id
-                                              ? 'Opened'
-                                              : 'Latest',
-                                          isSelected: _selected.contains(
-                                            hero.id,
-                                          ),
-                                          isSelectionMode: _selecting,
-                                          onTap: () => _selecting
-                                              ? _toggle(hero.id)
-                                              : ThoughtDetailSheet.show(
-                                                  context,
-                                                  hero,
-                                                ),
-                                          onLongPress: () => _selecting
-                                              ? _toggle(hero.id)
-                                              : _startSelecting(hero.id),
-                                          onDoubleTap: () => toggleThoughtDone(
-                                            context,
-                                            ref,
-                                            hero,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppSpace.s4),
-                                      ],
                                       for (final section
                                           in content.sections) ...[
                                         _sectionHeader(

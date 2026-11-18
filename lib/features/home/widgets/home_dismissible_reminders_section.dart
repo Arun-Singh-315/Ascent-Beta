@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../core/database/app_database.dart';
 
@@ -54,6 +54,13 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                 ),
               ),
             ),
+            if (onAddReminder != null)
+              IconButton(
+                key: const ValueKey('home_reminder_add_button'),
+                tooltip: 'New reminder',
+                icon: Icon(Icons.add_rounded, size: 20, color: g.ink),
+                onPressed: onAddReminder,
+              ),
             if (onViewAll != null)
               IconButton(
                 tooltip: 'All reminders',
@@ -69,8 +76,12 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
   }
 
   Widget _buildReminder(BuildContext context, Reminder reminder) {
-    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF15181C) : const Color(0xFF1E2126);
+    final cardBorder = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.white.withValues(alpha: 0.12);
+
     return Dismissible(
       key: ValueKey('home_reminder_${reminder.id}'),
       direction: DismissDirection.horizontal,
@@ -148,12 +159,10 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
           child: GlassSurface(
             radius: 18,
             enableBlur: false,
-            fillColor: isDark
-                ? null
-                : (g.merlot ? MerlotPalette.surface : Colors.white),
+            fillColor: cardBg,
             customBorder: Border.all(
-              color: g.merlot ? MerlotPalette.line : g.edge,
-              width: 0.75,
+              color: cardBorder,
+              width: 1.0,
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s14,
@@ -164,7 +173,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    // Quick mark done toggle button
+                    // Quick mark done circular toggle (zero blue sidebar)
                     InkWell(
                       onTap: () async {
                         HapticFeedback.mediumImpact();
@@ -174,25 +183,14 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                       },
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
-                        width: 48,
-                        height: 48,
+                        width: 24,
+                        height: 24,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: g.merlot
-                              ? (isDark
-                                    ? MerlotPalette.darkTint
-                                    : MerlotPalette.tint)
-                              : g.clay.withValues(alpha: 0.12),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.notifications_active_outlined,
-                            color: g.merlot
-                                ? (isDark
-                                      ? MerlotPalette.darkActionBright
-                                      : MerlotPalette.action)
-                                : g.clay,
-                            size: 18,
+                          color: Colors.transparent,
+                          border: Border.all(
+                            color: Colors.white38,
+                            width: 1.5,
                           ),
                         ),
                       ),
@@ -205,17 +203,17 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                         children: [
                           Text(
                             reminder.title,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.plusJakartaSans14W60080(
-                              color: g.ink,
+                              color: Colors.white,
                             ),
                           ),
                           const SizedBox(height: 3),
                           Text(
                             '${DateFormat('d MMM · h:mm a').format(reminder.scheduledAt)}${reminders.length > 1 ? ' · +${reminders.length - 1} more' : ''}',
                             style: AppTypography.plusJakartaSans12Regular57(
-                              color: g.inkMuted,
+                              color: Colors.white60,
                             ),
                           ),
                         ],
@@ -241,16 +239,28 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                     if (onSnoozeReminder != null)
                       IconButton(
                         tooltip: 'Snooze 10 min',
-                        icon: const Icon(Icons.snooze_rounded, size: 18),
+                        icon: const Icon(Icons.snooze_rounded, size: 18, color: Colors.white70),
                         onPressed: () => onSnoozeReminder!(reminder),
                       ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline_rounded, size: 18),
                       tooltip: 'Delete',
-                      color: g.inkMuted,
+                      color: Colors.white60,
                       onPressed: () async {
                         HapticFeedback.lightImpact();
-                        await onDismissReminder(reminder);
+                        final confirmed = await AscentDialog.confirm(
+                          context: context,
+                          title: 'Delete this reminder?',
+                          content:
+                              'Are you sure you want to delete "${reminder.title}"? You can undo this action.',
+                          confirmLabel: 'Delete',
+                          cancelLabel: 'Keep',
+                          isDestructive: true,
+                          icon: Icons.delete_outline_rounded,
+                        );
+                        if (confirmed == true) {
+                          await onDismissReminder(reminder);
+                        }
                       },
                     ),
                   ],

@@ -1,8 +1,4 @@
-import 'package:drift/drift.dart' show Value, BooleanExpressionOperators;
-import 'package:intl/intl.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/notifications/reminder_alert_sync.dart';
-import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../plans/widgets/plan_protection_dialog.dart';
 import 'package:flutter/material.dart';
@@ -10,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/providers/time_tracking_provider.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../thought_wall/board/board_actions.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
 import '../../reminders/reminder_action_ui.dart';
+import '../../reminders/widgets/ios_reminder_dialog.dart';
 
 Future<void> showHomeThoughtActions(
   BuildContext context,
@@ -139,11 +137,17 @@ Future<void> editHomeReminder(
       );
       return;
     }
-    await showAscentFrostedDialog<void>(
-      context: context,
-      builder: (_) =>
-          _HomeReminderEditor(reminder: reminder, parentContext: context),
+    final result = await showIOSReminderDialog(
+      context,
+      existing: reminder,
     );
+    if (result != null && context.mounted) {
+      ref.invalidate(homeVisibleRemindersProvider);
+      AscentSnackBar.show(
+        context,
+        message: 'Reminder updated',
+      );
+    }
   } catch (_) {
     if (context.mounted) {
       AscentSnackBar.error(
@@ -151,175 +155,5 @@ Future<void> editHomeReminder(
         message: 'Could not open this reminder. Please retry.',
       );
     }
-  }
-}
-
-class _HomeReminderEditor extends ConsumerStatefulWidget {
-  const _HomeReminderEditor({
-    required this.reminder,
-    required this.parentContext,
-  });
-  final Reminder reminder;
-  final BuildContext parentContext;
-  @override
-  ConsumerState<_HomeReminderEditor> createState() =>
-      _HomeReminderEditorState();
-}
-
-class _HomeReminderEditorState extends ConsumerState<_HomeReminderEditor> {
-  late final controller = TextEditingController(text: widget.reminder.title);
-  late DateTime at = widget.reminder.scheduledAt;
-  bool busy = false;
-  String? error;
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext ctx) {
-    final reminder = widget.reminder;
-    final context = widget.parentContext;
-    final db = ref.read(databaseProvider);
-    return AscentDialog(
-      title: 'Edit reminder',
-      icon: Icons.edit_outlined,
-      contentWidget: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: controller,
-            maxLength: 300,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: 'Reminder',
-              errorText: error,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton.icon(
-            icon: const Icon(Icons.calendar_month_outlined),
-            label: Text(DateFormat('EEE, d MMM · h:mm a').format(at)),
-            onPressed: busy
-                ? null
-                : () async {
-                    final now = DateTime.now();
-                    final date = await showDatePicker(
-                      context: ctx,
-                      initialDate: at.isBefore(now) ? now : at,
-                      firstDate: DateTime(now.year, now.month, now.day),
-                      lastDate: DateTime(now.year + 20),
-                    );
-                    if (date == null || !ctx.mounted) return;
-                    final time = await showTimePicker(
-                      context: ctx,
-                      initialTime: TimeOfDay.fromDateTime(at),
-                    );
-                    if (time != null && ctx.mounted) {
-                      setState(
-                        () => at = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          time.hour,
-                          time.minute,
-                        ),
-                      );
-                    }
-                  },
-          ),
-        ],
-      ),
-      actions: [
-        AscentButton.tonal(
-          label: busy ? 'Saving…' : 'Save changes',
-          expanded: true,
-          onPressed: busy
-              ? null
-              : () async {
-                  final title = controller.text.trim();
-                  if (title.isEmpty) {
-                    setState(() => error = 'Add a reminder title.');
-                    return;
-                  }
-                  if (!at.isAfter(DateTime.now())) {
-                    setState(() => error = 'Choose a future date and time.');
-                    return;
-                  }
-                  final confirmed = await AscentDialog.confirm(
-                    context: ctx,
-                    title: 'Save these changes?',
-                    content:
-                        'The reminder and its alert will use your updated details.',
-                    confirmLabel: 'Save changes',
-                    cancelLabel: 'Keep editing',
-                    icon: Icons.check_rounded,
-                  );
-                  if (confirmed != true || !ctx.mounted) return;
-                  setState(() {
-                    busy = true;
-                    error = null;
-                  });
-                  try {
-                    final count = await db.transaction(() async {
-                      if (await db.reminderDao.getReminderProtection(
-                            reminder.id,
-                          ) !=
-                          null) {
-                        throw StateError('Reminder is now managed by a plan');
-                      }
-                      return (db.update(db.reminderTable)..where(
-                            (r) =>
-                                r.id.equals(reminder.id) &
-                                r.title.equals(reminder.title) &
-                                r.scheduledAt.equals(reminder.scheduledAt) &
-                                r.isActive.equals(reminder.isActive),
-                          ))
-                          .write(
-                            ReminderTableCompanion(
-                              title: Value(title),
-                              scheduledAt: Value(at),
-                              alertSyncPending: const Value(true),
-                            ),
-                          );
-                    });
-                    if (count != 1) throw StateError('Reminder changed');
-                    var synced = true;
-                    try {
-                      synced = (await ReminderAlertSync.device(
-                        db,
-                      ).sync(ids: [reminder.id], onlyPending: true)).complete;
-                    } catch (_) {
-                      synced = false;
-                    }
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    if (context.mounted) {
-                      AscentSnackBar.show(
-                        context,
-                        message: synced
-                            ? 'Reminder updated'
-                            : 'Saved. Retry Sync reminder alerts to update the alert.',
-                      );
-                    }
-                  } catch (_) {
-                    if (ctx.mounted) {
-                      setState(() {
-                        busy = false;
-                        error =
-                            'Could not save. Reopen the reminder and try again.';
-                      });
-                    }
-                  }
-                },
-        ),
-        const SizedBox(height: 8),
-        AscentButton.outlined(
-          label: 'Cancel',
-          expanded: true,
-          onPressed: busy ? null : () => Navigator.pop(ctx),
-        ),
-      ],
-    );
   }
 }

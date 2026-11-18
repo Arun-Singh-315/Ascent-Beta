@@ -442,7 +442,7 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
                     await dao.deleteLog(removed.id);
                     if (!mounted) return;
                     AscentSnackBar.undo(
-                      context,
+                      this.context,
                       message: 'Problem log deleted',
                       onUndo: () => dao.insertLog(removed.toCompanion(true)),
                     );

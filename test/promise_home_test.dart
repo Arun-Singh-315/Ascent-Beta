@@ -52,6 +52,9 @@ void main() {
             activePromisesStreamProvider.overrideWith(
               (ref) => Stream.value([promise]),
             ),
+            completedPromisesStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
+            ),
           ],
           child: MaterialApp(
             theme: AscentTheme.light(),
@@ -126,6 +129,9 @@ void main() {
             activePromisesStreamProvider.overrideWith(
               (ref) => Stream.value([promise]),
             ),
+            completedPromisesStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
+            ),
           ],
           child: MaterialApp(
             theme: AscentTheme.light(),
@@ -181,6 +187,9 @@ void main() {
             promiseRepositoryProvider.overrideWithValue(repository),
             activePromisesStreamProvider.overrideWith(
               (ref) => Stream.value([p1, p2]),
+            ),
+            completedPromisesStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
             ),
           ],
           child: MaterialApp(

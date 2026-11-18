@@ -49,7 +49,7 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
   }
 
   /// Show the general thought entry bottom sheet.
-  static Future<void> show(
+  static Future<bool?> show(
     BuildContext context, {
     String? initialPrompt,
     String? initialMood,
@@ -58,10 +58,11 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
   }) {
     // Route promise entries to the dedicated centered dialog.
     if (initialMood == 'promise' && existingThought == null) {
-      return showPromise(context);
+      showPromise(context);
+      return Future.value(null);
     }
 
-    return showModalBottomSheet(
+    return showModalBottomSheet<bool>(
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
@@ -285,7 +286,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       }
 
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           AscentSnackBar.build(
             context,

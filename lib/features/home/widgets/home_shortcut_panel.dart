@@ -6,6 +6,8 @@ import '../../../core/providers/local_day_provider.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import 'home_shortcut_summary.dart';
 import 'home_record_actions.dart';
+import '../../reminders/widgets/ios_reminder_dialog.dart';
+import '../../reminders/reminder_action_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -115,7 +117,8 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = HomeDesign.of(context).primaryText;
+    final design = HomeDesign.of(context);
+    final ink = design.primaryText;
     final accentColor = dark
         ? SharedControlColors.actionBlueDark
         : SharedControlColors.actionBlue;
@@ -625,7 +628,46 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
               },
             ),
           if (upcoming.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Reminders',
+                      style: AscentTextStyles.homeTitle.copyWith(
+                        color: design.primaryText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('home_reminder_add'),
+                    tooltip: 'New reminder',
+                    icon: Icon(
+                      Icons.add_rounded,
+                      size: 20,
+                      color: design.primaryText,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      showIOSReminderDialog(context);
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Open reminders',
+                    icon: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: design.secondaryText,
+                    ),
+                    onPressed: () => context.push('/reminders'),
+                  ),
+                ],
+              ),
+            ),
             if (older.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -657,6 +699,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
 class _ReminderPreview extends ConsumerWidget {
   const _ReminderPreview({required this.reminder});
   final Reminder reminder;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -674,82 +717,143 @@ class _ReminderPreview extends ConsumerWidget {
         : tomorrow
         ? 'Tomorrow'
         : DateFormat('d MMM').format(time);
-    // Neutral grey card; only an overdue reminder picks up a warning color.
     final accentColor = overdue
         ? (dark ? SharedControlColors.dueRedDark : SharedControlColors.dueRed)
         : design.secondaryText;
+
+    final cardBg = dark
+        ? const Color(0xFF15181C)
+        : const Color(0xFF1E2126);
+    final cardBorder = overdue
+        ? accentColor.withValues(alpha: 0.5)
+        : (dark
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.12));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           key: ValueKey('hub_reminder_${reminder.id}'),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           onLongPress: () => showHomeReminderActions(context, ref, reminder),
           onTap: () => context.push('/reminders?reminder=${reminder.id}'),
           child: Container(
             decoration: BoxDecoration(
-              color: design.groupedFill,
-              borderRadius: BorderRadius.circular(14),
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: overdue
-                    ? accentColor.withValues(alpha: 0.45)
-                    : design.separator,
+                color: cardBorder,
                 width: 1,
               ),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  reminder.title,
-                                  style: AscentTextStyles.listRowTitle.copyWith(
-                                    color: design.primaryText,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
-                                  style: AscentTextStyles.interfaceLabel.copyWith(
-                                    color: accentColor,
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right_rounded,
-                            size: 20,
-                            color: accentColor.withValues(alpha: 0.7),
-                          ),
-                        ],
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Circular 1-tap complete toggle (zero blue sidebar)
+                Semantics(
+                  button: true,
+                  label: 'Mark reminder complete',
+                  child: InkResponse(
+                    onTap: () async {
+                      HapticFeedback.mediumImpact();
+                      await runReminderAction(
+                        context,
+                        ref,
+                        reminder,
+                        ReminderRowAction.done,
+                      );
+                    },
+                    radius: 20,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: overdue
+                              ? accentColor
+                              : (dark ? Colors.white38 : Colors.white54),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        reminder.title,
+                        style: AscentTextStyles.listRowTitle.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: overdue ? accentColor : Colors.white60,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
+                            style: AscentTextStyles.interfaceLabel.copyWith(
+                              color: overdue ? accentColor : Colors.white60,
+                              fontSize: 12,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Snooze 10 min',
+                  icon: const Icon(
+                    Icons.snooze_rounded,
+                    size: 18,
+                    color: Colors.white60,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () => runReminderAction(
+                    context,
+                    ref,
+                    reminder,
+                    ReminderRowAction.snooze,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Reminder actions',
+                  icon: const Icon(
+                    Icons.more_vert_rounded,
+                    size: 18,
+                    color: Colors.white60,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () => showHomeReminderActions(context, ref, reminder),
+                ),
+              ],
             ),
           ),
         ),
