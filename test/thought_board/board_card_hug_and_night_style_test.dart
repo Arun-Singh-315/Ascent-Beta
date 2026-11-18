@@ -179,6 +179,9 @@ void main() {
       // Transparent night canvas fill
       expect(decoration.color, equals(Colors.transparent));
 
+      // No blurry shadow bleeding through the transparent bubble interior
+      expect(decoration.boxShadow, isEmpty);
+
       // Border is not the old hardcoded near-invisible navy #262933
       final border = decoration.border as Border;
       expect(border.top.color, isNot(equals(const Color(0xFF262933))));
@@ -208,6 +211,7 @@ void main() {
       final decoration = container.decoration as BoxDecoration;
 
       expect(decoration.color, equals(Colors.transparent));
+      expect(decoration.boxShadow, isEmpty);
       final border = decoration.border as Border;
       expect(border.top.color, isNot(equals(const Color(0xFF262933))));
     });
