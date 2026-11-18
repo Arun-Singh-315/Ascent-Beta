@@ -617,7 +617,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       onDoubleTap: () => toggleThoughtDone(context, ref, t),
     );
 
-    final hero = content.hero;
     return PopScope(
       canPop: !_selecting,
       onPopInvokedWithResult: (didPop, _) {
@@ -813,38 +812,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                                   ),
                                   sliver: SliverList.list(
                                     children: [
-                                      if (hero != null) ...[
-                                        BoardHeroCard(
-                                          key: ValueKey(
-                                            'board_hero_${hero.id}',
-                                          ),
-                                          thought: hero,
-                                          now: now,
-                                          appearance: appearance,
-                                          label: _openedId == hero.id
-                                              ? 'Opened'
-                                              : 'Latest',
-                                          isSelected: _selected.contains(
-                                            hero.id,
-                                          ),
-                                          isSelectionMode: _selecting,
-                                          onTap: () => _selecting
-                                              ? _toggle(hero.id)
-                                              : ThoughtDetailSheet.show(
-                                                  context,
-                                                  hero,
-                                                ),
-                                          onLongPress: () => _selecting
-                                              ? _toggle(hero.id)
-                                              : _startSelecting(hero.id),
-                                          onDoubleTap: () => toggleThoughtDone(
-                                            context,
-                                            ref,
-                                            hero,
-                                          ),
-                                        ),
-                                        const SizedBox(height: AppSpace.s4),
-                                      ],
                                       for (final section
                                           in content.sections) ...[
                                         _sectionHeader(

@@ -149,13 +149,13 @@ void main() {
       expect(appearance.bubbleFilled, false);
     });
 
-    testWidgets('BoardHeroCard renders transparent glass with stylish non-bold font', (tester) async {
+    testWidgets('BoardCard renders reflective text and styling in Mind Palace', (tester) async {
       final now = DateTime(2026, 11, 17, 12, 0);
       final thought = Thought(
         id: 1,
         content: 'Long reflective paragraph describing creative thoughts and quiet focus for Ascent.',
         category: 'general',
-        mood: 'thought',
+        mood: 'idea',
         colorHex: '#000000',
         createdAt: now,
         isPinned: true,
@@ -166,10 +166,10 @@ void main() {
       await tester.pumpWidget(
         buildApp(
           Scaffold(
-            body: BoardHeroCard(
+            body: BoardCard(
               thought: thought,
+              index: 0,
               now: now,
-              label: 'Latest',
             ),
           ),
         ),
@@ -177,8 +177,6 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Long reflective paragraph'), findsOneWidget);
-      expect(find.text('LATEST'), findsOneWidget);
-      expect(find.byIcon(Icons.push_pin_rounded), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));

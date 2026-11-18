@@ -186,34 +186,5 @@ void main() {
       final border = decoration.border as Border;
       expect(border.top.color, isNot(equals(const Color(0xFF262933))));
     });
-
-    testWidgets('BoardHeroCard renders transparent fill and mood border in dark mode when bubbleFilled is false', (tester) async {
-      final thought = makeThought(id: 6, content: 'hello love', mood: 'win');
-
-      await tester.pumpWidget(
-        wrapWidget(
-          BoardHeroCard(
-            thought: thought,
-            now: now,
-            appearance: const ThoughtWallAppearance(bubbleFilled: false),
-          ),
-          dark: true,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(BoardHeroCard),
-          matching: find.byType(Container),
-        ).first,
-      );
-      final decoration = container.decoration as BoxDecoration;
-
-      expect(decoration.color, equals(Colors.transparent));
-      expect(decoration.boxShadow, isEmpty);
-      final border = decoration.border as Border;
-      expect(border.top.color, isNot(equals(const Color(0xFF262933))));
-    });
   });
 }

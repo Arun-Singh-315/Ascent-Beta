@@ -7,7 +7,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:ascent/features/thought_wall/board/thought_space_screen.dart';
-import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/features/thought_wall/board/board_background.dart';
 import 'package:ascent/features/thought_wall/board/board_logic.dart';
 import 'package:drift/drift.dart' as drift;
@@ -125,7 +124,7 @@ void main() {
         app(const ThoughtBoardScreen(), capture: capture),
       );
       await settle(tester);
-      await tester.tap(find.byKey(ValueKey('board_hero_$id')));
+      await tester.tap(find.byKey(ValueKey('board_card_$id')));
       await settle(tester);
       expect(
         find.byKey(const ValueKey('detail_edit')).hitTestable(),
@@ -162,7 +161,7 @@ void main() {
       });
       await tester.pumpWidget(app(const ThoughtBoardScreen()));
       await settle(tester);
-      await tester.tap(find.byKey(ValueKey('board_hero_$id')));
+      await tester.tap(find.byKey(ValueKey('board_card_$id')));
       await settle(tester);
       expect(find.byKey(const ValueKey('detail_edit')), findsOneWidget);
       tester.state<NavigatorState>(find.byType(Navigator).first).pop();
@@ -194,7 +193,7 @@ void main() {
       });
       await tester.pumpWidget(app(const ThoughtBoardScreen()));
       await settle(tester);
-      await tester.longPress(find.byKey(ValueKey('board_hero_$id')));
+      await tester.longPress(find.byKey(ValueKey('board_card_$id')));
       await settle(tester);
       for (final action in ['move', 'done', 'archive', 'delete', 'more']) {
         expect(find.byKey(ValueKey('select_$action')), findsOneWidget);
@@ -206,9 +205,9 @@ void main() {
       await tester.runAsync(() async {
         expect((await db.thoughtDao.getThoughtById(id))!.isArchived, false);
       });
-      await tester.tap(find.byKey(ValueKey('board_hero_$id')));
+      await tester.tap(find.byKey(ValueKey('board_card_$id')));
       await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.byKey(ValueKey('board_hero_$id')));
+      await tester.tap(find.byKey(ValueKey('board_card_$id')));
       await settle(tester);
       await tester.runAsync(() async {
         expect((await db.thoughtDao.getThoughtById(id))!.isCompleted, true);
@@ -235,7 +234,7 @@ void main() {
       await tester.pumpWidget(app(ThoughtBoardScreen(initialThoughtId: id)));
       await settle(tester);
       expect(find.textContaining('SECRET PRIVATE'), findsNothing);
-      expect(find.byType(BoardHeroCard), findsNothing);
+      expect(find.byKey(ValueKey('board_card_$id')), findsOneWidget);
       await tester.longPress(find.byKey(ValueKey('board_card_$id')));
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('select_more')));
@@ -306,7 +305,7 @@ void main() {
       });
       await tester.pumpWidget(app(const ThoughtBoardScreen()));
       await settle(tester);
-      await tester.longPress(find.byKey(ValueKey('board_hero_${ids.first}')));
+      await tester.longPress(find.byKey(ValueKey('board_card_${ids.first}')));
       await settle(tester);
       // All toggles the one visible selected note off; hidden Done stays unselected.
       expect(find.text('None'), findsOneWidget);
@@ -340,7 +339,7 @@ void main() {
       });
       await tester.pumpWidget(app(const ThoughtBoardScreen()));
       await settle(tester);
-      await tester.longPress(find.byKey(ValueKey('board_hero_${ids.first}')));
+      await tester.longPress(find.byKey(ValueKey('board_card_${ids.first}')));
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('select_all')));
       await settle(tester);
