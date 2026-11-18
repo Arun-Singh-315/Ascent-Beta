@@ -542,7 +542,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           submitTooltip: 'Add activity',
           controller: _text,
           focusNode: _effectiveFocus,
-          hint: 'Add a to-do or focus timer…',
+          hint: 'Add a task or timer…',
           leadingIcon: Icons.add,
           onLeadingTap: () {
             HapticFeedback.lightImpact();

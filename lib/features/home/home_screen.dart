@@ -322,10 +322,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           if (layout.visible.contains('life') && layout.tools.isNotEmpty)
                             const HomeLifeShelf(),
 
-                          // 6. Plans & Routines SectionCard
-                          const HomePlansPreview(
-                            key: ValueKey('home_plans_big_card'),
-                          ),
+                          // 6. Plans & Routines SectionCard. Things already has a
+                          // Plans tab, so this standalone card only appears
+                          // when Things is hidden from Home.
+                          if (!layout.visible.contains('today'))
+                            const HomePlansPreview(
+                              key: ValueKey('home_plans_big_card'),
+                            ),
 
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
