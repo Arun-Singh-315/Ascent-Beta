@@ -59,6 +59,59 @@ PopupMenuItem<T> ascentPopupItem<T>({
   );
 }
 
+/// A single-choice menu row whose selected state is a rounded pill that
+/// follows the menu's own corners, instead of Material's full-width rectangle.
+///
+/// Use it with [AscentPopupMenuButton] and do not pass `initialValue`: the
+/// selected row is drawn here, so Material's rectangular highlight stays off.
+PopupMenuItem<T> ascentChoiceItem<T>({
+  required T value,
+  required String label,
+  required bool selected,
+}) {
+  return PopupMenuItem<T>(
+    value: value,
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    child: Builder(
+      builder: (context) {
+        final g = context.glass;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          constraints: const BoxConstraints(
+            minHeight: AscentDimensions.minTouchTarget - 4,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AscentDimensions.spaceMd,
+          ),
+          alignment: AlignmentDirectional.centerStart,
+          decoration: ShapeDecoration(
+            color: selected ? g.claySoft : Colors.transparent,
+            shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: AscentTextStyles.body.copyWith(
+                    color: g.ink,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_rounded, size: 18, color: g.clay),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+
 /// Standardized Ascent destructive popup menu item conforming to Section 5 (C08).
 PopupMenuItem<T> ascentPopupDestructiveItem<T>({
   required T value,
@@ -156,11 +209,12 @@ class AscentPopupMenuButton<T> extends StatelessWidget {
           ),
           elevation: 4,
           shadowColor: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),
-          menuPadding: const EdgeInsets.symmetric(vertical: 4),
+          menuPadding: const EdgeInsets.symmetric(vertical: 6),
           textStyle: AscentTextStyles.body.copyWith(color: g.ink),
         ),
       ),
       child: PopupMenuButton<T>(
+        clipBehavior: Clip.antiAlias,
         tooltip: tooltip,
         enabled: enabled,
         padding: padding,

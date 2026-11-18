@@ -1,3 +1,4 @@
+import '../../../shared/widgets/selection_tick.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -222,7 +223,10 @@ class _BoardCardState extends State<BoardCard>
     final minimal = appearance.style == ThoughtCardStyle.minimal;
     final comfortable = appearance.density == ThoughtCardDensity.comfortable;
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
-    final fill = (!appearance.bubbleFilled || minimal)
+    // Night bubbles are always transparent with a hairline, so no shade can
+    // appear behind the text even if the filled-bubble option is on.
+    final filled = appearance.bubbleFilled && !dark;
+    final fill = (!filled || minimal)
         ? (dark
             ? Colors.transparent
             : Colors.white.withValues(alpha: .75))
@@ -257,7 +261,7 @@ class _BoardCardState extends State<BoardCard>
         color: fill,
         borderRadius: radius,
         border: Border.all(color: borderColor, width: borderWidth),
-        boxShadow: (minimal || !appearance.bubbleFilled)
+        boxShadow: (minimal || !filled)
             ? const []
             : [
                 BoxShadow(
@@ -334,13 +338,7 @@ class _BoardCardState extends State<BoardCard>
           PositionedDirectional(
             top: AppSpace.s8,
             end: AppSpace.s8,
-            child: Icon(
-              isSelected
-                  ? Icons.check_circle_rounded
-                  : Icons.radio_button_unchecked_rounded,
-              size: 22,
-              color: isSelected ? g.clay : g.inkMuted,
-            ),
+            child: SelectionTick(selected: isSelected),
           ),
         ],
       );
@@ -571,11 +569,7 @@ class BoardHeroCard extends StatelessWidget {
     final g = context.glass;
     final dark = context.isDark;
     final heroAccent = boardAccentFor(g, thought);
-    final fill = dark
-        ? (appearance.bubbleFilled
-            ? const Color(0xFF1A1D26)
-            : Colors.transparent)
-        : Colors.white;
+    final fill = dark ? Colors.transparent : Colors.white;
     final onFill = dark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final text = displayContent(thought.content).trim();
     final short = text.length <= 90 && !text.contains('\n');
@@ -594,7 +588,7 @@ class BoardHeroCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: fill,
-            boxShadow: !appearance.bubbleFilled
+            boxShadow: (!appearance.bubbleFilled || dark)
                 ? const []
                 : [
                     BoxShadow(
@@ -660,12 +654,10 @@ class BoardHeroCard extends StatelessWidget {
                   if (isSelectionMode)
                     Padding(
                       padding: const EdgeInsets.only(left: AppSpace.s8),
-                      child: Icon(
-                        isSelected
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                        size: 22,
+                      child: SelectionTick(
+                        selected: isSelected,
                         color: onFill,
+                        idleColor: onFill,
                       ),
                     ),
                 ],

@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_dialog.dart';
 import '../calendar/calendar_event_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../today/add_activity_sheet.dart';
@@ -219,49 +220,46 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     String? alarmInfo;
     String? titleError;
 
-    showModalBottomSheet(
+    showAscentFrostedDialog<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: 600,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-      ),
-      backgroundColor: context.glass.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
-      builder: (bottomSheetContext) {
-        return StatefulBuilder(
+      builder: (dialogContext) {
+        final media = MediaQuery.of(dialogContext);
+        final keyboard = media.viewInsets.bottom;
+        final available =
+            media.size.height - keyboard - media.padding.vertical - 32;
+        return SafeArea(
+          child: AnimatedPadding(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + keyboard),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: 440,
+                  maxHeight: available < 280 ? 280 : available,
+                ),
+                child: Material(
+                  color: dialogContext.glass.bg,
+                  clipBehavior: Clip.antiAlias,
+                  shape: ContinuousRectangleBorder(
+                    borderRadius: BorderRadius.circular(32),
+                    side: BorderSide(color: dialogContext.glass.line),
+                  ),
+                  child: StatefulBuilder(
           builder: (context, setSheetState) {
-            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-            final navBottom = MediaQuery.paddingOf(context).bottom;
             return Padding(
               padding: EdgeInsets.only(
                 left: AppSpace.s20,
                 right: AppSpace.s20,
                 top: AppSpace.s20,
-                bottom: bottomInset + navBottom + AppSpace.s24,
+                bottom: AppSpace.s20,
               ),
               child: Scrollbar(
-                thumbVisibility: true,
-                child: SingleChildScrollView(
+                                child: SingleChildScrollView(
                   child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: context.divider,
-                          borderRadius: AppGeometry.roundedr2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -740,6 +738,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ),
             );
           },
+        ),
+                ),
+              ),
+            ),
+          ),
         );
       },
     );

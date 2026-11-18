@@ -1,5 +1,6 @@
 import 'home_section_heading.dart';
 import 'home_module_row.dart';
+import 'home_outline_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:ascent/features/promises/widgets/promise_actions.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
-import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
@@ -51,10 +51,24 @@ class HomePromiseSection extends ConsumerWidget {
         HomeSectionHeading(
           title: 'Commitments',
           centered: false,
-          trailing: HomeSectionArrowButton(
-            tooltip: 'Open commitments',
-            color: const Color(0xFFC67D32),
-            onTap: () => context.push('/promises'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                key: const ValueKey('home_promise_add'),
+                tooltip: 'New commitment',
+                icon: Icon(Icons.add_rounded, color: g.ink),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  PromiseChatComposer.show(context);
+                },
+              ),
+              HomeSectionArrowButton(
+                tooltip: 'Open commitments',
+                color: const Color(0xFFC67D32),
+                onTap: () => context.push('/promises'),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
@@ -106,16 +120,9 @@ class HomePromiseSection extends ConsumerWidget {
         HapticFeedback.selectionClick();
         PromiseDetailSheet.show(context, promise);
       },
-      borderRadius: BorderRadius.zero,
-      child: GlassSurface(
-        borderRadius: BorderRadius.zero,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        fillColor: Colors.transparent,
-        enableBlur: false,
-        hasShadow: false,
-        customBorder: MediaQuery.highContrastOf(context)
-            ? Border.all(color: g.controlOutline)
-            : const Border(),
+      borderRadius: BorderRadius.circular(24),
+      child: HomeOutlineSurface(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
