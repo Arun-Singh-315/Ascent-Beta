@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -222,6 +223,16 @@ Future<void> showEditModuleSheet(
                       icon: Icons.delete_outline_rounded,
                       onPressed: () async {
                         HapticFeedback.mediumImpact();
+                        final ok = await AscentDialog.confirm(
+                          context: ctx,
+                          title: 'Delete this module?',
+                          content: 'Its lectures will be removed too.',
+                          confirmLabel: 'Delete',
+                          cancelLabel: 'Keep',
+                          isDestructive: true,
+                          icon: Icons.delete_outline_rounded,
+                        );
+                        if (ok != true || !ctx.mounted) return;
                         final saved = await _saveLearningEditor(
                           ctx,
                           () => ref
@@ -605,6 +616,16 @@ Future<void> showEditLectureSheet(
                           icon: Icons.delete_outline_rounded,
                           onPressed: () async {
                             HapticFeedback.mediumImpact();
+                            final ok = await AscentDialog.confirm(
+                              context: ctx,
+                              title: 'Delete this lecture?',
+                              content: 'Its progress will be removed.',
+                              confirmLabel: 'Delete',
+                              cancelLabel: 'Keep',
+                              isDestructive: true,
+                              icon: Icons.delete_outline_rounded,
+                            );
+                            if (ok != true || !ctx.mounted) return;
                             final saved = await _saveLearningEditor(
                               ctx,
                               () => ref
