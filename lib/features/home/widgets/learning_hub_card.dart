@@ -197,20 +197,10 @@ class LearningHubCard extends ConsumerWidget {
         children: [
           HomeSectionHeading(
             title: 'Learning',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: 'Switch course',
-                  icon: Icon(Icons.swap_horiz_rounded, color: g.ink),
-                  onPressed: () => context.push('/study-plan'),
-                ),
-                HomeSectionArrowButton(
-                  tooltip: 'Open study plan',
-                  color: HomeDesign.of(context).learningInk,
-                  onTap: () => context.push('/study-plan'),
-                ),
-              ],
+            trailing: HomeSectionArrowButton(
+              tooltip: 'Open study plan',
+              color: HomeDesign.of(context).learningInk,
+              onTap: () => context.push('/study-plan'),
             ),
           ),
           const SizedBox(height: 12),
@@ -334,85 +324,22 @@ class LearningHubCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // 4. iOS Media Player Scrubber with Scrub Handle & Tabular Timestamps
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final trackWidth = constraints.maxWidth;
-                      final progressWidth = (trackWidth * progressFraction).clamp(0.0, trackWidth);
-                      final thumbOffset = (progressWidth - 6).clamp(0.0, trackWidth - 12);
-
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          // Base background track
-                          Container(
-                            height: 6,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: g.ink.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                          // Active filled track
-                          Container(
-                            height: 6,
-                            width: progressWidth,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF7BA0C6)
-                                  : const Color(0xFF3B6790),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                          // iOS Media Scrubber thumb / head
-                          Positioned(
-                            left: thumbOffset,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Timestamps row: Elapsed (left) & Remaining (right)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        state.formattedElapsed,
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: g.inkSecondary,
+                  // 4. Slim progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(end: progressFraction),
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, _) => LinearProgressIndicator(
+                        value: value,
+                        minHeight: 6,
+                        backgroundColor: g.ink.withValues(alpha: 0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          HomeDesign.of(context).learningInk,
                         ),
                       ),
-                      Text(
-                        '-${state.formattedRemaining}',
-                        style: TextStyle(
-                          fontFamily: 'JetBrainsMono',
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                          color: g.inkMuted,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: 14),
 
@@ -474,16 +401,6 @@ class LearningHubCard extends ConsumerWidget {
                                 : state.isPlaying
                                 ? 'Pause'
                                 : 'Resume',
-                          ),
-                          const SizedBox(width: 6),
-                          IconButton(
-                            tooltip: 'Open in player',
-                            icon: Icon(
-                              Icons.open_in_new_rounded,
-                              size: 18,
-                              color: g.clay,
-                            ),
-                            onPressed: openPlayer,
                           ),
                         ],
                       ),
