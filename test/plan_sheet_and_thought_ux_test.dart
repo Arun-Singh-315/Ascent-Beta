@@ -142,7 +142,9 @@ void main() {
         expect(find.byTooltip('Collapse actions'), findsNothing);
         await tester.pump(const Duration(seconds: 10));
         expect(find.text('Plan'), findsOneWidget);
-        // Tap anywhere else on the thought bubble card -> navigates to Thought Wall!
+        // Double-tap the thought bubble card -> navigates to Thought Wall.
+        await tester.tap(find.text('Thought for navigation test'));
+        await tester.pump(const Duration(milliseconds: 50));
         await tester.tap(find.text('Thought for navigation test'));
         await tester.pumpAndSettle();
 
