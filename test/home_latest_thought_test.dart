@@ -110,7 +110,7 @@ void main() {
       final text = tester.widget<Text>(
         find.byKey(const ValueKey('home_latest_thought_text')),
       );
-      expect(text.data, message);
+      expect(text.textSpan?.toPlainText() ?? text.data, message);
       expect(text.maxLines, 4);
       expect(text.overflow, TextOverflow.ellipsis);
 
