@@ -62,9 +62,9 @@ class AppInputBar extends StatelessWidget {
                 minLines: 1,
                 maxLines: 4,
                 keyboardType: TextInputType.multiline,
+                textInputAction: TextInputAction.newline,
                 inputFormatters: const [SmartListInputFormatter()],
                 onChanged: onChanged,
-                onSubmitted: (_) => onSubmit(),
                 style: TextStyle(fontSize: 14, color: c.textPrimary),
                 decoration: InputDecoration(
                   hintText: hint,

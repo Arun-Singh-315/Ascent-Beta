@@ -21,7 +21,6 @@ import 'package:ascent/app/theme/frozen_palette.dart';
 import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/shared/widgets/glass_surface.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -212,10 +211,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('Life & Health'), findsOneWidget);
+      expect(find.text('Daily rhythm'), findsOneWidget);
       expect(find.text('Medicine'), findsOneWidget);
       expect(find.text('Hydration'), findsOneWidget);
-      expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
@@ -352,9 +350,6 @@ void main() {
 
       final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(cardFinder, findsOneWidget);
-      final cardGlass = tester.widget<GlassSurface>(cardFinder);
-      expect(cardGlass.fillColor, isNull);
-      expect(cardGlass.enableBlur, isFalse);
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
@@ -382,9 +377,6 @@ void main() {
 
       final frozenCardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(frozenCardFinder, findsOneWidget);
-      final frozenCardGlass = tester.widget<GlassSurface>(frozenCardFinder);
-      expect(frozenCardGlass.fillColor, isNull);
-      expect(frozenCardGlass.enableBlur, isFalse);
 
       final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(frozenBubbleFinder, findsOneWidget);

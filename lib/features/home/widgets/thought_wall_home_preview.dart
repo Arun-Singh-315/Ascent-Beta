@@ -1160,13 +1160,18 @@ class _ThoughtWallHomePreviewState
             submitTooltip: 'Send capture',
             leadingIcon: Icons.add,
             // "+" opens the full capture sheet (moods, pin, checklist) and
-            // carries whatever was already typed.
-            onLeadingTap: () {
+            // carries whatever was already typed without discarding on cancel.
+            onLeadingTap: () async {
               HapticFeedback.lightImpact();
               final draft = _controller.text;
-              _controller.clear();
               FocusScope.of(context).unfocus();
-              DropThoughtSheet.show(context, initialText: draft);
+              final saved = await DropThoughtSheet.show(
+                context,
+                initialText: draft,
+              );
+              if (saved == true && mounted) {
+                _controller.clear();
+              }
             },
             onSubmit: _send,
           ),
