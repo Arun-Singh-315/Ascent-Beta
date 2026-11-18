@@ -618,43 +618,39 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
 
   Future<void> _batchDelete(List<Thought> selected) async {
     if (_applyingSelection || selected.isEmpty) return;
-    final confirmed = await showDialog<bool>(
+    final count = selected.length;
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(
-          'Delete ${selected.length} note${selected.length > 1 ? 's' : ''}?',
-        ),
-        content: const Text(
-          'These thoughts and any linked reminders will be permanently removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Delete $count note${count > 1 ? 's' : ''}?',
+      content: 'Linked reminders are removed too. You can undo this right after.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
     );
     if (confirmed != true || !mounted) return;
     setState(() => _applyingSelection = true);
     try {
       final dao = ref.read(thoughtDaoProvider);
+      final snapshots = <dynamic>[];
       for (final t in selected) {
-        await dao.deleteThought(t.id);
+        final snapshot = await dao.deleteThoughtForUndo(t.id);
+        if (snapshot != null) snapshots.add(snapshot);
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${selected.length} note${selected.length > 1 ? 's' : ''} deleted',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (snapshots.isNotEmpty) {
+          AscentSnackBar.undo(
+            context,
+            message: '$count note${count > 1 ? 's' : ''} deleted',
+            onUndo: () async {
+              for (final snapshot in snapshots) {
+                try {
+                  await dao.restoreThoughtDeletion(snapshot);
+                } catch (_) {}
+              }
+            },
+          );
+        }
         _exitSelectionMode();
       }
     } finally {

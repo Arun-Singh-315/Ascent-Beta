@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -726,9 +727,17 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                 tooltip: 'Delete Log',
                                 onPressed: () async {
                                   HapticFeedback.lightImpact();
-                                  await ref
-                                      .read(waterDaoProvider)
-                                      .deleteWater(log.id);
+                                  final dao = ref.read(waterDaoProvider);
+                                  await dao.deleteWater(log.id);
+                                  if (!context.mounted) return;
+                                  AscentSnackBar.undo(
+                                    context,
+                                    message: '${log.amountMl} ml removed',
+                                    onUndo: () => dao.addWaterForDate(
+                                      log.amountMl,
+                                      log.timestamp,
+                                    ),
+                                  );
                                 },
                               ),
                             ],

@@ -1,3 +1,5 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/history_action.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -425,10 +427,26 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
                   tooltip: 'Delete Log',
                   onPressed: () async {
                     final navigator = Navigator.of(context);
-                    await ref
-                        .read(dsaDaoProvider)
-                        .deleteLog(widget.existing!.id);
-                    if (mounted) navigator.pop();
+                    final dao = ref.read(dsaDaoProvider);
+                    final removed = widget.existing!;
+                    final ok = await AscentDialog.confirm(
+                      context: context,
+                      title: 'Delete this log?',
+                      content: 'You can undo this right after.',
+                      confirmLabel: 'Delete',
+                      cancelLabel: 'Keep',
+                      isDestructive: true,
+                      icon: Icons.delete_outline_rounded,
+                    );
+                    if (ok != true || !mounted) return;
+                    await dao.deleteLog(removed.id);
+                    if (!mounted) return;
+                    AscentSnackBar.undo(
+                      context,
+                      message: 'Problem log deleted',
+                      onUndo: () => dao.insertLog(removed.toCompanion(true)),
+                    );
+                    navigator.pop();
                   },
                 ),
             ],
