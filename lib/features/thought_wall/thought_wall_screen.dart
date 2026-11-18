@@ -1,3 +1,4 @@
+import 'utils/thought_checklist_helper.dart';
 import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_popup_menu.dart';
@@ -1813,6 +1814,44 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     }
   }
 
+  /// Width that fits the text instead of always spanning the screen. Anything
+  /// that needs the full card (long text, checklists, prompts, promises,
+  /// selection mode) keeps the full width.
+  double _hugWidth(BuildContext context, double maxWidth) {
+    if (!maxWidth.isFinite ||
+        isSelectionMode ||
+        widget.appearance.style == ThoughtCardStyle.minimal ||
+        thought.mood == 'promise' ||
+        (thought.promptQuestion?.trim().isNotEmpty ?? false)) {
+      return maxWidth;
+    }
+    final content = thought.content.startsWith('[HIGH] ')
+        ? thought.content.substring(7)
+        : thought.content;
+    if (ThoughtChecklistHelper.hasChecklistItems(content)) return maxWidth;
+    final pad = widget.compact
+        ? (widget.appearance.density == ThoughtCardDensity.compact ? 12.0 : 18.0)
+        : AppSpace.s16;
+    final chrome = pad * 2 + 4; // padding, 1px borders and a small safety gap
+    final painter = TextPainter(
+      text: TextSpan(
+        text: content,
+        style: AppTypography.thoughtContent(color: context.glass.ink),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: widget.role == ThoughtCardRole.hero ? 6 : 4,
+      textWidthBasis: TextWidthBasis.longestLine,
+    )..layout(maxWidth: (maxWidth - chrome).clamp(0.0, maxWidth));
+    final overflowed = painter.didExceedMaxLines;
+    final width = painter.width + chrome;
+    painter.dispose();
+    if (overflowed) return maxWidth;
+    // Never narrower than the date and action row needs.
+    final floor = maxWidth < 232.0 ? maxWidth : 232.0;
+    return width.clamp(floor, maxWidth);
+  }
+
   BoxDecoration _wallDecoration(BuildContext context) {
     final g = context.glass;
     final isDark = context.isDark;
@@ -1829,7 +1868,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? context.doneInk.withValues(alpha: isDark ? .35 : .25)
         : hasBubbleFraming
         ? (isDark
-            ? const Color(0xFF262933)
+            // A visible hairline on the night canvas, softly tinted by mood.
+            ? Color.alphaBlend(
+                moodAccent.withValues(alpha: 0.40),
+                g.ink.withValues(alpha: 0.26),
+              )
             : Color.lerp(
                 g.edge,
                 moodAccent.withValues(alpha: 0.20),
@@ -1891,12 +1934,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isHero
           ? [
               BoxShadow(
-                color: (isDark ? Colors.black : moodAccent).withValues(
-                  alpha: isDark ? 0.35 : 0.08,
-                ),
-                blurRadius: 14,
+                // Night: a faint mood glow instead of a dark halo, so the
+                // transparent bubble stays clean against the canvas.
+                color: moodAccent.withValues(alpha: isDark ? 0.10 : 0.08),
+                blurRadius: isDark ? 18 : 14,
                 spreadRadius: 0,
-                offset: const Offset(0, 3),
+                offset: isDark ? Offset.zero : const Offset(0, 3),
               ),
             ]
           : isBubble && widget.appearance.bubbleFilled
@@ -2074,7 +2117,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               ],
             ),
           ),
-          child: AppTapArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) => Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: _hugWidth(context, constraints.maxWidth),
+                child: AppTapArea(
             onTap: isSelectionMode ? onToggleSelect : null,
             onLongPress: isSelectionMode ? onToggleSelect : onLongPress,
             borderRadius: AppGeometry.roundedr16,
@@ -2746,6 +2794,9 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 ),
               ),
             ),
+              ),
+            ),
+          ),
           ),
         ),
       );

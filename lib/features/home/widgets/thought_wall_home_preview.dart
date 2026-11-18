@@ -1388,7 +1388,7 @@ class _HomeThoughtBubble extends ConsumerWidget {
 
     final heroBg = isHighPriority
         ? c.accent.withValues(alpha: dark ? 0.12 : 0.05)
-        : (dark ? c.surfaceAlt.withValues(alpha: 0.95) : c.surface);
+        : (dark ? Colors.transparent : c.surface);
     final heroBorderColor = isHighPriority
         ? c.accent.withValues(alpha: 0.6)
         : (dark
@@ -1415,7 +1415,7 @@ class _HomeThoughtBubble extends ConsumerWidget {
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 )
-              else
+              else if (!dark)
                 ...AppElevation.soft(c.border, dark: dark),
             ],
           ),
