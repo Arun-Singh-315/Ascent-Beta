@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/theme/app_theme.dart';
 import 'app/app_navigation.dart';
+import 'core/services/share_intake.dart';
 import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
@@ -126,6 +127,16 @@ Future<void> main() async {
       }
     }
   });
+
+  // Text shared from another app becomes a thought in Mindspace. It opens
+  // through the same path as a notification tap, which waits for splash.
+  unawaited(
+    ShareIntake.start(
+      container: () => container,
+      open: (location) =>
+          NotificationService.onNotificationNavigate?.call(location),
+    ),
+  );
 
   NotificationService.onNotificationSeek = (route, seconds) {
     if (route != '/learning') return;

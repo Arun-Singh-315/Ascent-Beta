@@ -38,6 +38,7 @@ class ActivityComposer extends ConsumerStatefulWidget {
     this.notes,
     this.linkedThoughtId,
     this.onSaved,
+    this.remind = false,
   });
   final FocusNode? focusNode;
   final String? initialTitle;
@@ -50,6 +51,10 @@ class ActivityComposer extends ConsumerStatefulWidget {
 
   /// Called with the new task ids after a successful save.
   final ValueChanged<List<int>>? onSaved;
+
+  /// Start with a reminder on (as if "remind me" was typed). The user can
+  /// still remove it from its chip.
+  final bool remind;
   @override
   ConsumerState<ActivityComposer> createState() => _ActivityComposerState();
 }
@@ -136,7 +141,10 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         _reminder!.minute,
       );
     }
-    if (!(parsed?.remind ?? false)) return null;
+    final wantsReminder =
+        (parsed?.remind ?? false) ||
+        (widget.remind && !_ignored.contains(QuickAddField.reminder));
+    if (!wantsReminder) return null;
     final time = _effectiveTime(parsed);
     if (time != null) {
       return DateTime(day.year, day.month, day.day, time.hour, time.minute);

@@ -86,6 +86,11 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   bool _earlierOpen = false;
   bool _listening = false;
 
+  /// The clipboard has text the user could save as a thought. Only whether
+  /// text exists is checked; the text is read when the user taps (so iOS
+  /// never shows a paste prompt on its own).
+  bool _canPaste = false;
+
   /// The thought being dragged toward a space, if any.
   Thought? _dragging;
   VoiceInput? _voice;
@@ -111,6 +116,63 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       );
     } catch (_) {}
     _openFromHome();
+    _focus.addListener(_checkClipboard);
+    _input.addListener(_onInputChanged);
+    _checkClipboard();
+  }
+
+  bool _inputEmpty = true;
+  void _onInputChanged() {
+    final empty = _input.text.trim().isEmpty;
+    if (empty != _inputEmpty && mounted) setState(() => _inputEmpty = empty);
+  }
+
+  Future<void> _checkClipboard() async {
+    bool has;
+    try {
+      has = await Clipboard.hasStrings();
+    } catch (_) {
+      has = false;
+    }
+    if (mounted && has != _canPaste) setState(() => _canPaste = has);
+  }
+
+  /// Saves the clipboard text as a thought in one tap, with Undo.
+  Future<void> _pasteAsThought() async {
+    HapticFeedback.lightImpact();
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim();
+    if (!mounted) return;
+    if (text == null || text.isEmpty) {
+      setState(() => _canPaste = false);
+      AscentSnackBar.show(
+        context,
+        message: 'Nothing to paste',
+        icon: Icons.content_paste_off_rounded,
+      );
+      return;
+    }
+    final dao = ref.read(thoughtDaoProvider);
+    try {
+      final id = await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: text.length > 5000 ? text.substring(0, 5000) : text,
+          mood: const drift.Value('thought'),
+          category: drift.Value(
+            ref.read(palaceFilterProvider).space ?? wallCategoryKey,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      showUndoSnackbar(
+        context,
+        message: 'Saved from clipboard',
+        onUndo: () => dao.deleteThought(id),
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not save. Try again.');
+      }
+    }
   }
 
   @override
@@ -128,6 +190,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
       ref.read(localClockProvider.notifier).refresh();
       setState(() {});
       _scheduleDayChange();
@@ -538,8 +601,13 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         if (removed > 0 && mounted && _selecting) _stopSelecting();
       case 'share':
         await shareMultipleThoughts(picked);
-      case 'todo' when picked.length == 1:
-        final saved = await convertThoughtWithQuickAdd(context, ref, t);
+      case 'todo' || 'reminder' when picked.length == 1:
+        final saved = await convertThoughtWithQuickAdd(
+          context,
+          ref,
+          t,
+          remind: action == 'reminder',
+        );
         if (saved && mounted && _selecting) _stopSelecting();
       default:
         final saved = await applyThoughtAction(context, db, picked, action);
@@ -687,19 +755,35 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         16,
         16.0 + math.max(12.0, bottomInset),
       ),
-      child: MessageComposer(
-        quiet: true,
-        controller: _input,
-        focusNode: _focus,
-        hint: 'e.g. Idea for the weekend trip',
-        busy: _saving,
-        minHeight: 56,
-        onMic: _toggleVoice,
-        listening: _listening,
-        onSend: (_) {
-          if (_listening) _voice?.stop();
-          _send();
-        },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_canPaste && _inputEmpty && !_listening)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.s8),
+              child: AppChip(
+                key: const ValueKey('palace_paste'),
+                label: 'Paste as a thought',
+                icon: Icons.content_paste_rounded,
+                onTap: _pasteAsThought,
+              ),
+            ),
+          MessageComposer(
+            quiet: true,
+            controller: _input,
+            focusNode: _focus,
+            hint: 'e.g. Idea for the weekend trip',
+            busy: _saving,
+            minHeight: 56,
+            onMic: _toggleVoice,
+            listening: _listening,
+            onSend: (_) {
+              if (_listening) _voice?.stop();
+              _send();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -800,11 +884,77 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
             },
             feedback: _DragFeedback(width: box.maxWidth, child: card),
             childWhenDragging: Opacity(opacity: .35, child: card),
-            child: card,
+            // Another card dropped here: merge the two, or file it with this
+            // one's space.
+            child: DragTarget<Thought>(
+              key: ValueKey('palace_drop_on_${t.id}'),
+              onWillAcceptWithDetails: (d) {
+                final ok = d.data.id != t.id;
+                if (ok) HapticFeedback.selectionClick();
+                return ok;
+              },
+              onAcceptWithDetails: (d) => _groupWith(d.data, t),
+              builder: (context, candidates, _) => AnimatedScale(
+                scale: candidates.isNotEmpty ? 1.02 : 1,
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOutCubic,
+                child: DecoratedBox(
+                  position: DecorationPosition.foreground,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    border: candidates.isEmpty
+                        ? null
+                        : Border.all(color: context.glass.clay),
+                  ),
+                  child: card,
+                ),
+              ),
+            ),
           ),
         ),
       );
     });
+  }
+
+  /// A card dropped on another card: merge them into one thought, or put the
+  /// dragged one in the target's space.
+  Future<void> _groupWith(Thought dragged, Thought target) async {
+    if (_anyLocked([dragged, target])) {
+      AscentSnackBar.error(
+        context,
+        message: 'Unlock private commitments before grouping them.',
+      );
+      return;
+    }
+    final categories =
+        ref.read(thoughtCategoriesStreamProvider).value ??
+        ThoughtDao.builtInCategories;
+    final sameSpace = dragged.category == target.category;
+    final spaceName = target.category == wallCategoryKey
+        ? 'the wall'
+        : (categories[target.category] ?? 'this space');
+    final choice = await showAscentActionMenu<String>(
+      context: context,
+      title: 'Put these together',
+      actions: [
+        const AscentAction(
+          'merge',
+          'Merge into one thought',
+          Icons.merge_rounded,
+        ),
+        if (!sameSpace)
+          AscentAction('space', 'Move to $spaceName', Icons.folder_outlined),
+      ],
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'space') {
+      await _dropInto(dragged, (key: target.category, newName: null));
+    } else {
+      await applyThoughtAction(context, ref.read(databaseProvider), [
+        target,
+        dragged,
+      ], 'merge');
+    }
   }
 
   /// Files a dragged thought into a space, with Undo.

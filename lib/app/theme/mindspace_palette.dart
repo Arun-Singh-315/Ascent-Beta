@@ -23,4 +23,17 @@ abstract final class MindspacePalette {
   /// Soft card shadow in light mode (§3.3: black at a few percent).
   static Color cardShadowLight([double alpha = .04]) =>
       Colors.black.withValues(alpha: alpha);
+
+  /// Home Mind preview: composer and card fills, warm and cool presets.
+  static const previewFillWarm = Color(0xFFFFFDFB);
+  static const previewFillCool = Color(0xFFFBFDFF);
+  static const previewCardCool = Color(0xFFF8FAFD);
+  static const previewShadowWarm = Color(0xFF5C4A3E);
+
+  /// Mindspace accent (header arrow, small highlights).
+  static const accent = Color(0xFF7C5CB7);
+
+  /// Ink for highlighted to-do lines inside a thought.
+  static Color highlightInk(bool dark) =>
+      dark ? const Color(0xFFFDE68A) : const Color(0xFF92400E);
 }

@@ -299,7 +299,15 @@ class ThoughtActions {
       );
       if (source == null ||
           jsonEncode(source.toJson()) !=
-              jsonEncode(before.copyWith(isArchived: true).toJson())) {
+              // Archiving also stamps archivedAt; only that may differ.
+              jsonEncode(
+                before
+                    .copyWith(
+                      isArchived: true,
+                      archivedAt: drift.Value(source.archivedAt),
+                    )
+                    .toJson(),
+              )) {
         return false;
       }
     }
