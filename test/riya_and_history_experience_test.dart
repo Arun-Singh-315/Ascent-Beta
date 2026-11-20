@@ -53,7 +53,7 @@ void main() {
 
         expect(find.byType(AiAssistantScreen), findsOneWidget);
         // Minimal strong centered hero text
-        expect(find.textContaining('ascend today?'), findsOneWidget);
+        expect(find.byKey(const ValueKey('assistant_greeting')), findsOneWidget);
         expect(tester.takeException(), isNull);
 
         await tester.pumpWidget(const SizedBox());
