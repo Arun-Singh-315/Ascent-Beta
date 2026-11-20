@@ -2,7 +2,7 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/services/plan_collection_service.dart';
-import 'package:ascent/features/plans/plan_generator.dart';
+import 'package:ascent/core/services/plan_generator.dart';
 import 'package:ascent/features/plans/widgets/plan_generator_sheet.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';

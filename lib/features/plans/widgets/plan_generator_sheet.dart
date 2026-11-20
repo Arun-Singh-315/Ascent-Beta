@@ -12,34 +12,65 @@ import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
-import '../plan_generator.dart';
+import '../../../core/services/plan_generator.dart';
 import '../planning_providers.dart';
 
 enum PlanKind { study, meals }
 
 /// "Let Ascent make one": pick a subject or a goal, see the plan, create it.
 /// Returns the new plan's id, or null.
-Future<String?> showPlanGeneratorSheet(BuildContext context, PlanKind kind) =>
-    showAscentSheet<String>(
-      context: context,
-      builder: (_) => PlanGeneratorSheet(kind: kind),
-    );
+Future<String?> showPlanGeneratorSheet(
+  BuildContext context,
+  PlanKind kind, {
+  String? subject,
+  MealGoal? goal,
+  int? days,
+}) => showAscentSheet<String>(
+  context: context,
+  builder: (_) => PlanGeneratorSheet(
+    kind: kind,
+    initialSubject: subject,
+    initialGoal: goal,
+    initialDays: days,
+  ),
+);
+
+/// Riya's wording for a diet ("High-Protein Vitality") as a meal goal.
+MealGoal mealGoalFrom(String? text) {
+  final t = (text ?? '').toLowerCase();
+  if (t.contains('protein') || t.contains('muscle')) return MealGoal.protein;
+  if (t.contains('veg')) return MealGoal.veg;
+  if (t.contains('calorie') || t.contains('loss') || t.contains('light')) {
+    return MealGoal.light;
+  }
+  return MealGoal.balanced;
+}
 
 class PlanGeneratorSheet extends ConsumerStatefulWidget {
-  const PlanGeneratorSheet({super.key, required this.kind, this.clock});
+  const PlanGeneratorSheet({
+    super.key,
+    required this.kind,
+    this.clock,
+    this.initialSubject,
+    this.initialGoal,
+    this.initialDays,
+  });
   final PlanKind kind;
   final DateTime Function()? clock;
+  final String? initialSubject;
+  final MealGoal? initialGoal;
+  final int? initialDays;
 
   @override
   ConsumerState<PlanGeneratorSheet> createState() => _PlanGeneratorSheetState();
 }
 
 class _PlanGeneratorSheetState extends ConsumerState<PlanGeneratorSheet> {
-  final _subject = TextEditingController();
+  late final _subject = TextEditingController(text: widget.initialSubject);
   int _days = 14;
   int _minutes = 60;
   TimeOfDay _time = const TimeOfDay(hour: 7, minute: 0);
-  MealGoal _goal = MealGoal.balanced;
+  late MealGoal _goal = widget.initialGoal ?? MealGoal.balanced;
   bool _saving = false;
 
   DateTime get _now => (widget.clock ?? DateTime.now)();
@@ -49,6 +80,12 @@ class _PlanGeneratorSheetState extends ConsumerState<PlanGeneratorSheet> {
   void initState() {
     super.initState();
     if (!_study) _days = 7;
+    final d = widget.initialDays;
+    if (d != null) {
+      _days = _study
+          ? (d <= 7 ? 7 : (d <= 14 ? 14 : 30))
+          : (d <= 7 ? 7 : 14);
+    }
     _subject.addListener(() => setState(() {}));
   }
 
@@ -150,7 +187,7 @@ class _PlanGeneratorSheetState extends ConsumerState<PlanGeneratorSheet> {
             AppTextField(
               key: const ValueKey('plan_generator_subject'),
               controller: _subject,
-              autofocus: true,
+              autofocus: widget.initialSubject == null,
               hintText: 'e.g. DSA, Python, Physics',
               textCapitalization: TextCapitalization.words,
             ),

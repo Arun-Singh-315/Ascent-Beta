@@ -11,8 +11,11 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/services/plan_service.dart';
 import '../../../shared/widgets/app_surfaces.dart';
 import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/undo_snackbar.dart';
+import '../plan_adjust.dart';
 import '../plan_progress.dart';
+import '../planning_providers.dart';
 
 /// Last 7 days, streak, and on-track / behind with a one-tap catch up.
 class PlanProgressCard extends ConsumerWidget {
@@ -72,6 +75,29 @@ class PlanProgressCard extends ConsumerWidget {
         }
       }),
     );
+  }
+
+  Future<void> _adjust(
+    BuildContext context,
+    WidgetRef ref,
+    PlanAdjustment a,
+    String done,
+  ) async {
+    HapticFeedback.lightImpact();
+    final service = ref.read(planCollectionServiceProvider);
+    try {
+      final undo = await applyAdjustment(service, collectionId, a);
+      if (!context.mounted) return;
+      showUndoSnackbar(context, message: done, onUndo: undo);
+    } catch (e) {
+      if (!context.mounted) return;
+      AscentSnackBar.error(
+        context,
+        message: e is StateError || e is ArgumentError
+            ? '$e'.replaceFirst(RegExp(r'^\w+Error: '), '')
+            : 'Could not change the plan. Try again.',
+      );
+    }
   }
 
   @override
@@ -136,6 +162,51 @@ class PlanProgressCard extends ConsumerWidget {
                   ),
                 ),
             ],
+          ),
+          Builder(
+            builder: (context) {
+              final items =
+                  ref.watch(planItemsProvider(collectionId)).value ?? const [];
+              final now = DateTime.now();
+              final light = lighter(items, now);
+              final longer = extend(items, now);
+              if (light.isEmpty && longer.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(top: AppSpace.s12),
+                child: Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    if (!light.isEmpty)
+                      AscentButton.secondary(
+                        key: const ValueKey('plan_lighter'),
+                        label: 'Make it lighter',
+                        icon: Icons.spa_outlined,
+                        onPressed: () => _adjust(
+                          context,
+                          ref,
+                          light,
+                          'Lighter from today: weekdays, shorter sessions',
+                        ),
+                      ),
+                    if (!longer.isEmpty)
+                      AscentButton.secondary(
+                        key: const ValueKey('plan_extend'),
+                        label: 'Add a week',
+                        icon: Icons.add_rounded,
+                        onPressed: () => _adjust(
+                          context,
+                          ref,
+                          longer,
+                          'Plan extended by a week',
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
           ),
           if (p.missed.isNotEmpty) ...[
             const SizedBox(height: AppSpace.s12),

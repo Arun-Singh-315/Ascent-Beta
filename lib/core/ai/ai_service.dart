@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:flutter/material.dart' show TimeOfDay;
+
+import '../services/plan_generator.dart';
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
@@ -1314,42 +1317,25 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     final dailyMin = days <= 5 ? 90 : 60;
 
-    final List<Map<String, dynamic>> items = [];
-    if (subject.contains('Data Structures') || subject.contains('DSA')) {
-      final dsaModules = [
-        'Arrays, Two-Pointers & Prefix Sums',
-        'Sliding Window & Hash Map Patterns',
-        'Linked Lists & Fast-Slow Pointers',
-        'Binary Search on Answer Range',
-        'Stacks, Monotonic Queues & DFS',
-        'Binary Trees, BST & Tree Traversal',
-        'Dynamic Programming & Timed Mock Sprint',
-      ];
-      for (int i = 0; i < days; i++) {
-        final modName = dsaModules[i % dsaModules.length];
-        items.add({
+    // Real topics from the shared curriculum generator (same as Plans).
+    final generated = generateStudyPlan(
+      subject: subject,
+      days: days,
+      minutes: dailyMin,
+      time: const TimeOfDay(hour: 9, minute: 0),
+      now: DateTime.now(),
+    );
+    final List<Map<String, dynamic>> items = [
+      for (var i = 0; i < generated.items.length; i++)
+        {
           'day': i + 1,
-          'title': 'Day ${i + 1}: $modName',
-          'notes':
-              'Focus on pattern recognition and 2-3 standard benchmark problems.',
+          'title': 'Day ${i + 1}: ${generated.items[i].title}',
+          'notes': generated.items[i].notes,
           'minutes': dailyMin,
           'targetTime': '09:00',
           'category': 'study',
-        });
-      }
-    } else {
-      for (int i = 0; i < days; i++) {
-        items.add({
-          'day': i + 1,
-          'title': 'Day ${i + 1}: $subject Milestone ${i + 1}',
-          'notes':
-              'Core conceptual principles and targeted practice exercises.',
-          'minutes': dailyMin,
-          'targetTime': '09:00',
-          'category': 'study',
-        });
-      }
-    }
+        },
+    ];
 
     final payload = {
       'type': 'study_plan',
