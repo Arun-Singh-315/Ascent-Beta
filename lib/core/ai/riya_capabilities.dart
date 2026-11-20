@@ -927,7 +927,7 @@ class RiyaExecutor {
   }
 
   String _featureRoute(String feature) => switch (feature) {
-    'Mindspace' || 'Thought Wall' || 'Mind Space' => '/thought-wall',
+    'Mindspace' || 'Thought Wall' || 'Mind Space' || 'Mind Palace' => '/thought-wall',
     'Focus Timer' => '/focus',
     'Money' => '/money',
     'Reminders & Alerts' => '/reminders',

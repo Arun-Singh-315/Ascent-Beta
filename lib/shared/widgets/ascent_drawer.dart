@@ -127,7 +127,7 @@ class AscentDrawer extends ConsumerWidget {
             ),
             _DrawerTile(
               icon: Icons.bubble_chart_rounded,
-              label: 'Mind Palace',
+              label: 'Mindspace',
               route: '/thought-wall',
               color: context.accentSecondary,
             ),

@@ -26,7 +26,7 @@ class ReminderNotificationCopy {
       return '💧 Time to hydrate · Keep your mind refreshed';
     }
     if (destination.startsWith('/thought-wall')) {
-      return '✨ Mind Palace · Tap to reflect on your thought';
+      return '✨ Mindspace · Tap to reflect on your thought';
     }
     if (destination.startsWith('/home')) {
       return 'Due now · Tap to check in';

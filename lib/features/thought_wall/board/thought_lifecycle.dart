@@ -2,7 +2,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 
-/// Lifecycle rules for the Mind Palace.
+/// Lifecycle rules for the Mindspace.
 ///
 /// One thought is one record in one state. Today, Earlier, Done, Archive and
 /// History are views over four dates (createdAt, carriedOn, completedAt,
@@ -12,7 +12,7 @@ DateTime dayOf(DateTime d) => DateTime(d.year, d.month, d.day);
 
 bool _onDay(DateTime? at, DateTime day) => at != null && dayOf(at) == day;
 
-/// The tabs of the Mind Palace.
+/// The tabs of the Mindspace.
 enum PalaceTab { today, done, archive, history }
 
 /// Where a thought is drawn on a given day.

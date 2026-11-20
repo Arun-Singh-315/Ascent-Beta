@@ -1,6 +1,8 @@
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/undo_snackbar.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
@@ -49,7 +51,6 @@ class _ThoughtMergeSheetState extends State<_ThoughtMergeSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final messenger = ScaffoldMessenger.of(context);
     return StatefulBuilder(
       builder: (sheetContext, update) {
         final g = sheetContext.glass;
@@ -194,31 +195,26 @@ class _ThoughtMergeSheetState extends State<_ThoughtMergeSheet> {
                                       pin: pin,
                                     );
                                 if (!sheetContext.mounted) return;
+                                final undoContext = Navigator.of(
+                                  sheetContext,
+                                  rootNavigator: true,
+                                ).context;
                                 Navigator.pop(sheetContext, true);
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                      'Merged note saved. Original links preserved.',
-                                    ),
-                                    duration: const Duration(seconds: 8),
-                                    action: SnackBarAction(
-                                      label: 'Undo',
-                                      onPressed: () async {
-                                        final undone = await ThoughtActions(
-                                          widget.db,
-                                        ).undoMerge(merged.id);
-                                        if (!undone && messenger.mounted) {
-                                          messenger.showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'This merge changed since saving. Your newer work was kept.',
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                    ),
-                                  ),
+                                showUndoSnackbar(
+                                  undoContext,
+                                  message: 'Merged into one thought',
+                                  onUndo: () async {
+                                    final undone = await ThoughtActions(
+                                      widget.db,
+                                    ).undoMerge(merged.id);
+                                    if (!undone && undoContext.mounted) {
+                                      AscentSnackBar.error(
+                                        undoContext,
+                                        message:
+                                            'This merge changed since saving. Your newer work was kept.',
+                                      );
+                                    }
+                                  },
                                 );
                               } catch (failure) {
                                 if (sheetContext.mounted) {
@@ -232,11 +228,11 @@ class _ThoughtMergeSheetState extends State<_ThoughtMergeSheet> {
                               }
                             },
                     ),
-                    TextButton(
+                    AscentButton.ghost(
+                      label: 'Cancel',
                       onPressed: saving
                           ? null
                           : () => Navigator.pop(sheetContext),
-                      child: const Text('Cancel'),
                     ),
                   ],
                 ),

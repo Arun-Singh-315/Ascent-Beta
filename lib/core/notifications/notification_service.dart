@@ -1064,7 +1064,7 @@ class NotificationService {
               : (destination.startsWith('/today')
                   ? 'Tap to open activity'
                   : destination.startsWith('/thought-wall')
-                  ? 'Tap to open in Mind Palace'
+                  ? 'Tap to open in Mindspace'
                   : 'Tap to open your plan'),
         ),
       ),

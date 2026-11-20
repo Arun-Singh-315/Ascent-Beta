@@ -1,5 +1,6 @@
 import '../../../shared/widgets/selection_tick.dart';
 import 'package:flutter/material.dart';
+import '../../../app/theme/mindspace_palette.dart';
 import 'package:flutter/services.dart';
 
 import '../../../app/theme/color_tokens.dart';
@@ -185,9 +186,8 @@ class _BoardCardState extends State<BoardCard>
     final chrome = padding * 2 + 4; // padding, 1px borders and a small safety gap
 
     final textStyle = kind == BoardCardKind.spark
-        ? AscentTextStyles.cardTitle.copyWith(
+        ? AscentTextStyles.interfaceSupporting.copyWith(
             color: context.glass.ink,
-            fontSize: 15.5,
             fontWeight: FontWeight.w500,
             height: 1.4,
           )
@@ -229,8 +229,8 @@ class _BoardCardState extends State<BoardCard>
     final fill = (!filled || minimal)
         ? (dark
             ? Colors.transparent
-            : const Color(0xFFF7F5F0).withValues(alpha: .75))
-        : (dark ? const Color(0xFF16181F) : const Color(0xFFF7F5F0));
+            : MindspacePalette.cardPaperLight.withValues(alpha: .75))
+        : (dark ? MindspacePalette.cardPaperDark : MindspacePalette.cardPaperLight);
     final borderColor = isSelected
         ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
         : thought.isCompleted
@@ -265,9 +265,9 @@ class _BoardCardState extends State<BoardCard>
             ? const []
             : [
                 BoxShadow(
-                  color: (dark ? accent : Colors.black).withValues(
-                    alpha: dark ? 0.20 : 0.04,
-                  ),
+                  color: dark
+                      ? accent.withValues(alpha: 0.20)
+                      : MindspacePalette.cardShadowLight(),
                   blurRadius: dark ? 12 : 8,
                   offset: dark ? Offset.zero : const Offset(0, 2),
                 ),
@@ -398,9 +398,8 @@ class _BoardCardState extends State<BoardCard>
           text,
           maxLines: 4,
           overflow: TextOverflow.ellipsis,
-          style: AscentTextStyles.cardTitle.copyWith(
+          style: AscentTextStyles.interfaceSupporting.copyWith(
             color: g.ink,
-            fontSize: 15.5,
             fontWeight: FontWeight.w500,
             height: 1.4,
           ),
@@ -506,10 +505,9 @@ class _BoardCardState extends State<BoardCard>
                     children: [
                       Text(
                         _expanded ? 'Show less' : 'Show more',
-                        style: AscentTextStyles.labelSmall.copyWith(
+                        style: AscentTextStyles.homeCaption.copyWith(
                           color: g.clay,
                           fontWeight: FontWeight.w600,
-                          fontSize: 11,
                         ),
                       ),
                       const SizedBox(width: 4),

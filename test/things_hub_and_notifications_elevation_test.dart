@@ -258,7 +258,7 @@ void main() {
       );
       expect(
         copy.bodyFor('/thought-wall?thought=5'),
-        '✨ Mind Palace · Tap to reflect on your thought',
+        '✨ Mindspace · Tap to reflect on your thought',
       );
       expect(copy.bodyFor('/reminders'), 'Due now · Tap to open Reminders');
     });

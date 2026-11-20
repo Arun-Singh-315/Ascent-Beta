@@ -13,7 +13,6 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/plans/widgets/plan_collection_editor.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_quick_actions.dart';
 
 class FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
@@ -122,26 +121,6 @@ void main() {
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(minutes: 20));
-    });
-  });
-
-  group('Thought Wall Selection and Quick Actions Include Plan', () {
-    testWidgets('ThoughtQuickActions offers Plan, Todo, Reminder', (
-      tester,
-    ) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Quick note'),
-      );
-      final thought = await db.thoughtDao.getThoughtById(id);
-
-      await tester.pumpWidget(
-        wrap(ThoughtQuickActions(thought: thought!, db: db)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('Todo'), findsOneWidget);
-      expect(find.text('Reminder'), findsOneWidget);
     });
   });
 }

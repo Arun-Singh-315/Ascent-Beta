@@ -11,7 +11,7 @@ import '../history/history_ledger.dart';
 /// - 20 days of walking sessions (distance, duration, calories, pace)
 /// - 20 days of time tracking study sessions (yielding a 20-day streak)
 /// - 20 days of completed and pending tasks (timed tasks, standard to-dos, standing daily tasks)
-/// - Mind Palace thoughts across multiple categories with pins and moods
+/// - Mindspace thoughts across multiple categories with pins and moods
 /// - Active 30-day Momentum challenge on Day 20 with completed & pending commitments
 /// - Active and upcoming reminders
 /// - Full 20-day chronology in HistoryLedger
@@ -421,7 +421,7 @@ class DevDatabaseSeeder {
       );
     }
 
-    // 10. Insert Thoughts / Mind Palace
+    // 10. Insert Thoughts / Mindspace
     final sampleThoughts = [
       (content: 'Simplicity is a prerequisite for reliability. Complex systems always break in complex ways.', category: 'architecture', mood: 'idea', pinned: true),
       (content: 'Consistently hitting 2.5L water and daily walking dramatically clears cognitive fog.', category: 'health', mood: 'win', pinned: false),

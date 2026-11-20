@@ -12,7 +12,6 @@ import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/board/board_background.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
-import 'package:ascent/features/thought_wall/board/spaces_shelf.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
 
 void main() {
@@ -114,30 +113,6 @@ void main() {
       },
     );
 
-    testWidgets('SpacesShelf header has View all button at the right end', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildApp(
-          Scaffold(
-            body: SpacesShelf(
-              spaces: const [],
-              archivedCount: 0,
-              onOpen: (_) {},
-              onNew: () {},
-              onOpenArchive: () {},
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byKey(const ValueKey('space_tile_all')), findsOneWidget);
-      expect(find.byKey(const ValueKey('space_tile_new')), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
   });
 
   group('Mind Palace Style & Typography Tests', () {

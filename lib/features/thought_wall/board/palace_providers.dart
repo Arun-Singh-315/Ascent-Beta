@@ -5,7 +5,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/local_day_provider.dart';
 
-/// Space filter and search text shared by every Mind Palace tab.
+/// Space filter and search text shared by every Mindspace tab.
 @immutable
 class PalaceFilter {
   const PalaceFilter({this.space, this.query = ''});
@@ -16,11 +16,14 @@ class PalaceFilter {
 
   bool get isActive => space != null || query.trim().isNotEmpty;
 
-  PalaceFilter copyWith({String? space, bool clearSpace = false, String? query}) =>
-      PalaceFilter(
-        space: clearSpace ? null : (space ?? this.space),
-        query: query ?? this.query,
-      );
+  PalaceFilter copyWith({
+    String? space,
+    bool clearSpace = false,
+    String? query,
+  }) => PalaceFilter(
+    space: clearSpace ? null : (space ?? this.space),
+    query: query ?? this.query,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -86,6 +89,14 @@ final palaceArchiveProvider = StreamProvider.family<List<Thought>, int>((
   return ref
       .watch(thoughtDaoProvider)
       .watchArchive(limit: limit, category: filter.space, query: filter.query);
+});
+
+/// Search results across every tab, honouring the space filter.
+final palaceSearchProvider = StreamProvider<List<Thought>>((ref) {
+  final filter = ref.watch(palaceFilterProvider);
+  return ref
+      .watch(thoughtDaoProvider)
+      .watchSearch(query: filter.query, category: filter.space);
 });
 
 /// History: the events of one day.
