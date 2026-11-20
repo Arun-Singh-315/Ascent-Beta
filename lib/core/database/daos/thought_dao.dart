@@ -489,13 +489,32 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
         .write(ThoughtTableCompanion(carriedOn: Value(at)));
   }
 
-  /// Brings every Earlier thought to Today. Returns how many moved.
-  Future<int> carryAllEarlierToToday({DateTime? now}) async {
-    final at = now ?? DateTime.now();
-    final start = _dayStart(at);
-    return (update(thoughtTable)..where((t) => _earlier(t, start)))
-        .write(ThoughtTableCompanion(carriedOn: Value(at)));
-  }
+  /// Brings every Earlier thought to Today. Returns each moved thought's
+  /// previous [Thought.carriedOn] so the move can be undone with
+  /// [restoreCarriedOn].
+  Future<Map<int, DateTime?>> carryAllEarlierToToday({DateTime? now}) =>
+      transaction(() async {
+        final at = now ?? DateTime.now();
+        final start = _dayStart(at);
+        final rows = await (select(
+          thoughtTable,
+        )..where((t) => _earlier(t, start))).get();
+        if (rows.isEmpty) return const {};
+        final ids = [for (final r in rows) r.id];
+        await (update(thoughtTable)..where((t) => t.id.isIn(ids))).write(
+          ThoughtTableCompanion(carriedOn: Value(at)),
+        );
+        return {for (final r in rows) r.id: r.carriedOn};
+      });
+
+  /// Undo for [carryAllEarlierToToday].
+  Future<void> restoreCarriedOn(Map<int, DateTime?> previous) =>
+      transaction(() async {
+        for (final entry in previous.entries) {
+          await (update(thoughtTable)..where((t) => t.id.equals(entry.key)))
+              .write(ThoughtTableCompanion(carriedOn: Value(entry.value)));
+        }
+      });
 
   /// 'todo', 'bullet' or null (follow the user's default).
   Future<void> setBulletStyle(int id, String? style) async {
