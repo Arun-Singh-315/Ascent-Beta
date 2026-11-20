@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../core/ai/riya_conversation_provider.dart';
@@ -492,7 +493,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         'quickOptions': result.options,
       });
       if (command.id == 'navigation.open' && mounted) {
-        context.push(result.route);
+        context.open(result.route);
       }
       return (reply, data);
     } catch (error) {
@@ -599,7 +600,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       final route = data?['route'];
       if (route is String &&
           !['tasks', 'promises'].contains(data?['entityType'])) {
-        context.push(route);
+        context.open(route);
       } else {
         AscentSnackBar.show(
           context,
@@ -1651,7 +1652,7 @@ class _ConversationMessageBubbleState
                       context,
                       message: 'Already saved in Mindspace',
                       actionLabel: 'View',
-                      onAction: () => context.push('/thought-wall'),
+                      onAction: () => context.open('/thought-wall'),
                     );
                     return;
                   }
@@ -1671,7 +1672,7 @@ class _ConversationMessageBubbleState
                       context,
                       message: 'Saved to Mindspace',
                       actionLabel: 'View',
-                      onAction: () => context.push('/thought-wall'),
+                      onAction: () => context.open('/thought-wall'),
                     );
                   } catch (_) {
                     if (!context.mounted) return;

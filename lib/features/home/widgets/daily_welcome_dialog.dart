@@ -1,8 +1,8 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
@@ -82,7 +82,7 @@ class _DailyWelcomeDialogState extends ConsumerState<DailyWelcomeDialog> {
     if (host.mounted) action();
   }
 
-  void _open(String route) => _then(() => widget.host.push(route));
+  void _open(String route) => _then(() => widget.host.open(route));
   void _task(int? id) => _open(id == null ? '/today' : '/today?task=$id');
   void _go(int page) {
     if (!_controller.hasClients) return;

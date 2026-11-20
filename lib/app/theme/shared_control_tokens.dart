@@ -68,3 +68,18 @@ class SharedControlColors {
   static Color disabledFg(bool isDark) =>
       isDark ? disabledFgDark : disabledFgLight;
 }
+
+/// Pillar tints (CLAUDE.md §3.1): small icon tiles, charts and header accents
+/// only — never full-screen fills.
+class PillarTints {
+  PillarTints._();
+
+  static const plan = Color(0xFF007AFF);
+  static const think = Color(0xFFAF52DE);
+  static const live = Color(0xFFFF2D55);
+  static const water = Color(0xFF32ADE6);
+  static const money = Color(0xFF34C759);
+  static const grow = Color(0xFFFF9500);
+  static const assistant = Color(0xFF5E5CE6);
+  static const neutral = Color(0xFF8E8E93);
+}

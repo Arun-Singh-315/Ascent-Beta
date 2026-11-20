@@ -1542,6 +1542,8 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       },
       child: AscentScaffold(
         title: _selecting ? '${_selected.length} selected' : 'Mindspace',
+        largeTitle: true,
+        showBackButton: false,
         subtitle: _selecting ? 'Tap cards to add or remove' : null,
         glow1: Colors.transparent,
         glow2: Colors.transparent,

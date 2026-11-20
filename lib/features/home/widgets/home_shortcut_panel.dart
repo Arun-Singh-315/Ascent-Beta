@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../../shared/widgets/ascent_press_feedback.dart';
 import 'home_section_heading.dart';
 import '../../../app/theme/home_design.dart';
@@ -414,7 +415,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                             .hasStartedLearning
                                     ? '/study-plan'
                                     : item.route;
-                                context.push(route);
+                                context.open(route);
                               }
                             },
                             child: Padding(

@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -141,7 +142,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
   void _navigate(String route) {
     final router = GoRouter.of(context);
     if (widget.inSheet) Navigator.pop(context);
-    router.push(route);
+    router.open(route);
   }
 
   Future<void> _saveQuickTask() async {
