@@ -1034,37 +1034,12 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final task = await dao.getTaskById(target.linkedTaskId!);
         if (task?.actualCompletedDate != null && context.mounted) {
           if (widget.onViewCompleted != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Expanded(
-                      child: Text('Task completed'),
-                    ),
-                    Builder(
-                      builder: (btnContext) {
-                        return TextButton(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(btnContext).hideCurrentSnackBar();
-                            widget.onViewCompleted?.call();
-                          },
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'View completed',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            AscentSnackBar.show(
+              context,
+              message: 'Task completed',
+              icon: Icons.check_circle_rounded,
+              actionLabel: 'View completed',
+              onAction: () => widget.onViewCompleted?.call(),
             );
           } else {
             AscentSnackBar.applaud(
@@ -1759,27 +1734,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 label: const Text('Later'),
                 onPressed: () async {
                   HapticFeedback.lightImpact();
-                  final delay = await showModalBottomSheet<Duration>(
+                  final minutes = await showAscentActionMenu<int>(
                     context: context,
-                    useRootNavigator: true,
-                    useSafeArea: true,
-                    builder: (ctx) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const ListTile(title: Text('Ask me again in…')),
-                          for (final minutes in [15, 30, 60])
-                            ListTile(
-                              title: Text('$minutes minutes'),
-                              onTap: () => Navigator.pop(
-                                ctx,
-                                Duration(minutes: minutes),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                    title: 'Ask me again in…',
+                    actions: const [
+                      AscentAction(15, '15 minutes', Icons.schedule_rounded),
+                      AscentAction(30, '30 minutes', Icons.schedule_rounded),
+                      AscentAction(60, '1 hour', Icons.schedule_rounded),
+                    ],
                   );
+                  final delay = minutes == null
+                      ? null
+                      : Duration(minutes: minutes);
                   if (delay != null && context.mounted) {
                     if (dueCheckIn.isRoutine) {
                       await ref
@@ -2001,7 +1967,7 @@ Future<void> showActivityActions(
           (activity.targetMinutes ?? 0) <= 0)
         const AscentAction(
           'done',
-          'Mark as Done',
+          'Mark as done',
           Icons.check_circle_outline_rounded,
         ),
       if (!isDone && activity.linkedTaskId != null && !isLecture)
@@ -2015,11 +1981,11 @@ Future<void> showActivityActions(
       if (activity.linkedTaskId != null && !isDone && !isLecture)
         const AscentAction(
           'tomorrow',
-          'Move to Tomorrow',
+          'Move to tomorrow',
           Icons.next_plan_outlined,
         ),
       if (!isLecture && activity.linkedTaskId != null && !isDone)
-        const AscentAction('edit', 'Edit Activity', Icons.edit_outlined),
+        const AscentAction('edit', 'Edit activity', Icons.edit_outlined),
       AscentAction(
         'delete',
         _removesFromTodayOnly(activity)
@@ -2118,57 +2084,37 @@ Future<void> showActivityActions(
       }
       await AddActivitySheet.show(context, existingTask: task);
     } else if (action == 'delete') {
-      final confirmed = await AscentDialog.confirm(
-        context: context,
-        title: _removesFromTodayOnly(activity)
-            ? 'Remove from today?'
-            : 'Delete activity?',
-        content: _removesFromTodayOnly(activity)
-            ? 'Hide this activity for today? Its history stays saved.'
-            : 'Delete "${activity.title}"? You can undo this action from the notification.',
-        confirmLabel: _removesFromTodayOnly(activity) ? 'Remove' : 'Delete',
-        cancelLabel: 'Keep',
-        isDestructive: true,
-        icon: Icons.delete_outline_rounded,
-      );
-      if (confirmed != true || !context.mounted) return;
+      // Undo-first (CLAUDE.md §1.8): no confirmation, Undo in the snackbar.
+      HapticFeedback.mediumImpact();
       final container = ProviderScope.containerOf(context, listen: false);
-      final messenger = ScaffoldMessenger.of(context);
       final removed = activity;
       await deleteTodayActivity(container, removed);
-      if (!messenger.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            removed.sourceType == 'lecture'
-                ? "Removed from today's activities"
-                : 'Activity "${removed.title}" deleted',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () async {
-              try {
-                if (removed.linkedTaskId != null &&
-                    removed.sourceType != 'lecture') {
-                  if (!await dao.restoreDeletedTask(removed.linkedTaskId!)) {
-                    throw StateError('Restore unavailable');
-                  }
-                }
-                await container
-                    .read(dismissedTodayActivityIdsProvider.notifier)
-                    .unDismissActivityId(removed.id);
-              } catch (_) {
-                if (messenger.mounted) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not restore this activity.'),
-                    ),
-                  );
-                }
+      if (!context.mounted) return;
+      showUndoSnackbar(
+        context,
+        message: _removesFromTodayOnly(removed)
+            ? 'Removed “${removed.title}” from today'
+            : 'Deleted “${removed.title}”',
+        onUndo: () async {
+          try {
+            if (removed.linkedTaskId != null &&
+                removed.sourceType != 'lecture') {
+              if (!await dao.restoreDeletedTask(removed.linkedTaskId!)) {
+                throw StateError('Restore unavailable');
               }
-            },
-          ),
-        ),
+            }
+            await container
+                .read(dismissedTodayActivityIdsProvider.notifier)
+                .unDismissActivityId(removed.id);
+          } catch (_) {
+            if (context.mounted) {
+              AscentSnackBar.error(
+                context,
+                message: 'Could not restore this activity.',
+              );
+            }
+          }
+        },
       );
     }
   } catch (_) {

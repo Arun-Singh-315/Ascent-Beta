@@ -45,7 +45,7 @@ void main() {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
-    expect(find.text('New Activity'), findsOneWidget);
+    expect(find.text('New activity'), findsOneWidget);
     expect(find.text('What needs to be done?'), findsOneWidget);
 
     // Enter text
@@ -59,8 +59,8 @@ void main() {
     await tester.tap(find.text('30m Focus'));
     await tester.pumpAndSettle();
 
-    // Tap "Create Activity"
-    await tester.tap(find.text('Create Activity'));
+    // Tap the save button
+    await tester.tap(find.byKey(const ValueKey('add_activity_save')));
     await tester.pumpAndSettle();
 
     // Verify task was inserted in database
@@ -82,6 +82,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('New Activity'), findsOneWidget);
+    expect(find.text('New activity'), findsOneWidget);
   });
 }

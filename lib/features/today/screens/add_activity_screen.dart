@@ -8,6 +8,8 @@ import '../../../core/providers/database_provider.dart' show ActivityKind, datab
 import '../../../core/services/activity_entry_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/undo_snackbar.dart';
 
 /// The dedicated full-screen creator/editor for activities and tasks.
 ///
@@ -138,35 +140,19 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
   Future<void> _handleDelete() async {
     if (widget.existingTask == null) return;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Activity'),
-        content: const Text(
-          'Are you sure you want to delete this activity? All associated reminders and timers will be removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    // Undo-first (CLAUDE.md §1.8): delete now, offer Undo. The snackbar lives
+    // on the app-level messenger, so it stays after this screen closes.
+    HapticFeedback.mediumImpact();
+    final dao = ref.read(databaseProvider).taskDao;
+    final task = widget.existingTask!;
+    await dao.deleteTask(task.id);
+    if (!mounted) return;
+    showUndoSnackbar(
+      context,
+      message: 'Deleted “${task.title}”',
+      onUndo: () => dao.restoreDeletedTask(task.id),
     );
-
-    if (confirm == true && mounted) {
-      HapticFeedback.mediumImpact();
-      final db = ref.read(databaseProvider);
-      await db.taskDao.deleteTask(widget.existingTask!.id);
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    }
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -217,7 +203,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      isEditing ? 'Edit Activity' : 'New Activity',
+                      isEditing ? 'Edit activity' : 'New activity',
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -482,35 +468,12 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                 color: c.bg,
                 border: Border(top: BorderSide(color: c.border, width: 1.0)),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isSaving ? null : _handleSave,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
-                          ),
-                        )
-                      : Text(
-                          isEditing ? 'Save Changes' : 'Create Activity',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                ),
+              child: AscentButton.primary(
+                key: const ValueKey('add_activity_save'),
+                label: isEditing ? 'Save changes' : 'Add activity',
+                expanded: true,
+                loading: _isSaving,
+                onPressed: _isSaving ? null : _handleSave,
               ),
             ),
           ],

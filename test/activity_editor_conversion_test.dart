@@ -70,15 +70,15 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text(type));
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Save Changes'));
-        await tester.tap(find.text('Save Changes'));
+        await tester.ensureVisible(find.text('Save changes'));
+        await tester.tap(find.text('Save changes'));
         await settleDatabase(tester);
         await tester.pumpAndSettle();
         snapshot = (await tester.runAsync(
           () async => (await db.taskDao.getTaskById(id!))!,
         ))!;
         expect(snapshot.estimatedMinutes, type == 'Timed' ? 30 : null);
-        expect(find.text('Edit Activity'), findsNothing);
+        expect(find.text('Edit activity'), findsNothing);
         expect(snapshot.actualCompletedDate, isNull);
       }
       expect(
