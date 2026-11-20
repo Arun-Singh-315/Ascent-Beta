@@ -1062,13 +1062,13 @@ class _ThoughtWallHomePreviewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // "Mind palace" heading + doorway to the Mindspace sit above the card.
+        // "Mindspace" heading + doorway sit above the card.
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 6),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final title = Text(
-                'Mind palace',
+                'Mindspace',
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
@@ -1340,7 +1340,7 @@ class _ThoughtWallHomePreviewState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'All thoughts completed · Tap to open Mind Palace',
+                        'All thoughts completed · Tap to open Mindspace',
                         style: TextStyle(
                           color: c.textSecondary,
                           fontSize: 12.5,

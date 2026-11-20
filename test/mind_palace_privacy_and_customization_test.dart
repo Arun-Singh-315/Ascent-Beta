@@ -172,7 +172,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Style bottom sheet should appear
-        expect(find.text('Mind Palace Card Style'), findsOneWidget);
+        expect(find.text('Mindspace card style'), findsOneWidget);
         expect(find.text('Coloured Fill'), findsOneWidget);
         expect(find.text('Border Only'), findsOneWidget);
         expect(find.text('Thin (1px)'), findsOneWidget);

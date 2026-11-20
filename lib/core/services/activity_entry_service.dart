@@ -25,6 +25,7 @@ class ActivityEntryService {
     int? applicationId,
     DateTime? reminderAt,
     bool isDailyStanding = false,
+    int? linkedThoughtId,
   }) => db.transaction(() async {
     if (titles.isEmpty || titles.length > 200) {
       throw StateError('Add between 1 and 200 items.');
@@ -42,6 +43,7 @@ class ActivityEntryService {
           applicationId: applicationId,
           reminderAt: reminderAt,
           isDailyStanding: isDailyStanding,
+          linkedThoughtId: linkedThoughtId,
         ),
       );
     }
@@ -60,6 +62,7 @@ class ActivityEntryService {
     DateTime? reminderAt,
     bool replaceReminders = true,
     bool? isDailyStanding,
+    int? linkedThoughtId,
   }) => db.transaction(() async {
     final trimmed = title.trim();
     if (trimmed.isEmpty || trimmed.length > 300) {
@@ -129,6 +132,7 @@ class ActivityEntryService {
             ),
             parentTaskId: Value(parentTaskId),
             linkedApplicationId: Value(applicationId),
+            linkedThoughtId: Value(linkedThoughtId),
             lastInteractedAt: Value(clock()),
           ),
         );

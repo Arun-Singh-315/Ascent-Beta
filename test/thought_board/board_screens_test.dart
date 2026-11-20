@@ -9,6 +9,7 @@ import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:ascent/features/thought_wall/board/thought_space_screen.dart';
 import 'package:ascent/features/thought_wall/board/board_logic.dart';
 import 'package:drift/native.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -169,7 +170,7 @@ void main() {
       await tester.pump();
       expect(
         tester
-            .widget<FilledButton>(
+            .widget<AscentButton>(
               find.byKey(const ValueKey('space_paste_save')),
             )
             .onPressed,
@@ -202,7 +203,7 @@ void main() {
       await settle(tester);
       await tester.tap(find.byKey(const ValueKey('space_menu')));
       await settle(tester);
-      await tester.tap(find.byKey(const ValueKey('space_rename')));
+      await tester.tap(find.text('Rename'));
       await settle(tester);
       await tester.enterText(
         find.byKey(const ValueKey('space_rename_field')),

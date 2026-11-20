@@ -1,196 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../app/theme/glass_theme.dart';
-import '../../core/database/app_database.dart';
-import '../../core/providers/database_provider.dart';
+
+import '../../app/theme/dimension_tokens.dart';
+import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 
-Future<bool> moveThoughtsToCategory(
-  BuildContext context,
-  WidgetRef ref,
-  List<Thought> selected,
-) async {
-  var category = await showAscentCenteredForm<String>(
-    context: context,
-    maxWidth: 380,
-    builder: (dialogContext) => Material(
-      color: dialogContext.glass.elevated,
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: dialogContext.glass.line, width: 1.0),
-        ),
-        child: Consumer(
-          builder: (context, sheetRef, _) {
-            final categories =
-                sheetRef.watch(thoughtCategoriesStreamProvider).value ??
-                ThoughtDao.builtInCategories;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Move to category',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: dialogContext.glass.ink,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Close',
-                        onPressed: () => Navigator.pop(dialogContext),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: dialogContext.glass.inkMuted,
-                          size: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  for (final entry in categories.entries)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Material(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(14),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () => Navigator.pop(dialogContext, entry.key),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.folder_outlined,
-                                  size: 20,
-                                  color: dialogContext.glass.clay,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    entry.value,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: dialogContext.glass.ink,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  const Divider(height: 16),
-                  Material(
-                    color: dialogContext.glass.clay.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () => Navigator.pop(dialogContext, '__create__'),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.create_new_folder_outlined,
-                              size: 20,
-                              color: dialogContext.glass.clay,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Create category',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: dialogContext.glass.clay,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-  );
-  if (category == null || !context.mounted) return false;
-  String? createdName;
-  if (category == '__create__') {
-    createdName = await showDialog<String>(
-      context: context,
-      builder: (_) => const CreateThoughtCategoryDialog(move: true),
-    );
-    if (createdName == null || !context.mounted) return false;
-  }
-  final db = ref.read(databaseProvider);
-  try {
-    if (createdName != null) {
-      category = await db.thoughtDao.createCategoryAndMove(
-        createdName,
-        selected.map((t) => t.id),
-      );
-    } else {
-      await db.thoughtDao.moveToCategory(selected.map((t) => t.id), category);
-    }
-    if (!context.mounted) return false;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        persist: false,
-        content: Text(
-          '${selected.length} moved to ${(ref.read(thoughtCategoriesStreamProvider).value ?? ThoughtDao.builtInCategories)[category] ?? createdName}',
-        ),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () async {
-            await db.transaction(() async {
-              for (final thought in selected) {
-                final current = await db.thoughtDao.getThoughtById(thought.id);
-                if (current?.category == category) {
-                  await db.thoughtDao.moveToCategory([
-                    thought.id,
-                  ], thought.category);
-                }
-              }
-            });
-          },
-        ),
-      ),
-    );
-    return true;
-  } catch (_) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not move notes. Try again.')),
-      );
-    }
-    return false;
-  }
-}
+/// Asks for a new space's name. Returns the trimmed name, or null when
+/// cancelled. [move] changes the confirm label to "Create and move".
+Future<String?> showCreateSpaceDialog(
+  BuildContext context, {
+  bool move = false,
+}) => showAscentFrostedDialog<String>(
+  context: context,
+  builder: (_) => CreateThoughtCategoryDialog(move: move),
+);
 
 class CreateThoughtCategoryDialog extends StatefulWidget {
   const CreateThoughtCategoryDialog({super.key, this.move = false});
@@ -204,6 +27,7 @@ class _CreateThoughtCategoryDialogState
     extends State<CreateThoughtCategoryDialog> {
   final _name = TextEditingController();
   final _form = GlobalKey<FormState>();
+
   @override
   void dispose() {
     _name.dispose();
@@ -211,40 +35,52 @@ class _CreateThoughtCategoryDialogState
   }
 
   void _submit() {
-    if (_form.currentState!.validate()) {
+    if (_form.currentState?.validate() ?? false) {
       Navigator.pop(context, _name.text.trim());
     }
   }
 
+  static String? _validate(String? value) {
+    final name = value?.trim() ?? '';
+    if (name.isEmpty) return 'Enter a name for the space.';
+    if (name.length > 50) return 'Use 50 characters or fewer.';
+    return null;
+  }
+
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Create category'),
-    scrollable: true,
-    content: Form(
+  Widget build(BuildContext context) => AscentDialog(
+    title: 'New space',
+    icon: Icons.create_new_folder_outlined,
+    contentWidget: Form(
       key: _form,
-      child: TextFormField(
+      child: AppTextField(
+        key: const ValueKey('new_space_name'),
         controller: _name,
         autofocus: true,
-        maxLength: 50,
+        hintText: 'e.g. Movies',
         textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(
-          labelText: 'Category name',
-          hintText: 'e.g. Learning',
-        ),
-        validator: (value) => value == null || value.trim().isEmpty
-            ? 'Enter a category name.'
-            : null,
-        onFieldSubmitted: (_) => _submit(),
+        textInputAction: TextInputAction.done,
+        validator: _validate,
+        onSubmitted: (_) => _submit(),
       ),
     ),
     actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _submit,
-        child: Text(widget.move ? 'Create and move' : 'Create'),
+      Wrap(
+        alignment: WrapAlignment.end,
+        spacing: AscentDimensions.spaceSm,
+        runSpacing: AscentDimensions.spaceSm,
+        children: [
+          AscentButton.secondary(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AscentButton.tonal(
+            key: const ValueKey('new_space_create'),
+            label: widget.move ? 'Create and move' : 'Create',
+            compact: true,
+            onPressed: _submit,
+          ),
+        ],
       ),
     ],
   );

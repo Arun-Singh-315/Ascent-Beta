@@ -438,6 +438,25 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
         .watch();
   }
 
+  /// Search across every tab and space: open, done and archived thoughts whose
+  /// text matches [query]. Newest first, at most [limit] rows.
+  Stream<List<Thought>> watchSearch({
+    required String query,
+    String? category,
+    int limit = 200,
+  }) {
+    if (query.trim().isEmpty) return Stream.value(const <Thought>[]);
+    return (select(thoughtTable)
+          ..where((t) => _matches(t, category: category, query: query))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.isPinned),
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
+          ..limit(limit))
+        .watch();
+  }
+
   /// Thoughts with any lifecycle event on [day]: written, finished, archived
   /// or carried in.
   Stream<List<Thought>> watchHistoryForDay(DateTime day) {

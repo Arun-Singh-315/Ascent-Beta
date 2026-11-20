@@ -1,16 +1,23 @@
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/mindspace_palette.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
+import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_scaffold.dart';
+import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -118,12 +125,8 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   }
 
   Future<void> _pasteList(SpaceStyle style) async {
-    final text = await showModalBottomSheet<String>(
+    final text = await showAscentFrostedDialog<String>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
       builder: (_) =>
           _SpaceTextDialog(title: 'Add several ${style.noun}s', bulk: true),
     );
@@ -131,7 +134,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   }
 
   Future<void> _rename(String current) async {
-    final name = await showDialog<String>(
+    final name = await showAscentFrostedDialog<String>(
       context: context,
       builder: (_) => _SpaceTextDialog(title: 'Rename space', initial: current),
     );
@@ -152,24 +155,15 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
   }
 
   Future<void> _deleteSpace(String name) async {
-    final ok = await showDialog<bool>(
+    // Can't be undone in one step, so this one asks first (CLAUDE.md §1.8).
+    final ok = await AscentDialog.confirm(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Delete "$name"?'),
-        content: const Text('Your entries are kept and move back to the wall.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete space'),
-          ),
-        ],
-      ),
+      title: 'Delete “$name”?',
+      content: 'Your entries are kept and move back to the wall.',
+      confirmLabel: 'Delete space',
+      isDestructive: true,
     );
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
     try {
       await ref.read(thoughtDaoProvider).deleteCategory(widget.spaceKey);
       if (mounted) context.pop();
@@ -180,42 +174,51 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
     }
   }
 
-  void _menu(String name, bool custom) {
-    showModalBottomSheet<void>(
+  Future<void> _menu(String name, bool custom) async {
+    if (!custom) return;
+    final choice = await showAscentActionMenu<String>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      builder: (sheetContext) => Padding(
-        padding: const EdgeInsets.all(AppSpace.s20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (custom) ...[
-              _SpaceMenuAction(
-                key: const ValueKey('space_rename'),
-                icon: Icons.edit_outlined,
-                label: 'Rename',
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _rename(name);
-                },
-              ),
-              _SpaceMenuAction(
-                key: const ValueKey('space_delete'),
-                icon: Icons.delete_outline_rounded,
-                label: 'Delete space',
-                color: context.glass.errorInk,
-                onTap: () {
-                  Navigator.pop(sheetContext);
-                  _deleteSpace(name);
-                },
-              ),
-            ],
-          ],
+      title: name,
+      actions: const [
+        AscentAction('rename', 'Rename', Icons.edit_outlined),
+        AscentAction(
+          'delete',
+          'Delete space',
+          Icons.delete_outline_rounded,
+          destructive: true,
         ),
-      ),
+      ],
     );
+    if (!mounted) return;
+    switch (choice) {
+      case 'rename':
+        await _rename(name);
+      case 'delete':
+        await _deleteSpace(name);
+    }
   }
+
+  /// Skeletons shaped like entries (CLAUDE.md §6.2), never a bare spinner.
+  Widget _loadingScaffold() => AscentScaffold(
+    title: 'Space',
+    showFeatureHelp: false,
+    body: ListView(
+      key: const ValueKey('space_loading'),
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s16,
+        AppSpace.s12,
+        AppSpace.s16,
+        0,
+      ),
+      children: [
+        for (final h in const [64.0, 64.0, 64.0, 64.0]) ...[
+          SkeletonShimmer.card(height: h),
+          const SizedBox(height: AppSpace.s10),
+        ],
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +230,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
         ? ref.watch(archivedThoughtsStreamProvider)
         : ref.watch(allThoughtsStreamProvider);
     if (source.isLoading && !source.hasValue) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return _loadingScaffold();
     }
     if (source.hasError && !source.hasValue) {
       return AscentScaffold(
@@ -252,7 +255,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
 
     final categoryState = ref.watch(thoughtCategoriesStreamProvider);
     if (categoryState.isLoading && !categoryState.hasValue) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return _loadingScaffold();
     }
     final exists = _isArchive || categories.containsKey(widget.spaceKey);
     final name = _isArchive
@@ -417,7 +420,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: .04),
+                          color: MindspacePalette.cardShadowLight(),
                           blurRadius: 18,
                           offset: const Offset(0, 4),
                         ),
@@ -460,13 +463,9 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
                           ),
                           onPressed: _saving ? null : () => _add(_input.text),
                           icon: _saving
-                              ? SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: g.bg,
-                                  ),
+                              ? CupertinoActivityIndicator(
+                                  radius: 9,
+                                  color: g.bg,
                                 )
                               : const Icon(
                                   Icons.arrow_upward_rounded,
@@ -483,8 +482,6 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
       ),
     );
   }
-
-
 }
 
 /// One entry of a space. A list row has a big tap-circle on the left that
@@ -652,7 +649,8 @@ class _SpaceEntry extends StatelessWidget {
   }
 }
 
-/// Dialog owns its controller until the closing transition has unmounted it.
+/// Rename a space, or paste several entries at once (one per line). The
+/// dialog owns its controller until the closing transition has unmounted it.
 class _SpaceTextDialog extends StatefulWidget {
   const _SpaceTextDialog({
     required this.title,
@@ -675,144 +673,61 @@ class _SpaceTextDialogState extends State<_SpaceTextDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final count = splitEntries(_text.text, max: 101).length;
     final valid = widget.bulk
         ? count > 0 && count <= 100
-        : _text.text.trim().isNotEmpty;
-    if (widget.bulk) {
-      final g = context.glass;
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .7,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: AscentTextStyles.sectionHeading.copyWith(color: g.ink),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Paste a list. Each line becomes its own entry.',
-                  style: TextStyle(color: g.inkSecondary),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  key: const ValueKey('space_paste_field'),
-                  controller: _text,
-                  autofocus: true,
-                  minLines: 3,
-                  maxLines: 6,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'One per line',
-                    filled: true,
-                    fillColor: g.ink.withValues(alpha: .04),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide(
-                        color: g.ink.withValues(alpha: .2),
-                      ),
-                    ),
-                    helperText: count > 100
-                        ? 'Add up to 100 entries at a time.'
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    const Spacer(),
-                    FilledButton(
-                      key: const ValueKey('space_paste_save'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: g.ink,
-                        foregroundColor: g.bg,
-                      ),
-                      onPressed: valid
-                          ? () => Navigator.pop(context, _text.text)
-                          : null,
-                      child: Text('Add ${count > 100 ? 100 : count}'),
-                    ),
-                  ],
-                ),
-              ],
+        : _text.text.trim().isNotEmpty && _text.text.trim().length <= 50;
+    return AscentDialog(
+      title: widget.title,
+      contentWidget: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppTextField(
+            key: ValueKey(
+              widget.bulk ? 'space_paste_field' : 'space_rename_field',
             ),
+            controller: _text,
+            autofocus: true,
+            minLines: widget.bulk ? 5 : 1,
+            maxLines: widget.bulk ? 10 : 1,
+            hintText: widget.bulk ? 'One per line' : 'e.g. Movies',
+            textCapitalization: widget.bulk
+                ? TextCapitalization.sentences
+                : TextCapitalization.words,
+            onChanged: (_) => setState(() {}),
           ),
-        ),
-      );
-    }
-    return AlertDialog(
-      title: Text(widget.title),
-      scrollable: true,
-      content: TextField(
-        key: ValueKey(widget.bulk ? 'space_paste_field' : 'space_rename_field'),
-        controller: _text,
-        autofocus: true,
-        minLines: widget.bulk ? 5 : 1,
-        maxLines: widget.bulk ? 10 : 1,
-        maxLength: widget.bulk ? null : 50,
-        onChanged: (_) => setState(() {}),
-        decoration: InputDecoration(
-          hintText: widget.bulk ? 'One per line' : 'Space name',
-          helperText: widget.bulk && count > 100
-              ? 'Add up to 100 entries at a time.'
-              : null,
-        ),
+          if (widget.bulk && count > 100) ...[
+            const SizedBox(height: AppSpace.s8),
+            Text(
+              'Add up to 100 entries at a time.',
+              style: AscentTextStyles.caption.copyWith(color: g.errorInk),
+            ),
+          ],
+        ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          key: widget.bulk ? const ValueKey('space_paste_save') : null,
-          onPressed: valid ? () => Navigator.pop(context, _text.text) : null,
-          child: Text(
-            widget.bulk ? 'Add ${count > 100 ? 100 : count}' : 'Save',
-          ),
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: AppSpace.s8,
+          runSpacing: AppSpace.s8,
+          children: [
+            AscentButton.secondary(
+              label: 'Cancel',
+              onPressed: () => Navigator.pop(context),
+            ),
+            AscentButton.tonal(
+              key: widget.bulk ? const ValueKey('space_paste_save') : null,
+              label: widget.bulk ? 'Add ${count > 100 ? 100 : count}' : 'Save',
+              compact: true,
+              onPressed: valid
+                  ? () => Navigator.pop(context, _text.text)
+                  : null,
+            ),
+          ],
         ),
       ],
     );
   }
-}
-
-class _SpaceMenuAction extends StatelessWidget {
-  const _SpaceMenuAction({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.color,
-  });
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: color ?? context.glass.inkSecondary),
-    title: Text(label, style: TextStyle(color: color)),
-    onTap: onTap,
-  );
 }

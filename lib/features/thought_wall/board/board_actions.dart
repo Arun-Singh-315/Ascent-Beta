@@ -62,13 +62,19 @@ Future<SpacePick?> showSpacePicker(
                       Expanded(
                         child: Text(
                           title,
-                          style: AscentTextStyles.cardTitle.copyWith(color: g.ink),
+                          style: AscentTextStyles.cardTitle.copyWith(
+                            color: g.ink,
+                          ),
                         ),
                       ),
                       IconButton(
                         tooltip: 'Close',
                         onPressed: () => Navigator.pop(sheetContext),
-                        icon: Icon(Icons.close_rounded, color: g.inkMuted, size: 20),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: g.inkMuted,
+                          size: 20,
+                        ),
                       ),
                     ],
                   ),
@@ -95,10 +101,9 @@ Future<SpacePick?> showSpacePicker(
                         icon: Icons.add_rounded,
                         label: 'New space',
                         onTap: () async {
-                          final name = await showDialog<String>(
-                            context: sheetContext,
-                            builder: (_) =>
-                                const CreateThoughtCategoryDialog(move: true),
+                          final name = await showCreateSpaceDialog(
+                            sheetContext,
+                            move: true,
                           );
                           if (name != null && sheetContext.mounted) {
                             Navigator.pop(sheetContext, (

@@ -29,6 +29,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Voice capture in Mindspace; asked only when the mic is tapped. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!--
         NOTE: We do NOT declare READ_EXTERNAL_STORAGE or READ_MEDIA_* permissions.
@@ -155,6 +157,9 @@
         <!-- For file_picker: allow querying document providers -->
         <intent>
             <action android:name="android.intent.action.OPEN_DOCUMENT" />
+        </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
         </intent>
     </queries>
 

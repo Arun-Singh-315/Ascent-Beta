@@ -13,7 +13,7 @@ import 'board_logic.dart';
 import 'thought_lifecycle.dart';
 import 'thought_lines.dart';
 
-/// One thought in the Mind Palace.
+/// One thought in the Mindspace.
 ///
 /// Reading never opens a popup: tapping the card grows it to its full text and
 /// shows one action strip; tapping again folds it. The only extra control is a
@@ -421,10 +421,7 @@ class _PalaceCardState extends State<PalaceCard> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: AscentTextStyles.labelLarge.copyWith(
-                  color: ink,
-                  fontSize: 13,
-                ),
+                style: AscentTextStyles.interfaceLabel.copyWith(color: ink),
               ),
             ],
           ),

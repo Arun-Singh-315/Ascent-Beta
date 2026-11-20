@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../../app/theme/mindspace_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -41,33 +43,15 @@ class BoardBackground extends ConsumerWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final colors = switch (value) {
       BoardBackdrop.sky =>
-        dark
-            ? [const Color(0xFF10141D), const Color(0xFF151B26)]
-            : [
-                const Color(0xFFE8EEF5),
-                const Color(0xFFDFE7F0),
-              ],
+        dark ? MindspacePalette.skyDark : MindspacePalette.skyLight,
       BoardBackdrop.plain =>
         dark
             ? [context.glass.bg, context.glass.bg]
-            : [
-                const Color(0xFFEFECE6),
-                const Color(0xFFE5E1D8),
-              ],
+            : MindspacePalette.plainLight,
       BoardBackdrop.paper =>
-        dark
-            ? [const Color(0xFF161920), const Color(0xFF0F1218)]
-            : [
-                const Color(0xFFEFECE6),
-                const Color(0xFFE6E2D9),
-              ],
+        dark ? MindspacePalette.paperDark : MindspacePalette.paperLight,
       BoardBackdrop.dusk =>
-        dark
-            ? [const Color(0xFF1E222B), const Color(0xFF171A21)]
-            : [
-                const Color(0xFFE8E5DF),
-                const Color(0xFFDDD8CE),
-              ],
+        dark ? MindspacePalette.duskDark : MindspacePalette.duskLight,
     };
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -91,7 +75,7 @@ class _PaperDots extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (dark ? Colors.white : Colors.black).withValues(alpha: .045);
+      ..color = MindspacePalette.paperDots(dark);
     for (double y = 14; y < size.height; y += 24) {
       for (double x = 14; x < size.width; x += 24) {
         canvas.drawCircle(Offset(x, y), .7, paint);
@@ -123,15 +107,14 @@ class BoardBackgroundSheet extends ConsumerWidget {
             const SizedBox(height: 24),
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: const SizedBox(
+              child: SizedBox(
                 height: 130,
                 width: double.infinity,
                 child: BoardBackground(
                   child: Center(
                     child: Text(
                       'Room to think',
-                      style: TextStyle(
-                        fontSize: 23,
+                      style: AscentTextStyles.dialogTitle.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),

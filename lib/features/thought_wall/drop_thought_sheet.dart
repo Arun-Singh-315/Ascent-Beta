@@ -7,6 +7,7 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_text_field.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -279,18 +280,13 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       }
 
       if (mounted) {
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text(
-              widget.existingThought != null
-                  ? 'Updated reflection in Mindspace'
-                  : 'Pinned to your Mindspace',
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+        AscentSnackBar.show(
+          context,
+          message: widget.existingThought != null
+              ? 'Thought updated'
+              : 'Saved to Mindspace',
         );
+        Navigator.of(context).pop(true);
       }
     } catch (error) {
       if (mounted) {
@@ -445,38 +441,15 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   padding: const EdgeInsets.only(bottom: AppSpace.s8),
                   child: Text(_saveError!),
                 ),
-              TextField(
+              AppTextField(
                 controller: _contentController,
                 focusNode: _contentFocus,
                 autofocus: true,
-                readOnly: false,
-                maxLines: 4,
+                minLines: 3,
+                maxLines: 6,
+                textCapitalization: TextCapitalization.sentences,
                 inputFormatters: const [SmartListInputFormatter()],
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: context.textPrimary,
-                  height: 1.4,
-                ),
-                decoration: InputDecoration(
-                  hintText:
-                      'Speak your mind freely... unfiltered reflections, moments of clarity, or what you want to remember.',
-                  hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                    color: context.textMuted.withValues(alpha: 0.7),
-                  ),
-                  filled: true,
-                  fillColor: context.glass.fill,
-                  contentPadding: const EdgeInsets.all(AppSpace.s14),
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr14,
-                    borderSide: BorderSide(color: context.glass.line),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr14,
-                    borderSide: BorderSide(
-                      color: context.accentPrimary,
-                      width: AppBorderScale.w1point5,
-                    ),
-                  ),
-                ),
+                hintText: 'e.g. Idea for the weekend trip',
               ),
 
               const SizedBox(height: 18),
@@ -491,8 +464,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   const SizedBox(width: 4),
                   Text(
                     'Add plan item (→) or to-do (•) line',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: AscentTextStyles.bodySmall.copyWith(
                       color: context.textMuted,
                       fontWeight: FontWeight.w500,
                     ),

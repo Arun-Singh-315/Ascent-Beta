@@ -98,17 +98,15 @@ class _ThoughtWallAppearanceSheetState
                         children: [
                           Text(
                             'Wall appearance',
-                            style: AscentTextStyles.homeTitle.copyWith(
+                            style: AscentTextStyles.headlineMedium.copyWith(
                               color: g.ink,
-                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           Text(
-                            'Mind Palace Card Style',
-                            style: AscentTextStyles.homeCaption.copyWith(
+                            'Mindspace card style',
+                            style: AscentTextStyles.caption.copyWith(
                               color: g.inkMuted,
-                              fontSize: 12,
                             ),
                           ),
                         ],

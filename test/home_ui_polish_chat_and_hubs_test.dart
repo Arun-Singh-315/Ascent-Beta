@@ -113,9 +113,9 @@ void main() {
 
         // The "Mind palace" heading sits above the card, not inside it, and the
         // old separate "Recent thoughts" caption is gone.
-        expect(find.text('Mind palace'), findsOneWidget);
+        expect(find.text('Mindspace'), findsOneWidget);
         expect(
-          find.descendant(of: cardFinder, matching: find.text('Mind palace')),
+          find.descendant(of: cardFinder, matching: find.text('Mindspace')),
           findsNothing,
         );
         expect(find.text('Recent thoughts'), findsNothing);

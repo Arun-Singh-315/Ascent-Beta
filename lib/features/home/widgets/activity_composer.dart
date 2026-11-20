@@ -31,9 +31,25 @@ import '../../../app/theme/text_styles.dart';
 
 /// Type first. Optional controls keep the normal path to a single send.
 class ActivityComposer extends ConsumerStatefulWidget {
-  const ActivityComposer({super.key, this.focusNode, this.initialTitle});
+  const ActivityComposer({
+    super.key,
+    this.focusNode,
+    this.initialTitle,
+    this.notes,
+    this.linkedThoughtId,
+    this.onSaved,
+  });
   final FocusNode? focusNode;
   final String? initialTitle;
+
+  /// Saved as the to-do's notes (e.g. the rest of a converted thought).
+  final String? notes;
+
+  /// The thought this to-do comes from; the two stay linked.
+  final int? linkedThoughtId;
+
+  /// Called with the new task ids after a successful save.
+  final ValueChanged<List<int>>? onSaved;
   @override
   ConsumerState<ActivityComposer> createState() => _ActivityComposerState();
 }
@@ -356,6 +372,8 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         isDailyStanding: _isDailyStanding,
         estimatedMinutes: _kind == ActivityKind.flexible ? -1 : minutes,
         reminderAt: reminderAt,
+        notes: widget.notes,
+        linkedThoughtId: widget.linkedThoughtId,
       );
       final reminderIds = results.expand((r) => r.reminderIds).toList();
       // Persistence succeeded. Never repeat creation because device alerts fail.
@@ -410,6 +428,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             }
           },
         );
+        widget.onSaved?.call(ids);
       }
     } catch (e) {
       if (mounted) {

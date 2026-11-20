@@ -8,6 +8,7 @@ import '../../core/database/app_database.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 
 Future<bool> showThoughtConversion(
@@ -99,8 +100,13 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
       if (result.taskIds.isEmpty && result.reminders.isEmpty) {
         throw StateError('These notes are already done. Select active notes.');
       }
-      String message =
-          '${result.taskIds.length} Todo${result.taskIds.length == 1 ? '' : 's'} · ${result.reminders.length} reminder${result.reminders.length == 1 ? '' : 's'} saved';
+      String plural(int n, String one) => n == 1 ? '1 $one' : '$n ${one}s';
+      String message = [
+        if (result.taskIds.isNotEmpty) plural(result.taskIds.length, 'to-do'),
+        if (result.reminders.isNotEmpty)
+          plural(result.reminders.length, 'reminder'),
+      ].join(' · ');
+      message = message.isEmpty ? 'Nothing new to save' : '$message saved';
       if (result.reminders.isNotEmpty) {
         try {
           final sync = await ReminderAlertSync.device(widget.db).sync(
@@ -115,12 +121,14 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
         }
       }
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      Navigator.pop(context, true);
       HapticFeedback.lightImpact();
-      messenger.showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 5)),
+      AscentSnackBar.show(
+        context,
+        message: message,
+        icon: Icons.check_circle_outline_rounded,
+        duration: const Duration(seconds: 5),
       );
+      Navigator.pop(context, true);
     } catch (error) {
       if (mounted) {
         setState(() {
