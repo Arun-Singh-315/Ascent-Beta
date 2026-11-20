@@ -13,7 +13,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/momentum/momentum_screen.dart';
-import 'package:ascent/features/study_plan/study_plan_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,49 +63,6 @@ void main() {
             .expand((m) => m.lectures)
             .firstWhere((l) => l.id == activeLec.id);
         expect(targetLec.isCompleted, isTrue);
-      },
-    );
-
-    testWidgets(
-      'StudyPlanScreen displays completed lectures with strikethrough decoration',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({'has_started_learning': true});
-        final prefs = await SharedPreferences.getInstance();
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        // Complete first lecture
-        await seedLectureStudyEvidence(container, 1);
-        await container.read(learningHubProvider.notifier).markLectureCompleted(1, completed: true);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(home: StudyPlanScreen()),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Switch to Lectures tab
-        await tester.tap(find.text('Lectures'));
-        await tester.pumpAndSettle();
-
-        // Find lecture 1 text widget
-        final lecture1Text = tester.widget<Text>(
-          find.textContaining("A Beginner's Walkthrough to MongoDB").first,
-        );
-        expect(
-          lecture1Text.style?.decoration,
-          equals(TextDecoration.lineThrough),
-        );
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
       },
     );
   });

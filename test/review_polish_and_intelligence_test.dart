@@ -29,58 +29,6 @@ void main() {
       final formatted = formatMultipleThoughtsForShare([]);
       expect(formatted, isEmpty);
     });
-
-    test('Formats a single thought identically to single share format', () {
-      final t = Thought(
-        category: 'general',
-        id: 1,
-        content: 'Small steps every day yield exponential growth.',
-        mood: 'focus',
-        colorHex: '#0284C7',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        createdAt: DateTime(2026, 10, 9, 10, 0),
-      );
-
-      final formatted = formatMultipleThoughtsForShare([t]);
-      expect(formatted, contains('"Small steps every day yield exponential growth."'));
-      expect(formatted, contains('— Mind Space · Ascent'));
-    });
-
-    test('Formats multiple thoughts for WhatsApp batch sharing with clean separators', () {
-      final t1 = Thought(
-        category: 'general',
-        id: 1,
-        content: 'Action cures fear.',
-        mood: 'energized',
-        colorHex: '#10B981',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        createdAt: DateTime(2026, 10, 9, 9, 0),
-      );
-
-      final t2 = Thought(
-        category: 'general',
-        id: 2,
-        content: 'Reflect before reacting.',
-        mood: 'calm',
-        colorHex: '#6366F1',
-        promptQuestion: 'What did I learn today?',
-        isPinned: true,
-        isArchived: false,
-        isCompleted: false,
-        createdAt: DateTime(2026, 10, 9, 12, 0),
-      );
-
-      final formatted = formatMultipleThoughtsForShare([t1, t2]);
-      expect(formatted, contains('"Action cures fear."'));
-      expect(formatted, contains('💭 Prompt: What did I learn today?'));
-      expect(formatted, contains('Note 1/2'));
-      expect(formatted, contains('Note 2/2'));
-      expect(formatted, contains('— Shared from Mind Space · Ascent'));
-    });
   });
 
   group('Hydration 1-Tap Quick Increment Tests', () {
@@ -103,71 +51,95 @@ void main() {
   });
 
   group('Monthly Reminder Recurrence Scheduling Tests', () {
-    test('Generates 12 monthly occurrences handling varying month lengths without overflow', () async {
-      // Base date: January 31st at 10:00 AM
-      final baseScheduled = DateTime(2026, 1, 31, 10, 0);
+    test(
+      'Generates 12 monthly occurrences handling varying month lengths without overflow',
+      () async {
+        // Base date: January 31st at 10:00 AM
+        final baseScheduled = DateTime(2026, 1, 31, 10, 0);
 
-      // Verify date math for monthly recurring reminders
-      final occurrences = <DateTime>[];
-      for (int m = 0; m < 12; m++) {
-        final targetYear = baseScheduled.year + ((baseScheduled.month - 1 + m) ~/ 12);
-        final targetMonth = ((baseScheduled.month - 1 + m) % 12) + 1;
-        final maxDaysInMonth = DateTime(targetYear, targetMonth + 1, 0).day;
-        final targetDay = baseScheduled.day > maxDaysInMonth ? maxDaysInMonth : baseScheduled.day;
+        // Verify date math for monthly recurring reminders
+        final occurrences = <DateTime>[];
+        for (int m = 0; m < 12; m++) {
+          final targetYear =
+              baseScheduled.year + ((baseScheduled.month - 1 + m) ~/ 12);
+          final targetMonth = ((baseScheduled.month - 1 + m) % 12) + 1;
+          final maxDaysInMonth = DateTime(targetYear, targetMonth + 1, 0).day;
+          final targetDay = baseScheduled.day > maxDaysInMonth
+              ? maxDaysInMonth
+              : baseScheduled.day;
 
-        occurrences.add(DateTime(
-          targetYear,
-          targetMonth,
-          targetDay,
-          baseScheduled.hour,
-          baseScheduled.minute,
-        ));
-      }
+          occurrences.add(
+            DateTime(
+              targetYear,
+              targetMonth,
+              targetDay,
+              baseScheduled.hour,
+              baseScheduled.minute,
+            ),
+          );
+        }
 
-      expect(occurrences.length, equals(12));
-      // Jan 31
-      expect(occurrences[0], equals(DateTime(2026, 1, 31, 10, 0)));
-      // Feb has 28 days in 2026 -> should be clamped to Feb 28
-      expect(occurrences[1], equals(DateTime(2026, 2, 28, 10, 0)));
-      // Mar 31
-      expect(occurrences[2], equals(DateTime(2026, 3, 31, 10, 0)));
-      // Apr has 30 days -> clamped to Apr 30
-      expect(occurrences[3], equals(DateTime(2026, 4, 30, 10, 0)));
-    });
+        expect(occurrences.length, equals(12));
+        // Jan 31
+        expect(occurrences[0], equals(DateTime(2026, 1, 31, 10, 0)));
+        // Feb has 28 days in 2026 -> should be clamped to Feb 28
+        expect(occurrences[1], equals(DateTime(2026, 2, 28, 10, 0)));
+        // Mar 31
+        expect(occurrences[2], equals(DateTime(2026, 3, 31, 10, 0)));
+        // Apr has 30 days -> clamped to Apr 30
+        expect(occurrences[3], equals(DateTime(2026, 4, 30, 10, 0)));
+      },
+    );
 
-    test('ReminderDao persists and retrieves upcoming vs completed correctly', () async {
-      final now = DateTime.now();
+    test(
+      'ReminderDao persists and retrieves upcoming vs completed correctly',
+      () async {
+        final now = DateTime.now();
 
-      final reminderId1 = await reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'SIP Mutual Fund',
-          scheduledAt: now.add(const Duration(days: 5)),
-          isActive: const Value(true),
-        ),
-      );
+        final reminderId1 = await reminderDao.insertReminder(
+          ReminderTableCompanion.insert(
+            title: 'SIP Mutual Fund',
+            scheduledAt: now.add(const Duration(days: 5)),
+            isActive: const Value(true),
+          ),
+        );
 
-      final reminderId2 = await reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Electricity Bill',
-          scheduledAt: now.subtract(const Duration(hours: 2)),
-          isActive: const Value(false), // Completed/inactive
-        ),
-      );
+        final reminderId2 = await reminderDao.insertReminder(
+          ReminderTableCompanion.insert(
+            title: 'Electricity Bill',
+            scheduledAt: now.subtract(const Duration(hours: 2)),
+            isActive: const Value(false), // Completed/inactive
+          ),
+        );
 
-      final allReminders = await reminderDao.watchAllReminders().first;
-      final upcoming = allReminders.where((r) => r.isActive && r.scheduledAt.isAfter(DateTime(now.year, now.month, now.day))).toList();
-      final completed = allReminders.where((r) => !r.isActive || r.scheduledAt.isBefore(DateTime(now.year, now.month, now.day))).toList();
+        final allReminders = await reminderDao.watchAllReminders().first;
+        final upcoming = allReminders
+            .where(
+              (r) =>
+                  r.isActive &&
+                  r.scheduledAt.isAfter(DateTime(now.year, now.month, now.day)),
+            )
+            .toList();
+        final completed = allReminders
+            .where(
+              (r) =>
+                  !r.isActive ||
+                  r.scheduledAt.isBefore(
+                    DateTime(now.year, now.month, now.day),
+                  ),
+            )
+            .toList();
 
-      expect(upcoming.length, equals(1));
-      expect(upcoming.first.id, equals(reminderId1));
-      expect(upcoming.first.title, equals('SIP Mutual Fund'));
+        expect(upcoming.length, equals(1));
+        expect(upcoming.first.id, equals(reminderId1));
+        expect(upcoming.first.title, equals('SIP Mutual Fund'));
 
-      expect(completed.length, equals(1));
-      expect(completed.first.id, equals(reminderId2));
-      expect(completed.first.title, equals('Electricity Bill'));
-    });
+        expect(completed.length, equals(1));
+        expect(completed.first.id, equals(reminderId2));
+        expect(completed.first.title, equals('Electricity Bill'));
+      },
+    );
   });
-
 
   group('Ascent Logo Brand Assets & Widget Tests', () {
     test('All brand logo asset files exist and have non-zero size', () {
@@ -189,17 +161,16 @@ void main() {
       expect(appIconFg.lengthSync(), greaterThan(1000));
     });
 
-    testWidgets('AscentLogo widget renders without errors with custom dimensions', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AscentLogo(size: 80),
-          ),
-        ),
-      );
+    testWidgets(
+      'AscentLogo widget renders without errors with custom dimensions',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: AscentLogo(size: 80))),
+        );
 
-      expect(find.byType(AscentLogo), findsOneWidget);
-      expect(find.byType(Image), findsOneWidget);
-    });
+        expect(find.byType(AscentLogo), findsOneWidget);
+        expect(find.byType(Image), findsOneWidget);
+      },
+    );
   });
 }

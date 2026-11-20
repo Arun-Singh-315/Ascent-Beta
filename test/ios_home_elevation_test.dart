@@ -38,8 +38,13 @@ void main() {
   }
 
   group('iOS Home Elevation & Dynamic Greeting Tests', () {
-    testWidgets('HomeHeader renders non-static name and diurnal period badge', (tester) async {
-      final profile = makeProfile(name: 'Alex Rivera', role: 'Staff Systems Engineer');
+    testWidgets('HomeHeader renders non-static name and diurnal period badge', (
+      tester,
+    ) async {
+      final profile = makeProfile(
+        name: 'Alex Rivera',
+        role: 'Staff Systems Engineer',
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -71,7 +76,9 @@ void main() {
       expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
     });
 
-    testWidgets('Streak badge evolves to Blaze for streak >= 7', (tester) async {
+    testWidgets('Streak badge evolves to Blaze for streak >= 7', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -80,9 +87,7 @@ void main() {
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(14)),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: HomeHeader(profile: null),
-            ),
+            home: Scaffold(body: HomeHeader(profile: null)),
           ),
         ),
       );
@@ -90,7 +95,9 @@ void main() {
       expect(find.text('14 · Blaze'), findsOneWidget);
     });
 
-    testWidgets('Streak badge evolves to Fire for streak >= 30', (tester) async {
+    testWidgets('Streak badge evolves to Fire for streak >= 30', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -99,9 +106,7 @@ void main() {
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(45)),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: HomeHeader(profile: null),
-            ),
+            home: Scaffold(body: HomeHeader(profile: null)),
           ),
         ),
       );
@@ -110,110 +115,129 @@ void main() {
       expect(find.byIcon(Icons.whatshot_rounded), findsOneWidget);
     });
 
-    testWidgets('HomeExecutiveFocusCard renders velocity track and telemetry trio metrics', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value([
-                const TodayActivityItem(
-                  id: '1',
-                  title: 'Architecture Review',
-                  sourceType: 'task',
-                  status: TodayActivityStatus.done,
-                  elapsedSecondsToday: 0,
-                  categoryTag: 'work',
-                ),
-                const TodayActivityItem(
-                  id: '2',
-                  title: 'Team Sync',
-                  sourceType: 'task',
-                  status: TodayActivityStatus.notStarted,
-                  elapsedSecondsToday: 0,
-                  categoryTag: 'meeting',
-                ),
-              ]),
-            ),
-            todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1500)),
-            dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
-            todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HomeExecutiveFocusCard(),
+    testWidgets(
+      'HomeExecutiveFocusCard renders velocity track and telemetry trio metrics',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value([
+                  const TodayActivityItem(
+                    id: '1',
+                    title: 'Architecture Review',
+                    sourceType: 'task',
+                    status: TodayActivityStatus.done,
+                    elapsedSecondsToday: 0,
+                    categoryTag: 'work',
+                  ),
+                  const TodayActivityItem(
+                    id: '2',
+                    title: 'Team Sync',
+                    sourceType: 'task',
+                    status: TodayActivityStatus.notStarted,
+                    elapsedSecondsToday: 0,
+                    categoryTag: 'meeting',
+                  ),
+                ]),
+              ),
+              todayWaterMlStreamProvider.overrideWith(
+                (ref) => Stream.value(1500),
+              ),
+              dailyWaterGoalStreamProvider.overrideWith(
+                (ref) => Stream.value(2500),
+              ),
+              todayMedicineLogsStreamProvider.overrideWith(
+                (ref) => Stream.value([]),
+              ),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(body: HomeExecutiveFocusCard()),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Card is present
-      expect(find.byKey(const ValueKey('home_executive_focus_card')), findsOneWidget);
+        // Card is present
+        expect(
+          find.byKey(const ValueKey('home_executive_focus_card')),
+          findsOneWidget,
+        );
 
-      // Verify dynamic headline: "1 of 2 priorities done"
-      expect(find.text('1 of 2 priorities done'), findsOneWidget);
+        // Verify dynamic headline: "1 of 2 priorities done"
+        expect(find.text('1 of 2 priorities done'), findsOneWidget);
 
-      // Verify telemetry chips
-      expect(find.text('1/2'), findsOneWidget);
-      expect(find.text('1.50L'), findsOneWidget);
-    });
+        // Verify telemetry chips
+        expect(find.text('1/2'), findsOneWidget);
+        expect(find.text('1.50L'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Rule 13: Strict 320px width & 2.0x text scale overflow immunity', (tester) async {
-      tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() => tester.view.reset());
+    testWidgets(
+      'Rule 13: Strict 320px width & 2.0x text scale overflow immunity',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() => tester.view.reset());
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value([
-                const TodayActivityItem(
-                  id: '1',
-                  title: 'Core Task',
-                  sourceType: 'task',
-                  status: TodayActivityStatus.notStarted,
-                  elapsedSecondsToday: 0,
-                  categoryTag: 'work',
-                ),
-              ]),
-            ),
-            todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(750)),
-            dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
-            todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-          ],
-          child: MaterialApp(
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 800),
-                textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value([
+                  const TodayActivityItem(
+                    id: '1',
+                    title: 'Core Task',
+                    sourceType: 'task',
+                    status: TodayActivityStatus.notStarted,
+                    elapsedSecondsToday: 0,
+                    categoryTag: 'work',
+                  ),
+                ]),
               ),
-              child: Scaffold(
-                body: ListView(
-                  children: [
-                    HomeHeader(
-                      profile: makeProfile(
-                        name: 'Long Firstname Supercalifragilistic',
-                        role: 'Executive Principal Architect',
+              todayWaterMlStreamProvider.overrideWith(
+                (ref) => Stream.value(750),
+              ),
+              dailyWaterGoalStreamProvider.overrideWith(
+                (ref) => Stream.value(2500),
+              ),
+              todayMedicineLogsStreamProvider.overrideWith(
+                (ref) => Stream.value([]),
+              ),
+            ],
+            child: MaterialApp(
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(320, 800),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: Scaffold(
+                  body: ListView(
+                    children: [
+                      HomeHeader(
+                        profile: makeProfile(
+                          name: 'Long Firstname Supercalifragilistic',
+                          role: 'Executive Principal Architect',
+                        ),
                       ),
-                    ),
-                    const HomeTopRemindersGlance(),
-                    const HomeExecutiveFocusCard(),
-                  ],
+                      const HomeTopRemindersGlance(),
+                      const HomeExecutiveFocusCard(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Zero exceptions and zero RenderFlex overflow errors
-      expect(tester.takeException(), isNull);
-    });
+        // Zero exceptions and zero RenderFlex overflow errors
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

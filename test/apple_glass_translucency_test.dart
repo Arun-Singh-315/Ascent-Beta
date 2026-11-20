@@ -10,52 +10,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('GlassTranslucencyPreset supports subtleFrosted, balancedLiquid, and highContrast', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
+  testWidgets(
+    'GlassTranslucencyPreset supports subtleFrosted, balancedLiquid, and highContrast',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
 
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-      ],
-    );
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
 
-    // Default preset should be balancedLiquid
-    expect(
-      container.read(glassTranslucencyPresetProvider),
-      GlassTranslucencyPreset.balancedLiquid,
-    );
+      // Default preset should be balancedLiquid
+      expect(
+        container.read(glassTranslucencyPresetProvider),
+        GlassTranslucencyPreset.balancedLiquid,
+      );
 
-    // Can change to highContrast
-    await container
-        .read(glassTranslucencyPresetProvider.notifier)
-        .setPreset(GlassTranslucencyPreset.highContrast);
+      // Can change to highContrast
+      await container
+          .read(glassTranslucencyPresetProvider.notifier)
+          .setPreset(GlassTranslucencyPreset.highContrast);
 
-    expect(
-      container.read(glassTranslucencyPresetProvider),
-      GlassTranslucencyPreset.highContrast,
-    );
+      expect(
+        container.read(glassTranslucencyPresetProvider),
+        GlassTranslucencyPreset.highContrast,
+      );
 
-    // Can change to subtleFrosted
-    await container
-        .read(glassTranslucencyPresetProvider.notifier)
-        .setPreset(GlassTranslucencyPreset.subtleFrosted);
+      // Can change to subtleFrosted
+      await container
+          .read(glassTranslucencyPresetProvider.notifier)
+          .setPreset(GlassTranslucencyPreset.subtleFrosted);
 
-    expect(
-      container.read(glassTranslucencyPresetProvider),
-      GlassTranslucencyPreset.subtleFrosted,
-    );
-  });
+      expect(
+        container.read(glassTranslucencyPresetProvider),
+        GlassTranslucencyPreset.subtleFrosted,
+      );
+    },
+  );
 
-  testWidgets('AscentSnackBar has crisp contrast and visibility in day mode', (tester) async {
+  testWidgets('AscentSnackBar has crisp contrast and visibility in day mode', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp(
           theme: AscentTheme.light(),
           home: Scaffold(

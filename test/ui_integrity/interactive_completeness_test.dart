@@ -29,92 +29,98 @@ void main() {
       await db.close();
     });
 
-    testWidgets('ActivityHubCard provides non-blocking entry points on empty and populated states', (tester) async {
-      // 1. Empty state
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
+    testWidgets(
+      'ActivityHubCard provides non-blocking entry points on empty and populated states',
+      (tester) async {
+        // 1. Empty state
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.dark(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ActivityHubCard()),
+              ),
             ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Ensure "View board" entry point is rendered and interactive
-      expect(find.text('View board'), findsOneWidget);
-      expect(find.text('Things hub'), findsOneWidget);
-
-      // 2. Populate 10 items (boundary test)
-      final now = DateTime.now();
-      for (int i = 1; i <= 10; i++) {
-        await db.taskDao.insertTask(
-          TaskTableCompanion.insert(
-            title: 'Task #$i for today',
-            plannedDate: drift.Value(now),
           ),
         );
-      }
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
+        // Ensure "View board" entry point is rendered and interactive
+        expect(find.text('View board'), findsOneWidget);
+        expect(find.text('Things hub'), findsOneWidget);
+
+        // 2. Populate 10 items (boundary test)
+        final now = DateTime.now();
+        for (int i = 1; i <= 10; i++) {
+          await db.taskDao.insertTask(
+            TaskTableCompanion.insert(
+              title: 'Task #$i for today',
+              plannedDate: drift.Value(now),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ActivityHubCard()),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Capping test: Ensure list does not blow out the screen unbounded (capped preview)
-      expect(find.text('View board'), findsOneWidget);
-      expect(find.text('Task #1 for today'), findsOneWidget);
+        // Capping test: Ensure list does not blow out the screen unbounded (capped preview)
+        expect(find.text('View board'), findsOneWidget);
+        expect(find.text('Task #1 for today'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('ThoughtWallHomePreview provides active input and navigation on narrow 320px screen', (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
+    testWidgets(
+      'ThoughtWallHomePreview provides active input and navigation on narrow 320px screen',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.dark(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Active thought input is visible and interactive
-      expect(find.text('Capture a thought…'), findsOneWidget);
-      // Composer icons are present
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+        // Active thought input is visible and interactive
+        expect(find.text('Capture a thought…'), findsOneWidget);
+        // Composer icons are present
+        expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 }

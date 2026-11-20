@@ -32,79 +32,99 @@ void main() {
   }
 
   group('DayOneTutorialCard button contrast tests', () {
-    testWidgets('Light mode: Choose your first small step button preserves accessible contrast', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.classicClay),
-            home: const Scaffold(
-              body: DayOneTutorialCard(userName: 'Arun'),
+    testWidgets(
+      'Light mode: Choose your first small step button preserves accessible contrast',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              theme: AscentTheme.light(preset: DayThemePreset.classicClay),
+              home: const Scaffold(body: DayOneTutorialCard(userName: 'Arun')),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonFinder = find.widgetWithText(AscentButton, 'Choose your first small step');
-      expect(buttonFinder, findsOneWidget);
+        final buttonFinder = find.widgetWithText(
+          AscentButton,
+          'Choose your first small step',
+        );
+        expect(buttonFinder, findsOneWidget);
 
-      final glass = AscentGlass.light;
-      final bg = glass.tonalBg;
-      final fg = glass.tonalFg;
+        final glass = AscentGlass.light;
+        final bg = glass.tonalBg;
+        final fg = glass.tonalFg;
 
-      final contrast = calculateContrast(bg, fg);
-      expect(contrast, greaterThanOrEqualTo(4.5), reason: 'WCAG AA requires >= 4.5:1 contrast');
-    });
+        final contrast = calculateContrast(bg, fg);
+        expect(
+          contrast,
+          greaterThanOrEqualTo(4.5),
+          reason: 'WCAG AA requires >= 4.5:1 contrast',
+        );
+      },
+    );
 
-    testWidgets('Dark mode: Choose your first small step button has high contrast foreground on tonal background', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            home: const Scaffold(
-              body: DayOneTutorialCard(userName: 'Arun'),
+    testWidgets(
+      'Dark mode: Choose your first small step button has high contrast foreground on tonal background',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              theme: AscentTheme.dark(),
+              home: const Scaffold(body: DayOneTutorialCard(userName: 'Arun')),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonFinder = find.widgetWithText(AscentButton, 'Choose your first small step');
-      expect(buttonFinder, findsOneWidget);
+        final buttonFinder = find.widgetWithText(
+          AscentButton,
+          'Choose your first small step',
+        );
+        expect(buttonFinder, findsOneWidget);
 
-      final glass = AscentGlass.dark;
-      final bg = glass.tonalBg;
-      final fg = glass.tonalFg;
+        final glass = AscentGlass.dark;
+        final bg = glass.tonalBg;
+        final fg = glass.tonalFg;
 
-      final contrast = calculateContrast(bg, fg);
-      expect(contrast, greaterThanOrEqualTo(4.5), reason: 'WCAG AA requires >= 4.5:1 contrast');
-    });
+        final contrast = calculateContrast(bg, fg);
+        expect(
+          contrast,
+          greaterThanOrEqualTo(4.5),
+          reason: 'WCAG AA requires >= 4.5:1 contrast',
+        );
+      },
+    );
 
-    testWidgets('Disabled state colors provide accessible disabled contrast without crashing', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            home: const Scaffold(
-              body: DayOneTutorialCard(userName: 'Arun'),
+    testWidgets(
+      'Disabled state colors provide accessible disabled contrast without crashing',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              theme: AscentTheme.dark(),
+              home: const Scaffold(body: DayOneTutorialCard(userName: 'Arun')),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final buttonFinder = find.widgetWithText(AscentButton, 'Choose your first small step');
-      expect(buttonFinder, findsOneWidget);
+        final buttonFinder = find.widgetWithText(
+          AscentButton,
+          'Choose your first small step',
+        );
+        expect(buttonFinder, findsOneWidget);
 
-      final glass = AscentGlass.dark;
-      final disabledBg = glass.disabledBg;
-      final disabledFg = glass.disabledFg;
+        final glass = AscentGlass.dark;
+        final disabledBg = glass.disabledBg;
+        final disabledFg = glass.disabledFg;
 
-      expect(disabledBg, isNotNull);
-      expect(disabledFg, isNotNull);
-    });
+        expect(disabledBg, isNotNull);
+        expect(disabledFg, isNotNull);
+      },
+    );
   });
 }

@@ -17,89 +17,88 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   group('Tier 0: DailyWelcomeDialog Pager and Honest Numbers', () {
-    testWidgets('footer shows interactive Next button and no static Swipe label', (tester) async {
-      final today = briefingDay(DateTime.now());
-      final briefing = DailyBriefing(
-        completedYesterday: 0,
-        plannedYesterday: 0,
-        finishedPlannedYesterday: 0,
-        trackedMinutesYesterday: 0,
-        dueToday: 0,
-        overdue: 0,
-        unscheduled: 0,
-      );
+    testWidgets(
+      'footer shows interactive Next button and no static Swipe label',
+      (tester) async {
+        final today = briefingDay(DateTime.now());
+        final briefing = DailyBriefing(
+          completedYesterday: 0,
+          plannedYesterday: 0,
+          finishedPlannedYesterday: 0,
+          trackedMinutesYesterday: 0,
+          dueToday: 0,
+          overdue: 0,
+          unscheduled: 0,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          dailyBriefingProvider(today).overrideWithValue(AsyncValue.data(briefing)),
-        ],
-      );
+        final container = ProviderContainer(
+          overrides: [
+            dailyBriefingProvider(
+              today,
+            ).overrideWithValue(AsyncValue.data(briefing)),
+          ],
+        );
 
-      addTearDown(container.dispose);
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Builder(
-              builder: (ctx) => Scaffold(
-                body: DailyWelcomeDialog(
-                  day: today,
-                  name: 'Alex',
-                  host: ctx,
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: Builder(
+                builder: (ctx) => Scaffold(
+                  body: DailyWelcomeDialog(day: today, name: 'Alex', host: ctx),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Confirm 'Swipe' label is removed
-      expect(find.text('Swipe'), findsNothing);
+        // Confirm 'Swipe' label is removed
+        expect(find.text('Swipe'), findsNothing);
 
-      // Confirm interactive 'Next' button is present
-      final nextButton = find.text('Next');
-      expect(nextButton, findsOneWidget);
+        // Confirm interactive 'Next' button is present
+        final nextButton = find.text('Next');
+        expect(nextButton, findsOneWidget);
 
-      // Confirm Honest Numbers: does not display raw '0m' or '0' counters in pulse items
-      expect(find.text('0m'), findsNothing);
-      expect(find.text('0'), findsNothing);
+        // Confirm Honest Numbers: does not display raw '0m' or '0' counters in pulse items
+        expect(find.text('0m'), findsNothing);
+        expect(find.text('0'), findsNothing);
 
-      // Tap Next button to advance pager
-      await tester.tap(nextButton);
-      await tester.pumpAndSettle();
+        // Tap Next button to advance pager
+        await tester.tap(nextButton);
+        await tester.pumpAndSettle();
 
-      // On Page 2, Next button is still present
-      expect(find.text('Next'), findsOneWidget);
+        // On Page 2, Next button is still present
+        expect(find.text('Next'), findsOneWidget);
 
-      // Tap Next button to advance to Page 3 (Launchpad)
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+        // Tap Next button to advance to Page 3 (Launchpad)
+        await tester.tap(find.text('Next'));
+        await tester.pumpAndSettle();
 
-      // On Page 3 (final page), 'Next' is replaced by 'Done'
-      expect(find.text('Next'), findsNothing);
-      expect(find.text('Done'), findsOneWidget);
-    });
+        // On Page 3 (final page), 'Next' is replaced by 'Done'
+        expect(find.text('Next'), findsNothing);
+        expect(find.text('Done'), findsOneWidget);
+      },
+    );
   });
 
   group('Tier 0: DayOneTutorial emoji purge', () {
-    testWidgets('DayOneTutorialCard buttons do not contain emojis', (tester) async {
+    testWidgets('DayOneTutorialCard buttons do not contain emojis', (
+      tester,
+    ) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: MaterialApp(
             theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: DayOneTutorialCard(userName: 'Alex'),
-            ),
+            home: const Scaffold(body: DayOneTutorialCard(userName: 'Alex')),
           ),
         ),
       );
@@ -112,42 +111,44 @@ void main() {
   });
 
   group('Tier 0: ActivityRowItem Dismissible & Actions', () {
-    testWidgets('provides both background and secondaryBackground with zero reveal glitch', (tester) async {
-      final item = TodayActivityItem(
-        id: 'todo-1',
-        title: 'Review System Architecture',
-        status: TodayActivityStatus.notStarted,
-        kind: ActivityKind.todo,
-        sourceType: 'task',
-        priority: 'high',
-        categoryTag: 'work',
-        elapsedSecondsToday: 0,
-      );
+    testWidgets(
+      'provides both background and secondaryBackground with zero reveal glitch',
+      (tester) async {
+        final item = TodayActivityItem(
+          id: 'todo-1',
+          title: 'Review System Architecture',
+          status: TodayActivityStatus.notStarted,
+          kind: ActivityKind.todo,
+          sourceType: 'task',
+          priority: 'high',
+          categoryTag: 'work',
+          elapsedSecondsToday: 0,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: ActivityRowItem(
-                activity: item,
-                compact: true,
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: Scaffold(
+                body: ActivityRowItem(activity: item, compact: true),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final dismissibleFinder = find.byType(Dismissible);
-      expect(dismissibleFinder, findsOneWidget);
+        final dismissibleFinder = find.byType(Dismissible);
+        expect(dismissibleFinder, findsOneWidget);
 
-      final dismissible = tester.widget<Dismissible>(dismissibleFinder);
-      expect(dismissible.background, isNotNull);
-      expect(dismissible.secondaryBackground, isNotNull);
-    });
+        final dismissible = tester.widget<Dismissible>(dismissibleFinder);
+        expect(dismissible.background, isNotNull);
+        expect(dismissible.secondaryBackground, isNotNull);
+      },
+    );
 
-    testWidgets('untimed to-dos do not display play/pause timer buttons', (tester) async {
+    testWidgets('untimed to-dos do not display play/pause timer buttons', (
+      tester,
+    ) async {
       final untimedTodo = TodayActivityItem(
         id: 'todo-untimed',
         title: 'Buy Groceries',
@@ -165,10 +166,7 @@ void main() {
           child: MaterialApp(
             theme: AscentTheme.light(),
             home: Scaffold(
-              body: ActivityRowItem(
-                activity: untimedTodo,
-                compact: true,
-              ),
+              body: ActivityRowItem(activity: untimedTodo, compact: true),
             ),
           ),
         ),
@@ -181,73 +179,80 @@ void main() {
     });
   });
 
-  group('Tier 0: StudyStreakMeterCard Honest Numbers & 320px Overflow Immunity', () {
-    testWidgets('displays honest invitation at 0 streak without longest: 0d', (tester) async {
-      final zeroStreak = StudyStreakStatus(
-        todaySeconds: 0,
-        targetSeconds: 3600,
-        displayStreakDays: 0,
-        longestStreakDays: 0,
-        isTodaySecured: false,
-        isRescueMode: false,
-        isUrgent: false,
-      );
+  group(
+    'Tier 0: StudyStreakMeterCard Honest Numbers & 320px Overflow Immunity',
+    () {
+      testWidgets(
+        'displays honest invitation at 0 streak without longest: 0d',
+        (tester) async {
+          final zeroStreak = StudyStreakStatus(
+            todaySeconds: 0,
+            targetSeconds: 3600,
+            displayStreakDays: 0,
+            longestStreakDays: 0,
+            isTodaySecured: false,
+            isRescueMode: false,
+            isUrgent: false,
+          );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: StudyStreakMeterCard(status: zeroStreak),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Start a streak today'), findsOneWidget);
-      expect(find.textContaining('0 Day Streak'), findsNothing);
-      expect(find.textContaining('Longest: 0d'), findsNothing);
-    });
-
-    testWidgets('320px width at 2.0x font scaling has zero RenderFlex overflow', (tester) async {
-      tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final activeStreak = StudyStreakStatus(
-        todaySeconds: 2700,
-        targetSeconds: 3600,
-        displayStreakDays: 14,
-        longestStreakDays: 21,
-        isTodaySecured: false,
-        isRescueMode: true,
-        isUrgent: true,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                textScaler: TextScaler.linear(2.0),
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                theme: AscentTheme.light(),
+                home: Scaffold(body: StudyStreakMeterCard(status: zeroStreak)),
               ),
-              child: Scaffold(
-                body: SingleChildScrollView(
-                  child: StudyStreakMeterCard(status: activeStreak),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Start a streak today'), findsOneWidget);
+          expect(find.textContaining('0 Day Streak'), findsNothing);
+          expect(find.textContaining('Longest: 0d'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        '320px width at 2.0x font scaling has zero RenderFlex overflow',
+        (tester) async {
+          tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
+          tester.view.devicePixelRatio = 2.0;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+
+          final activeStreak = StudyStreakStatus(
+            todaySeconds: 2700,
+            targetSeconds: 3600,
+            displayStreakDays: 14,
+            longestStreakDays: 21,
+            isTodaySecured: false,
+            isRescueMode: true,
+            isUrgent: true,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              child: MaterialApp(
+                theme: AscentTheme.light(),
+                home: MediaQuery(
+                  data: const MediaQueryData(
+                    textScaler: TextScaler.linear(2.0),
+                  ),
+                  child: Scaffold(
+                    body: SingleChildScrollView(
+                      child: StudyStreakMeterCard(status: activeStreak),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
-  });
+          expect(tester.takeException(), isNull);
+        },
+      );
+    },
+  );
 }

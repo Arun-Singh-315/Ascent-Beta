@@ -44,37 +44,43 @@ void main() {
       expect(result.selection.baseOffset, 2);
     });
 
-    test('pressing Enter after bullet line automatically continues with bullet', () {
-      // User has "• Wake up early" and presses Enter
-      const oldValue = TextEditingValue(
-        text: '• Wake up early',
-        selection: TextSelection.collapsed(offset: 15),
-      );
-      const newValue = TextEditingValue(
-        text: '• Wake up early\n',
-        selection: TextSelection.collapsed(offset: 16),
-      );
+    test(
+      'pressing Enter after bullet line automatically continues with bullet',
+      () {
+        // User has "• Wake up early" and presses Enter
+        const oldValue = TextEditingValue(
+          text: '• Wake up early',
+          selection: TextSelection.collapsed(offset: 15),
+        );
+        const newValue = TextEditingValue(
+          text: '• Wake up early\n',
+          selection: TextSelection.collapsed(offset: 16),
+        );
 
-      final result = formatter.formatEditUpdate(oldValue, newValue);
-      expect(result.text, '• Wake up early\n• ');
-      expect(result.selection.baseOffset, '• Wake up early\n• '.length);
-    });
+        final result = formatter.formatEditUpdate(oldValue, newValue);
+        expect(result.text, '• Wake up early\n• ');
+        expect(result.selection.baseOffset, '• Wake up early\n• '.length);
+      },
+    );
 
-    test('pressing Enter after numbered item automatically increments number', () {
-      // User has "1. Morning walk" and presses Enter
-      const oldValue = TextEditingValue(
-        text: '1. Morning walk',
-        selection: TextSelection.collapsed(offset: 15),
-      );
-      const newValue = TextEditingValue(
-        text: '1. Morning walk\n',
-        selection: TextSelection.collapsed(offset: 16),
-      );
+    test(
+      'pressing Enter after numbered item automatically increments number',
+      () {
+        // User has "1. Morning walk" and presses Enter
+        const oldValue = TextEditingValue(
+          text: '1. Morning walk',
+          selection: TextSelection.collapsed(offset: 15),
+        );
+        const newValue = TextEditingValue(
+          text: '1. Morning walk\n',
+          selection: TextSelection.collapsed(offset: 16),
+        );
 
-      final result = formatter.formatEditUpdate(oldValue, newValue);
-      expect(result.text, '1. Morning walk\n2. ');
-      expect(result.selection.baseOffset, '1. Morning walk\n2. '.length);
-    });
+        final result = formatter.formatEditUpdate(oldValue, newValue);
+        expect(result.text, '1. Morning walk\n2. ');
+        expect(result.selection.baseOffset, '1. Morning walk\n2. '.length);
+      },
+    );
 
     test('pressing Enter on empty bullet exits list mode cleanly', () {
       // User has "• Wake up\n• " and presses Enter on the empty bullet
@@ -110,39 +116,48 @@ void main() {
   });
 
   group('NoteListButton Compact Spacing Tests', () {
-    test('insertNextItem uses single newline without double blank line gap', () {
-      final controller = TextEditingController(text: 'Wake up');
-      NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'Wake up\n• ');
-      expect(controller.text.contains('\n\n'), isFalse);
-      controller.dispose();
-    });
+    test(
+      'insertNextItem uses single newline without double blank line gap',
+      () {
+        final controller = TextEditingController(text: 'Wake up');
+        NoteListButton.insertNextItem(controller);
+        expect(controller.text, 'Wake up\n• ');
+        expect(controller.text.contains('\n\n'), isFalse);
+        controller.dispose();
+      },
+    );
 
-    test('insertNextItem when already ending with newline does not add extra newline', () {
-      final controller = TextEditingController(text: 'Wake up\n');
-      NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'Wake up\n• ');
-      controller.dispose();
-    });
+    test(
+      'insertNextItem when already ending with newline does not add extra newline',
+      () {
+        final controller = TextEditingController(text: 'Wake up\n');
+        NoteListButton.insertNextItem(controller);
+        expect(controller.text, 'Wake up\n• ');
+        controller.dispose();
+      },
+    );
   });
 
   group('PlanItemDraft Parser with "->" Tests', () {
-    test('parseList cleans leading "->" and "-->" without leaving arrows in task titles', () {
-      const raw = '''
+    test(
+      'parseList cleans leading "->" and "-->" without leaving arrows in task titles',
+      () {
+        const raw = '''
 -> Wake up
 -> Drink lemon tea
 --> Morning walk
 • Revise notes
 1. Gym session
 ''';
-      final titles = PlanItemDraft.parseList(raw);
-      expect(titles.length, 5);
-      expect(titles[0], 'Wake up');
-      expect(titles[1], 'Drink lemon tea');
-      expect(titles[2], 'Morning walk');
-      expect(titles[3], 'Revise notes');
-      expect(titles[4], 'Gym session');
-    });
+        final titles = PlanItemDraft.parseList(raw);
+        expect(titles.length, 5);
+        expect(titles[0], 'Wake up');
+        expect(titles[1], 'Drink lemon tea');
+        expect(titles[2], 'Morning walk');
+        expect(titles[3], 'Revise notes');
+        expect(titles[4], 'Gym session');
+      },
+    );
   });
 
   group('ThoughtChecklistHelper with "->" Tests', () {
@@ -168,14 +183,17 @@ My Schedule:
   });
 
   group('ThoughtExcerpt Bullet & Spacing Formatting Tests', () {
-    test('formatArrowContent converts "->" and "-->" into clean bullets without huge gaps', () {
-      const raw = '-> First item\n-> Second item\n--> Third item';
-      final formatted = ThoughtExcerpt.formatArrowContent(raw);
-      expect(formatted.contains('• First item'), isTrue);
-      expect(formatted.contains('• Second item'), isTrue);
-      expect(formatted.contains('• Third item'), isTrue);
-      expect(formatted.contains('->'), isFalse);
-      expect(formatted.contains('-->'), isFalse);
-    });
+    test(
+      'formatArrowContent converts "->" and "-->" into clean bullets without huge gaps',
+      () {
+        const raw = '-> First item\n-> Second item\n--> Third item';
+        final formatted = ThoughtExcerpt.formatArrowContent(raw);
+        expect(formatted.contains('• First item'), isTrue);
+        expect(formatted.contains('• Second item'), isTrue);
+        expect(formatted.contains('• Third item'), isTrue);
+        expect(formatted.contains('->'), isFalse);
+        expect(formatted.contains('-->'), isFalse);
+      },
+    );
   });
 }

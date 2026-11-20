@@ -51,190 +51,196 @@ void main() {
           child: MaterialApp(
             theme: ThemeData.light(),
             home: Scaffold(
-              body: ActivityRowItem(
-                activity: activity,
-                compact: true,
-              ),
+              body: ActivityRowItem(activity: activity, compact: true),
             ),
           ),
         ),
       );
 
       // Verify star button exists per AGENTS.md rule: "Importance uses a user-selected star, not a yellow priority badge"
-      expect(find.byKey(const ValueKey('activity_priority_task_1')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('activity_priority_task_1')),
+        findsOneWidget,
+      );
       expect(find.byType(AscentStarButton), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     });
 
-    testWidgets('ActivityRowItem compact row safe at 320px with 2.0x text scale', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'ActivityRowItem compact row safe at 320px with 2.0x text scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final activity = TodayActivityItem(
-        id: 'task_2',
-        title: 'Super long activity title testing responsive flex wrap handling',
-        kind: ActivityKind.todo,
-        status: TodayActivityStatus.notStarted,
-        sourceType: 'task',
-        categoryTag: 'tasks',
-        elapsedSecondsToday: 0,
-        linkedTaskId: 2,
-        priority: 'high',
-      );
+        final activity = TodayActivityItem(
+          id: 'task_2',
+          title:
+              'Super long activity title testing responsive flex wrap handling',
+          kind: ActivityKind.todo,
+          status: TodayActivityStatus.notStarted,
+          sourceType: 'task',
+          categoryTag: 'tasks',
+          elapsedSecondsToday: 0,
+          linkedTaskId: 2,
+          priority: 'high',
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-              child: Scaffold(
-                body: ActivityRowItem(
-                  activity: activity,
-                  compact: true,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWithValue(db)],
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              home: MediaQuery(
+                data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+                child: Scaffold(
+                  body: ActivityRowItem(activity: activity, compact: true),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(const ValueKey('activity_priority_task_2')), findsOneWidget);
-    });
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byKey(const ValueKey('activity_priority_task_2')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('Things Hub Hero Activity Composer', () {
-    testWidgets('Hero mode options allow configuring To-do, Timer, and schedule', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'Hero mode options allow configuring To-do, Timer, and schedule',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            home: const Scaffold(
-              body: Padding(
-                padding: EdgeInsets.all(12),
-                child: ActivityComposer(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWithValue(db)],
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              home: const Scaffold(
+                body: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: ActivityComposer(),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Entering text displays the Activity options button
-      await tester.enterText(
-        find.byKey(const ValueKey('activity_quick_input')),
-        'Study algorithms',
-      );
-      await tester.pumpAndSettle();
+        // Entering text displays the Activity options button
+        await tester.enterText(
+          find.byKey(const ValueKey('activity_quick_input')),
+          'Study algorithms',
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('activity_options')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('activity_options')));
-      await tester.pumpAndSettle();
+        expect(find.byKey(const ValueKey('activity_options')), findsOneWidget);
+        await tester.tap(find.byKey(const ValueKey('activity_options')));
+        await tester.pumpAndSettle();
 
-      // Options sheet contains To-do, Timer, Flexible
-      expect(find.text('To-do'), findsOneWidget);
-      expect(find.text('Timer'), findsOneWidget);
-      expect(find.text('Flexible'), findsOneWidget);
+        // Options sheet contains To-do, Timer, Flexible
+        expect(find.text('To-do'), findsOneWidget);
+        expect(find.text('Timer'), findsOneWidget);
+        expect(find.text('Flexible'), findsOneWidget);
 
-      // Tap Timer
-      await tester.tap(find.text('Timer'));
-      await tester.pumpAndSettle();
-      expect(find.text('Duration'), findsOneWidget);
-      expect(find.text('30 min'), findsOneWidget);
-    });
+        // Tap Timer
+        await tester.tap(find.text('Timer'));
+        await tester.pumpAndSettle();
+        expect(find.text('Duration'), findsOneWidget);
+        expect(find.text('30 min'), findsOneWidget);
+      },
+    );
 
-    testWidgets('ActivityRowItem detail dialog allows switching task between To-do and Focus Timer', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'ActivityRowItem detail dialog allows switching task between To-do and Focus Timer',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      final taskId = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
+        final taskId = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Review System Design',
+            plannedDate: drift.Value(DateTime.now()),
+          ),
+        );
+
+        final activity = TodayActivityItem(
+          id: 'task_$taskId',
           title: 'Review System Design',
-          plannedDate: drift.Value(DateTime.now()),
-        ),
-      );
+          kind: ActivityKind.todo,
+          status: TodayActivityStatus.notStarted,
+          sourceType: 'task',
+          categoryTag: 'tasks',
+          elapsedSecondsToday: 0,
+          linkedTaskId: taskId,
+          priority: 'medium',
+        );
 
-      final activity = TodayActivityItem(
-        id: 'task_$taskId',
-        title: 'Review System Design',
-        kind: ActivityKind.todo,
-        status: TodayActivityStatus.notStarted,
-        sourceType: 'task',
-        categoryTag: 'tasks',
-        elapsedSecondsToday: 0,
-        linkedTaskId: taskId,
-        priority: 'medium',
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: ThemeData.light(),
-            home: Scaffold(
-              body: ActivityRowItem(
-                activity: activity,
-                compact: true,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [databaseProvider.overrideWithValue(db)],
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              home: Scaffold(
+                body: ActivityRowItem(activity: activity, compact: true),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Tap card to open detail dialog
-      await tester.tap(find.text('Review System Design'));
-      await tester.pumpAndSettle();
+        // Tap card to open detail dialog
+        await tester.tap(find.text('Review System Design'));
+        await tester.pumpAndSettle();
 
-      // Should show option to switch to 25m Focus Timer
-      expect(find.text('Switch to 25m Focus Timer'), findsOneWidget);
-      await tester.tap(find.text('Switch to 25m Focus Timer'));
-      await tester.pumpAndSettle();
+        // Should show option to switch to 25m Focus Timer
+        expect(find.text('Switch to 25m Focus Timer'), findsOneWidget);
+        await tester.tap(find.text('Switch to 25m Focus Timer'));
+        await tester.pumpAndSettle();
 
-      // Verify task in database has estimatedMinutes updated to 25
-      final updated = await db.taskDao.getTaskById(taskId);
-      expect(updated?.estimatedMinutes, 25);
-    });
+        // Verify task in database has estimatedMinutes updated to 25
+        final updated = await db.taskDao.getTaskById(taskId);
+        expect(updated?.estimatedMinutes, 25);
+      },
+    );
   });
 
   group('Caring Notifications & Deep Linking', () {
-    test('Task linked reminder routes to /today?task=id instead of /reminders', () async {
-      final taskId = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Deep Work Session',
-          plannedDate: drift.Value(DateTime.now()),
-        ),
-      );
+    test(
+      'Task linked reminder routes to /today?task=id instead of /reminders',
+      () async {
+        final taskId = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Deep Work Session',
+            plannedDate: drift.Value(DateTime.now()),
+          ),
+        );
 
-      await db.reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Deep Work Session',
-          scheduledAt: DateTime.now().add(const Duration(hours: 2)),
-          linkedTaskId: drift.Value(taskId),
-        ),
-      );
+        await db.reminderDao.insertReminder(
+          ReminderTableCompanion.insert(
+            title: 'Deep Work Session',
+            scheduledAt: DateTime.now().add(const Duration(hours: 2)),
+            linkedTaskId: drift.Value(taskId),
+          ),
+        );
 
-      final reminder = (await db.reminderDao.getRemindersByTaskId(taskId)).first;
-      expect(reminder.linkedTaskId, taskId);
-    });
+        final reminder = (await db.reminderDao.getRemindersByTaskId(
+          taskId,
+        )).first;
+        expect(reminder.linkedTaskId, taskId);
+      },
+    );
 
     test('ReminderNotificationCopy provides caring, context-aware copy', () {
       final copy = ReminderNotificationCopy('Review architecture design');
@@ -253,21 +259,21 @@ void main() {
         copy.bodyFor('/thought-wall?thought=5'),
         '✨ Mind Palace · Tap to reflect on your thought',
       );
-      expect(
-        copy.bodyFor('/reminders'),
-        'Due now · Tap to open Reminders',
-      );
+      expect(copy.bodyFor('/reminders'), 'Due now · Tap to open Reminders');
     });
 
-    test('NotificationService destination routes recognize /today and /hydration', () {
-      expect(
-        NotificationService.destinationForPayload('/today?task=12'),
-        '/today?task=12',
-      );
-      expect(
-        NotificationService.destinationForPayload('/hydration'),
-        '/hydration',
-      );
-    });
+    test(
+      'NotificationService destination routes recognize /today and /hydration',
+      () {
+        expect(
+          NotificationService.destinationForPayload('/today?task=12'),
+          '/today?task=12',
+        );
+        expect(
+          NotificationService.destinationForPayload('/hydration'),
+          '/hydration',
+        );
+      },
+    );
   });
 }

@@ -197,7 +197,8 @@ void main() {
 
           expect(tester.takeException(), isNull);
           await snapshot('home');
-          expect(find.text('Read a chapter'), findsOneWidget);
+          // The Now card and the Today timeline both show the focused item.
+          expect(find.text('Read a chapter'), findsWidgets);
           await snapshot('mind');
           await tester.scrollUntilVisible(
             find.byType(HomeLifeShelf),

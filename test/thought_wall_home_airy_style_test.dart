@@ -25,69 +25,82 @@ void main() {
     return ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        recentThoughtsStreamProvider.overrideWith((ref) => Stream.value(thoughts)),
+        recentThoughtsStreamProvider.overrideWith(
+          (ref) => Stream.value(thoughts),
+        ),
       ],
       child: MaterialApp(
         theme: AscentTheme.light(),
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: child,
-          ),
-        ),
+        home: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );
   }
 
   group('ThoughtWallHomePreview Airy Glass & Empty State Tests', () {
-    testWidgets('When thoughts are empty, composer appears as a single sleek glass input placeholder without nested card container', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          child: const ThoughtWallHomePreview(showComposer: true),
-          thoughts: const [],
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'When thoughts are empty, composer appears as a single sleek glass input placeholder without nested card container',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            child: const ThoughtWallHomePreview(showComposer: true),
+            thoughts: const [],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Renders input field
-      expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Capture a thought…'), findsOneWidget);
+        // Renders input field
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.text('Capture a thought…'), findsOneWidget);
 
-      // Single enclosure key present
-      expect(find.byKey(const ValueKey('home_mind_space_card')), findsOneWidget);
+        // Single enclosure key present
+        expect(
+          find.byKey(const ValueKey('home_mind_space_card')),
+          findsOneWidget,
+        );
 
-      // No thought items rendered
-      expect(find.byKey(const ValueKey('home_thought_1')), findsNothing);
-    });
+        // No thought items rendered
+        expect(find.byKey(const ValueKey('home_thought_1')), findsNothing);
+      },
+    );
 
-    testWidgets('When thoughts are present, thoughts appear with airy glass bubble styling', (tester) async {
+    testWidgets(
+      'When thoughts are present, thoughts appear with airy glass bubble styling',
+      (tester) async {
+        final sampleThought = Thought(
+          id: 1,
+          content: 'This is a peaceful morning reflection',
+          category: 'mindfulness',
+          mood: 'calm',
+          colorHex: '#0284C7',
+          createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+          isPinned: false,
+          isArchived: false,
+          isCompleted: false,
+        );
+
+        await tester.pumpWidget(
+          buildTestApp(
+            child: const ThoughtWallHomePreview(showComposer: true),
+            thoughts: [sampleThought],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('This is a peaceful morning reflection'),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('home_thought_1')), findsOneWidget);
+      },
+    );
+
+    testWidgets('Renders overflow-free at 320px width and 2.0x text scale', (
+      tester,
+    ) async {
       final sampleThought = Thought(
         id: 1,
-        content: 'This is a peaceful morning reflection',
-        category: 'mindfulness',
-        mood: 'calm',
-        colorHex: '#0284C7',
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-      );
-
-      await tester.pumpWidget(
-        buildTestApp(
-          child: const ThoughtWallHomePreview(showComposer: true),
-          thoughts: [sampleThought],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('This is a peaceful morning reflection'), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_thought_1')), findsOneWidget);
-    });
-
-    testWidgets('Renders overflow-free at 320px width and 2.0x text scale', (tester) async {
-      final sampleThought = Thought(
-        id: 1,
-        content: 'Long thought reflection to test wrap and layout scaling bounds',
+        content:
+            'Long thought reflection to test wrap and layout scaling bounds',
         category: 'mindfulness',
         mood: 'calm',
         colorHex: '#0284C7',

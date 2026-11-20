@@ -13,14 +13,14 @@ import 'package:ascent/core/providers/settings_provider.dart';
 
 void main() {
   testWidgets('AscentApp smoke test', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({'ascent_onboarding_complete': true});
+    SharedPreferences.setMockInitialValues({
+      'ascent_onboarding_complete': true,
+    });
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: const AscentApp(),
       ),
     );

@@ -1,13 +1,13 @@
 # Ascent documentation
 
+**Rules first:** [CLAUDE.md](../CLAUDE.md) is the single source of truth for product identity, user-ease principles, visual language and component contracts. Every document below is reference or history; where one conflicts with CLAUDE.md, CLAUDE.md wins.
+
 Current planning and contributor references. Monochrome Home/Calendar handoff added on 9 November 2026:
 
 - [Monochrome Home and Calendar handoff](IOS_MONOCHROME_HOME_CALENDAR_HANDOFF.md): current user-requested iOS-inspired visual specification, exact date states, typography, screen-by-screen edits, implementation order and acceptance checks. Implementation in progress; includes the completed/remaining batch checkpoint. Supersedes conflicting older visual recommendations within its scope.
-- [Mind Space feedback plan](MIND_SPACE_FEEDBACK_PLAN.md): the eleven feedback notes, proposed implementation order and acceptance cases. Requirements and implementation stages.
 - [Mind Space implementation](MIND_SPACE_IMPLEMENTATION.md): current behavior, capability boundaries and verification evidence.
-- [Next update plan](NEXT_UPDATE_PLAN.md): Home customization and optional connected projects. Planning only.
 - [Application architecture](APP_ARCHITECTURE.md): current storage, state, services and navigation boundaries.
-- [Design system](DESIGN_SYSTEM.md): shared theme and UI conventions.
+- [Design system](DESIGN_SYSTEM.md): maps each CLAUDE.md rule to its code and lists migration gaps.
 - [Apple-inspired implementation handoff](APPLE_INSPIRED_IMPLEMENTATION_HANDOFF.md): exact visual upgrade requirements, component contracts, screen scope, and acceptance checks. Specification only; implementation is not yet complete.
 - [Apple-inspired visual review](APPLE_INSPIRED_VISUAL_REVIEW.md): research, current-code findings, and rationale supporting the handoff.
 - [Component catalog](COMPONENT_CATALOG.md): reusable widgets present in the active app.

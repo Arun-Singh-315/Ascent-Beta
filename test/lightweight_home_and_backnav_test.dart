@@ -16,33 +16,36 @@ void main() {
   });
 
   group('Lightweight Hydration Architecture Tests', () {
-    test('WaterDao supports daily goal configuration and logs correctly', () async {
-      final waterDao = db.waterDao;
+    test(
+      'WaterDao supports daily goal configuration and logs correctly',
+      () async {
+        final waterDao = db.waterDao;
 
-      // Initial default goal is 2500 mL
-      final defaultGoal = await waterDao.watchDailyWaterGoal().first;
-      expect(defaultGoal, 2500);
+        // Initial default goal is 2500 mL
+        final defaultGoal = await waterDao.watchDailyWaterGoal().first;
+        expect(defaultGoal, 2500);
 
-      // Set new goal to 3000 mL
-      await waterDao.setDailyWaterGoal(3000);
-      final updatedGoal = await waterDao.watchDailyWaterGoal().first;
-      expect(updatedGoal, 3000);
+        // Set new goal to 3000 mL
+        await waterDao.setDailyWaterGoal(3000);
+        final updatedGoal = await waterDao.watchDailyWaterGoal().first;
+        expect(updatedGoal, 3000);
 
-      // Log 500 mL of water
-      await waterDao.addWater(500);
-      final totalWater = await waterDao.watchTodayWaterMl().first;
-      expect(totalWater, 500);
+        // Log 500 mL of water
+        await waterDao.addWater(500);
+        final totalWater = await waterDao.watchTodayWaterMl().first;
+        expect(totalWater, 500);
 
-      // Verify logs
-      final logs = await waterDao.watchTodayWaterLogs().first;
-      expect(logs.length, 1);
-      expect(logs.first.amountMl, 500);
+        // Verify logs
+        final logs = await waterDao.watchTodayWaterLogs().first;
+        expect(logs.length, 1);
+        expect(logs.first.amountMl, 500);
 
-      // Delete log
-      await waterDao.deleteWater(logs.first.id);
-      final emptyLogs = await waterDao.watchTodayWaterLogs().first;
-      expect(emptyLogs, isEmpty);
-    });
+        // Delete log
+        await waterDao.deleteWater(logs.first.id);
+        final emptyLogs = await waterDao.watchTodayWaterLogs().first;
+        expect(emptyLogs, isEmpty);
+      },
+    );
   });
 
   group('Learning Hub Hero Model Tests', () {
@@ -69,7 +72,8 @@ void main() {
       bool shouldExit = false;
 
       void onBackPress(DateTime now) {
-        if (lastBackPress == null || now.difference(lastBackPress!) > const Duration(seconds: 2)) {
+        if (lastBackPress == null ||
+            now.difference(lastBackPress!) > const Duration(seconds: 2)) {
           lastBackPress = now;
           shouldExit = false;
         } else {

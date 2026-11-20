@@ -11,12 +11,16 @@ import 'package:google_fonts/google_fonts.dart';
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('PromisesScreen renders production Promise overview with tabs', (tester) async {
+  testWidgets('PromisesScreen renders production Promise overview with tabs', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           activePromisesStreamProvider.overrideWith((ref) => Stream.value([])),
-          completedPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
+          completedPromisesStreamProvider.overrideWith(
+            (ref) => Stream.value([]),
+          ),
           pausedPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
         ],
         child: MaterialApp(

@@ -187,6 +187,12 @@ void main() {
 
         // Verify key elements are in tree
         expect(find.byType(HomeScreen), findsOneWidget);
+        // The assistant card is the last Home section (CLAUDE.md §5.1).
+        await tester.scrollUntilVisible(
+          find.byTooltip('Ask Riya'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
         // Flush 350ms post-frame timer in _HomeScreenState
@@ -219,6 +225,12 @@ void main() {
           ),
         );
         await tester.pump();
+        // The assistant card is the last Home section (CLAUDE.md §5.1).
+        await tester.scrollUntilVisible(
+          find.byTooltip('Ask Riya'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
         // Change assistant identity to Jarvis

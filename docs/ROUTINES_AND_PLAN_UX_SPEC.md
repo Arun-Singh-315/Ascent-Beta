@@ -1,5 +1,7 @@
 # Plans and routines: experience, audit and implementation proposal
 
+> **Superseded where it conflicts.** Since 20 November 2026 the product rules, palette, typography and component contracts are defined only in [CLAUDE.md](../CLAUDE.md). Keep this file for history and behaviour details; follow CLAUDE.md for any visual or UX decision.
+
 **17 October 2026 · Proposal for review; recurring plans are not implemented by this document.**
 
 ## 1. The experience we should build

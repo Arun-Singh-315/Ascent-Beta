@@ -39,9 +39,7 @@ void main() {
       ],
       child: MaterialApp(
         home: MediaQuery(
-          data: MediaQueryData(
-            textScaler: TextScaler.linear(textScale),
-          ),
+          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
           child: child,
         ),
       ),
@@ -49,58 +47,76 @@ void main() {
   }
 
   group('Ask Riya Gateway & Mindspace Alignment Tests', () {
-    testWidgets('HomeAssistantHeroCard renders minimal card without AI badge or glow', (tester) async {
-      await tester.pumpWidget(
-        buildApp(const Scaffold(body: HomeAssistantHeroCard())),
-      );
-      await tester.pump();
+    testWidgets(
+      'HomeAssistantHeroCard renders minimal card without AI badge or glow',
+      (tester) async {
+        await tester.pumpWidget(
+          buildApp(const Scaffold(body: HomeAssistantHeroCard())),
+        );
+        await tester.pump();
 
-      expect(find.byKey(const ValueKey('home_assistant_button')), findsOneWidget);
-      expect(find.text('Ask Riya'), findsOneWidget);
-      expect(find.text('Plan your day or ask anything'), findsOneWidget);
-      expect(find.text('AI'), findsNothing);
-      expect(find.text('Chat'), findsOneWidget);
-      expect(find.byTooltip('Ask Riya'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('home_assistant_button')),
+          findsOneWidget,
+        );
+        expect(find.text('Ask Riya'), findsOneWidget);
+        expect(find.text('Plan your day or ask anything'), findsOneWidget);
+        expect(find.text('AI'), findsNothing);
+        expect(find.text('Chat'), findsOneWidget);
+        expect(find.byTooltip('Ask Riya'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('HomeHeader remains spacious without assistant hero when includeAssistant is false', (tester) async {
-      await tester.pumpWidget(
-        buildApp(const Scaffold(body: HomeHeader(profile: null, includeAssistant: false))),
-      );
-      await tester.pump();
+    testWidgets(
+      'HomeHeader remains spacious without assistant hero when includeAssistant is false',
+      (tester) async {
+        await tester.pumpWidget(
+          buildApp(
+            const Scaffold(
+              body: HomeHeader(profile: null, includeAssistant: false),
+            ),
+          ),
+        );
+        await tester.pump();
 
-      // HomeHeader does not contain home_assistant_button
-      expect(
-        find.descendant(
-          of: find.byType(HomeHeader),
-          matching: find.byKey(const ValueKey('home_assistant_button')),
-        ),
-        findsNothing,
-      );
+        // HomeHeader does not contain home_assistant_button
+        expect(
+          find.descendant(
+            of: find.byType(HomeHeader),
+            matching: find.byKey(const ValueKey('home_assistant_button')),
+          ),
+          findsNothing,
+        );
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('Mindspace SectionCard has chevron right and removed mid-row View all', (tester) async {
-      await tester.pumpWidget(
-        buildApp(const Scaffold(body: ThoughtWallHomePreview(compact: true))),
-      );
-      await tester.pump();
+    testWidgets(
+      'Mindspace SectionCard has chevron right and removed mid-row View all',
+      (tester) async {
+        await tester.pumpWidget(
+          buildApp(const Scaffold(body: ThoughtWallHomePreview(compact: true))),
+        );
+        await tester.pump();
 
-      // Header row has chevron right, same as Things/Plans
-      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
-      // Mid-row View all removed per requirement e
-      expect(find.text('View all'), findsNothing);
+        // Header row has chevron right, same as Things/Plans
+        expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
+        // Mid-row View all removed per requirement e
+        expect(find.text('View all'), findsNothing);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 50));
+      },
+    );
 
-    testWidgets('SpacesShelf header has View all button at the right end', (tester) async {
+    testWidgets('SpacesShelf header has View all button at the right end', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildApp(
           Scaffold(
@@ -127,9 +143,7 @@ void main() {
   group('Mind Palace Style & Typography Tests', () {
     testWidgets('Default BoardBackdrop is plain', (tester) async {
       final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
       addTearDown(container.dispose);
 
@@ -137,11 +151,11 @@ void main() {
       expect(backdrop, BoardBackdrop.plain);
     });
 
-    testWidgets('ThoughtWallAppearance bubbleFilled defaults to false', (tester) async {
+    testWidgets('ThoughtWallAppearance bubbleFilled defaults to false', (
+      tester,
+    ) async {
       final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
       addTearDown(container.dispose);
 
@@ -149,11 +163,14 @@ void main() {
       expect(appearance.bubbleFilled, false);
     });
 
-    testWidgets('BoardCard renders reflective text and styling in Mind Palace', (tester) async {
+    testWidgets('BoardCard renders reflective text and styling in Mind Palace', (
+      tester,
+    ) async {
       final now = DateTime(2026, 11, 17, 12, 0);
       final thought = Thought(
         id: 1,
-        content: 'Long reflective paragraph describing creative thoughts and quiet focus for Ascent.',
+        content:
+            'Long reflective paragraph describing creative thoughts and quiet focus for Ascent.',
         category: 'general',
         mood: 'idea',
         colorHex: '#000000',
@@ -166,11 +183,7 @@ void main() {
       await tester.pumpWidget(
         buildApp(
           Scaffold(
-            body: BoardCard(
-              thought: thought,
-              index: 0,
-              now: now,
-            ),
+            body: BoardCard(thought: thought, index: 0, now: now),
           ),
         ),
       );
@@ -182,7 +195,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     });
 
-    testWidgets('Rule 13: Zero overflow at 320px width and 2.0x text scale', (tester) async {
+    testWidgets('Rule 13: Zero overflow at 320px width and 2.0x text scale', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(320, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);

@@ -127,7 +127,9 @@ void main() {
         );
         expect(
           tester.getTopLeft(find.byType(TextField)).dy,
-          lessThan(tester.getTopLeft(find.byKey(ValueKey('home_thought_$id2'))).dy),
+          lessThan(
+            tester.getTopLeft(find.byKey(ValueKey('home_thought_$id2'))).dy,
+          ),
         );
 
         // View all is inside this card

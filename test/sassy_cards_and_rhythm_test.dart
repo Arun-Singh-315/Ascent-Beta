@@ -32,7 +32,10 @@ void main() {
     await db.close();
   });
 
-  Widget buildTestWidget(Widget child, {List<dynamic> extraOverrides = const []}) {
+  Widget buildTestWidget(
+    Widget child, {
+    List<dynamic> extraOverrides = const [],
+  }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
@@ -53,51 +56,64 @@ void main() {
   }
 
   group('LearningHubCard sassy centered design tests', () {
-    testWidgets('LearningHubCard renders centered start learning layout with transparent bordered styling', (tester) async {
-      await tester.pumpWidget(buildTestWidget(const LearningHubCard()));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'LearningHubCard renders centered start learning layout with transparent bordered styling',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(const LearningHubCard()));
+        await tester.pumpAndSettle();
 
-      // Heading and call to action are present
-      expect(find.byKey(const ValueKey('home_learning_title')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_learning_course')), findsOneWidget);
-      expect(find.text('Start learning'), findsOneWidget);
+        // Heading and call to action are present
+        expect(
+          find.byKey(const ValueKey('home_learning_title')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('home_learning_course')),
+          findsOneWidget,
+        );
+        expect(find.text('Start learning'), findsOneWidget);
 
-      // Verify centered alignment of the card content
-      final titleFinder = find.byKey(const ValueKey('home_learning_title'));
-      final titleCenter = tester.getCenter(titleFinder);
-      final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      expect((titleCenter.dx - screenWidth / 2).abs(), lessThan(40));
-    });
+        // Verify centered alignment of the card content
+        final titleFinder = find.byKey(const ValueKey('home_learning_title'));
+        final titleCenter = tester.getCenter(titleFinder);
+        final screenWidth =
+            tester.view.physicalSize.width / tester.view.devicePixelRatio;
+        expect((titleCenter.dx - screenWidth / 2).abs(), lessThan(40));
+      },
+    );
 
-    testWidgets('LearningHubCard is immune to overflow at 320px with 2.0x font scaling', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'LearningHubCard is immune to overflow at 320px with 2.0x font scaling',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: Scaffold(
-              body: buildTestWidget(const LearningHubCard()),
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.dark(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(body: buildTestWidget(const LearningHubCard())),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.byType(LearningHubCard), findsOneWidget);
-    });
+        expect(tester.takeException(), isNull);
+        expect(find.byType(LearningHubCard), findsOneWidget);
+      },
+    );
   });
 
   group('VaultHomePreview sassy centered design tests', () {
-    testWidgets('VaultHomePreview renders centered locked layout with border', (tester) async {
+    testWidgets('VaultHomePreview renders centered locked layout with border', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const VaultHomePreview(),
@@ -110,100 +126,126 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('home_vault_card')), findsOneWidget);
-      expect(find.descendant(of: find.byKey(const ValueKey('home_vault_card')), matching: find.text('Private Vault')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('home_vault_card')),
+          matching: find.text('Private Vault'),
+        ),
+        findsOneWidget,
+      );
 
-      final titleFinder = find.descendant(of: find.byKey(const ValueKey('home_vault_card')), matching: find.text('Private Vault'));
+      final titleFinder = find.descendant(
+        of: find.byKey(const ValueKey('home_vault_card')),
+        matching: find.text('Private Vault'),
+      );
       final titleCenter = tester.getCenter(titleFinder);
-      final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final screenWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
       expect((titleCenter.dx - screenWidth / 2).abs(), lessThan(40));
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('VaultHomePreview is immune to overflow at 320px with 2.0x text scaling', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'VaultHomePreview is immune to overflow at 320px with 2.0x text scaling',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.light(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: Scaffold(
-              body: buildTestWidget(
-                const VaultHomePreview(),
-                extraOverrides: [
-                  vaultSessionUnlockedProvider.overrideWith(_FakeLockedNotifier.new),
-                  vaultItemCountProvider.overrideWith((ref) => 3),
-                ],
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.light(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(
+                body: buildTestWidget(
+                  const VaultHomePreview(),
+                  extraOverrides: [
+                    vaultSessionUnlockedProvider.overrideWith(
+                      _FakeLockedNotifier.new,
+                    ),
+                    vaultItemCountProvider.overrideWith((ref) => 3),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 
   group('Daily rhythm enclosed border & animation tests', () {
-    testWidgets('HomeLifeShelf wraps tools in a single unified border enclosure', (tester) async {
-      await tester.pumpWidget(buildTestWidget(const HomeLifeShelf()));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(const ValueKey('home_life_shelf_enclosure')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_life_shelf')), findsOneWidget);
-      expect(find.text('Daily rhythm'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
-
-    testWidgets('HomeLifeShelf expands smoothly on tapping a tool without overflow at 320px 2.0x scale', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: Scaffold(
-              body: buildTestWidget(const HomeLifeShelf()),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final initialHeight = tester.getSize(find.byKey(const ValueKey('home_life_shelf_enclosure'))).height;
-
-      // Tap hydration tool
-      final waterCard = find.byKey(const ValueKey('home_routine_hydration'));
-      if (waterCard.evaluate().isNotEmpty) {
-        await tester.tap(waterCard);
-        await tester.pump(const Duration(milliseconds: 100));
+    testWidgets(
+      'HomeLifeShelf wraps tools in a single unified border enclosure',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget(const HomeLifeShelf()));
         await tester.pumpAndSettle();
 
-        final expandedHeight = tester.getSize(find.byKey(const ValueKey('home_life_shelf_enclosure'))).height;
-        expect(expandedHeight, greaterThanOrEqualTo(initialHeight));
-      }
+        expect(
+          find.byKey(const ValueKey('home_life_shelf_enclosure')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('home_life_shelf')), findsOneWidget);
+        expect(find.text('Daily rhythm'), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+    testWidgets(
+      'HomeLifeShelf expands smoothly on tapping a tool without overflow at 320px 2.0x scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.dark(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(body: buildTestWidget(const HomeLifeShelf())),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final initialHeight = tester
+            .getSize(find.byKey(const ValueKey('home_life_shelf_enclosure')))
+            .height;
+
+        // Tap hydration tool
+        final waterCard = find.byKey(const ValueKey('home_routine_hydration'));
+        if (waterCard.evaluate().isNotEmpty) {
+          await tester.tap(waterCard);
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
+
+          final expandedHeight = tester
+              .getSize(find.byKey(const ValueKey('home_life_shelf_enclosure')))
+              .height;
+          expect(expandedHeight, greaterThanOrEqualTo(initialHeight));
+        }
+
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 }

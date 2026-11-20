@@ -92,6 +92,24 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     );
   }
 
+  /// Creates a real to-do for today from an empty-state starter, with Undo.
+  Future<void> _addStarterTask(TaskDao taskDao, String title) async {
+    final now = DateTime.now();
+    final id = await taskDao.insertTask(
+      TaskTableCompanion.insert(
+        title: title,
+        plannedDate: Value(DateTime(now.year, now.month, now.day)),
+      ),
+    );
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    showUndoSnackbar(
+      context,
+      message: 'Added “$title” to today',
+      onUndo: () => taskDao.deleteTask(id),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final taskDao = ref.watch(taskDaoProvider);
@@ -211,12 +229,23 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
           // §7: Clean empty state for new users
           if (!hasActiveTasks && completedTasks.isEmpty) {
             return EmptyState(
-              icon: Icons.landscape_rounded,
-              title: 'Your slate is clean',
+              icon: Icons.check_circle_outline_rounded,
+              title: 'Your day is wide open',
               subtitle:
-                  'Add your first prep task for today, or link one to an active application.',
-              actionLabel: 'Add Task',
+                  'Add one thing you want to get done today. You can add a time or reminder whenever you like.',
+              actionLabel: 'Add your first thing',
               onAction: () => _openAddTaskSheet(context),
+              starters: [
+                for (final title in const [
+                  'Drink a glass of water',
+                  'Read for 20 minutes',
+                  'Plan tomorrow',
+                ])
+                  EmptyStarter(
+                    label: title,
+                    onTap: () => _addStarterTask(taskDao, title),
+                  ),
+              ],
             );
           }
 

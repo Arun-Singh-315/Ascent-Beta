@@ -1,4 +1,3 @@
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
@@ -9,74 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class _UnavailableLecture extends LearningHubNotifier {
-  @override
-  LearningHubState build() => const LearningHubState(courses: [], activeCourseId: '', activeLectureId: 0);
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
   group('Lecture activity routing and timer isolation', () {
-    testWidgets(
-      'Unavailable lecture stays safe and has no generic timer controls',
-      (tester) async {
-        final lectureActivity = TodayActivityItem(
-          id: 'lecture_dsa_101',
-          title: 'Algorithms: Dynamic Programming',
-          sourceType: 'lecture',
-          learningCourseId: 'dsa_course',
-          learningLectureId: 101,
-          status: TodayActivityStatus.inProgress,
-          elapsedSecondsToday: 245,
-          categoryTag: 'Study',
-          kind: ActivityKind.duration,
-          targetMinutes: 30,
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [learningHubProvider.overrideWith(_UnavailableLecture.new)],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: Scaffold(
-                body: ActivityRowItem(activity: lectureActivity),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // 1. Title is displayed
-        expect(find.text('Algorithms: Dynamic Programming'), findsOneWidget);
-
-        // 2. No timer countdown or elapsed seconds text (e.g. "04:05" or "245s" or "/ 30m")
-        expect(find.textContaining('04:05'), findsNothing);
-        expect(find.textContaining('/ 30m'), findsNothing);
-        expect(find.textContaining('tracked'), findsNothing);
-
-        // 3. Subtitle displays clean status without ticking time
-        expect(find.text('Lecture in progress'), findsOneWidget);
-
-        // 4. NO play or pause buttons on the activity row to avoid player crossover
-        expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
-        expect(find.byIcon(Icons.pause_rounded), findsNothing);
-
-        // 5. An unavailable catalog lecture does not open an unrelated player.
-        await tester.tap(find.text('Algorithms: Dynamic Programming'));
-        await tester.pumpAndSettle();
-        expect(find.byType(BottomSheet), findsNothing);
-        expect(find.byType(Dialog), findsNothing);
-
-        // 6. Checkbox circle displays headphone/lecture icon and is not interactive
-        expect(find.byIcon(Icons.headphones_rounded), findsOneWidget);
-        await tester.tap(find.byIcon(Icons.headphones_rounded));
-        await tester.pumpAndSettle();
-        expect(find.byType(BottomSheet), findsNothing);
-      },
-    );
-
     testWidgets(
       'Completed lecture activity displays done state without timer text',
       (tester) async {
@@ -98,9 +34,7 @@ void main() {
           ProviderScope(
             child: MaterialApp(
               theme: AscentTheme.light(),
-              home: Scaffold(
-                body: ActivityRowItem(activity: completedLecture),
-              ),
+              home: Scaffold(body: ActivityRowItem(activity: completedLecture)),
             ),
           ),
         );

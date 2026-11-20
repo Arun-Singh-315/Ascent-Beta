@@ -43,50 +43,60 @@ void main() {
   }
 
   group('Riya AI Assistant Experience Tests', () {
-    testWidgets('Empty chat screen displays strong minimal hero typography without chip clutter', (tester) async {
-      await tester.pumpWidget(buildScope(const AiAssistantScreen(compact: true)));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
+    testWidgets(
+      'Empty chat screen displays strong minimal hero typography without chip clutter',
+      (tester) async {
+        await tester.pumpWidget(
+          buildScope(const AiAssistantScreen(compact: true)),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
 
-      expect(find.byType(AiAssistantScreen), findsOneWidget);
-      // Minimal strong centered hero text
-      expect(find.textContaining('ascend today?'), findsOneWidget);
-      expect(tester.takeException(), isNull);
+        expect(find.byType(AiAssistantScreen), findsOneWidget);
+        // Minimal strong centered hero text
+        expect(find.textContaining('ascend today?'), findsOneWidget);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
-    testWidgets('AiAssistantScreen is immune to overflow at 320px with 2.0x text scaling', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'AiAssistantScreen is immune to overflow at 320px with 2.0x text scaling',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.dark(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: buildScope(const AiAssistantScreen(compact: true)),
             ),
-            child: buildScope(const AiAssistantScreen(compact: true)),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 150));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 
   group('Classified History Tests', () {
-    testWidgets('HistoryScreen renders domain classification filter segments', (tester) async {
+    testWidgets('HistoryScreen renders domain classification filter segments', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildScope(const HistoryScreen()));
       await tester.pumpAndSettle();
 
@@ -100,100 +110,115 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('HistoryScreen is immune to overflow at 320px with 2.0x text scaling', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'HistoryScreen is immune to overflow at 320px with 2.0x text scaling',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.dark(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: buildScope(const HistoryScreen()),
             ),
-            child: buildScope(const HistoryScreen()),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 
   group('Yesterday Summary Report Card in Your Space Tests', () {
-    testWidgets('HomeShortcutPanel renders yesterday report button and expands narrative report card', (tester) async {
-      await tester.pumpWidget(
-        buildScope(
-          Scaffold(
-            body: SingleChildScrollView(
-              child: HomeShortcutPanel(
-                shortcuts: const ['focus', 'hydration', 'vault'],
-                showReminders: false,
+    testWidgets(
+      'HomeShortcutPanel renders yesterday report button and expands narrative report card',
+      (tester) async {
+        await tester.pumpWidget(
+          buildScope(
+            Scaffold(
+              body: SingleChildScrollView(
+                child: HomeShortcutPanel(
+                  shortcuts: const ['focus', 'hydration', 'vault'],
+                  showReminders: false,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('yesterday_report_button')), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('yesterday_report_button')),
+          findsOneWidget,
+        );
 
-      // Tap report button
-      await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
-      await tester.pumpAndSettle();
+        // Tap report button
+        await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
+        await tester.pumpAndSettle();
 
-      // Narrative report card appears with qualitative words, no raw 0/1 numbers
-      expect(find.byKey(const ValueKey('yesterday_report_card')), findsOneWidget);
-      expect(find.textContaining('Yesterday’s Reflection'), findsOneWidget);
-      expect(find.text('Keep report in Your Space'), findsOneWidget);
+        // Narrative report card appears with qualitative words, no raw 0/1 numbers
+        expect(
+          find.byKey(const ValueKey('yesterday_report_card')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Yesterday’s Reflection'), findsOneWidget);
+        expect(find.text('Keep report in Your Space'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
-    testWidgets('HomeShortcutPanel with expanded report card is immune to overflow at 320px with 2.0x text scale', (tester) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'HomeShortcutPanel with expanded report card is immune to overflow at 320px with 2.0x text scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.light(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: buildScope(
-              Scaffold(
-                body: SingleChildScrollView(
-                  child: HomeShortcutPanel(
-                    shortcuts: const ['focus', 'hydration', 'vault'],
-                    showReminders: false,
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.light(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 800),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: buildScope(
+                Scaffold(
+                  body: SingleChildScrollView(
+                    child: HomeShortcutPanel(
+                      shortcuts: const ['focus', 'hydration', 'vault'],
+                      showReminders: false,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }

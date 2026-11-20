@@ -17,11 +17,12 @@ void main() {
     await db.close();
   });
 
-  Widget buildSubject({double textScale = 1.0, Size size = const Size(390, 844)}) {
+  Widget buildSubject({
+    double textScale = 1.0,
+    Size size = const Size(390, 844),
+  }) {
     return ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-      ],
+      overrides: [databaseProvider.overrideWithValue(db)],
       child: MaterialApp(
         theme: ThemeData(
           brightness: Brightness.light,
@@ -32,16 +33,15 @@ void main() {
             size: size,
             textScaler: TextScaler.linear(textScale),
           ),
-          child: const PlanCreatorScreen(
-            initialSpan: '3d',
-            initialTasks: [],
-          ),
+          child: const PlanCreatorScreen(initialSpan: '3d', initialTasks: []),
         ),
       ),
     );
   }
 
-  testWidgets('PlanCreatorScreen 4-step tap-first flow works seamlessly', (tester) async {
+  testWidgets('PlanCreatorScreen 4-step tap-first flow works seamlessly', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
@@ -103,11 +103,15 @@ void main() {
     expect(find.text('Create plan'), findsOneWidget);
   });
 
-  testWidgets('PlanCreatorScreen 320px width & 2.0x text scale immunity', (tester) async {
+  testWidgets('PlanCreatorScreen 320px width & 2.0x text scale immunity', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(320, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(buildSubject(size: const Size(320, 700), textScale: 2.0));
+    await tester.pumpWidget(
+      buildSubject(size: const Size(320, 700), textScale: 2.0),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

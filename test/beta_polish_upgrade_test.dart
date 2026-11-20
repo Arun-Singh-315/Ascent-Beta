@@ -82,7 +82,9 @@ void main() {
     test('Reader-to-Mind Space Integration in Database', () async {
       final thoughtId = await db.thoughtDao.insertThought(
         const ThoughtTableCompanion(
-          content: drift.Value('Key Takeaway: DelegatingFilterProxy forwards to SecurityFilterChain with stateless JWT auth.'),
+          content: drift.Value(
+            'Key Takeaway: DelegatingFilterProxy forwards to SecurityFilterChain with stateless JWT auth.',
+          ),
           mood: drift.Value('idea'),
         ),
       );
@@ -117,61 +119,82 @@ Please review system design and concurrency.
       expect(detectedCompany, 'Stripe');
 
       // Check role detection
-      expect(textLower.contains('senior') && textLower.contains('engineer'), isTrue);
+      expect(
+        textLower.contains('senior') && textLower.contains('engineer'),
+        isTrue,
+      );
 
       // Check meeting link detection
-      final urlRegex = RegExp(r'(https?:\/\/(?:[a-zA-Z0-9\-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com)[^\s]*)');
+      final urlRegex = RegExp(
+        r'(https?:\/\/(?:[a-zA-Z0-9\-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com)[^\s]*)',
+      );
       final match = urlRegex.firstMatch(email);
       expect(match, isNotNull);
       expect(match!.group(0), 'https://meet.google.com/abc-xyz-def');
     });
 
-    test('WalkDao.getDistanceForDate aggregates walk distance for specific date', () async {
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final dateOnly = DateTime(yesterday.year, yesterday.month, yesterday.day, 10, 30);
+    test(
+      'WalkDao.getDistanceForDate aggregates walk distance for specific date',
+      () async {
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        final dateOnly = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day,
+          10,
+          30,
+        );
 
-      await db.walkDao.insertWalk(
-        WalkSessionTableCompanion.insert(
-          startTime: dateOnly,
-          endTime: drift.Value(dateOnly.add(const Duration(minutes: 30))),
-          distanceMeters: const drift.Value(3400.0),
-          durationSeconds: const drift.Value(1800),
-          isCompleted: const drift.Value(true),
-        ),
-      );
+        await db.walkDao.insertWalk(
+          WalkSessionTableCompanion.insert(
+            startTime: dateOnly,
+            endTime: drift.Value(dateOnly.add(const Duration(minutes: 30))),
+            distanceMeters: const drift.Value(3400.0),
+            durationSeconds: const drift.Value(1800),
+            isCompleted: const drift.Value(true),
+          ),
+        );
 
-      final distance = await db.walkDao.getDistanceForDate(yesterday);
-      expect(distance, 3400.0);
+        final distance = await db.walkDao.getDistanceForDate(yesterday);
+        expect(distance, 3400.0);
 
-      // Other dates should be 0.0
-      final todayDistance = await db.walkDao.getDistanceForDate(DateTime.now());
-      expect(todayDistance, 0.0);
-    });
+        // Other dates should be 0.0
+        final todayDistance = await db.walkDao.getDistanceForDate(
+          DateTime.now(),
+        );
+        expect(todayDistance, 0.0);
+      },
+    );
 
-    test('WaterDao.getWaterForDate aggregates water logged for specific date', () async {
-      final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final dateOnly = DateTime(yesterday.year, yesterday.month, yesterday.day);
+    test(
+      'WaterDao.getWaterForDate aggregates water logged for specific date',
+      () async {
+        final yesterday = DateTime.now().subtract(const Duration(days: 1));
+        final dateOnly = DateTime(
+          yesterday.year,
+          yesterday.month,
+          yesterday.day,
+        );
 
-      await db.into(db.waterLogTable).insert(
-        WaterLogTableCompanion.insert(
-          amountMl: 250,
-          date: dateOnly,
-        ),
-      );
-      await db.into(db.waterLogTable).insert(
-        WaterLogTableCompanion.insert(
-          amountMl: 500,
-          date: dateOnly,
-        ),
-      );
+        await db
+            .into(db.waterLogTable)
+            .insert(
+              WaterLogTableCompanion.insert(amountMl: 250, date: dateOnly),
+            );
+        await db
+            .into(db.waterLogTable)
+            .insert(
+              WaterLogTableCompanion.insert(amountMl: 500, date: dateOnly),
+            );
 
-      final totalMl = await db.waterDao.getWaterForDate(yesterday);
-      expect(totalMl, 750);
+        final totalMl = await db.waterDao.getWaterForDate(yesterday);
+        expect(totalMl, 750);
 
-      // Today should be 0 if nothing logged
-      final todayMl = await db.waterDao.getWaterForDate(DateTime.now());
-      expect(todayMl, 0);
-    });
+        // Today should be 0 if nothing logged
+        final todayMl = await db.waterDao.getWaterForDate(DateTime.now());
+        expect(todayMl, 0);
+      },
+    );
 
     test('New Day task roll-forward and planning', () async {
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
@@ -190,14 +213,19 @@ Please review system design and concurrency.
       await db.taskDao.updateTask(
         TaskTableCompanion(
           id: drift.Value(carriedId),
-          plannedDate: drift.Value(DateTime(today.year, today.month, today.day)),
+          plannedDate: drift.Value(
+            DateTime(today.year, today.month, today.day),
+          ),
           updatedAt: drift.Value(today),
         ),
       );
 
       final todayTasks = await db.taskDao.watchTodayTasks().first;
       expect(todayTasks.any((t) => t.id == carriedId), isTrue);
-      expect(todayTasks.firstWhere((t) => t.id == carriedId).title, 'Unfinished System Design Notes');
+      expect(
+        todayTasks.firstWhere((t) => t.id == carriedId).title,
+        'Unfinished System Design Notes',
+      );
     });
   });
 }

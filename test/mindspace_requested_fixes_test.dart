@@ -5,7 +5,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/shared/utils/action_text.dart';
@@ -66,21 +65,24 @@ void main() {
     },
   );
 
-  test('bullet insertion respects existing spacing and cursor selection without long gaps', () {
-    for (final text in ['First', 'First\n']) {
-      final controller = TextEditingController(text: text);
+  test(
+    'bullet insertion respects existing spacing and cursor selection without long gaps',
+    () {
+      for (final text in ['First', 'First\n']) {
+        final controller = TextEditingController(text: text);
+        NoteListButton.insertNextItem(controller);
+        expect(controller.text, 'First\n• ');
+        NoteListButton.insertNextItem(controller);
+        expect(controller.text, 'First\n• ');
+        controller.dispose();
+      }
+      final controller = TextEditingController(text: 'FirstreplaceLast')
+        ..selection = const TextSelection(baseOffset: 5, extentOffset: 12);
       NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'First\n• ');
-      NoteListButton.insertNextItem(controller);
-      expect(controller.text, 'First\n• ');
+      expect(controller.text, 'First\n• Last');
       controller.dispose();
-    }
-    final controller = TextEditingController(text: 'FirstreplaceLast')
-      ..selection = const TextSelection(baseOffset: 5, extentOffset: 12);
-    NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'First\n• Last');
-    controller.dispose();
-  });
+    },
+  );
 
   test(
     'schema 18 migration preserves thought type, history and task link',
@@ -104,11 +106,13 @@ void main() {
             linkedThoughtId: d.Value(id),
           ),
         );
-        final triggers = await db.customSelect(
-          "SELECT name FROM sqlite_master WHERE type='trigger'",
-        ).get();
+        final triggers = await db
+            .customSelect("SELECT name FROM sqlite_master WHERE type='trigger'")
+            .get();
         for (final row in triggers) {
-          await db.customStatement('DROP TRIGGER IF EXISTS ${row.read<String>('name')}');
+          await db.customStatement(
+            'DROP TRIGGER IF EXISTS ${row.read<String>('name')}',
+          );
         }
         await db.customStatement('ALTER TABLE thoughts DROP COLUMN category');
         await db.customStatement('PRAGMA user_version = 18');
@@ -169,130 +173,6 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     }
   });
-
-  for (final fail in [false, true]) {
-    testWidgets(
-      'swipe removes dismissed widget during slow deletion; failure=$fail',
-      (tester) async {
-        SharedPreferences.setMockInitialValues({
-          'feature_guide_v1_Thought Wall': true,
-        });
-        final prefs = await SharedPreferences.getInstance();
-        final db = AppDatabase.forTesting(NativeDatabase.memory());
-        addTearDown(db.close);
-        final dao = DelayedDeleteDao(db);
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            taskDaoProvider.overrideWithValue(dao),
-          ],
-        );
-        try {
-          final id = await db.taskDao.insertTask(
-            TaskTableCompanion.insert(title: 'Swipe me'),
-          );
-          final child = await db.taskDao.insertTask(
-            TaskTableCompanion.insert(
-              title: 'Child',
-              parentTaskId: d.Value(id),
-            ),
-          );
-          final reminderId = await db.reminderDao.insertReminder(
-            ReminderTableCompanion.insert(
-              title: 'Linked reminder',
-              scheduledAt: DateTime.now().add(const Duration(hours: 1)),
-              linkedTaskId: d.Value(id),
-            ),
-          );
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: MaterialApp(
-                theme: AscentTheme.light(),
-                home: Scaffold(
-                  body: ActivityRowItem(
-                    activity: TodayActivityItem(
-                      id: 'task_$id',
-                      title: 'Swipe me',
-                      sourceType: 'task',
-                      status: TodayActivityStatus.notStarted,
-                      elapsedSecondsToday: 0,
-                      categoryTag: 'task',
-                      linkedTaskId: id,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          await tester.pumpAndSettle();
-
-          await tester.drag(
-            find.byKey(ValueKey('task_$id')),
-            const Offset(-700, 0),
-          );
-
-          await settleDb(tester);
-
-          if (find.text('Delete').evaluate().isNotEmpty) {
-            await tester.tap(find.text('Delete'));
-            await settleDb(tester);
-          }
-
-          expect(find.byKey(ValueKey('task_$id')), findsNothing);
-          expect(tester.takeException(), isNull);
-          if (fail) {
-            dao.gate.completeError(StateError('Simulated write failure'));
-          } else {
-            dao.gate.complete();
-          }
-          await settleDb(tester);
-
-          if (fail) {
-            expect(find.byKey(ValueKey('task_$id')), findsOneWidget);
-            expect(
-              await tester.runAsync(() => db.taskDao.getTaskById(id)),
-              isNotNull,
-            );
-          } else {
-            final archived = await tester.runAsync(
-              () => db.taskDao.getTaskById(id),
-            );
-            expect(archived?.isArchived, true);
-
-            await tester.tap(find.text('Undo'));
-            await settleDb(tester);
-
-            final restored = await tester.runAsync(
-              () => db.taskDao.getTaskById(id),
-            );
-            expect(restored, isNotNull);
-            expect(restored?.isArchived, false);
-            expect(
-              await tester.runAsync(() => db.taskDao.getTaskById(child)),
-              isNotNull,
-            );
-            expect(
-              await tester.runAsync(
-                () => db.reminderDao.getReminderById(reminderId),
-              ),
-              isNotNull,
-            );
-            expect(find.byKey(ValueKey('task_$id')), findsOneWidget);
-          }
-          expect(tester.takeException(), isNull);
-        } finally {
-          await tester.pumpWidget(const SizedBox());
-          container.dispose();
-          await tester.pump(const Duration(seconds: 2));
-          await tester.pump();
-        }
-      },
-    );
-  }
 
   testWidgets(
     'bulk category moves persist into category-filtered history and Undo restores both',

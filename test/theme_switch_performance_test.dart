@@ -42,7 +42,9 @@ void main() {
     }
   });
 
-  testWidgets('Theme toggle does not throw exceptions or render error screen', (tester) async {
+  testWidgets('Theme toggle does not throw exceptions or render error screen', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(() {
@@ -56,12 +58,14 @@ void main() {
     });
     final prefs = await SharedPreferences.getInstance();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
-    await db.into(db.userProfileTable).insert(
-      UserProfileTableCompanion.insert(
-        name: 'Tester',
-        onboardingComplete: const Value(true),
-      ),
-    );
+    await db
+        .into(db.userProfileTable)
+        .insert(
+          UserProfileTableCompanion.insert(
+            name: 'Tester',
+            onboardingComplete: const Value(true),
+          ),
+        );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -97,8 +101,16 @@ void main() {
     // Pump intermediate frames during the 320ms AnimatedTheme transition
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 40));
-      expect(tester.takeException(), isNull, reason: 'Frame $i of theme switch threw exception');
-      expect(find.byType(ErrorWidget), findsNothing, reason: 'ErrorWidget shown at frame $i');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Frame $i of theme switch threw exception',
+      );
+      expect(
+        find.byType(ErrorWidget),
+        findsNothing,
+        reason: 'ErrorWidget shown at frame $i',
+      );
     }
 
     await tester.pump(const Duration(milliseconds: 500));
@@ -108,8 +120,16 @@ void main() {
     await tester.tap(toggleFinder);
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 40));
-      expect(tester.takeException(), isNull, reason: 'Frame $i of light switch threw exception');
-      expect(find.byType(ErrorWidget), findsNothing, reason: 'ErrorWidget shown at frame $i');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Frame $i of light switch threw exception',
+      );
+      expect(
+        find.byType(ErrorWidget),
+        findsNothing,
+        reason: 'ErrorWidget shown at frame $i',
+      );
     }
     await tester.pump(const Duration(milliseconds: 500));
     expect(tester.takeException(), isNull);

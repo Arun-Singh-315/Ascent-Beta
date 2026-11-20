@@ -32,7 +32,9 @@ void main() {
     'routines': 1,
     'unscheduled': 0,
     'overdue': 0,
-    'next_at': DateTime.now().add(const Duration(hours: 3)).millisecondsSinceEpoch ~/ 1000,
+    'next_at':
+        DateTime.now().add(const Duration(hours: 3)).millisecondsSinceEpoch ~/
+        1000,
     'pending_alerts': 0,
   });
 
@@ -48,7 +50,9 @@ void main() {
     'routines': 1,
     'unscheduled': 0,
     'overdue': 0,
-    'next_at': DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/ 1000,
+    'next_at':
+        DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch ~/
+        1000,
     'pending_alerts': 0,
   });
 
@@ -66,9 +70,7 @@ void main() {
           child: MaterialApp(
             theme: AscentTheme.light(),
             home: const Scaffold(
-              body: SingleChildScrollView(
-                child: HomePlansPreview(),
-              ),
+              body: SingleChildScrollView(child: HomePlansPreview()),
             ),
           ),
         ),
@@ -127,9 +129,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: const Scaffold(
-                body: SingleChildScrollView(
-                  child: HomePlansPreview(),
-                ),
+                body: SingleChildScrollView(child: HomePlansPreview()),
               ),
             ),
           ),

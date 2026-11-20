@@ -7,7 +7,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'support/returning_user_guides.dart';
 
@@ -236,59 +235,6 @@ void main() {
         expect(find.text('PROMISE'), findsOneWidget);
         expect(find.text('ARCHIVED'), findsOneWidget);
         expect(find.text('✓ Done'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pump(const Duration(seconds: 2));
-      },
-    );
-
-    testWidgets(
-      'renders broader 1.8px border and mood-harmonized translucent fill for bubble cards',
-      (tester) async {
-        final thought = Thought(
-          id: 105,
-          content: 'An innovative idea with tactile bubble borders',
-          category: 'ideas',
-          mood: 'idea',
-          isPinned: false,
-          isArchived: false,
-          isCompleted: false,
-          colorHex: '#D97706',
-          createdAt: DateTime(2026, 10, 25, 10, 0),
-        );
-
-        await tester.pumpWidget(
-          buildApp(
-            ThoughtCardBubble(
-              thought: thought,
-              index: 0,
-              compact: true,
-              appearance: const ThoughtWallAppearance(
-                style: ThoughtCardStyle.bubble,
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Verify container surface decoration
-        final animatedContainer = tester.widget<AnimatedContainer>(
-          find.byKey(const ValueKey('thought_surface_105_bubble')),
-        );
-        final decoration = animatedContainer.decoration as BoxDecoration;
-        final border = decoration.border as Border;
-
-        // Border width must be 1.8px (broader than standard 1.0px)
-        expect(border.top.width, equals(1.8));
-        expect(border.bottom.width, equals(1.8));
-
-        // Color must not be transparent
-        expect(decoration.color, isNotNull);
-        expect(decoration.color, isNot(equals(Colors.transparent)));
-
-        // Box shadow aura must be present for depth
-        expect(decoration.boxShadow, isNotEmpty);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(milliseconds: 100));

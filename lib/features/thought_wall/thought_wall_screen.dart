@@ -1449,8 +1449,30 @@ if (!mounted || result == null) return;
                             : (todayFestival != null
                                   ? Icons.auto_awesome_rounded
                                   : Icons.bubble_chart_rounded),
-                        actionLabel: 'Drop a Thought',
+                        actionLabel: 'Write a thought',
                         onAction: () => _focusNode.requestFocus(),
+                        starters: _categoryFilter == 'archived'
+                            ? const []
+                            : [
+                                for (final prompt in const [
+                                  'One thing I\'m grateful for',
+                                  'An idea I don\'t want to lose',
+                                  'What\'s on my mind right now',
+                                ])
+                                  EmptyStarter(
+                                    label: prompt,
+                                    icon: Icons.edit_outlined,
+                                    onTap: () {
+                                      _inputController.text = '$prompt: ';
+                                      _inputController.selection =
+                                          TextSelection.collapsed(
+                                            offset:
+                                                _inputController.text.length,
+                                          );
+                                      _focusNode.requestFocus();
+                                    },
+                                  ),
+                              ],
                       ),
                     );
                   }

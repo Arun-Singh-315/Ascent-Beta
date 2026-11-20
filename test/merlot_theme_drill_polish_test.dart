@@ -30,13 +30,13 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
 class _FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 7200,
-        yesterdaySeconds: 7200,
-        priorStreakDays: 5,
-        historicalLongestStreak: 5,
-        historicalShortestStreak: 1,
-        now: DateTime.now(),
-      );
+    todaySeconds: 7200,
+    yesterdaySeconds: 7200,
+    priorStreakDays: 5,
+    historicalLongestStreak: 5,
+    historicalShortestStreak: 1,
+    now: DateTime.now(),
+  );
 }
 
 void main() {
@@ -77,7 +77,11 @@ void main() {
     lastOpenedAt: null,
   );
 
-  Widget buildTestableWidget(Widget child, {ThemeData? theme, List<Thought>? thoughts}) {
+  Widget buildTestableWidget(
+    Widget child, {
+    ThemeData? theme,
+    List<Thought>? thoughts,
+  }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
@@ -91,13 +95,18 @@ void main() {
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
         allChallengesProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider
-            .overrideWith((ref) => Stream.value(null)),
-        todayMomentumCommitmentsStreamProvider
-            .overrideWith((ref) => Stream.value([])),
-        recentThoughtsStreamProvider.overrideWith((ref) => Stream.value(thoughts ?? [])),
-        userProfileStreamProvider
-            .overrideWith((ref) => Stream.value(testProfile)),
+        activeMomentumChallengeStreamProvider.overrideWith(
+          (ref) => Stream.value(null),
+        ),
+        todayMomentumCommitmentsStreamProvider.overrideWith(
+          (ref) => Stream.value([]),
+        ),
+        recentThoughtsStreamProvider.overrideWith(
+          (ref) => Stream.value(thoughts ?? []),
+        ),
+        userProfileStreamProvider.overrideWith(
+          (ref) => Stream.value(testProfile),
+        ),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
         todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
       ],
@@ -106,335 +115,380 @@ void main() {
   }
 
   group('Merlot Theme Drill & Polish Tests', () {
-    testWidgets('1. Streak chip text has high contrast in both Merlot light and dark modes', (tester) async {
-      // Light Merlot
-      await tester.pumpWidget(
-        buildTestableWidget(
-          Scaffold(body: HomeHeader(profile: testProfile)),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+    testWidgets(
+      '1. Streak chip text has high contrast in both Merlot light and dark modes',
+      (tester) async {
+        // Light Merlot
+        await tester.pumpWidget(
+          buildTestableWidget(
+            Scaffold(body: HomeHeader(profile: testProfile)),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final flameFinder = find.byIcon(Icons.local_fire_department_rounded);
-      expect(flameFinder, findsOneWidget);
-      final streakPillFinder = find.ancestor(
-        of: flameFinder,
-        matching: find.byType(GestureDetector),
-      );
-      expect(streakPillFinder, findsOneWidget);
-      final streakText = tester.widget<Text>(
-        find.descendant(of: streakPillFinder, matching: find.byType(Text)),
-      );
-      expect(streakText.style?.color, isNotNull);
+        final flameFinder = find.byIcon(Icons.local_fire_department_rounded);
+        expect(flameFinder, findsOneWidget);
+        final streakPillFinder = find.ancestor(
+          of: flameFinder,
+          matching: find.byType(GestureDetector),
+        );
+        expect(streakPillFinder, findsOneWidget);
+        final streakText = tester.widget<Text>(
+          find.descendant(of: streakPillFinder, matching: find.byType(Text)),
+        );
+        expect(streakText.style?.color, isNotNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
 
-      // Dark Merlot
-      await tester.pumpWidget(
-        buildTestableWidget(
-          Scaffold(body: HomeHeader(profile: testProfile)),
-          theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        // Dark Merlot
+        await tester.pumpWidget(
+          buildTestableWidget(
+            Scaffold(body: HomeHeader(profile: testProfile)),
+            theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final darkFlameFinder = find.byIcon(Icons.local_fire_department_rounded);
-      expect(darkFlameFinder, findsOneWidget);
-      final darkStreakPillFinder = find.ancestor(
-        of: darkFlameFinder,
-        matching: find.byType(GestureDetector),
-      );
-      expect(darkStreakPillFinder, findsOneWidget);
-      final darkStreakText = tester.widget<Text>(
-        find.descendant(of: darkStreakPillFinder, matching: find.byType(Text)),
-      );
-      expect(darkStreakText.style?.color, isNotNull);
+        final darkFlameFinder = find.byIcon(
+          Icons.local_fire_department_rounded,
+        );
+        expect(darkFlameFinder, findsOneWidget);
+        final darkStreakPillFinder = find.ancestor(
+          of: darkFlameFinder,
+          matching: find.byType(GestureDetector),
+        );
+        expect(darkStreakPillFinder, findsOneWidget);
+        final darkStreakText = tester.widget<Text>(
+          find.descendant(
+            of: darkStreakPillFinder,
+            matching: find.byType(Text),
+          ),
+        );
+        expect(darkStreakText.style?.color, isNotNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('2. DayOneTutorialDialog renders without overflowing at 320px with 2.0x text scale and dismisses cleanly', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          Builder(
-            builder: (ctx) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => DayOneTutorialDialog.show(ctx, userName: 'Arun Singh'),
-                  child: const Text('Open'),
+    testWidgets(
+      '2. DayOneTutorialDialog renders without overflowing at 320px with 2.0x text scale and dismisses cleanly',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            Builder(
+              builder: (ctx) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        DayOneTutorialDialog.show(ctx, userName: 'Arun Singh'),
+                    child: const Text('Open'),
+                  ),
                 ),
               ),
             ),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      // Open dialog
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        // Open dialog
+        await tester.tap(find.text('Open'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(DayOneTutorialDialog), findsOneWidget);
-      expect(find.text("You’re home, Arun."), findsOneWidget);
-      expect(find.text('What would make today feel worthwhile?'), findsOneWidget);
+        expect(find.byType(DayOneTutorialDialog), findsOneWidget);
+        expect(find.text("You’re home, Arun."), findsOneWidget);
+        expect(
+          find.text('What would make today feel worthwhile?'),
+          findsOneWidget,
+        );
 
-      // Dismiss dialog via close button
-      await tester.tap(find.byTooltip('Explore on my own'));
-      await tester.pumpAndSettle();
+        // Dismiss dialog via close button
+        await tester.tap(find.byTooltip('Explore on my own'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(DayOneTutorialDialog), findsNothing);
-      expect(prefs.getBool(DayOneTutorialDialog.prefKey), isTrue);
+        expect(find.byType(DayOneTutorialDialog), findsNothing);
+        expect(prefs.getBool(DayOneTutorialDialog.prefKey), isTrue);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('3. QuickModulesNavHub renders seamless bento cells without nested AppCard rounded boxes', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(
-              child: QuickModulesNavHub(),
+    testWidgets(
+      '3. QuickModulesNavHub renders seamless bento cells without nested AppCard rounded boxes',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: QuickModulesNavHub()),
             ),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(find.text('Daily rhythm'), findsOneWidget);
-      expect(find.text('Medicine'), findsOneWidget);
-      expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('Daily rhythm'), findsOneWidget);
+        expect(find.text('Medicine'), findsOneWidget);
+        expect(find.text('Hydration'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('4. LearningHubCard Explore button uses contrasting onPrimary in dark Merlot mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(
-              child: LearningHubCard(),
+    testWidgets(
+      '4. LearningHubCard Explore button uses contrasting onPrimary in dark Merlot mode',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: LearningHubCard()),
             ),
+            theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
           ),
-          theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
-      expect(buttonFinder, findsOneWidget);
-      final button = tester.widget<FilledButton>(buttonFinder);
-      expect(button.style?.foregroundColor?.resolve({}), equals(MerlotPalette.darkCanvas));
+        final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
+        expect(buttonFinder, findsOneWidget);
+        final button = tester.widget<FilledButton>(buttonFinder);
+        expect(
+          button.style?.foregroundColor?.resolve({}),
+          equals(MerlotPalette.darkCanvas),
+        );
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('6. UI Overflow Immunity at 320px width with 2.0x text scale for Home widgets', (tester) async {
-      tester.view.physicalSize = const Size(320 * 3, 800 * 3);
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      '6. UI Overflow Immunity at 320px width with 2.0x text scale for Home widgets',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 3, 800 * 3);
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      await tester.pumpWidget(
-        buildTestableWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              textScaler: TextScaler.linear(2.0),
-              size: Size(320, 800),
-            ),
-            child: Scaffold(
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    HomeHeader(profile: testProfile),
-                    const QuickModulesNavHub(),
-                    const LearningHubCard(),
-                  ],
+        await tester.pumpWidget(
+          buildTestableWidget(
+            MediaQuery(
+              data: const MediaQueryData(
+                textScaler: TextScaler.linear(2.0),
+                size: Size(320, 800),
+              ),
+              child: Scaffold(
+                body: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      HomeHeader(profile: testProfile),
+                      const QuickModulesNavHub(),
+                      const LearningHubCard(),
+                    ],
+                  ),
                 ),
               ),
             ),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('7. LearningHubCard Explore button is light in light Merlot and Frozen Sky modes', (tester) async {
-      // Light Merlot
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(
-              child: LearningHubCard(),
+    testWidgets(
+      '7. LearningHubCard Explore button is light in light Merlot and Frozen Sky modes',
+      (tester) async {
+        // Light Merlot
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: LearningHubCard()),
             ),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
-      expect(buttonFinder, findsOneWidget);
-      final button = tester.widget<FilledButton>(buttonFinder);
-      expect(button.style?.backgroundColor?.resolve({}), equals(MerlotPalette.pillSoft));
-      expect(button.style?.foregroundColor?.resolve({}), equals(MerlotPalette.action));
+        final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
+        expect(buttonFinder, findsOneWidget);
+        final button = tester.widget<FilledButton>(buttonFinder);
+        expect(
+          button.style?.backgroundColor?.resolve({}),
+          equals(MerlotPalette.pillSoft),
+        );
+        expect(
+          button.style?.foregroundColor?.resolve({}),
+          equals(MerlotPalette.action),
+        );
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
 
-      // Light Frozen Sky
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(
-              child: LearningHubCard(),
+        // Light Frozen Sky
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: LearningHubCard()),
             ),
+            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
-      final frozenButtonFinder = find.widgetWithText(FilledButton, 'Explore');
-      expect(frozenButtonFinder, findsOneWidget);
-      final frozenButton = tester.widget<FilledButton>(frozenButtonFinder);
-      expect(frozenButton.style?.backgroundColor?.resolve({}), equals(FrozenPalette.pillSoft));
-      expect(frozenButton.style?.foregroundColor?.resolve({}), equals(FrozenPalette.action));
+        final frozenButtonFinder = find.widgetWithText(FilledButton, 'Explore');
+        expect(frozenButtonFinder, findsOneWidget);
+        final frozenButton = tester.widget<FilledButton>(frozenButtonFinder);
+        expect(
+          frozenButton.style?.backgroundColor?.resolve({}),
+          equals(FrozenPalette.pillSoft),
+        );
+        expect(
+          frozenButton.style?.foregroundColor?.resolve({}),
+          equals(FrozenPalette.action),
+        );
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('8. ThoughtWallHomePreview uses matching faint bubbles in Merlot and Frozen Sky', (tester) async {
-      final tId = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Deep mind space reflection'),
-      );
-      final t = (await db.thoughtDao.getThoughtById(tId))!;
+    testWidgets(
+      '8. ThoughtWallHomePreview uses matching faint bubbles in Merlot and Frozen Sky',
+      (tester) async {
+        final tId = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: 'Deep mind space reflection'),
+        );
+        final t = (await db.thoughtDao.getThoughtById(tId))!;
 
-      // Merlot light keeps a faint accent tint inside the bubble.
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+        // Merlot light keeps a faint accent tint inside the bubble.
+        await tester.pumpWidget(
+          buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+            ),
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            thoughts: [t],
           ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-          thoughts: [t],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
-      expect(cardFinder, findsOneWidget);
+        final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
+        expect(cardFinder, findsOneWidget);
 
-      final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
-      expect(bubbleFinder, findsOneWidget);
-      final bubble = tester.widget<Container>(bubbleFinder);
-      final merlotBox = bubble.decoration! as BoxDecoration;
-      expect(merlotBox.color, isNotNull);
-      expect(merlotBox.border, isNotNull);
-      expect(merlotBox.gradient, isNull);
+        final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
+        expect(bubbleFinder, findsOneWidget);
+        final bubble = tester.widget<Container>(bubbleFinder);
+        final merlotBox = bubble.decoration! as BoxDecoration;
+        expect(merlotBox.color, isNotNull);
+        expect(merlotBox.border, isNotNull);
+        expect(merlotBox.gradient, isNull);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
 
-      // Frozen Sky uses the same geometry with transparent bubble and hard border.
-      await tester.pumpWidget(
-        buildTestableWidget(
-          const Scaffold(
-            body: SingleChildScrollView(child: ThoughtWallHomePreview()),
-          ),
-          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-          thoughts: [t],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final frozenCardFinder = find.byKey(const ValueKey('home_mind_space_card'));
-      expect(frozenCardFinder, findsOneWidget);
-
-      final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
-      expect(frozenBubbleFinder, findsOneWidget);
-      final frozenBubble = tester.widget<Container>(frozenBubbleFinder);
-      final frozenBox = frozenBubble.decoration! as BoxDecoration;
-      expect(frozenBox.gradient, isNull);
-      expect(frozenBox.color, isNotNull);
-      expect(frozenBox.border, isNotNull);
-      expect(frozenBox.borderRadius, merlotBox.borderRadius);
-
-      // Thought text follows the theme ink on the light tint.
-      final thoughtTextFinder = find.textContaining(t.content);
-      expect(thoughtTextFinder, findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
-
-    testWidgets('9. ThoughtWallHomePreview is immune to overflows at 320px width with 2.0x text scale', (tester) async {
-      tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      final tId = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Important reflection about daily routines and priorities',
-          isPinned: const drift.Value(true),
-        ),
-      );
-      final t = (await db.thoughtDao.getThoughtById(tId))!;
-
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(
-            size: Size(320, 800),
-            textScaler: TextScaler.linear(2.0),
-          ),
-          child: buildTestableWidget(
+        // Frozen Sky uses the same geometry with transparent bubble and hard border.
+        await tester.pumpWidget(
+          buildTestableWidget(
             const Scaffold(
               body: SingleChildScrollView(child: ThoughtWallHomePreview()),
             ),
             theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
             thoughts: [t],
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(const ValueKey('home_mind_space_card')), findsOneWidget);
-      expect(find.byKey(ValueKey('home_thought_$tId')), findsOneWidget);
+        final frozenCardFinder = find.byKey(
+          const ValueKey('home_mind_space_card'),
+        );
+        expect(frozenCardFinder, findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
+        expect(frozenBubbleFinder, findsOneWidget);
+        final frozenBubble = tester.widget<Container>(frozenBubbleFinder);
+        final frozenBox = frozenBubble.decoration! as BoxDecoration;
+        expect(frozenBox.gradient, isNull);
+        expect(frozenBox.color, isNotNull);
+        expect(frozenBox.border, isNotNull);
+        expect(frozenBox.borderRadius, merlotBox.borderRadius);
+
+        // Thought text follows the theme ink on the light tint.
+        final thoughtTextFinder = find.textContaining(t.content);
+        expect(thoughtTextFinder, findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
+
+    testWidgets(
+      '9. ThoughtWallHomePreview is immune to overflows at 320px width with 2.0x text scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final tId = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Important reflection about daily routines and priorities',
+            isPinned: const drift.Value(true),
+          ),
+        );
+        final t = (await db.thoughtDao.getThoughtById(tId))!;
+
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(
+              size: Size(320, 800),
+              textScaler: TextScaler.linear(2.0),
+            ),
+            child: buildTestableWidget(
+              const Scaffold(
+                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+              ),
+              theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+              thoughts: [t],
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byKey(const ValueKey('home_mind_space_card')),
+          findsOneWidget,
+        );
+        expect(find.byKey(ValueKey('home_thought_$tId')), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 }

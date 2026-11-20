@@ -124,14 +124,8 @@ void main() {
         // Both bubbles have defined fill and border.
         final bubble0 = tester.widget<Container>(thought0Finder);
         final bubble1 = tester.widget<Container>(thought1Finder);
-        expect(
-          (bubble0.decoration! as BoxDecoration).color,
-          isNotNull,
-        );
-        expect(
-          (bubble1.decoration! as BoxDecoration).color,
-          isNotNull,
-        );
+        expect((bubble0.decoration! as BoxDecoration).color, isNotNull);
+        expect((bubble1.decoration! as BoxDecoration).color, isNotNull);
 
         // Verify left / right asymmetric chat margins
         final padding0 = tester.widget<Padding>(
@@ -225,6 +219,12 @@ void main() {
 
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
         expect(scaffold.floatingActionButton, isNull);
+        // The assistant card is the last Home section (CLAUDE.md §5.1).
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('home_assistant_button')),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(
           find.byKey(const ValueKey('home_assistant_button')),
           findsOneWidget,

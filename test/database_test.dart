@@ -41,7 +41,9 @@ void main() {
           name: 'Jane Doe',
           targetRole: const drift.Value('Senior Flutter Engineer'),
           targetCompanies: drift.Value(jsonEncode(['Google', 'Stripe'])),
-          interviewDate: drift.Value(DateTime.now().add(const Duration(days: 45))),
+          interviewDate: drift.Value(
+            DateTime.now().add(const Duration(days: 45)),
+          ),
         ),
       );
 
@@ -108,7 +110,11 @@ void main() {
 
     test('ConsistencyDao computes streak and logs day accurately', () async {
       final today = DateTime.now();
-      await db.consistencyDao.logDay(today, true, note: 'Solved 2 hard problems');
+      await db.consistencyDao.logDay(
+        today,
+        true,
+        note: 'Solved 2 hard problems',
+      );
 
       final todayLog = await db.consistencyDao.getTodayLog();
       expect(todayLog, isNotNull);
@@ -138,31 +144,36 @@ void main() {
       expect(updatedAll.first.revisitFlag, isFalse);
     });
 
-    test('ApplicationDao records status history and streams updates reactively', () async {
-      final appId = await db.applicationDao.insertApplication(
-        ApplicationTableCompanion.insert(
-          company: 'Stripe',
-          role: 'Staff Engineer',
-          currentStage: drift.Value(ApplicationStage.applied.name),
-        ),
-      );
+    test(
+      'ApplicationDao records status history and streams updates reactively',
+      () async {
+        final appId = await db.applicationDao.insertApplication(
+          ApplicationTableCompanion.insert(
+            company: 'Stripe',
+            role: 'Staff Engineer',
+            currentStage: drift.Value(ApplicationStage.applied.name),
+          ),
+        );
 
-      await db.applicationDao.recordStatusChange(
-        appId,
-        ApplicationStage.interview,
-        notes: 'Recruiter screen scheduled',
-      );
+        await db.applicationDao.recordStatusChange(
+          appId,
+          ApplicationStage.interview,
+          notes: 'Recruiter screen scheduled',
+        );
 
-      final updatedApp = await db.applicationDao.watchApplicationById(appId).first;
-      expect(updatedApp, isNotNull);
-      expect(updatedApp!.currentStage, ApplicationStage.interview.name);
+        final updatedApp = await db.applicationDao
+            .watchApplicationById(appId)
+            .first;
+        expect(updatedApp, isNotNull);
+        expect(updatedApp!.currentStage, ApplicationStage.interview.name);
 
-      final history = await db.applicationDao.watchStatusHistory(appId).first;
-      expect(history.length, 2);
-      expect(history.first.stage, ApplicationStage.interview.name);
-      expect(history.first.notes, 'Recruiter screen scheduled');
-      expect(history.last.stage, ApplicationStage.applied.name);
-    });
+        final history = await db.applicationDao.watchStatusHistory(appId).first;
+        expect(history.length, 2);
+        expect(history.first.stage, ApplicationStage.interview.name);
+        expect(history.first.notes, 'Recruiter screen scheduled');
+        expect(history.last.stage, ApplicationStage.applied.name);
+      },
+    );
 
     test('TimeSessionDao tracks session lifecycle and duration', () async {
       await db.timeSessionDao.ensureDefaultCategories();
@@ -196,33 +207,38 @@ void main() {
       active = await db.timeSessionDao.getActiveSession();
       expect(active, isNull);
 
-      final dateSessions = await db.timeSessionDao.getSessionsForDate(DateTime.now());
+      final dateSessions = await db.timeSessionDao.getSessionsForDate(
+        DateTime.now(),
+      );
       final session = dateSessions.firstWhere((s) => s.id == sessionId);
       expect(session.status, 'completed');
       expect(session.endedAt, isNotNull);
     });
 
-    test('TaskDao watchTasksForApplication filters by linkedApplicationId', () async {
-      final task1 = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Review Google offer',
-          linkedApplicationId: const drift.Value(42),
-        ),
-      );
-      final task2 = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Review Stripe offer',
-          linkedApplicationId: const drift.Value(99),
-        ),
-      );
+    test(
+      'TaskDao watchTasksForApplication filters by linkedApplicationId',
+      () async {
+        final task1 = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Review Google offer',
+            linkedApplicationId: const drift.Value(42),
+          ),
+        );
+        final task2 = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Review Stripe offer',
+            linkedApplicationId: const drift.Value(99),
+          ),
+        );
 
-      final googleTasks = await db.taskDao.watchTasksForApplication(42).first;
-      expect(googleTasks.length, 1);
-      expect(googleTasks.first.id, task1);
+        final googleTasks = await db.taskDao.watchTasksForApplication(42).first;
+        expect(googleTasks.length, 1);
+        expect(googleTasks.first.id, task1);
 
-      final stripeTasks = await db.taskDao.watchTasksForApplication(99).first;
-      expect(stripeTasks.length, 1);
-      expect(stripeTasks.first.id, task2);
-    });
+        final stripeTasks = await db.taskDao.watchTasksForApplication(99).first;
+        expect(stripeTasks.length, 1);
+        expect(stripeTasks.first.id, task2);
+      },
+    );
   });
 }

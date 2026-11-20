@@ -21,23 +21,14 @@ Widget _buildTestApp({
   List<dynamic> overrides = const [],
 }) {
   return ProviderScope(
-    overrides: [
-      ...overrides.cast(),
-    ],
+    overrides: [...overrides.cast()],
     child: MaterialApp(
       theme: AscentTheme.dark(),
       home: MediaQuery(
-        data: MediaQueryData(
-          size: Size(width, height),
-          textScaler: textScaler,
-        ),
+        data: MediaQueryData(size: Size(width, height), textScaler: textScaler),
         child: Scaffold(
           body: Center(
-            child: SizedBox(
-              width: width,
-              height: height,
-              child: child,
-            ),
+            child: SizedBox(width: width, height: height, child: child),
           ),
         ),
       ),
@@ -52,14 +43,17 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({
-      'ascent_vault_master_pin_hash_v1': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      'ascent_vault_master_pin_hash_v1':
+          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
       'ascent_vault_master_pin_salt_v1': 'testsalt12345678',
     });
     prefs = await SharedPreferences.getInstance();
   });
 
   group('Vault UI & Accessibility Tests', () {
-    testWidgets('VaultHomePreview complies with Rule 18 heading styling', (tester) async {
+    testWidgets('VaultHomePreview complies with Rule 18 heading styling', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildTestApp(
           overrides: [
@@ -79,44 +73,52 @@ void main() {
       expect(titleWidget.style?.fontWeight, equals(FontWeight.w700));
     });
 
-    testWidgets('VaultHomePreview is immune to overflow at 320px with 2.0x text scale (Rule 13)', (tester) async {
-      final errors = <FlutterErrorDetails>[];
-      final originalOnError = FlutterError.onError;
-      FlutterError.onError = (details) => errors.add(details);
+    testWidgets(
+      'VaultHomePreview is immune to overflow at 320px with 2.0x text scale (Rule 13)',
+      (tester) async {
+        final errors = <FlutterErrorDetails>[];
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (details) => errors.add(details);
 
-      try {
-        await tester.pumpWidget(
-          _buildTestApp(
-            width: 320,
-            height: 600,
-            textScaler: const TextScaler.linear(2.0),
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              vaultItemCountProvider.overrideWith((ref) => 12),
-            ],
-            child: const SingleChildScrollView(
-              child: VaultHomePreview(),
+        try {
+          await tester.pumpWidget(
+            _buildTestApp(
+              width: 320,
+              height: 600,
+              textScaler: const TextScaler.linear(2.0),
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(prefs),
+                vaultItemCountProvider.overrideWith((ref) => 12),
+              ],
+              child: const SingleChildScrollView(child: VaultHomePreview()),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.text('Vault'), findsOneWidget);
-        expect(find.text('Encrypted & Locked'), findsOneWidget);
+          expect(find.text('Vault'), findsOneWidget);
+          expect(find.text('Encrypted & Locked'), findsOneWidget);
 
-        final overflowErrors = errors.where((e) => e.toString().contains('overflowed')).toList();
-        expect(overflowErrors, isEmpty, reason: 'Found RenderFlex overflow at 320px 2.0x scale: $overflowErrors');
-      } finally {
-        FlutterError.onError = originalOnError;
-      }
-    });
+          final overflowErrors = errors
+              .where((e) => e.toString().contains('overflowed'))
+              .toList();
+          expect(
+            overflowErrors,
+            isEmpty,
+            reason:
+                'Found RenderFlex overflow at 320px 2.0x scale: $overflowErrors',
+          );
+        } finally {
+          FlutterError.onError = originalOnError;
+        }
+      },
+    );
 
-    testWidgets('VaultLockView renders keypad and accepts PIN input', (tester) async {
+    testWidgets('VaultLockView renders keypad and accepts PIN input', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildTestApp(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: const VaultLockView(),
         ),
       );
@@ -125,7 +127,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ascent Vault is Locked'), findsOneWidget);
-      expect(find.text('Enter your Master PIN or use Biometrics'), findsOneWidget);
+      expect(
+        find.text('Enter your Master PIN or use Biometrics'),
+        findsOneWidget,
+      );
 
       // Verify keypad digits 0-9
       for (int i = 0; i <= 9; i++) {
@@ -153,37 +158,44 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     });
 
-    testWidgets('VaultLockView 320px width at 2.0x scale has zero overflow (Rule 13)', (tester) async {
-      final errors = <FlutterErrorDetails>[];
-      final originalOnError = FlutterError.onError;
-      FlutterError.onError = (details) => errors.add(details);
+    testWidgets(
+      'VaultLockView 320px width at 2.0x scale has zero overflow (Rule 13)',
+      (tester) async {
+        final errors = <FlutterErrorDetails>[];
+        final originalOnError = FlutterError.onError;
+        FlutterError.onError = (details) => errors.add(details);
 
-      try {
-        await tester.pumpWidget(
-          _buildTestApp(
-            width: 320,
-            height: 700,
-            textScaler: const TextScaler.linear(2.0),
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: const SingleChildScrollView(
-              child: VaultLockView(),
+        try {
+          await tester.pumpWidget(
+            _buildTestApp(
+              width: 320,
+              height: 700,
+              textScaler: const TextScaler.linear(2.0),
+              overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+              child: const SingleChildScrollView(child: VaultLockView()),
             ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pumpAndSettle();
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.pumpAndSettle();
 
-        final overflowErrors = errors.where((e) => e.toString().contains('overflowed')).toList();
-        expect(overflowErrors, isEmpty, reason: 'RenderFlex overflow in VaultLockView: $overflowErrors');
-      } finally {
-        FlutterError.onError = originalOnError;
-      }
-    });
+          final overflowErrors = errors
+              .where((e) => e.toString().contains('overflowed'))
+              .toList();
+          expect(
+            overflowErrors,
+            isEmpty,
+            reason: 'RenderFlex overflow in VaultLockView: $overflowErrors',
+          );
+        } finally {
+          FlutterError.onError = originalOnError;
+        }
+      },
+    );
 
-    testWidgets('VaultItemCard displays virtual card and ID styling', (tester) async {
+    testWidgets('VaultItemCard displays virtual card and ID styling', (
+      tester,
+    ) async {
       final cardItem = VaultItem(
         id: 1,
         title: 'HDFC Regalia Gold',
@@ -201,13 +213,8 @@ void main() {
 
       await tester.pumpWidget(
         _buildTestApp(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: VaultItemCard(
-            item: cardItem,
-            onTap: () {},
-          ),
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: VaultItemCard(item: cardItem, onTap: () {}),
         ),
       );
       await tester.pumpAndSettle();
@@ -225,7 +232,9 @@ void main() {
       expect(find.text('4111 4242 4242 4242'), findsOneWidget);
     });
 
-    testWidgets('VaultScreen displays locked view when session is locked', (tester) async {
+    testWidgets('VaultScreen displays locked view when session is locked', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildTestApp(
           overrides: [
@@ -243,64 +252,66 @@ void main() {
       expect(find.byType(VaultLockView), findsOneWidget);
     });
 
-    testWidgets('VaultHomePreview follows theme in day and dark modes without hardcoded white', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            vaultItemCountProvider.overrideWith((ref) => 2),
-            vaultSessionUnlockedProvider.overrideWith(
-              VaultSessionUnlockedNotifier.new,
-            ),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-            home: const Scaffold(
-              body: VaultHomePreview(),
+    testWidgets(
+      'VaultHomePreview follows theme in day and dark modes without hardcoded white',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              vaultItemCountProvider.overrideWith((ref) => 2),
+              vaultSessionUnlockedProvider.overrideWith(
+                VaultSessionUnlockedNotifier.new,
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+              home: const Scaffold(body: VaultHomePreview()),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final cardFinder = find.byKey(const ValueKey('home_vault_card'));
-      expect(cardFinder, findsOneWidget);
+        final cardFinder = find.byKey(const ValueKey('home_vault_card'));
+        expect(cardFinder, findsOneWidget);
 
-      final glassWidget = tester.widget<GlassSurface>(cardFinder);
-      // Ensures no hardcoded white or static overrides are forced
-      expect(glassWidget.fillColor, isNull);
-    });
+        final glassWidget = tester.widget<GlassSurface>(cardFinder);
+        // Ensures no hardcoded white or static overrides are forced
+        expect(glassWidget.fillColor, isNull);
+      },
+    );
 
-    testWidgets('VaultItemEditorSheet validates inputs and rejects empty fields', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: VaultItemEditorSheet(
-                  initialCategory: VaultCategory.card,
+    testWidgets(
+      'VaultItemEditorSheet validates inputs and rejects empty fields',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  child: VaultItemEditorSheet(
+                    initialCategory: VaultCategory.card,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Tap Secure & Save to Vault with empty form
-      final saveBtn = find.text('Secure & Save to Vault');
-      expect(saveBtn, findsOneWidget);
-      await tester.ensureVisible(saveBtn);
-      await tester.tap(saveBtn);
-      await tester.pumpAndSettle();
+        // Tap Secure & Save to Vault with empty form
+        final saveBtn = find.text('Secure & Save to Vault');
+        expect(saveBtn, findsOneWidget);
+        await tester.ensureVisible(saveBtn);
+        await tester.tap(saveBtn);
+        await tester.pumpAndSettle();
 
-      // Both title and card number errors should trigger
-      expect(find.text('Title cannot be left empty'), findsOneWidget);
-      expect(find.text('Card number cannot be left empty'), findsOneWidget);
-    });
+        // Both title and card number errors should trigger
+        expect(find.text('Title cannot be left empty'), findsOneWidget);
+        expect(find.text('Card number cannot be left empty'), findsOneWidget);
+      },
+    );
   });
 }

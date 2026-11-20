@@ -46,19 +46,28 @@ void main() {
         final notifier = container.read(chaiBreakProvider.notifier);
 
         // 1. Initial mode defaults to mindfulPause
-        expect(container.read(chaiBreakProvider).mode, ChaiBreakMode.mindfulPause);
+        expect(
+          container.read(chaiBreakProvider).mode,
+          ChaiBreakMode.mindfulPause,
+        );
         expect(container.read(chaiBreakProvider).linkedTaskId, isNull);
 
         // 2. Switch to studyWithMe mode
         notifier.setMode(ChaiBreakMode.studyWithMe);
-        expect(container.read(chaiBreakProvider).mode, ChaiBreakMode.studyWithMe);
+        expect(
+          container.read(chaiBreakProvider).mode,
+          ChaiBreakMode.studyWithMe,
+        );
         // Default study preset should be 25 minutes (1500s)
         expect(container.read(chaiBreakProvider).totalDurationSeconds, 1500);
 
         // 3. Link a task from Things
         notifier.linkTask(42, 'Algorithms Practice');
         expect(container.read(chaiBreakProvider).linkedTaskId, 42);
-        expect(container.read(chaiBreakProvider).linkedTaskTitle, 'Algorithms Practice');
+        expect(
+          container.read(chaiBreakProvider).linkedTaskTitle,
+          'Algorithms Practice',
+        );
 
         // 4. Start 25m study timer
         notifier.setPresetMinutes(25);
@@ -95,7 +104,9 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
             ],
             child: const MaterialApp(home: ChaiBreakScreen()),
           ),
@@ -138,7 +149,9 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
             ],
             child: MaterialApp(
               home: MediaQuery(

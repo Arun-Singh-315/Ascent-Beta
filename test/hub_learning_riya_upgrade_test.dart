@@ -48,59 +48,62 @@ void main() {
   });
 
   group('Additive Multi-Course Learning Hub Models Tests', () {
-    test('Course calculates duration, progress, and lecture counts from modules', () {
-      final module1 = CourseModule(
-        id: 1,
-        title: 'Module 1: Foundations',
-        lectures: [
-          Lecture(
-            id: 1,
-            moduleId: 1,
-            moduleTitle: 'Module 1: Foundations',
-            title: 'Intro',
-            durationSeconds: 600, // 10 mins
-            isCompleted: true,
-          ),
-          Lecture(
-            id: 2,
-            moduleId: 1,
-            moduleTitle: 'Module 1: Foundations',
-            title: 'Setup',
-            durationSeconds: 1200, // 20 mins
-            isCompleted: false,
-          ),
-        ],
-      );
+    test(
+      'Course calculates duration, progress, and lecture counts from modules',
+      () {
+        final module1 = CourseModule(
+          id: 1,
+          title: 'Module 1: Foundations',
+          lectures: [
+            Lecture(
+              id: 1,
+              moduleId: 1,
+              moduleTitle: 'Module 1: Foundations',
+              title: 'Intro',
+              durationSeconds: 600, // 10 mins
+              isCompleted: true,
+            ),
+            Lecture(
+              id: 2,
+              moduleId: 1,
+              moduleTitle: 'Module 1: Foundations',
+              title: 'Setup',
+              durationSeconds: 1200, // 20 mins
+              isCompleted: false,
+            ),
+          ],
+        );
 
-      final module2 = CourseModule(
-        id: 2,
-        title: 'Module 2: Advanced Concepts',
-        lectures: [
-          Lecture(
-            id: 3,
-            moduleId: 2,
-            moduleTitle: 'Module 2: Advanced Concepts',
-            title: 'Deep Dive',
-            durationSeconds: 1800, // 30 mins
-            isCompleted: false,
-          ),
-        ],
-      );
+        final module2 = CourseModule(
+          id: 2,
+          title: 'Module 2: Advanced Concepts',
+          lectures: [
+            Lecture(
+              id: 3,
+              moduleId: 2,
+              moduleTitle: 'Module 2: Advanced Concepts',
+              title: 'Deep Dive',
+              durationSeconds: 1800, // 30 mins
+              isCompleted: false,
+            ),
+          ],
+        );
 
-      final course = Course(
-        id: 'test_course_1',
-        title: 'Flutter Advanced',
-        modules: [module1, module2],
-      );
+        final course = Course(
+          id: 'test_course_1',
+          title: 'Flutter Advanced',
+          modules: [module1, module2],
+        );
 
-      expect(course.totalLectures, 3);
-      expect(course.completedLectures, 1);
-      expect(course.remainingLectures, 2);
-      expect(course.totalDurationSeconds, 3600); // 1 hour
-      expect(course.formattedTotalDuration, '1h 0m');
-      expect(course.progressPercent, 33);
-      expect(course.nextLecture?.title, 'Setup');
-    });
+        expect(course.totalLectures, 3);
+        expect(course.completedLectures, 1);
+        expect(course.remainingLectures, 2);
+        expect(course.totalDurationSeconds, 3600); // 1 hour
+        expect(course.formattedTotalDuration, '1h 0m');
+        expect(course.progressPercent, 33);
+        expect(course.nextLecture?.title, 'Setup');
+      },
+    );
 
     test('Course serialization to and from JSON is lossless', () {
       final original = Course(
@@ -135,118 +138,172 @@ void main() {
       expect(restored.modules.first.lectures.first.title, 'JVM Internals');
     });
 
-    test('buildCompleteJava2026Course seeds all 37 lectures from Engineering Digest playlist', () {
-      final javaCourse = buildCompleteJava2026Course();
-      expect(javaCourse.id, 'java_programming_2026');
-      expect(javaCourse.title, 'Complete Java Programming Course 2026');
-      expect(javaCourse.author, 'Engineering Digest');
-      expect(javaCourse.modules.length, 4);
+    test(
+      'buildCompleteJava2026Course seeds all 37 lectures from Engineering Digest playlist',
+      () {
+        final javaCourse = buildCompleteJava2026Course();
+        expect(javaCourse.id, 'java_programming_2026');
+        expect(javaCourse.title, 'Complete Java Programming Course 2026');
+        expect(javaCourse.author, 'Engineering Digest');
+        expect(javaCourse.modules.length, 4);
 
-      final totalLectures = javaCourse.modules.expand((m) => m.lectures).length;
-      expect(totalLectures, 37);
+        final totalLectures = javaCourse.modules
+            .expand((m) => m.lectures)
+            .length;
+        expect(totalLectures, 37);
 
-      final firstLec = javaCourse.modules.first.lectures.first;
-      expect(firstLec.title, 'How to Install Java OpenJDK on Windows 11');
-      expect(firstLec.durationSeconds, 708);
+        final firstLec = javaCourse.modules.first.lectures.first;
+        expect(firstLec.title, 'How to Install Java OpenJDK on Windows 11');
+        expect(firstLec.durationSeconds, 708);
 
-      final lastLec = javaCourse.modules.last.lectures.last;
-      expect(lastLec.title, 'Java String vs StringBuilder vs StringBuffer: Best Practices & Performance');
-      expect(lastLec.durationSeconds, 795);
-    });
+        final lastLec = javaCourse.modules.last.lectures.last;
+        expect(
+          lastLec.title,
+          'Java String vs StringBuilder vs StringBuffer: Best Practices & Performance',
+        );
+        expect(lastLec.durationSeconds, 795);
+      },
+    );
   });
 
   group('AI Riya Natural Language Parsing & Intent Upgrade Tests', () {
     final aiEngine = LocalDeterministicAiEngine();
 
     test('Parses "need to call saurabh at 2" with time and reminder', () {
-      final parsed = aiEngine.tryParseActivityOrTask('need to call saurabh at 2');
+      final parsed = aiEngine.tryParseActivityOrTask(
+        'need to call saurabh at 2',
+      );
       expect(parsed, isNotNull);
       expect(parsed!['title'], contains('call saurabh'));
       expect(parsed['kind'], 'todo');
       expect(parsed['reminderTime'], isNotNull);
     });
 
-    test('Parses "complete java spring boot today" as high priority today task', () {
-      final parsed = aiEngine.tryParseActivityOrTask('complete java spring boot today');
-      expect(parsed, isNotNull);
-      expect(parsed!['title'], contains('java spring boot'));
-      expect(parsed['priority'], 'high');
-    });
+    test(
+      'Parses "complete java spring boot today" as high priority today task',
+      () {
+        final parsed = aiEngine.tryParseActivityOrTask(
+          'complete java spring boot today',
+        );
+        expect(parsed, isNotNull);
+        expect(parsed!['title'], contains('java spring boot'));
+        expect(parsed['priority'], 'high');
+      },
+    );
 
     test('Parses "need to finish java tutorial today"', () {
-      final parsed = aiEngine.tryParseActivityOrTask('need to finish java tutorial today');
+      final parsed = aiEngine.tryParseActivityOrTask(
+        'need to finish java tutorial today',
+      );
       expect(parsed, isNotNull);
       expect(parsed!['title'], contains('java tutorial'));
       expect(parsed['kind'], 'todo');
     });
 
     test('Parses "add todo need to complete java"', () {
-      final parsed = aiEngine.tryParseActivityOrTask('add todo need to complete java');
+      final parsed = aiEngine.tryParseActivityOrTask(
+        'add todo need to complete java',
+      );
       expect(parsed, isNotNull);
       expect(parsed!['title'], contains('complete java'));
       expect(parsed['kind'], 'todo');
     });
 
-    test('Parses "I want to exercise for 30 minutes after waking up" as timed activity', () {
-      final parsed = aiEngine.tryParseActivityOrTask('I want to exercise for 30 minutes after waking up');
-      expect(parsed, isNotNull);
-      expect(parsed!['title'], contains('exercise'));
-      expect(parsed['kind'], 'duration');
-      expect(parsed['estimatedMinutes'], 30);
-    });
+    test(
+      'Parses "I want to exercise for 30 minutes after waking up" as timed activity',
+      () {
+        final parsed = aiEngine.tryParseActivityOrTask(
+          'I want to exercise for 30 minutes after waking up',
+        );
+        expect(parsed, isNotNull);
+        expect(parsed!['title'], contains('exercise'));
+        expect(parsed['kind'], 'duration');
+        expect(parsed['estimatedMinutes'], 30);
+      },
+    );
 
-    test('Parses "remind me to apply for jobs tomorrow morning" with date & reminder', () {
-      final parsed = aiEngine.tryParseActivityOrTask('remind me to apply for jobs tomorrow morning');
-      expect(parsed, isNotNull);
-      expect(parsed!['title'], contains('apply for jobs'));
-      expect(parsed['kind'], 'todo');
-      expect(parsed['reminderTime'], isNotNull);
-    });
+    test(
+      'Parses "remind me to apply for jobs tomorrow morning" with date & reminder',
+      () {
+        final parsed = aiEngine.tryParseActivityOrTask(
+          'remind me to apply for jobs tomorrow morning',
+        );
+        expect(parsed, isNotNull);
+        expect(parsed!['title'], contains('apply for jobs'));
+        expect(parsed['kind'], 'todo');
+        expect(parsed['reminderTime'], isNotNull);
+      },
+    );
 
-    test('Parses "I need to study Java for two hours today" as 120min duration activity', () {
-      final parsed = aiEngine.tryParseActivityOrTask('I need to study Java for two hours today');
-      expect(parsed, isNotNull);
-      expect(parsed!['title'], contains('study Java'));
-      expect(parsed['kind'], 'duration');
-      expect(parsed['estimatedMinutes'], 120);
-    });
+    test(
+      'Parses "I need to study Java for two hours today" as 120min duration activity',
+      () {
+        final parsed = aiEngine.tryParseActivityOrTask(
+          'I need to study Java for two hours today',
+        );
+        expect(parsed, isNotNull);
+        expect(parsed!['title'], contains('study Java'));
+        expect(parsed['kind'], 'duration');
+        expect(parsed['estimatedMinutes'], 120);
+      },
+    );
 
     test('Parses "add a task to call my friend" as to-do', () {
-      final parsed = aiEngine.tryParseActivityOrTask('add a task to call my friend');
+      final parsed = aiEngine.tryParseActivityOrTask(
+        'add a task to call my friend',
+      );
       expect(parsed, isNotNull);
       expect(parsed!['title'], contains('call my friend'));
       expect(parsed['kind'], 'todo');
     });
 
-    test('Identifies task query prompts like "What are my tasks today?" and "show my todo"', () {
-      expect(aiEngine.tryParseActivityOrTask('What are my tasks today?'), isNull);
-      expect(aiEngine.tryParseActivityOrTask('show my todo'), isNull);
-      expect(aiEngine.tryParseActivityOrTask('what are my reminders'), isNull);
-    });
+    test(
+      'Identifies task query prompts like "What are my tasks today?" and "show my todo"',
+      () {
+        expect(
+          aiEngine.tryParseActivityOrTask('What are my tasks today?'),
+          isNull,
+        );
+        expect(aiEngine.tryParseActivityOrTask('show my todo'), isNull);
+        expect(
+          aiEngine.tryParseActivityOrTask('what are my reminders'),
+          isNull,
+        );
+      },
+    );
   });
 
   group('Learning Hub Started State Tests', () {
-    test('LearningHubState defaults hasStartedLearning to false when not started', () {
-      final course = buildDefaultSpringBootCourse();
-      final state = LearningHubState(
-        courses: [course],
-        activeCourseId: course.id,
-        activeLectureId: 1,
-        hasStartedLearning: false,
-      );
-      expect(state.hasStartedLearning, isFalse);
+    test(
+      'LearningHubState defaults hasStartedLearning to false when not started',
+      () {
+        final course = buildDefaultSpringBootCourse();
+        final state = LearningHubState(
+          courses: [course],
+          activeCourseId: course.id,
+          activeLectureId: 1,
+          hasStartedLearning: false,
+        );
+        expect(state.hasStartedLearning, isFalse);
 
-      final started = state.copyWith(hasStartedLearning: true);
-      expect(started.hasStartedLearning, isTrue);
-    });
+        final started = state.copyWith(hasStartedLearning: true);
+        expect(started.hasStartedLearning, isTrue);
+      },
+    );
   });
 
   group('Day Mode Composed Color Tokens Tests', () {
-    test('AscentColors secondary accent and warning are calm, composed, and non-glaring in day mode', () {
-      // Day mode colors should not be harsh screaming high-saturation red/orange
-      expect(ascent_colors.AscentColors.accentSecondary.toARGB32(), 0xFF8A513E);
-      expect(ascent_colors.AscentColors.stateWarning.toARGB32(), 0xFFB46824);
-      expect(ascent_colors.AscentColors.stateDanger.toARGB32(), 0xFFBA433C);
-    });
+    test(
+      'AscentColors secondary accent and warning are calm, composed, and non-glaring in day mode',
+      () {
+        // Day mode colors should not be harsh screaming high-saturation red/orange
+        expect(
+          ascent_colors.AscentColors.accentSecondary.toARGB32(),
+          0xFF8A513E,
+        );
+        expect(ascent_colors.AscentColors.stateWarning.toARGB32(), 0xFFB46824);
+        expect(ascent_colors.AscentColors.stateDanger.toARGB32(), 0xFFBA433C);
+      },
+    );
   });
 }

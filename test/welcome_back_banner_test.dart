@@ -39,32 +39,31 @@ void main() {
     },
   );
 
-  testWidgets(
-    'WelcomeBackBanner auto-dismisses after visibleFor duration',
-    (tester) async {
-      var dismissed = false;
+  testWidgets('WelcomeBackBanner auto-dismisses after visibleFor duration', (
+    tester,
+  ) async {
+    var dismissed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: Scaffold(
-            body: WelcomeBackBanner(
-              days: 1,
-              visibleFor: const Duration(seconds: 2),
-              onDismissed: () => dismissed = true,
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AscentTheme.dark(),
+        home: Scaffold(
+          body: WelcomeBackBanner(
+            days: 1,
+            visibleFor: const Duration(seconds: 2),
+            onDismissed: () => dismissed = true,
           ),
         ),
-      );
+      ),
+    );
 
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Welcome back! You were away 1 day.'), findsOneWidget);
-      expect(dismissed, isFalse);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Welcome back! You were away 1 day.'), findsOneWidget);
+    expect(dismissed, isFalse);
 
-      // Advance clock past duration
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pumpAndSettle();
-      expect(dismissed, isTrue);
-    },
-  );
+    // Advance clock past duration
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(dismissed, isTrue);
+  });
 }

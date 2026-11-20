@@ -137,7 +137,9 @@ void main() {
         expect(find.byKey(const ValueKey('group_dose_task_2')), findsNothing);
 
         // Tap the medicine group to expand it
-        await tester.tap(find.byKey(const ValueKey('medicine_group_Paracetamol')));
+        await tester.tap(
+          find.byKey(const ValueKey('medicine_group_Paracetamol')),
+        );
         await tester.pumpAndSettle();
 
         // All 3 doses should now be visible inline
@@ -146,7 +148,9 @@ void main() {
         expect(find.byKey(const ValueKey('group_dose_task_3')), findsOneWidget);
 
         // Tap again to collapse
-        await tester.tap(find.byKey(const ValueKey('medicine_group_Paracetamol')));
+        await tester.tap(
+          find.byKey(const ValueKey('medicine_group_Paracetamol')),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byKey(const ValueKey('group_dose_task_2')), findsNothing);
@@ -176,10 +180,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: Scaffold(
-                body: ActivityRowItem(
-                  activity: futureActivity,
-                  compact: true,
-                ),
+                body: ActivityRowItem(activity: futureActivity, compact: true),
               ),
             ),
           ),
@@ -187,7 +188,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // The "Done" button should NOT be present!
-        expect(find.byKey(const ValueKey('activity_action_task_future')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('activity_action_task_future')),
+          findsNothing,
+        );
 
         // The scheduled time badge should be visible
         expect(
@@ -196,11 +200,16 @@ void main() {
         );
 
         // Tapping the scheduled badge displays the explanatory snackbar
-        await tester.tap(find.byKey(const ValueKey('activity_scheduled_task_future')));
+        await tester.tap(
+          find.byKey(const ValueKey('activity_scheduled_task_future')),
+        );
         await tester.pump();
 
         expect(find.textContaining('Scheduled for'), findsOneWidget);
-        expect(find.textContaining('You can complete it once that time arrives'), findsOneWidget);
+        expect(
+          find.textContaining('You can complete it once that time arrives'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -225,10 +234,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: Scaffold(
-                body: ActivityRowItem(
-                  activity: dueActivity,
-                  compact: true,
-                ),
+                body: ActivityRowItem(activity: dueActivity, compact: true),
               ),
             ),
           ),
@@ -236,8 +242,14 @@ void main() {
         await tester.pumpAndSettle();
 
         // The "Done" button SHOULD be present when time has arrived!
-        expect(find.byKey(const ValueKey('activity_action_task_due')), findsOneWidget);
-        expect(find.byKey(const ValueKey('activity_scheduled_task_due')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('activity_action_task_due')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('activity_scheduled_task_due')),
+          findsNothing,
+        );
       },
     );
 
@@ -261,10 +273,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: Scaffold(
-                body: ActivityRowItem(
-                  activity: futureActivity,
-                  compact: false,
-                ),
+                body: ActivityRowItem(activity: futureActivity, compact: false),
               ),
             ),
           ),
@@ -303,10 +312,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: Scaffold(
-                body: ActivityRowItem(
-                  activity: futureActivity,
-                  compact: false,
-                ),
+                body: ActivityRowItem(activity: futureActivity, compact: false),
               ),
             ),
           ),
@@ -369,9 +375,9 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.dark(),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(2.0),
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
               home: Scaffold(
@@ -393,7 +399,11 @@ void main() {
         expect(tester.takeException(), isNull);
 
         // Tap to expand
-        await tester.tap(find.byKey(const ValueKey('medicine_group_Long Medicine Name Tablet')));
+        await tester.tap(
+          find.byKey(
+            const ValueKey('medicine_group_Long Medicine Name Tablet'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Verify zero exceptions even when expanded at 320px with 2.0x text scale

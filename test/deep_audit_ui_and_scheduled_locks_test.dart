@@ -133,7 +133,9 @@ void main() {
           findsOneWidget,
         );
 
-        final logs = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).get();
+        final logs = await (db.select(
+          db.medicineLogTable,
+        )..where((l) => l.id.equals(logId))).get();
         expect(logs.first.isTaken, isFalse);
       },
     );
@@ -181,7 +183,9 @@ void main() {
         await tester.tap(find.text('Take'));
         await tester.pumpAndSettle();
 
-        final logs = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).get();
+        final logs = await (db.select(
+          db.medicineLogTable,
+        )..where((l) => l.id.equals(logId))).get();
         expect(logs.first.isTaken, isTrue);
       },
     );
@@ -304,35 +308,36 @@ void main() {
   });
 
   group('Accessibility & Rule 13 Immunity Tests', () {
-    testWidgets('MedicineScreen renders cleanly at 320px with 2.0x text scale', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320 * 2, 700 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
+    testWidgets(
+      'MedicineScreen renders cleanly at 320px with 2.0x text scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 2, 700 * 2);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 700),
-                textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(320, 700),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: const MedicineScreen(),
               ),
-              child: const MedicineScreen(),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('PromiseCard renders cleanly at 320px with 2.0x text scale', (
       tester,

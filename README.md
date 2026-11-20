@@ -1,17 +1,15 @@
-# Ascent - Job Prep Companion App
+# Ascent — your personal OS
 
-> **Your personal job-search operating system.**  
-> A calm, local-first, empathetic mobile application designed to turn job preparation and interview hunting into a structured, stress-free engineering practice.
+> **One calm, premium place to plan your day, capture your thoughts, take care of yourself and grow.**
+> Offline-first: everything works on your device; online features (sync, weather, an online assistant, integrations) are optional extras.
 
-Next update planning: [Your Home, Connected Projects](docs/NEXT_UPDATE_PLAN.md) — Home customization first, followed by connections between existing tools.
+Hero surfaces: **Home** (your day at a glance), **Things Hub** (plan), **Thought Wall / Mind Space** (think). Product, design and engineering rules: [CLAUDE.md](CLAUDE.md).
 
 ---
 
 ## Documentation
 
 See the [documentation index](docs/README.md) for current architecture, design conventions, components, feature entry points and historical release evidence.
-
-The [Mind Space feedback plan](docs/MIND_SPACE_FEEDBACK_PLAN.md) covers the latest eleven feedback notes and proposed acceptance cases. It is a planning document; those changes have not been implemented yet.
 
 ---
 

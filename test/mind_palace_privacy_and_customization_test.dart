@@ -22,244 +22,262 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    testWidgets('Locked private promise displays privacy shield on Home Thought preview', (tester) async {
-      final now = DateTime.now();
-      final privateThought = Thought(
-        id: 99,
-        content: 'Secret personal commitment',
-        promptQuestion: 'secret personal commitment',
-        mood: 'promise',
-        category: 'personal',
-        colorHex: '#2D2D3A',
-        isPinned: false,
-        isCompleted: false,
-        isArchived: false,
-        createdAt: now,
-      );
+    testWidgets(
+      'Locked private promise displays privacy shield on Home Thought preview',
+      (tester) async {
+        final now = DateTime.now();
+        final privateThought = Thought(
+          id: 99,
+          content: 'Secret personal commitment',
+          promptQuestion: 'secret personal commitment',
+          mood: 'promise',
+          category: 'personal',
+          colorHex: '#2D2D3A',
+          isPinned: false,
+          isCompleted: false,
+          isArchived: false,
+          createdAt: now,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([privateThought]),
+              ),
+              privatePromiseIdsProvider.overrideWith((ref) => {99}),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Content should NOT be visible
+        expect(find.text('Secret personal commitment'), findsNothing);
+        // Privacy lock shield should be displayed
+        expect(find.byType(LockedCommitmentTile), findsOneWidget);
+        expect(find.text('Private commitment'), findsOneWidget);
+        expect(find.text('PRIVATE PROMISE'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Unlocked private promise reveals content and deduplicates prompt case-insensitively',
+      (tester) async {
+        final now = DateTime.now();
+        final thought = Thought(
+          id: 99,
+          content:
+              'Kissi se baat ni krni dec tk group mein gayab and work . ❤️',
+          promptQuestion:
+              'kissi se baat ni krni dec tk group mein gayab and work . ❤️',
+          mood: 'promise',
+          category: 'personal',
+          colorHex: '#2D2D3A',
+          isPinned: false,
+          isCompleted: false,
+          isArchived: false,
+          createdAt: now,
+        );
+
+        final container = ProviderContainer(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([privateThought])),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => Stream.value([thought]),
+            ),
             privatePromiseIdsProvider.overrideWith((ref) => {99}),
           ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(),
+        );
+
+        // Unlock it
+        container.read(unlockedPromiseIdsProvider.notifier).unlock(99);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Content should NOT be visible
-      expect(find.text('Secret personal commitment'), findsNothing);
-      // Privacy lock shield should be displayed
-      expect(find.byType(LockedCommitmentTile), findsOneWidget);
-      expect(find.text('Private commitment'), findsOneWidget);
-      expect(find.text('PRIVATE PROMISE'), findsOneWidget);
-    });
+        // Should show the unlocked badge
+        expect(find.text('UNLOCKED PROMISE'), findsOneWidget);
+        // Standalone prompt Text widget should be deduplicated (not shown)
+        final standalonePrompt = find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              (widget.data?.toLowerCase().contains('kissi se baat') ?? false),
+        );
+        expect(standalonePrompt, findsNothing);
+      },
+    );
 
-    testWidgets('Unlocked private promise reveals content and deduplicates prompt case-insensitively', (tester) async {
-      final now = DateTime.now();
-      final thought = Thought(
-        id: 99,
-        content: 'Kissi se baat ni krni dec tk group mein gayab and work . ❤️',
-        promptQuestion: 'kissi se baat ni krni dec tk group mein gayab and work . ❤️',
-        mood: 'promise',
-        category: 'personal',
-        colorHex: '#2D2D3A',
-        isPinned: false,
-        isCompleted: false,
-        isArchived: false,
-        createdAt: now,
-      );
+    testWidgets(
+      'Mind Palace card style button opens style sheet and customizes fill and border',
+      (tester) async {
+        final now = DateTime.now();
+        final thought = Thought(
+          id: 1,
+          content: 'i can & i will 🔥',
+          promptQuestion: null,
+          mood: 'thought',
+          category: 'general',
+          colorHex: '#2D2D3A',
+          isPinned: false,
+          isCompleted: false,
+          isArchived: false,
+          createdAt: now,
+        );
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          privatePromiseIdsProvider.overrideWith((ref) => {99}),
-        ],
-      );
-
-      // Unlock it
-      container.read(unlockedPromiseIdsProvider.notifier).unlock(99);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([thought]),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Should show the unlocked badge
-      expect(find.text('UNLOCKED PROMISE'), findsOneWidget);
-      // Standalone prompt Text widget should be deduplicated (not shown)
-      final standalonePrompt = find.byWidgetPredicate(
-        (widget) => widget is Text && (widget.data?.toLowerCase().contains('kissi se baat') ?? false),
-      );
-      expect(standalonePrompt, findsNothing);
-    });
+        // Find style customize button
+        final styleBtn = find.byKey(
+          const ValueKey('home_mind_palace_style_btn'),
+        );
+        expect(styleBtn, findsOneWidget);
 
-    testWidgets('Mind Palace card style button opens style sheet and customizes fill and border', (tester) async {
-      final now = DateTime.now();
-      final thought = Thought(
-        id: 1,
-        content: 'i can & i will 🔥',
-        promptQuestion: null,
-        mood: 'thought',
-        category: 'general',
-        colorHex: '#2D2D3A',
-        isPinned: false,
-        isCompleted: false,
-        isArchived: false,
-        createdAt: now,
-      );
+        await tester.tap(styleBtn);
+        await tester.pumpAndSettle();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(),
-              ),
+        // Style bottom sheet should appear
+        expect(find.text('Mind Palace Card Style'), findsOneWidget);
+        expect(find.text('Coloured Fill'), findsOneWidget);
+        expect(find.text('Border Only'), findsOneWidget);
+        expect(find.text('Thin (1px)'), findsOneWidget);
+        expect(find.text('Standard'), findsOneWidget);
+        expect(find.text('Bold (2.6px)'), findsOneWidget);
+
+        // Tap Border Only
+        await tester.tap(find.text('Border Only'));
+        await tester.pumpAndSettle();
+        expect(prefs.getBool('home_thought_bubble_filled'), isFalse);
+
+        // Tap Bold (2.6px)
+        await tester.tap(find.text('Bold (2.6px)'));
+        await tester.pumpAndSettle();
+        expect(prefs.getDouble('home_thought_bubble_border_width'), 2.6);
+      },
+    );
+
+    testWidgets(
+      'ThoughtWallAppearanceSheet allows customizing Card Background and Border Thickness',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(body: ThoughtWallAppearanceSheet()),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Find style customize button
-      final styleBtn = find.byKey(const ValueKey('home_mind_palace_style_btn'));
-      expect(styleBtn, findsOneWidget);
+        expect(find.text('Wall appearance'), findsOneWidget);
+        expect(find.text('CARD BACKGROUND'), findsOneWidget);
+        expect(find.text('BORDER THICKNESS'), findsOneWidget);
+        expect(find.text('Coloured Fill'), findsOneWidget);
+        expect(find.text('Border Only'), findsOneWidget);
 
-      await tester.tap(styleBtn);
-      await tester.pumpAndSettle();
+        // Select Border Only in Thought Wall appearance
+        await tester.tap(find.text('Border Only'));
+        await tester.pumpAndSettle();
+        expect(prefs.getBool('home_thought_bubble_filled'), isFalse);
 
-      // Style bottom sheet should appear
-      expect(find.text('Mind Palace Card Style'), findsOneWidget);
-      expect(find.text('Coloured Fill'), findsOneWidget);
-      expect(find.text('Border Only'), findsOneWidget);
-      expect(find.text('Thin (1px)'), findsOneWidget);
-      expect(find.text('Standard'), findsOneWidget);
-      expect(find.text('Bold (2.6px)'), findsOneWidget);
+        // Select Thin (1px) in Thought Wall appearance
+        await tester.tap(find.text('Thin (1px)'));
+        await tester.pumpAndSettle();
+        expect(prefs.getDouble('home_thought_bubble_border_width'), 1.0);
+      },
+    );
 
-      // Tap Border Only
-      await tester.tap(find.text('Border Only'));
-      await tester.pumpAndSettle();
-      expect(prefs.getBool('home_thought_bubble_filled'), isFalse);
+    testWidgets(
+      'Rule 13: 320px width and 2.0x accessibility text scale immunity',
+      (tester) async {
+        final now = DateTime.now();
+        final thought = Thought(
+          id: 99,
+          content:
+              'A long philosophical reflection on life, priorities, focus and progress.',
+          promptQuestion: 'What is truly essential for peace of mind today?',
+          mood: 'promise',
+          category: 'personal',
+          colorHex: '#2D2D3A',
+          isPinned: false,
+          isCompleted: false,
+          isArchived: false,
+          createdAt: now,
+        );
 
-      // Tap Bold (2.6px)
-      await tester.tap(find.text('Bold (2.6px)'));
-      await tester.pumpAndSettle();
-      expect(prefs.getDouble('home_thought_bubble_border_width'), 2.6);
-    });
+        tester.view.physicalSize = const Size(320 * 2, 700 * 2);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
 
-    testWidgets('ThoughtWallAppearanceSheet allows customizing Card Background and Border Thickness', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: ThoughtWallAppearanceSheet(),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('Wall appearance'), findsOneWidget);
-      expect(find.text('CARD BACKGROUND'), findsOneWidget);
-      expect(find.text('BORDER THICKNESS'), findsOneWidget);
-      expect(find.text('Coloured Fill'), findsOneWidget);
-      expect(find.text('Border Only'), findsOneWidget);
-
-      // Select Border Only in Thought Wall appearance
-      await tester.tap(find.text('Border Only'));
-      await tester.pumpAndSettle();
-      expect(prefs.getBool('home_thought_bubble_filled'), isFalse);
-
-      // Select Thin (1px) in Thought Wall appearance
-      await tester.tap(find.text('Thin (1px)'));
-      await tester.pumpAndSettle();
-      expect(prefs.getDouble('home_thought_bubble_border_width'), 1.0);
-    });
-
-    testWidgets('Rule 13: 320px width and 2.0x accessibility text scale immunity', (tester) async {
-      final now = DateTime.now();
-      final thought = Thought(
-        id: 99,
-        content: 'A long philosophical reflection on life, priorities, focus and progress.',
-        promptQuestion: 'What is truly essential for peace of mind today?',
-        mood: 'promise',
-        category: 'personal',
-        colorHex: '#2D2D3A',
-        isPinned: false,
-        isCompleted: false,
-        isArchived: false,
-        createdAt: now,
-      );
-
-      tester.view.physicalSize = const Size(320 * 2, 700 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(() {
-        tester.view.resetPhysicalSize();
-        tester.view.resetDevicePixelRatio();
-      });
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-            privatePromiseIdsProvider.overrideWith((ref) => {99}),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 700),
-                textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([thought]),
               ),
-              child: const Scaffold(
-                body: SingleChildScrollView(
-                  child: ThoughtWallHomePreview(),
+              privatePromiseIdsProvider.overrideWith((ref) => {99}),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(320, 700),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: const Scaffold(
+                  body: SingleChildScrollView(child: ThoughtWallHomePreview()),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Expect no overflow exceptions
-      expect(tester.takeException(), isNull);
-    });
+        // Expect no overflow exceptions
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

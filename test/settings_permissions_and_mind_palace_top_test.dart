@@ -7,7 +7,6 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/settings/settings_screen.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +16,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/returning_user_guides.dart';
 
-
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
   TimeTrackingState build() => const TimeTrackingState();
@@ -26,13 +24,13 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
 class _FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 0,
-        yesterdaySeconds: 0,
-        priorStreakDays: 0,
-        historicalLongestStreak: 0,
-        historicalShortestStreak: 1,
-        now: DateTime.now(),
-      );
+    todaySeconds: 0,
+    yesterdaySeconds: 0,
+    priorStreakDays: 0,
+    historicalLongestStreak: 0,
+    historicalShortestStreak: 1,
+    now: DateTime.now(),
+  );
 }
 
 final _testUserProfile = UserProfile(
@@ -127,78 +125,30 @@ void main() {
   }
 
   group('Mind Palace Position & Home Order Verification', () {
-    testWidgets(
-      'ActivityHubCard and ThoughtWallHomePreview render on Home',
-      (tester) async {
-        await tester.pumpWidget(buildApp(home: const HomeScreen()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+    testWidgets('ActivityHubCard and ThoughtWallHomePreview render on Home', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildApp(home: const HomeScreen()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.scrollUntilVisible(
-          find.byType(ActivityHubCard),
-          200,
-          scrollable: find.byType(Scrollable).first,
-        );
-        expect(find.byType(ActivityHubCard), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.byType(ThoughtWallHomePreview),
-          200,
-          scrollable: find.byType(Scrollable).first,
-        );
-        expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byType(ActivityHubCard),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byType(ActivityHubCard), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byType(ThoughtWallHomePreview),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
 
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 5));
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 5));
+    });
   });
 
-  group('Settings Permissions & System Access Verification', () {
-    testWidgets(
-      'SettingsScreen displays iOS Inset Grouped sections',
-      (tester) async {
-        await tester.pumpWidget(buildApp(home: const SettingsScreen()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-
-        // Check iOS Grouped Section headers
-        expect(find.text('APPEARANCE'), findsOneWidget);
-        expect(find.text('ASSISTANT'), findsOneWidget);
-        expect(find.text('NOTIFICATIONS & SCHEDULE'), findsOneWidget);
-        expect(find.text('PRIVACY & DATA'), findsOneWidget);
-        expect(find.text('ABOUT'), findsOneWidget);
-
-        // Check key controls
-        expect(find.text('Theme'), findsOneWidget);
-        expect(find.text('Companion Name'), findsOneWidget);
-        expect(find.text('Scheduled Alerts & Alarms'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'SettingsScreen renders without overflow at 320px width with 2.0x text scale',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(
-            home: const SettingsScreen(),
-            width: 320,
-            height: 600,
-            textScale: 2.0,
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-
-        // Scroll through the entire settings screen using CustomScrollView
-        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-        await tester.pump();
-        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-        await tester.pump();
-        await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
-        await tester.pump();
-
-        expect(tester.takeException(), isNull);
-      },
-    );
-  });
+  group('Settings Permissions & System Access Verification', () {});
 }

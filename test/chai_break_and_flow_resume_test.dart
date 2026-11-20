@@ -36,49 +36,46 @@ void main() {
   });
 
   group('Chai & Coffee Break Sanctuary Tests', () {
-    test(
-      'ChaiBreakNotifier stays idle until explicitly started',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-        );
-        final notifier = container.read(chaiBreakProvider.notifier);
+    test('ChaiBreakNotifier stays idle until explicitly started', () async {
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+      );
+      final notifier = container.read(chaiBreakProvider.notifier);
 
-        expect(container.read(chaiBreakProvider).totalDurationSeconds, 600);
-        expect(container.read(chaiBreakProvider).remainingSeconds, 600);
-        expect(container.read(chaiBreakProvider).isRunning, false);
-        expect(container.read(chaiBreakProvider).hasStarted, false);
-        expect(
-          container.read(chaiBreakProvider).selectedSoundscape,
-          SoundscapePreset.tapriCafeRain,
-        );
+      expect(container.read(chaiBreakProvider).totalDurationSeconds, 600);
+      expect(container.read(chaiBreakProvider).remainingSeconds, 600);
+      expect(container.read(chaiBreakProvider).isRunning, false);
+      expect(container.read(chaiBreakProvider).hasStarted, false);
+      expect(
+        container.read(chaiBreakProvider).selectedSoundscape,
+        SoundscapePreset.tapriCafeRain,
+      );
 
-        // Change preset to 5m
-        notifier.setPresetMinutes(5);
-        expect(container.read(chaiBreakProvider).totalDurationSeconds, 300);
-        expect(container.read(chaiBreakProvider).remainingSeconds, 300);
+      // Change preset to 5m
+      notifier.setPresetMinutes(5);
+      expect(container.read(chaiBreakProvider).totalDurationSeconds, 300);
+      expect(container.read(chaiBreakProvider).remainingSeconds, 300);
 
-        // Pause timer
-        notifier.pause();
-        expect(container.read(chaiBreakProvider).isRunning, false);
+      // Pause timer
+      notifier.pause();
+      expect(container.read(chaiBreakProvider).isRunning, false);
 
-        // Resume timer
-        notifier.resume();
-        expect(container.read(chaiBreakProvider).isRunning, true);
+      // Resume timer
+      notifier.resume();
+      expect(container.read(chaiBreakProvider).isRunning, true);
 
-        // Select acoustic soundscape
-        notifier.selectSoundscape(SoundscapePreset.acousticLofi);
-        expect(
-          container.read(chaiBreakProvider).selectedSoundscape,
-          SoundscapePreset.acousticLofi,
-        );
+      // Select acoustic soundscape
+      notifier.selectSoundscape(SoundscapePreset.acousticLofi);
+      expect(
+        container.read(chaiBreakProvider).selectedSoundscape,
+        SoundscapePreset.acousticLofi,
+      );
 
-        container.dispose();
-      },
-    );
+      container.dispose();
+    });
 
     testWidgets(
       'ChaiBreakScreen pumps and displays timer, presets, and soundscape',

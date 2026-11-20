@@ -42,7 +42,9 @@ void main() {
   tearDown(() => db.close());
 
   group('Tier 1: History Screen Day Rollups & Classification', () {
-    testWidgets('groups items into day rollup cards with count badges', (tester) async {
+    testWidgets('groups items into day rollup cards with count badges', (
+      tester,
+    ) async {
       final now = DateTime.now();
       final entries = [
         HistoryEvent(
@@ -100,41 +102,47 @@ void main() {
   });
 
   group('Tier 1: AscentSegmentedControl Large Text Immunity', () {
-    testWidgets('vertical large-text layout accommodates long labels at 320px / 2.0x scale', (tester) async {
-      tester.view.physicalSize = const Size(320, 600);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+    testWidgets(
+      'vertical large-text layout accommodates long labels at 320px / 2.0x scale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.light(),
-          home: MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 600),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: Scaffold(
-              body: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AscentSegmentedControl<String>(
-                  segments: const [
-                    AscentSegment(value: 'all', label: 'All Activities'),
-                    AscentSegment(value: 'done', label: 'Finished Items'),
-                    AscentSegment(value: 'other', label: 'Archived & Missed Events'),
-                  ],
-                  selected: 'all',
-                  onChanged: (_) {},
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AscentTheme.light(),
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 600),
+                textScaler: TextScaler.linear(2.0),
+              ),
+              child: Scaffold(
+                body: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: AscentSegmentedControl<String>(
+                    segments: const [
+                      AscentSegment(value: 'all', label: 'All Activities'),
+                      AscentSegment(value: 'done', label: 'Finished Items'),
+                      AscentSegment(
+                        value: 'other',
+                        label: 'Archived & Missed Events',
+                      ),
+                    ],
+                    selected: 'all',
+                    onChanged: (_) {},
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
-      expect(find.text('Archived & Missed Events'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+        await tester.pumpAndSettle();
+        expect(find.text('Archived & Missed Events'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

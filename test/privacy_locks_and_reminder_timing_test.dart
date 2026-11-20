@@ -31,10 +31,10 @@ class _MockIdleTracking extends TimeTrackingNotifier {
 class _MockIdleLearning extends LearningHubNotifier {
   @override
   LearningHubState build() => const LearningHubState(
-        courses: [],
-        activeCourseId: '',
-        activeLectureId: 0,
-      );
+    courses: [],
+    activeCourseId: '',
+    activeLectureId: 0,
+  );
 }
 
 void main() {
@@ -54,8 +54,9 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         timeTrackingProvider.overrideWith(_MockIdleTracking.new),
         learningHubProvider.overrideWith(_MockIdleLearning.new),
-        vaultSecurityServiceProvider
-            .overrideWithValue(VaultSecurityService.forTesting()),
+        vaultSecurityServiceProvider.overrideWithValue(
+          VaultSecurityService.forTesting(),
+        ),
       ],
     );
   });
@@ -77,54 +78,56 @@ void main() {
 
   group('Reminder Timing & Premature Lock Tests', () {
     testWidgets(
-        'Future scheduled reminder cannot be completed prematurely via runReminderAction',
-        (tester) async {
-      final futureTime = DateTime.now().add(const Duration(hours: 2));
-      final reminderId = await db.reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Drink Protein Shake',
-          scheduledAt: futureTime,
-          isActive: const drift.Value(true),
-        ),
-      );
-      final reminder = await db.reminderDao.getReminderById(reminderId);
-      expect(reminder, isNotNull);
-
-      await tester.pumpWidget(
-        wrapWithHarness(
-          Consumer(
-            builder: (context, ref, _) {
-              return ElevatedButton(
-                onPressed: () async {
-                  final changed = await runReminderAction(
-                    context,
-                    ref,
-                    reminder!,
-                    ReminderRowAction.done,
-                  );
-                  expect(changed, isFalse);
-                },
-                child: const Text('Complete Reminder'),
-              );
-            },
+      'Future scheduled reminder cannot be completed prematurely via runReminderAction',
+      (tester) async {
+        final futureTime = DateTime.now().add(const Duration(hours: 2));
+        final reminderId = await db.reminderDao.insertReminder(
+          ReminderTableCompanion.insert(
+            title: 'Drink Protein Shake',
+            scheduledAt: futureTime,
+            isActive: const drift.Value(true),
           ),
-        ),
-      );
+        );
+        final reminder = await db.reminderDao.getReminderById(reminderId);
+        expect(reminder, isNotNull);
 
-      await tester.tap(find.text('Complete Reminder'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          wrapWithHarness(
+            Consumer(
+              builder: (context, ref, _) {
+                return ElevatedButton(
+                  onPressed: () async {
+                    final changed = await runReminderAction(
+                      context,
+                      ref,
+                      reminder!,
+                      ReminderRowAction.done,
+                    );
+                    expect(changed, isFalse);
+                  },
+                  child: const Text('Complete Reminder'),
+                );
+              },
+            ),
+          ),
+        );
 
-      // Toast explains scheduled time
-      final timeStr = DateFormat('h:mm a').format(futureTime);
-      expect(find.textContaining('Scheduled for $timeStr'), findsOneWidget);
+        await tester.tap(find.text('Complete Reminder'));
+        await tester.pumpAndSettle();
 
-      // Reminder remains active in database
-      final reloaded = await db.reminderDao.getReminderById(reminderId);
-      expect(reloaded?.isActive, isTrue);
-    });
+        // Toast explains scheduled time
+        final timeStr = DateFormat('h:mm a').format(futureTime);
+        expect(find.textContaining('Scheduled for $timeStr'), findsOneWidget);
 
-    testWidgets('Past or due reminder can be completed normally',
-        (tester) async {
+        // Reminder remains active in database
+        final reloaded = await db.reminderDao.getReminderById(reminderId);
+        expect(reloaded?.isActive, isTrue);
+      },
+    );
+
+    testWidgets('Past or due reminder can be completed normally', (
+      tester,
+    ) async {
       final pastTime = DateTime.now().subtract(const Duration(minutes: 10));
       final reminderId = await db.reminderDao.insertReminder(
         ReminderTableCompanion.insert(
@@ -166,121 +169,127 @@ void main() {
     });
 
     testWidgets(
-        'RemindersScreen displays locked schedule pill for future reminders',
-        (tester) async {
-      final futureTime = DateTime.now().add(const Duration(hours: 3));
-      await db.reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Late Night Call',
-          scheduledAt: futureTime,
-          isActive: const drift.Value(true),
-        ),
-      );
+      'RemindersScreen displays locked schedule pill for future reminders',
+      (tester) async {
+        final futureTime = DateTime.now().add(const Duration(hours: 3));
+        await db.reminderDao.insertReminder(
+          ReminderTableCompanion.insert(
+            title: 'Late Night Call',
+            scheduledAt: futureTime,
+            isActive: const drift.Value(true),
+          ),
+        );
 
-      await tester.pumpWidget(wrapWithHarness(const RemindersScreen()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(wrapWithHarness(const RemindersScreen()));
+        await tester.pumpAndSettle();
 
-      final timeStr = DateFormat('h:mm a').format(futureTime);
-      // Locked schedule pill is displayed
-      expect(find.text('At $timeStr'), findsOneWidget);
+        final timeStr = DateFormat('h:mm a').format(futureTime);
+        // Locked schedule pill is displayed
+        expect(find.text('At $timeStr'), findsOneWidget);
 
-      // Tapping the pill informs the user instead of completing
-      await tester.tap(find.text('At $timeStr'));
-      await tester.pumpAndSettle();
+        // Tapping the pill informs the user instead of completing
+        await tester.tap(find.text('At $timeStr'));
+        await tester.pumpAndSettle();
 
-      expect(find.textContaining('Scheduled for $timeStr'), findsOneWidget);
-    });
+        expect(find.textContaining('Scheduled for $timeStr'), findsOneWidget);
+      },
+    );
   });
 
   group('PromiseCard Privacy Locks & Content Deduplication Tests', () {
     testWidgets(
-        'Private promise displays locked privacy banner until authenticated',
-        (tester) async {
-      final privatePromise = PromiseModel(
-        id: 42,
-        title: 'Secret Deep Work Protocol',
-        category: 'Personal',
-        intention: 'Build stealth MVP without telling group',
-        trackingType: PromiseTrackingType.completion,
-        createdAt: DateTime.now(),
-        isPrivate: true,
-      );
+      'Private promise displays locked privacy banner until authenticated',
+      (tester) async {
+        final privatePromise = PromiseModel(
+          id: 42,
+          title: 'Secret Deep Work Protocol',
+          category: 'Personal',
+          intention: 'Build stealth MVP without telling group',
+          trackingType: PromiseTrackingType.completion,
+          createdAt: DateTime.now(),
+          isPrivate: true,
+        );
 
-      await tester.pumpWidget(
-          wrapWithHarness(PromiseCard(promise: privatePromise)));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          wrapWithHarness(PromiseCard(promise: privatePromise)),
+        );
+        await tester.pumpAndSettle();
 
-      // Secret title & intention must NOT be visible directly in plain text
-      expect(find.text('Secret Deep Work Protocol'), findsNothing);
-      expect(
-          find.text('Build stealth MVP without telling group'), findsNothing);
+        // Secret title & intention must NOT be visible directly in plain text
+        expect(find.text('Secret Deep Work Protocol'), findsNothing);
+        expect(
+          find.text('Build stealth MVP without telling group'),
+          findsNothing,
+        );
 
-      // Privacy lock banner is visible
-      expect(find.byType(LockedCommitmentTile), findsOneWidget);
-      expect(find.text('Private commitment'), findsOneWidget);
+        // Privacy lock banner is visible
+        expect(find.byType(LockedCommitmentTile), findsOneWidget);
+        expect(find.text('Private commitment'), findsOneWidget);
 
-      // Tap to authenticate and unlock
-      await tester.tap(find.byType(LockedCommitmentTile));
-      await tester.pumpAndSettle();
+        // Tap to authenticate and unlock
+        await tester.tap(find.byType(LockedCommitmentTile));
+        await tester.pumpAndSettle();
 
-      // Once unlocked, title becomes visible
-      expect(find.text('Secret Deep Work Protocol'), findsOneWidget);
-    });
+        // Once unlocked, title becomes visible
+        expect(find.text('Secret Deep Work Protocol'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'Private promise remains strictly locked and hides title when biometric authentication fails',
-        (tester) async {
-      final failingSecurity = VaultSecurityService.forTesting(
-        mockBiometricsSuccess: false,
-      );
-      final privatePromise = PromiseModel(
-        id: 77,
-        title: 'Top Secret Strategy 2026',
-        category: 'Personal',
-        intention: 'Confidential strategy',
-        trackingType: PromiseTrackingType.completion,
-        createdAt: DateTime.now(),
-        isPrivate: true,
-      );
+      'Private promise remains strictly locked and hides title when biometric authentication fails',
+      (tester) async {
+        final failingSecurity = VaultSecurityService.forTesting(
+          mockBiometricsSuccess: false,
+        );
+        final privatePromise = PromiseModel(
+          id: 77,
+          title: 'Top Secret Strategy 2026',
+          category: 'Personal',
+          intention: 'Confidential strategy',
+          trackingType: PromiseTrackingType.completion,
+          createdAt: DateTime.now(),
+          isPrivate: true,
+        );
 
-      final failingContainer = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(_MockIdleTracking.new),
-          learningHubProvider.overrideWith(_MockIdleLearning.new),
-          vaultSecurityServiceProvider.overrideWithValue(failingSecurity),
-        ],
-      );
-      addTearDown(failingContainer.dispose);
+        final failingContainer = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(_MockIdleTracking.new),
+            learningHubProvider.overrideWith(_MockIdleLearning.new),
+            vaultSecurityServiceProvider.overrideWithValue(failingSecurity),
+          ],
+        );
+        addTearDown(failingContainer.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: failingContainer,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(body: PromiseCard(promise: privatePromise)),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: failingContainer,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: Scaffold(body: PromiseCard(promise: privatePromise)),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Secret title must not be visible
-      expect(find.text('Top Secret Strategy 2026'), findsNothing);
-      expect(find.byType(LockedCommitmentTile), findsOneWidget);
+        // Secret title must not be visible
+        expect(find.text('Top Secret Strategy 2026'), findsNothing);
+        expect(find.byType(LockedCommitmentTile), findsOneWidget);
 
-      // Tap to authenticate (which fails)
-      await tester.tap(find.byType(LockedCommitmentTile));
-      await tester.pumpAndSettle();
+        // Tap to authenticate (which fails)
+        await tester.tap(find.byType(LockedCommitmentTile));
+        await tester.pumpAndSettle();
 
-      // Because authentication failed, secret title MUST STILL NOT be visible
-      expect(find.text('Top Secret Strategy 2026'), findsNothing);
-      expect(find.byType(LockedCommitmentTile), findsOneWidget);
-    });
+        // Because authentication failed, secret title MUST STILL NOT be visible
+        expect(find.text('Top Secret Strategy 2026'), findsNothing);
+        expect(find.byType(LockedCommitmentTile), findsOneWidget);
+      },
+    );
 
-    testWidgets(
-        'PromiseCard deduplicates intention when identical to title',
-        (tester) async {
+    testWidgets('PromiseCard deduplicates intention when identical to title', (
+      tester,
+    ) async {
       final promiseWithSameIntention = PromiseModel(
         id: 99,
         title: 'No talk until Dec group gayab and work',
@@ -305,20 +314,26 @@ void main() {
   });
 
   group('Day Theme Soft Off-White Polish Tests', () {
-    test('MerlotPalette.canvas is soft soothing cashmere linen without bleached whitewash', () {
-      expect(MerlotPalette.canvas, equals(const Color(0xFFFBFBFD)));
-      expect(MerlotPalette.recessedWell, equals(const Color(0xFFF2F2F7)));
-    });
+    test(
+      'MerlotPalette.canvas is soft soothing cashmere linen without bleached whitewash',
+      () {
+        expect(MerlotPalette.canvas, equals(const Color(0xFFFBFBFD)));
+        expect(MerlotPalette.recessedWell, equals(const Color(0xFFF2F2F7)));
+      },
+    );
 
-    test('DayGlassMaterial produces pristine off-white canvas with subtle dark blend', () {
-      final theme = AscentTheme.light();
-      final glass = theme.extension<AscentGlass>()!;
-      final material = DayGlassMaterial.from(
-        glass,
-        GlassTranslucencyPreset.balancedLiquid,
-      );
-      // Canvas should be close to F7F3EA and not clay tan
-      expect(material.canvas.toARGB32() != 0xFFF5F3EF, isTrue);
-    });
+    test(
+      'DayGlassMaterial produces pristine off-white canvas with subtle dark blend',
+      () {
+        final theme = AscentTheme.light();
+        final glass = theme.extension<AscentGlass>()!;
+        final material = DayGlassMaterial.from(
+          glass,
+          GlassTranslucencyPreset.balancedLiquid,
+        );
+        // Canvas should be close to F7F3EA and not clay tan
+        expect(material.canvas.toARGB32() != 0xFFF5F3EF, isTrue);
+      },
+    );
   });
 }

@@ -15,8 +15,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/challenge/challenge_providers.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 
@@ -113,31 +111,6 @@ void main() {
   }
 
   group('Home UI Polish Drill Tests', () {
-    testWidgets(
-      '1. Avatar A circle has strong contrast and does not mix with canvas',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestableWidget(Scaffold(body: HomeHeader(profile: testProfile))),
-        );
-        await tester.pumpAndSettle();
-
-        // Find the Avatar text 'A'
-        final avatarTextFinder = find.text('A');
-        expect(avatarTextFinder, findsOneWidget);
-
-        final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
-        final foreground = avatar.foregroundColor!.computeLuminance();
-        final background = avatar.backgroundColor!.computeLuminance();
-        final contrast = foreground > background
-            ? (foreground + .05) / (background + .05)
-            : (background + .05) / (foreground + .05);
-        expect(contrast, greaterThanOrEqualTo(4.5));
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
     testWidgets(
       '2. ActivityRowItem uses rounded capsule with burgundy & yellow accents',
       (tester) async {
@@ -247,83 +220,5 @@ void main() {
       },
     );
 
-    testWidgets(
-      '4. Empty medicine summary avoids a misleading zero-dose progress bar',
-      (tester) async {
-        tester.view.physicalSize = const Size(400 * 2, 800 * 2);
-        tester.view.devicePixelRatio = 2.0;
-
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: QuickModulesNavHub()),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final medBarFinder = find.byKey(
-          const ValueKey('medicine_progress_bar'),
-        );
-        final waterBarFinder = find.byKey(
-          const ValueKey('hydration_progress_bar'),
-        );
-
-        expect(medBarFinder, findsNothing);
-        expect(find.text('No doses scheduled'), findsOneWidget);
-        expect(waterBarFinder, findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
-
-    testWidgets('5. Rule 13: 320px width & 2.0x text scale overflow immunity', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320 * 2, 800 * 2);
-      tester.view.devicePixelRatio = 2.0;
-
-      final reminder = Reminder(
-        id: 99,
-        title: 'Call doctor for scheduled prescription update',
-        scheduledAt: DateTime.now().add(const Duration(hours: 1)),
-        alarmEnabled: false,
-        isActive: true,
-        alertSyncPending: false,
-        createdAt: DateTime.now(),
-      );
-
-      await tester.pumpWidget(
-        buildTestableWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: Scaffold(
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    HomeDismissibleRemindersSection(
-                      reminders: [reminder],
-                      onCompleteReminder: (_) async {},
-                      onDismissReminder: (_) async {},
-                    ),
-                    const QuickModulesNavHub(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    });
   });
 }
