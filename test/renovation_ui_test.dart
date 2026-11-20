@@ -146,11 +146,13 @@ void main() {
         () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
       await tester.pump();
-      expect(find.text('Confirm'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
       await tester.runAsync(() async {
         expect(await db.financeDao.watchAllTransactions().first, isEmpty);
       });
-      await tester.tap(find.text('Confirm'));
+      // Two quick taps must still save one expense.
+      await tester.tap(find.text('Save'));
+      await tester.tap(find.text('Save'), warnIfMissed: false);
       await tester.pump();
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)),
@@ -163,7 +165,6 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 20));
     },
-skip: true, // Known bug: Check that an assistant expense is not saved before confirmation
 );
   testWidgets(
     'Money has one expense primary and no empty or appbar duplicate',

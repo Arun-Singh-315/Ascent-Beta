@@ -1,3 +1,7 @@
+import '../../app/theme/chat_palette.dart';
+import '../../core/services/voice_input.dart';
+import 'assistant_suggestions.dart';
+import '../../app/theme/text_styles.dart';
 import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -86,6 +90,43 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   int? _lastMessageCount;
   RiyaIntentResolver? _resolver;
   final _composerFocus = FocusNode();
+  bool _listening = false;
+  VoiceInput? _voice;
+
+  /// Dictation fills the composer; the user reviews and sends.
+  Future<void> _toggleVoice() async {
+    final VoiceInput voice = _voice ?? ref.read(voiceInputProvider);
+    _voice = voice;
+    if (_listening) {
+      await voice.stop();
+      return;
+    }
+    final typed = _textController.text.trimRight();
+    final base = typed.isEmpty ? '' : '$typed ';
+    setState(() => _listening = true);
+    final ok = await voice.start(
+      onText: (words) {
+        if (!mounted) return;
+        _textController.text = '$base$words';
+        _textController.selection = TextSelection.collapsed(
+          offset: _textController.text.length,
+        );
+      },
+      onDone: () {
+        if (mounted && _listening) setState(() => _listening = false);
+      },
+    );
+    if (!ok && mounted) {
+      setState(() => _listening = false);
+      AscentSnackBar.show(
+        context,
+        message:
+            'Voice isn’t available. Allow the microphone, or type instead.',
+        icon: Icons.mic_off_outlined,
+      );
+    }
+  }
+
   RiyaIntentResolver get _conversation {
     final resolver = _resolver ?? ref.read(riyaConversationProvider);
     _resolver = resolver;
@@ -120,6 +161,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   @override
   void dispose() {
+    if (_listening) {
+      _listening = false; // the stop callback must not rebuild a dead state
+      _voice?.stop();
+    }
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _composerFocus.dispose();
@@ -157,7 +202,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           if (_scrollController.hasClients &&
               _scrollController.position.pixels <
                   _scrollController.position.maxScrollExtent) {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            _scrollController.jumpTo(
+              _scrollController.position.maxScrollExtent,
+            );
           }
         });
       }
@@ -167,6 +214,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   Future<void> _handleSubmitted(String text) async {
     final prompt = text.trim();
     if (prompt.isEmpty || _isLoading) return;
+    if (_listening) unawaited(_voice?.stop());
 
     HapticFeedback.lightImpact();
     _textController.clear();
@@ -763,7 +811,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final messagesStream = _messagesStream;
     final accentColor = context.accentPrimary;
     final router = GoRouter.maybeOf(context);
-    final canPopNow = router != null ? router.canPop() : Navigator.of(context).canPop();
+    final canPopNow = router != null
+        ? router.canPop()
+        : Navigator.of(context).canPop();
 
     return PopScope(
       canPop: !_isLoading && canPopNow,
@@ -779,11 +829,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       child: Scaffold(
         resizeToAvoidBottomInset: !widget.compact,
         extendBodyBehindAppBar: true,
-        backgroundColor: isDark
-            ? const Color(0xFF0A0C10)
-            : const Color(0xFFEFECE6),
+        backgroundColor: ChatPalette.of(context).canvas,
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF0A0C10) : const Color(0xFFEFECE6),
+          backgroundColor: ChatPalette.of(context).canvas,
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -809,17 +857,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           title: Text(
             name,
             key: const ValueKey('ai_assistant_title'),
-            style: TextStyle(
-              color: c.textPrimary,
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.2,
+            style: AscentTextStyles.interfaceNavigation.copyWith(
+              color: ChatPalette.of(context).label,
             ),
           ),
           actions: [
             PopupMenuButton<String>(
               key: const ValueKey('ai_assistant_menu_button'),
-              color: isDark ? const Color(0xFF16181E) : const Color(0xFFFFFDF9),
+              color: ChatPalette.of(context).elevated,
               elevation: 8,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -841,7 +886,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   AscentSnackBar.show(context, message: 'Voice output toggled');
                 } else if (val == 'export') {
                   HapticFeedback.selectionClick();
-                  AscentSnackBar.show(context, message: 'Conversation exported');
+                  AscentSnackBar.show(
+                    context,
+                    message: 'Conversation exported',
+                  );
                 }
               },
               itemBuilder: (context) => [
@@ -926,7 +974,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       Padding(
                         padding: EdgeInsets.fromLTRB(
                           14,
-                          MediaQuery.paddingOf(context).top + kToolbarHeight + 4,
+                          MediaQuery.paddingOf(context).top +
+                              kToolbarHeight +
+                              4,
                           14,
                           0,
                         ),
@@ -961,9 +1011,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? const Color(0xFFFDE68A)
-                                        : const Color(0xFF92400E),
+                                    color: ChatPalette.of(context).highlightInk,
                                   ),
                                 ),
                               ),
@@ -986,8 +1034,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 todayFestival != null
                                     ? 8
                                     : MediaQuery.paddingOf(context).top +
-                                        kToolbarHeight +
-                                        8,
+                                          kToolbarHeight +
+                                          8,
                                 14,
                                 12,
                               ),
@@ -1051,9 +1099,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
                                           maxWidth: isUser
-                                              ? (MediaQuery.sizeOf(context).width *
-                                                      0.82)
-                                                  .clamp(240.0, 520.0)
+                                              ? (MediaQuery.sizeOf(
+                                                          context,
+                                                        ).width *
+                                                        0.82)
+                                                    .clamp(240.0, 520.0)
                                               : double.infinity,
                                         ),
                                         child: _ConversationMessageBubble(
@@ -1063,8 +1113,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                           assistantName: name,
                                           accentColor: accentColor,
                                           actionData: actionData,
-                                          messageQuickChips: (index == messages.length - 1 && !isUser)
-                                              ? messageQuickChips.take(2).toList()
+                                          messageQuickChips:
+                                              (index == messages.length - 1 &&
+                                                  !isUser)
+                                              ? messageQuickChips
+                                                    .take(2)
+                                                    .toList()
                                               : const <String>[],
                                           onSelectChip: _handleSubmitted,
                                           busy: _isLoading,
@@ -1095,6 +1149,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
                     // Single-enclosure floating AppComposer
                     AppComposer(
+                      onMic: _toggleVoice,
+                      listening: _listening,
                       controller: _textController,
                       focusNode: _composerFocus,
                       assistantName: name,
@@ -1102,11 +1158,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       onSubmitted: _handleSubmitted,
                       onPlusPressed: () {
                         HapticFeedback.lightImpact();
-                        _showCompanionSelectorSheet(
-                          context,
-                          ref,
-                          name,
-                        );
+                        _showCompanionSelectorSheet(context, ref, name);
                       },
                     ),
                   ],
@@ -1174,10 +1226,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
-              border: Border.all(
-                color: sheetContext.c.border,
-                width: 1,
-              ),
+              border: Border.all(color: sheetContext.c.border, width: 1),
             ),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             child: SafeArea(
@@ -1224,7 +1273,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       description:
                           'Sharp, proactive planning with grounded intelligence and calm clarity.',
                       icon: Icons.auto_awesome_rounded,
-                      selected: currentName == 'Jarvis' ||
+                      selected:
+                          currentName == 'Jarvis' ||
                           currentName.isEmpty ||
                           currentName == 'Aria' ||
                           currentName == 'Riya',
@@ -1295,14 +1345,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           decoration: BoxDecoration(
             color: selected
                 ? accent.withValues(alpha: isDark ? 0.16 : 0.08)
-                : (isDark ? const Color(0xFF1C1E26) : const Color(0xFFF7F5F0)),
+                : ChatPalette.of(sheetContext).recessed,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected
-                  ? accent
-                  : (isDark
-                        ? sheetContext.glass.edge
-                        : const Color(0x1F000000)),
+              color: selected ? accent : ChatPalette.of(sheetContext).separator,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -1315,9 +1361,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   shape: BoxShape.circle,
                   color: selected
                       ? accent.withValues(alpha: 0.22)
-                      : (isDark
-                            ? Colors.white10
-                            : Colors.black.withValues(alpha: 0.05)),
+                      : ChatPalette.of(sheetContext).surface,
                 ),
                 child: Icon(
                   icon,
@@ -1437,13 +1481,10 @@ class _ConversationMessageBubbleState
       parent: _animController,
       curve: Curves.easeOut,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
     _animController.forward();
   }
 
@@ -1477,44 +1518,18 @@ class _ConversationMessageBubbleState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── iOS Glass Message Bubbles (Option A: Soothing Slate Blue & Gentle Linen Glass) ──
-    final Color bubbleFill;
-    final Color bubbleBorder;
-    final Color messageTextColor;
-    final Color timestampColor;
-    final BorderRadius borderRadius;
-
-    if (isUser) {
-      bubbleFill = isDark
-          ? const Color(0xFF1E2E4E)
-          : const Color(0xFF2554B8);
-      bubbleBorder = isDark
-          ? const Color(0xFF3A5688).withValues(alpha: 0.40)
-          : const Color(0xFF2554B8).withValues(alpha: 0.40);
-      messageTextColor = Colors.white;
-      timestampColor = const Color(0xD0FFFFFF);
-      borderRadius = const BorderRadius.only(
-        topLeft: Radius.circular(18),
-        topRight: Radius.circular(18),
-        bottomLeft: Radius.circular(18),
-        bottomRight: Radius.circular(4),
-      );
-    } else {
-      bubbleFill = isDark
-          ? const Color(0xFF151821)
-          : const Color(0xFFF6F4EF);
-      bubbleBorder = isDark
-          ? const Color(0xFF222634)
-          : const Color(0xFFE2DDD5);
-      messageTextColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1C1917);
-      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF78716C);
-      borderRadius = const BorderRadius.only(
-        topLeft: Radius.circular(18),
-        topRight: Radius.circular(18),
-        bottomRight: Radius.circular(18),
-        bottomLeft: Radius.circular(4),
-      );
-    }
+    // User: action-tint bubble on the right. Assistant: no bubble, full
+    // width, name label at the start of a turn (CLAUDE.md §5.4).
+    final chat = ChatPalette.of(context);
+    final Color bubbleFill = isUser ? chat.userBubble : Colors.transparent;
+    final Color messageTextColor = isUser ? chat.userText : chat.label;
+    final Color timestampColor = chat.labelTertiary;
+    const borderRadius = BorderRadius.only(
+      topLeft: Radius.circular(20),
+      topRight: Radius.circular(20),
+      bottomLeft: Radius.circular(20),
+      bottomRight: Radius.circular(6),
+    );
 
     final messageText = (actionData?['records'] as List? ?? []).isNotEmpty
         ? (msg.actionType?.startsWith('promises.') == true
@@ -1532,13 +1547,9 @@ class _ConversationMessageBubbleState
             padding: const EdgeInsets.only(bottom: 6),
             child: Text(
               assistantName,
-              style: TextStyle(
-                fontSize: 13,
+              style: AscentTextStyles.interfaceLabel.copyWith(
+                color: chat.assistantName,
                 fontWeight: FontWeight.w700,
-                color: isDark
-                    ? SharedControlColors.actionBlueDark
-                    : SharedControlColors.actionBlue,
-                letterSpacing: -0.2,
               ),
             ),
           ),
@@ -1548,54 +1559,48 @@ class _ConversationMessageBubbleState
         if (isUser)
           Text(
             messageText,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+            style: AscentTextStyles.body.copyWith(
               color: messageTextColor,
               height: 1.4,
-              letterSpacing: -0.1,
             ),
           )
         else
           MarkdownBody(
             data: messageText,
             selectable: true,
-            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-              p: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: c.textPrimary,
-                height: 1.5,
-              ),
-              strong: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: c.textPrimary,
-              ),
-              h1: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: c.textPrimary,
-              ),
-              h2: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: c.textPrimary,
-              ),
-              h3: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: c.textPrimary,
-              ),
-              listBullet: TextStyle(
-                fontSize: 15,
-                color: isDark
-                    ? SharedControlColors.actionBlueDark
-                    : SharedControlColors.actionBlue,
-                fontWeight: FontWeight.w600,
-              ),
-              pPadding: const EdgeInsets.only(bottom: 8),
-            ),
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
+                .copyWith(
+                  p: AscentTextStyles.body.copyWith(
+                    color: chat.label,
+                    height: 1.5,
+                  ),
+                  strong: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                  h1: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                  h2: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                  h3: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                  listBullet: TextStyle(
+                    fontSize: 15,
+                    color: chat.action,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  pPadding: const EdgeInsets.only(bottom: 8),
+                ),
           ),
 
         // Action row under each assistant reply: Copy, Share, Save to Mindspace, Regenerate
@@ -1605,24 +1610,35 @@ class _ConversationMessageBubbleState
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: Icon(Icons.copy_rounded, size: 16, color: c.textTertiary),
+                icon: Icon(
+                  Icons.copy_rounded,
+                  size: 16,
+                  color: chat.labelTertiary,
+                ),
                 tooltip: 'Copy',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: () async {
                   HapticFeedback.lightImpact();
                   await Clipboard.setData(ClipboardData(text: messageText));
                   if (context.mounted) {
-                    AscentSnackBar.show(context, message: 'Copied to clipboard');
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Copied to clipboard',
+                    );
                   }
                 },
               ),
               const SizedBox(width: 4),
               IconButton(
-                icon: Icon(Icons.share_outlined, size: 16, color: c.textTertiary),
+                icon: Icon(
+                  Icons.share_outlined,
+                  size: 16,
+                  color: c.textTertiary,
+                ),
                 tooltip: 'Share',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   SharePlus.instance.share(ShareParams(text: messageText));
@@ -1637,13 +1653,13 @@ class _ConversationMessageBubbleState
                   size: 16,
                   color: _isSaved
                       ? (isDark
-                          ? SharedControlColors.actionBlueDark
-                          : SharedControlColors.actionBlue)
+                            ? SharedControlColors.actionBlueDark
+                            : SharedControlColors.actionBlue)
                       : c.textTertiary,
                 ),
                 tooltip: _isSaved ? 'Saved to Mindspace' : 'Save to Mindspace',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: () async {
                   HapticFeedback.selectionClick();
                   if (_isSaved) {
@@ -1685,10 +1701,14 @@ class _ConversationMessageBubbleState
               ),
               const SizedBox(width: 4),
               IconButton(
-                icon: Icon(Icons.refresh_rounded, size: 16, color: c.textTertiary),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  size: 16,
+                  color: c.textTertiary,
+                ),
                 tooltip: 'Regenerate',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: busy ? null : onRecover,
               ),
             ],
@@ -1712,18 +1732,12 @@ class _ConversationMessageBubbleState
     final Widget mainBubble = GestureDetector(
       onTap: () => setState(() => _showTimestamp = !_showTimestamp),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: isUser
+            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
+            : const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         decoration: BoxDecoration(
           color: bubbleFill,
           borderRadius: borderRadius,
-          border: Border.all(color: bubbleBorder, width: 1.0),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x30000000) : const Color(0x0A5C4A3E),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: bubbleContent,
       ),
@@ -1739,520 +1753,520 @@ class _ConversationMessageBubbleState
               : CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-        mainBubble,
+            mainBubble,
 
-        // Interactive Study Plan Card
-        if (!isUser &&
-            actionData != null &&
-            (actionData['type'] == 'study_plan' ||
-                msg.actionType == 'studyPlanCreated'))
-          RiyaStudyPlanCard(planData: actionData, accentColor: accentColor),
+            // Interactive Study Plan Card
+            if (!isUser &&
+                actionData != null &&
+                (actionData['type'] == 'study_plan' ||
+                    msg.actionType == 'studyPlanCreated'))
+              RiyaStudyPlanCard(planData: actionData, accentColor: accentColor),
 
-        // Interactive Meal Plan Card
-        if (!isUser &&
-            actionData != null &&
-            (actionData['type'] == 'meal_plan' ||
-                msg.actionType == 'mealPlanCreated'))
-          RiyaMealPlanCard(planData: actionData, accentColor: accentColor),
+            // Interactive Meal Plan Card
+            if (!isUser &&
+                actionData != null &&
+                (actionData['type'] == 'meal_plan' ||
+                    msg.actionType == 'mealPlanCreated'))
+              RiyaMealPlanCard(planData: actionData, accentColor: accentColor),
 
-        if (!isUser && actionData?['executionStatus'] == 'proposed')
-          Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Builder(
-                  builder: (context) {
-                    final isDark =
-                        Theme.of(context).brightness == Brightness.dark;
-                    final rawText =
-                        (actionData?['pendingCommand']?['arguments']?['text']
-                            as String?) ??
-                        '';
-                    final proposal =
-                        msg.actionType == 'promises.create' &&
-                            rawText.isNotEmpty
-                        ? PromiseIntentParser.parse(rawText)
-                        : null;
-                    final taskTitle = msg.actionType == 'tasks.create'
-                        ? (actionData?['pendingCommand']?['arguments']?['title']
-                              as String?)
-                        : null;
-                    final taskDate = msg.actionType == 'tasks.create'
-                        ? (actionData?['pendingCommand']?['arguments']?['plannedDate']
+            if (!isUser && actionData?['executionStatus'] == 'proposed')
+              Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Builder(
+                      builder: (context) {
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+                        final rawText =
+                            (actionData?['pendingCommand']?['arguments']?['text']
+                                as String?) ??
+                            '';
+                        final proposal =
+                            msg.actionType == 'promises.create' &&
+                                rawText.isNotEmpty
+                            ? PromiseIntentParser.parse(rawText)
+                            : null;
+                        final taskTitle = msg.actionType == 'tasks.create'
+                            ? (actionData?['pendingCommand']?['arguments']?['title']
                                   as String?)
-                              ?.split('T')
-                              .first
-                        : null;
+                            : null;
+                        final taskDate = msg.actionType == 'tasks.create'
+                            ? (actionData?['pendingCommand']?['arguments']?['plannedDate']
+                                      as String?)
+                                  ?.split('T')
+                                  .first
+                            : null;
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1A2035)
-                            : const Color(0xFFF7F9FF),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF2A3550)
-                              : const Color(0xFFDDE3F0),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.25 : 0.06,
-                            ),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 7,
-                                  vertical: 2.5,
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: ChatPalette.of(context).surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: isDark
+                                ? Border.all(
+                                    color: ChatPalette.of(context).separator,
+                                  )
+                                : null,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.25 : 0.06,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: 0.14),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  msg.actionType?.startsWith('promises.') ==
-                                          true
-                                      ? 'PROMISE PREVIEW'
-                                      : (msg.actionType?.startsWith('tasks.') ==
-                                                true
-                                            ? 'TODO PREVIEW'
-                                            : 'REVIEW ACTION'),
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    letterSpacing: 1.0,
-                                    color: accentColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            proposal?.title ??
-                                taskTitle ??
-                                (actionData?['title'] as String? ?? 'Review'),
-                            style: TextStyle(
-                              color: context.glass.ink,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              height: 1.25,
-                            ),
-                          ),
-                          if (proposal != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: context.glass.fill.withValues(
-                                  alpha: isDark ? 0.25 : 0.45,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: context.glass.line,
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.event_outlined,
-                                        size: 14,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2.5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: accentColor.withValues(
+                                        alpha: 0.14,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      msg.actionType?.startsWith('promises.') ==
+                                              true
+                                          ? 'PROMISE PREVIEW'
+                                          : (msg.actionType?.startsWith(
+                                                      'tasks.',
+                                                    ) ==
+                                                    true
+                                                ? 'TODO PREVIEW'
+                                                : 'REVIEW ACTION'),
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        letterSpacing: 1.0,
                                         color: accentColor,
+                                        fontWeight: FontWeight.w700,
                                       ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          proposal.targetDate != null
-                                              ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
-                                              : (proposal.schedule?.summary !=
-                                                        null
-                                                    ? 'Schedule: ${proposal.schedule!.summary}'
-                                                    : 'Schedule: Every day (Daily)'),
-                                          style: TextStyle(
-                                            color: context.glass.ink,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.timer_outlined,
-                                        size: 14,
-                                        color: accentColor,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          proposal.trackingType ==
-                                                  PromiseTrackingType.duration
-                                              ? '${proposal.targetValue.toInt()} minutes per session'
-                                              : (proposal.trackingType ==
-                                                        PromiseTrackingType
-                                                            .frequency
-                                                    ? '${proposal.frequencyPerWeek} times a week'
-                                                    : 'Daily check-in commitment'),
-                                          style: TextStyle(
-                                            color: context.glass.inkSecondary,
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.notifications_active_outlined,
-                                        size: 14,
-                                        color: accentColor,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          proposal.reminderTime != null
-                                              ? 'Reminder: ${proposal.reminderTime}'
-                                              : 'No reminder',
-                                          style: TextStyle(
-                                            color: context.glass.inkSecondary,
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ] else if (taskDate != null) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 14,
-                                  color: accentColor,
+                              const SizedBox(height: 8),
+                              Text(
+                                proposal?.title ??
+                                    taskTitle ??
+                                    (actionData?['title'] as String? ??
+                                        'Review'),
+                                style: TextStyle(
+                                  color: context.glass.ink,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.25,
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Planned: $taskDate',
-                                  style: TextStyle(
-                                    color: context.glass.inkSecondary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
+                              ),
+                              if (proposal != null) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: context.glass.fill.withValues(
+                                      alpha: isDark ? 0.25 : 0.45,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: context.glass.line,
+                                      width: 0.8,
+                                    ),
                                   ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.event_outlined,
+                                            size: 14,
+                                            color: accentColor,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              proposal.targetDate != null
+                                                  ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
+                                                  : (proposal
+                                                                .schedule
+                                                                ?.summary !=
+                                                            null
+                                                        ? 'Schedule: ${proposal.schedule!.summary}'
+                                                        : 'Schedule: Every day (Daily)'),
+                                              style: TextStyle(
+                                                color: context.glass.ink,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.timer_outlined,
+                                            size: 14,
+                                            color: accentColor,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              proposal.trackingType ==
+                                                      PromiseTrackingType
+                                                          .duration
+                                                  ? '${proposal.targetValue.toInt()} minutes per session'
+                                                  : (proposal.trackingType ==
+                                                            PromiseTrackingType
+                                                                .frequency
+                                                        ? '${proposal.frequencyPerWeek} times a week'
+                                                        : 'Daily check-in commitment'),
+                                              style: TextStyle(
+                                                color:
+                                                    context.glass.inkSecondary,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.notifications_active_outlined,
+                                            size: 14,
+                                            color: accentColor,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Expanded(
+                                            child: Text(
+                                              proposal.reminderTime != null
+                                                  ? 'Reminder: ${proposal.reminderTime}'
+                                                  : 'No reminder',
+                                              style: TextStyle(
+                                                color:
+                                                    context.glass.inkSecondary,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ] else if (taskDate != null) ...[
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_rounded,
+                                      size: 14,
+                                      color: accentColor,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Planned: $taskDate',
+                                      style: TextStyle(
+                                        color: context.glass.inkSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
-                            ),
-                          ],
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              FilledButton.icon(
-                                onPressed: busy ? null : () => onReview(true),
-                                icon: Icon(
-                                  msg.actionType?.endsWith('.delete') == true
-                                      ? Icons.delete_outline_rounded
-                                      : Icons.check_rounded,
-                                  size: 16,
-                                ),
-                                label: Text(
-                                  msg.actionType?.endsWith('.delete') == true
-                                      ? 'Delete'
-                                      : 'Save',
-                                ),
-                              ),
-                              if (msg.actionType?.endsWith('.create') == true ||
-                                  msg.actionType?.endsWith('.edit') == true)
-                                TextButton.icon(
-                                  onPressed: busy ? null : onEditDraft,
-                                  icon: const Icon(
-                                    Icons.edit_outlined,
-                                    size: 14,
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed: busy
+                                        ? null
+                                        : () => onReview(true),
+                                    icon: Icon(
+                                      msg.actionType?.endsWith('.delete') ==
+                                              true
+                                          ? Icons.delete_outline_rounded
+                                          : Icons.check_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      msg.actionType?.endsWith('.delete') ==
+                                              true
+                                          ? 'Delete'
+                                          : 'Save',
+                                    ),
                                   ),
-                                  label: const Text('Change words'),
-                                ),
-                              TextButton(
-                                onPressed: busy ? null : () => onReview(false),
-                                child: const Text('Cancel'),
+                                  if (msg.actionType?.endsWith('.create') ==
+                                          true ||
+                                      msg.actionType?.endsWith('.edit') == true)
+                                    TextButton.icon(
+                                      onPressed: busy ? null : onEditDraft,
+                                      icon: const Icon(
+                                        Icons.edit_outlined,
+                                        size: 14,
+                                      ),
+                                      label: const Text('Change words'),
+                                    ),
+                                  TextButton(
+                                    onPressed: busy
+                                        ? null
+                                        : () => onReview(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                ],
                               ),
                             ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                  as Widget,
+            if (!isUser)
+              for (final record in (actionData?['records'] as List? ?? []))
+                if (record is Map &&
+                    ['tasks', 'promises'].contains(record['type']) &&
+                    record['id'] is int)
+                  RiyaEntityCard(
+                    type: record['type'] as String,
+                    id: record['id'] as int,
+                    onCommand: onSelectChip,
+                    busy: busy,
+                  ),
+            if (!isUser &&
+                actionData != null &&
+                ['tasks', 'promises'].contains(actionData['entityType']) &&
+                actionData['entityId'] is int &&
+                (actionData['records'] as List? ?? []).isEmpty)
+              RiyaEntityCard(
+                type: actionData['entityType'] as String,
+                id: actionData['entityId'] as int,
+                onCommand: onSelectChip,
+                busy: busy,
+              ),
+
+            if (!isUser &&
+                    const [
+                      'failed',
+                      'recovery_pending',
+                    ].contains(actionData?['executionStatus']) ||
+                (!isUser && actionData?['alertsPending'] == true))
+              Padding(
+                padding: const EdgeInsets.only(top: AscentSpacing.sm),
+                child: Builder(
+                  builder: (context) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ChatPalette.of(context).surface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: ChatPalette.of(context).separator,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            actionData?['executionStatus'] == 'recovery_pending'
+                                ? 'Verification pending'
+                                : 'Action needs attention',
+                            style: TextStyle(
+                              color: ChatPalette.of(context).label,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'Review saved changes before sending this request again.',
+                            style: TextStyle(
+                              color: ChatPalette.of(context).labelSecondary,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: onRecover,
+                            icon: const Icon(Icons.restore_rounded),
+                            label: const Text('Recover'),
                           ),
                         ],
                       ),
                     );
                   },
                 ),
-              )
-              as Widget,
-        if (!isUser)
-          for (final record in (actionData?['records'] as List? ?? []))
-            if (record is Map &&
-                ['tasks', 'promises'].contains(record['type']) &&
-                record['id'] is int)
-              RiyaEntityCard(
-                type: record['type'] as String,
-                id: record['id'] as int,
-                onCommand: onSelectChip,
-                busy: busy,
               ),
-        if (!isUser &&
-            actionData != null &&
-            ['tasks', 'promises'].contains(actionData['entityType']) &&
-            actionData['entityId'] is int &&
-            (actionData['records'] as List? ?? []).isEmpty)
-          RiyaEntityCard(
-            type: actionData['entityType'] as String,
-            id: actionData['entityId'] as int,
-            onCommand: onSelectChip,
-            busy: busy,
-          ),
 
-        if (!isUser &&
-                const [
-                  'failed',
-                  'recovery_pending',
-                ].contains(actionData?['executionStatus']) ||
-            (!isUser && actionData?['alertsPending'] == true))
-          Padding(
-            padding: const EdgeInsets.only(top: AscentSpacing.sm),
-            child: Builder(
-              builder: (context) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E2430) : const Color(0xFFF7F5F0),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isDark
-                          ? const Color(0xFF2D3548)
-                          : const Color(0xFFE2DDD5),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        actionData?['executionStatus'] == 'recovery_pending'
-                            ? 'Verification pending'
-                            : 'Action needs attention',
-                        style: TextStyle(
-                          color: isDark
-                              ? const Color(0xFFE8EDF5)
-                              : const Color(0xFF1A2233),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Text(
-                        'Review saved changes before sending this request again.',
-                        style: TextStyle(
-                          color: isDark
-                              ? const Color(0xFF6B7A99)
-                              : const Color(0xFF6B7A99),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: onRecover,
-                        icon: const Icon(Icons.restore_rounded),
-                        label: const Text('Recover'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-        // Attached Action Confirmation Capsule (Executed Directly)
-        if (!isUser &&
-            msg.actionType != null &&
-            actionData != null &&
-            !['tasks', 'promises'].contains(actionData['entityType']) &&
-            (actionData['records'] as List? ?? []).isEmpty &&
-            actionData['executionStatus'] == 'verified' &&
-            actionData['title'] != null) ...[
-          const SizedBox(height: 6),
-          Builder(
-            builder: (context) {
-              final isDark = Theme.of(context).brightness == Brightness.dark;
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1A2430)
-                      : const Color(0xFFF0F9F4),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF243040)
-                        : const Color(0xFFCFEADA),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      actionData['write'] == true
-                          ? Icons.check_circle_rounded
-                          : Icons.info_outline_rounded,
-                      size: 15,
-                      color: context.glass.sage,
-                    ),
-                    const SizedBox(width: 7),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            actionData['title'].toString(),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? const Color(0xFFE8EDF5)
-                                  : const Color(0xFF1A2233),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (actionData['summary'] != null)
-                            Text(
-                              actionData['summary'].toString(),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                color: isDark
-                                    ? const Color(0xFF6B7A99)
-                                    : const Color(0xFF6B7A99),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        if (msg.actionType ==
-                            AiActionType.lectureMarkedComplete.name) {
-                          onOpenCourse();
-                        } else {
-                          onOpenHub();
-                        }
-                      },
-                      borderRadius: AscentRadii.borderSm,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: AscentDimensions.minTouchTarget,
-                          minHeight: AscentDimensions.minTouchTarget,
-                        ),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(AscentSpacing.sm),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              msg.actionType ==
-                                      AiActionType.lectureMarkedComplete.name
-                                  ? 'Open Course'
-                                  : 'View',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w700,
-                                color: context.glass.sage,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 9,
-                              color: context.glass.sage,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-
-        // Subtle contextual follow-up pills (at most 2 on latest message)
-        if (!isUser && messageQuickChips.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: messageQuickChips.take(2).map((chipText) {
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    onSelectChip(chipText);
-                  },
-                  borderRadius: BorderRadius.circular(999),
-                  child: Container(
+            // Attached Action Confirmation Capsule (Executed Directly)
+            if (!isUser &&
+                msg.actionType != null &&
+                actionData != null &&
+                !['tasks', 'promises'].contains(actionData['entityType']) &&
+                (actionData['records'] as List? ?? []).isEmpty &&
+                actionData['executionStatus'] == 'verified' &&
+                actionData['title'] != null) ...[
+              const SizedBox(height: 6),
+              Builder(
+                builder: (context) {
+                  return Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
+                      horizontal: 12,
+                      vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: c.surfaceAlt,
-                      borderRadius: BorderRadius.circular(999),
+                      color: ChatPalette.of(context).surface,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: c.border,
-                        width: 1.0,
+                        color: ChatPalette.of(context).separator,
                       ),
                     ),
-                    child: Text(
-                      chipText,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
-                        color: c.textSecondary,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          actionData['write'] == true
+                              ? Icons.check_circle_rounded
+                              : Icons.info_outline_rounded,
+                          size: 15,
+                          color: context.glass.sage,
+                        ),
+                        const SizedBox(width: 7),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                actionData['title'].toString(),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: ChatPalette.of(context).label,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (actionData['summary'] != null)
+                                Text(
+                                  actionData['summary'].toString(),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    color: ChatPalette.of(
+                                      context,
+                                    ).labelSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (msg.actionType ==
+                                AiActionType.lectureMarkedComplete.name) {
+                              onOpenCourse();
+                            } else {
+                              onOpenHub();
+                            }
+                          },
+                          borderRadius: AscentRadii.borderSm,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              minWidth: AscentDimensions.minTouchTarget,
+                              minHeight: AscentDimensions.minTouchTarget,
+                            ),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.all(AscentSpacing.sm),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  msg.actionType ==
+                                          AiActionType
+                                              .lectureMarkedComplete
+                                              .name
+                                      ? 'Open Course'
+                                      : 'View',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.glass.sage,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.arrow_forward_ios_rounded,
+                                  size: 9,
+                                  color: context.glass.sage,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+
+            // Subtle contextual follow-up pills (at most 2 on latest message)
+            if (!isUser && messageQuickChips.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: messageQuickChips.take(2).map((chipText) {
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onSelectChip(chipText);
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: c.surfaceAlt,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: c.border, width: 1.0),
+                        ),
+                        child: Text(
+                          chipText,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            color: c.textSecondary,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ],
-    ),
-    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2262,10 +2276,7 @@ class _ConversationMessageBubbleState
 // ---------------------------------------------------------------------------
 
 class _ThinkingBubble extends StatefulWidget {
-  const _ThinkingBubble({
-    required this.name,
-    required this.accentColor,
-  });
+  const _ThinkingBubble({required this.name, required this.accentColor});
   final String name;
   final Color accentColor;
 
@@ -2290,8 +2301,9 @@ class _ThinkingBubbleState extends State<_ThinkingBubble>
   @override
   void initState() {
     super.initState();
-    final isTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -2375,12 +2387,8 @@ class _SoftChatWelcome extends StatefulWidget {
 }
 
 class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
-  static const _suggestions = [
-    'Plan my day',
-    'Study plan',
-    'Meal plan',
-    "Today's agenda",
-  ];
+  // Picked once when the chat opens, so tiles don't shuffle under a finger.
+  late final DateTime _openedAt = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -2388,7 +2396,6 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
       builder: (context, ref, _) {
         final c = context.c;
         final colorScheme = Theme.of(context).colorScheme;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Center(
           child: SingleChildScrollView(
@@ -2419,11 +2426,10 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
 
                 // Centered hero greeting
                 Text(
-                  'How can I help you\nascend today?',
+                  assistantGreeting(_openedAt),
+                  key: const ValueKey('assistant_greeting'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
+                  style: AscentTextStyles.interfaceSection.copyWith(
                     color: c.textPrimary,
                     letterSpacing: -0.3,
                   ),
@@ -2440,7 +2446,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        for (final title in _suggestions)
+                        for (final title in assistantSuggestions(_openedAt))
                           SizedBox(
                             width: cardWidth,
                             child: Material(
@@ -2460,24 +2466,8 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                                     vertical: 14,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0x35222630)
-                                        : c.surfaceAlt,
+                                    color: ChatPalette.of(context).recessed,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? const Color(0x28FFFFFF)
-                                          : c.border,
-                                      width: 1.0,
-                                    ),
-                                    boxShadow: [
-                                      if (isDark)
-                                        const BoxShadow(
-                                          color: Color(0x20000000),
-                                          blurRadius: 8,
-                                          offset: Offset(0, 2),
-                                        ),
-                                    ],
                                   ),
                                   child: Text(
                                     title,
@@ -2495,10 +2485,10 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                     );
                   },
                 ),
-                ],
-              ),
+              ],
             ),
-          );
+          ),
+        );
       },
     );
   }
@@ -2517,59 +2507,36 @@ class _AtmosphericChatBackground extends StatelessWidget {
     required this.accentColor,
   });
 
+  /// Grouped canvas with one quiet glow in the assistant gradient at the
+  /// top: calm in both themes, never a full-screen colour wash.
   @override
   Widget build(BuildContext context) {
-    // Theme-aware background palette:
-    // Option A: Soothing Slate Blue & Gentle Linen Glass
-    final List<Color> gradientColors;
-
-    if (isDark) {
-      gradientColors = const [
-        Color(0xFF0A0C10), // deep night base
-        Color(0xFF10131A), // slate-charcoal elevation
-        Color(0xFF0A0C10), // deep night base
-      ];
-    } else {
-      gradientColors = const [
-        Color(0xFFEFECE6), // soothing muted linen tone
-        Color(0xFFE8E5DF), // soft linen wash
-        Color(0xFFEFECE6), // soothing muted linen tone
-      ];
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: gradientColors,
+    final chat = isDark ? ChatPalette.dark : ChatPalette.light;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: chat.canvas),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(-0.6, -1.1),
+                radius: 1.1,
+                colors: [chat.glowA, chat.glowA.withValues(alpha: 0)],
+              ),
             ),
           ),
-          child: const SizedBox.expand(),
-        ),
-        // Subtle ambient soothing glass aura
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(0, -0.4),
-              radius: 1.2,
-              colors: isDark
-                  ? [
-                      const Color(0xFF1E2E4E).withValues(alpha: 0.12),
-                      Colors.transparent,
-                    ]
-                  : [
-                      const Color(0xFF2554B8).withValues(alpha: 0.05),
-                      Colors.transparent,
-                    ],
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0.8, -0.9),
+                radius: 0.9,
+                colors: [chat.glowB, chat.glowB.withValues(alpha: 0)],
+              ),
             ),
           ),
-          child: const SizedBox.expand(),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
