@@ -22,7 +22,7 @@ class ThoughtWallAppearance {
     this.density = ThoughtCardDensity.compact,
     this.bubbleFilled = false,
     this.bubbleBorderWidth = 1.0,
-    this.defaultBullets = BulletStyle.todo,
+    this.defaultBullets = BulletStyle.asWritten,
   });
   final ThoughtCardStyle style;
   final ThoughtCardTone tone;
@@ -81,7 +81,7 @@ class ThoughtWallAppearance {
       bubbleBorderWidth: (json['bubbleBorderWidth'] as num?)?.toDouble() ?? 1.8,
       defaultBullets:
           BulletStyle.fromStorage(json['defaultBullets'] as String?) ??
-          BulletStyle.todo,
+          BulletStyle.asWritten,
     );
   }
 }

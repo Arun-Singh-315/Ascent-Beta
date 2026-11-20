@@ -338,9 +338,10 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                             maxLines: 4,
                             controller: _controller,
                             focusNode: _focus,
-                            hint: 'I promise myself…',
+                            hint: 'e.g. I promise myself to walk daily',
                             onSend: _continue,
                             busy: _saving,
+                            checklist: false,
                           )
                         : Align(
                             alignment: Alignment.centerRight,

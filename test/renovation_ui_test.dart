@@ -90,13 +90,13 @@ void main() {
           tester.getSize(find.byKey(const ValueKey('message_composer_send'))),
           const Size(48, 48),
         );
+        // Nothing to send yet: the send button stays hidden.
         expect(
-          tester
-              .widget<IconButton>(
-                find.byKey(const ValueKey('message_composer_send')),
-              )
-              .onPressed,
-          isNull,
+          find.descendant(
+            of: find.byKey(const ValueKey('message_composer_send')),
+            matching: find.byType(IconButton),
+          ),
+          findsNothing,
         );
         await tester.enterText(find.byType(TextField), 'Line one\n🙂 Line two');
         await tester.pump();

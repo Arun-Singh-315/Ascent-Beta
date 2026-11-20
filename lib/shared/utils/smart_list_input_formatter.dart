@@ -28,13 +28,14 @@ class SmartListInputFormatter extends TextInputFormatter {
         final prevLine = textBeforeEnter.substring(lineStart);
 
         final bulletMatch =
-            RegExp(r'^(\s*)(?:[•\-\*]|-->|->|→)\s*(.*)$').firstMatch(prevLine);
+            RegExp(r'^(\s*)([☐☑]|[•\-\*]|-->|->|→)\s*(.*)$').firstMatch(prevLine);
         final numberMatch =
             RegExp(r'^(\s*)(\d+)([\.\)])\s*(.*)$').firstMatch(prevLine);
 
         if (bulletMatch != null) {
           final indent = bulletMatch.group(1) ?? '';
-          final content = bulletMatch.group(2) ?? '';
+          final glyph = bulletMatch.group(2) ?? '•';
+          final content = bulletMatch.group(3) ?? '';
           if (content.trim().isEmpty) {
             // Empty bullet line -> cleanly exit list mode by deleting the bullet
             final newText =
@@ -44,8 +45,9 @@ class SmartListInputFormatter extends TextInputFormatter {
               selection: TextSelection.collapsed(offset: lineStart),
             );
           } else {
-            // Auto-continue bullet on the new line
-            const nextMarker = '• ';
+            // Continue the same kind of list: a checklist line starts a new
+            // unticked box, anything else a plain bullet.
+            final nextMarker = glyph == '☐' || glyph == '☑' ? '☐ ' : '• ';
             final insertText = '\n$indent$nextMarker';
             final newText = oldValue.text.replaceRange(
               changeStart,

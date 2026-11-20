@@ -1,18 +1,31 @@
 import '../utils/thought_checklist_helper.dart';
 
 /// How bullets of a thought are drawn. A view choice only: the stored text
-/// ("- [ ] item" / "- [x] item" / "- item") is never rewritten by switching.
+/// ("☐ item" / "☑ item" / "• item") is never rewritten by switching.
 enum BulletStyle {
   /// A circle before each bullet; tapping it ticks the line.
   todo,
 
   /// A plain bullet, no circle.
-  bullet;
+  bullet,
+
+  /// Each line as written: tick boxes ("☐", "[ ]") get a circle, plain
+  /// bullets ("•", "→", "1.") stay plain. A thought is not a to-do list
+  /// unless the user made it one.
+  asWritten;
 
   static BulletStyle? fromStorage(String? value) => switch (value) {
     'todo' => BulletStyle.todo,
     'bullet' => BulletStyle.bullet,
+    'asWritten' => BulletStyle.asWritten,
     _ => null,
+  };
+
+  /// Whether [line] is drawn with a tick circle in this style.
+  bool showsCircle(ThoughtLine line) => switch (this) {
+    BulletStyle.todo => line.isItem,
+    BulletStyle.bullet => false,
+    BulletStyle.asWritten => line.isItem && line.isCheckbox,
   };
 
   String get storage => name;
@@ -30,6 +43,7 @@ class ThoughtLine {
     this.isDone = false,
     this.isHighlighted = false,
     this.glyph,
+    this.isCheckbox = false,
   });
 
   /// Text without its typed marker ("- ", "→ ", "[ ] " ...).
@@ -44,6 +58,9 @@ class ThoughtLine {
   /// The typed bullet glyph ("→", "•", "-", "1." ...), kept so plain style can
   /// draw the arrow the user chose.
   final String? glyph;
+
+  /// Written as a tick box ("☐", "☑", "[ ]", "[x]").
+  final bool isCheckbox;
 
   bool get isItem => itemIndex != null;
 }
@@ -76,6 +93,7 @@ List<ThoughtLine> parseThoughtLines(String content) {
         isDone: item.isDone,
         isHighlighted: item.isHighlighted,
         glyph: glyph == '-' || glyph == '*' ? '•' : glyph,
+        isCheckbox: ThoughtChecklistHelper.isCheckboxLine(item.rawLine),
       ),
     );
   }

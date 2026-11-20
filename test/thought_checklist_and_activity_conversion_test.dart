@@ -62,11 +62,11 @@ Morning Routine:
 ''';
       // Toggle item 0 to done
       final t1 = ThoughtChecklistHelper.toggleItemDone(text, 0);
-      expect(t1.contains('- [x] Wake up'), isTrue);
+      expect(t1.contains('☑ Wake up'), isTrue);
 
       // Toggle item 2 to undone
       final t2 = ThoughtChecklistHelper.toggleItemDone(t1, 2);
-      expect(t2.contains('- [ ] Gym'), isTrue);
+      expect(t2.contains('☐ Gym'), isTrue);
     });
 
     test('setAllDone updates all items in thought', () {
@@ -76,14 +76,14 @@ Morning Routine:
 - [x] Item 3
 ''';
       final allDone = ThoughtChecklistHelper.setAllDone(text, true);
-      expect(allDone.contains('- [x] Item 1'), isTrue);
-      expect(allDone.contains('- [x] Item 2'), isTrue);
-      expect(allDone.contains('- [x] Item 3'), isTrue);
+      expect(allDone.contains('☑ Item 1'), isTrue);
+      expect(allDone.contains('☑ Item 2'), isTrue);
+      expect(allDone.contains('☑ Item 3'), isTrue);
 
       final allUndone = ThoughtChecklistHelper.setAllDone(allDone, false);
-      expect(allUndone.contains('- [ ] Item 1'), isTrue);
-      expect(allUndone.contains('- [ ] Item 2'), isTrue);
-      expect(allUndone.contains('- [ ] Item 3'), isTrue);
+      expect(allUndone.contains('☐ Item 1'), isTrue);
+      expect(allUndone.contains('☐ Item 2'), isTrue);
+      expect(allUndone.contains('☐ Item 3'), isTrue);
     });
   });
 
@@ -107,9 +107,9 @@ Morning Routine:
         final id = await db.thoughtDao.insertThought(
           ThoughtTableCompanion.insert(
             content: '''
-- Wake up early
-- Drink lemon tea
-- Morning walk
+☐ Wake up early
+☐ Drink lemon tea
+☐ Morning walk
 ''',
           ),
         );
@@ -161,7 +161,7 @@ Morning Routine:
 
         // Verify database content has been updated to marked done
         final updatedThought = await db.thoughtDao.getThoughtById(id);
-        expect(updatedThought!.content.contains('- [x] Wake up early'), isTrue);
+        expect(updatedThought!.content.contains('☑ Wake up early'), isTrue);
       },
     );
 
