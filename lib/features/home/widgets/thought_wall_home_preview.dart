@@ -1,3 +1,8 @@
+import '../../../shared/widgets/undo_snackbar.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/ascent_sheet.dart';
+import '../../../app/theme/mindspace_palette.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 import 'package:ascent/app/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
@@ -18,7 +23,6 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
@@ -98,12 +102,9 @@ class _ThoughtWallHomePreviewState
 
   void _showBubbleStyleSheet(BuildContext context) {
     HapticFeedback.lightImpact();
-    showModalBottomSheet<void>(
+    showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+      framed: false,
       builder: (_) => const ThoughtWallAppearanceSheet(),
     );
   }
@@ -137,10 +138,9 @@ class _ThoughtWallHomePreviewState
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save. Your note is still here.'),
-          ),
+        AscentSnackBar.error(
+          context,
+          message: 'Could not save. Your note is still here.',
         );
       }
     } finally {
@@ -198,18 +198,16 @@ class _ThoughtWallHomePreviewState
       if (key != null) await ref.read(sharedPreferencesProvider).remove(key);
       if (mounted) {
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kept as a thought. No reminder was added.'),
-          ),
+        AscentSnackBar.show(
+          context,
+          message: 'Kept as a thought. No reminder was added.',
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not close this draft. Please retry.'),
-          ),
+        AscentSnackBar.error(
+          context,
+          message: 'Could not close this draft. Please retry.',
         );
       }
     }
@@ -326,8 +324,8 @@ class _ThoughtWallHomePreviewState
               : (g.merlot
                     ? MerlotPalette.surface
                     : (g.frozen
-                          ? const Color(0xFFFBFDFF)
-                          : const Color(0xFFFFFDFB))),
+                          ? MindspacePalette.previewFillCool
+                          : MindspacePalette.previewFillWarm)),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _focusNode.hasFocus ? g.clay : g.line,
@@ -335,9 +333,11 @@ class _ThoughtWallHomePreviewState
           ),
           boxShadow: [
             BoxShadow(
-              color: (_focusNode.hasFocus ? g.clay : const Color(0xFF5C4A3E)).withValues(
-                alpha: context.isDark ? 0.18 : 0.04,
-              ),
+              color:
+                  (_focusNode.hasFocus
+                          ? g.clay
+                          : MindspacePalette.previewShadowWarm)
+                      .withValues(alpha: context.isDark ? 0.18 : 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -371,9 +371,9 @@ class _ThoughtWallHomePreviewState
                 style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                 decoration: InputDecoration(
                   hintText: 'Capture a thought…',
-                  hintStyle: TextStyle(
+                  hintStyle: AscentTextStyles.bodyMedium.copyWith(
                     color: g.inkMuted,
-                    fontSize: 14,
+
                     fontWeight: FontWeight.w500,
                   ),
                   filled: false,
@@ -392,22 +392,27 @@ class _ThoughtWallHomePreviewState
                 backgroundColor: g.clay,
                 disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
                 foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
+                disabledForegroundColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.4),
                 minimumSize: const Size(44, 44),
               ),
               onPressed: _saving || _controller.text.trim().isEmpty
                   ? null
                   : _send,
               icon: _saving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                      child: CupertinoActivityIndicator(
+                        radius: 9,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
-                  : const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                  : Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
             ),
           ],
         ),
@@ -443,8 +448,7 @@ class _ThoughtWallHomePreviewState
                     const SizedBox(width: 6),
                     Text(
                       'Tip: Tap + or type → for plans, • for to-do',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: AscentTextStyles.homeCaption.copyWith(
                         fontWeight: FontWeight.w600,
                         color: g.clay,
                       ),
@@ -515,7 +519,7 @@ class _ThoughtWallHomePreviewState
                               children: [
                                 Text(
                                   todayFestival.emoji,
-                                  style: const TextStyle(fontSize: 16),
+                                  style: AscentTextStyles.body.copyWith(),
                                 ),
                                 const SizedBox(width: 8),
                                 Flexible(
@@ -523,9 +527,9 @@ class _ThoughtWallHomePreviewState
                                     '${todayFestival.name} Reflection',
                                     style: AscentTextStyles.labelMedium
                                         .copyWith(
-                                          color: context.isDark
-                                              ? const Color(0xFFFDE68A)
-                                              : const Color(0xFF92400E),
+                                          color: MindspacePalette.highlightInk(
+                                            context.isDark,
+                                          ),
                                           fontWeight: FontWeight.w700,
                                         ),
                                   ),
@@ -558,8 +562,8 @@ class _ThoughtWallHomePreviewState
                 : (g.merlot
                       ? MerlotPalette.surface
                       : (g.frozen
-                            ? const Color(0xFFF8FAFD)
-                            : const Color(0xFFFFFDFB)));
+                            ? MindspacePalette.previewCardCool
+                            : MindspacePalette.previewFillWarm));
 
             final cardBorder = isDark
                 ? null
@@ -958,11 +962,12 @@ class _ThoughtWallHomePreviewState
                                           const SizedBox(width: 4),
                                           Text(
                                             'Done',
-                                            style: TextStyle(
-                                              color: g.sage,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: AscentTextStyles.homeCaption
+                                                .copyWith(
+                                                  color: g.sage,
+
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -1070,9 +1075,8 @@ class _ThoughtWallHomePreviewState
             builder: (context, constraints) {
               final title = Text(
                 'Mindspace',
-                style: AscentTextStyles.homeTitle.copyWith(
+                style: AscentTextStyles.interfaceTitle.copyWith(
                   color: g.ink,
-                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               );
@@ -1092,7 +1096,7 @@ class _ThoughtWallHomePreviewState
                   const SizedBox(width: 4),
                   HomeSectionArrowButton(
                     tooltip: 'Open Mindspace',
-                    color: const Color(0xFF7C5CB7),
+                    color: MindspacePalette.accent,
                     onTap: () => context.open('/thought-wall'),
                   ),
                 ],
@@ -1206,10 +1210,19 @@ class _ThoughtWallHomePreviewState
                       return true;
                     } else {
                       final newDone = !latest.isCompleted;
-                      await ref.read(thoughtDaoProvider).setCompleted(latest.id, newDone);
-                      if (ThoughtChecklistHelper.hasChecklistItems(latest.content)) {
-                        final newText = ThoughtChecklistHelper.setAllDone(latest.content, newDone);
-                        await ref.read(thoughtDaoProvider).setContent(latest.id, newText);
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .setCompleted(latest.id, newDone);
+                      if (ThoughtChecklistHelper.hasChecklistItems(
+                        latest.content,
+                      )) {
+                        final newText = ThoughtChecklistHelper.setAllDone(
+                          latest.content,
+                          newDone,
+                        );
+                        await ref
+                            .read(thoughtDaoProvider)
+                            .setContent(latest.id, newText);
                       }
                       return false;
                     }
@@ -1236,10 +1249,9 @@ class _ThoughtWallHomePreviewState
                         const SizedBox(width: 8),
                         Text(
                           latest.isCompleted ? 'Mark open' : 'Complete',
-                          style: TextStyle(
+                          style: AscentTextStyles.interfaceLabel.copyWith(
                             color: SharedControlColors.actionBlue,
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1260,10 +1272,9 @@ class _ThoughtWallHomePreviewState
                       children: [
                         Text(
                           'Delete',
-                          style: TextStyle(
+                          style: AscentTextStyles.interfaceLabel.copyWith(
                             color: SharedControlColors.dueRed,
                             fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1281,7 +1292,8 @@ class _ThoughtWallHomePreviewState
                     locked: locked,
                     timeAgo: _formatTimeAgo(latest.createdAt),
                     maxLines: widget.previewLimit == 1 ? 2 : 4,
-                    onTap: () => context.open('/thought-wall?thought=${latest.id}'),
+                    onTap: () =>
+                        context.open('/thought-wall?thought=${latest.id}'),
                     onAction: () => showHomeThoughtActions(
                       context,
                       ref,
@@ -1301,7 +1313,10 @@ class _ThoughtWallHomePreviewState
                 child: Container(
                   key: const ValueKey('home_no_active_thoughts'),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: c.surfaceAlt,
                     borderRadius: BorderRadius.circular(Rd.card),
@@ -1331,9 +1346,9 @@ class _ThoughtWallHomePreviewState
                       const SizedBox(height: 12),
                       Text(
                         'No active thoughts',
-                        style: TextStyle(
+                        style: AscentTextStyles.interfaceSupporting.copyWith(
                           color: c.textPrimary,
-                          fontSize: 15,
+
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.2,
                         ),
@@ -1342,9 +1357,9 @@ class _ThoughtWallHomePreviewState
                       const SizedBox(height: 4),
                       Text(
                         'All thoughts completed · Tap to open Mindspace',
-                        style: TextStyle(
+                        style: AscentTextStyles.caption.copyWith(
                           color: c.textSecondary,
-                          fontSize: 12.5,
+
                           height: 1.35,
                         ),
                         textAlign: TextAlign.center,
@@ -1387,9 +1402,9 @@ class _ThoughtWallHomePreviewState
                   const SizedBox(height: 12),
                   Text(
                     'Your mindspace is clear',
-                    style: TextStyle(
+                    style: AscentTextStyles.interfaceSupporting.copyWith(
                       color: c.textPrimary,
-                      fontSize: 15,
+
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.2,
                     ),
@@ -1398,9 +1413,9 @@ class _ThoughtWallHomePreviewState
                   const SizedBox(height: 4),
                   Text(
                     'Capture what’s on your mind anytime.',
-                    style: TextStyle(
+                    style: AscentTextStyles.caption.copyWith(
                       color: c.textSecondary,
-                      fontSize: 12.5,
+
                       height: 1.35,
                     ),
                     textAlign: TextAlign.center,
@@ -1472,8 +1487,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
     final heroBorderColor = isHighPriority
         ? c.accent.withValues(alpha: 0.6)
         : (dark
-            ? c.border.withValues(alpha: 0.95)
-            : c.border.withValues(alpha: 0.85));
+              ? c.border.withValues(alpha: 0.95)
+              : c.border.withValues(alpha: 0.85));
 
     return Material(
       color: Colors.transparent,
@@ -1540,12 +1555,12 @@ class _HomeThoughtBubble extends ConsumerWidget {
                                     const SizedBox(width: 4),
                                     Text(
                                       'PRIVATE COMMITMENT',
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.8,
-                                        color: c.accent,
-                                      ),
+                                      style: AscentTextStyles.homeCaption
+                                          .copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.8,
+                                            color: c.accent,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -1559,8 +1574,7 @@ class _HomeThoughtBubble extends ConsumerWidget {
                             timeAgo,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11.5,
+                            style: AscentTextStyles.homeCaption.copyWith(
                               color: c.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1631,8 +1645,8 @@ class _HomeThoughtBubble extends ConsumerWidget {
                           newStatus,
                         );
                         await ref
-                          .read(thoughtDaoProvider)
-                          .setContent(thought.id, newContent);
+                            .read(thoughtDaoProvider)
+                            .setContent(thought.id, newContent);
                       }
                     },
                   ),
@@ -1664,14 +1678,14 @@ class _HomeThoughtBubble extends ConsumerWidget {
               ] else ...[
                 ThoughtExcerpt(
                   content: display,
-                  style: TextStyle(
-                    fontSize: 14.5,
+                  style: AscentTextStyles.bodyMedium.copyWith(
                     height: 1.45,
                     fontStyle: locked ? FontStyle.italic : FontStyle.normal,
                     color: locked ? c.textSecondary : c.textPrimary,
                     fontWeight: FontWeight.w500,
-                    decoration:
-                        thought.isCompleted ? TextDecoration.lineThrough : null,
+                    decoration: thought.isCompleted
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
                   maxLines: maxLines,
                   thoughtId: thought.id,
@@ -1726,10 +1740,12 @@ class _HomeThoughtBubble extends ConsumerWidget {
                       await ref
                           .read(thoughtDaoProvider)
                           .setContent(thought.id, newText);
-                      final updatedItems =
-                          ThoughtChecklistHelper.parseItems(newText);
-                      final allDone =
-                          ThoughtChecklistHelper.areAllDone(updatedItems);
+                      final updatedItems = ThoughtChecklistHelper.parseItems(
+                        newText,
+                      );
+                      final allDone = ThoughtChecklistHelper.areAllDone(
+                        updatedItems,
+                      );
                       if (allDone != thought.isCompleted) {
                         await ref
                             .read(thoughtDaoProvider)
@@ -1754,16 +1770,17 @@ class _HomeThoughtBubble extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       item.text,
-                      style: TextStyle(
-                        fontSize: 14,
+                      style: AscentTextStyles.bodyMedium.copyWith(
                         height: 1.35,
                         color: item.isDone
                             ? c.textSecondary
                             : (item.isHighlighted ? c.accent : c.textPrimary),
-                        decoration:
-                            item.isDone ? TextDecoration.lineThrough : null,
-                        fontWeight:
-                            item.isHighlighted ? FontWeight.w600 : FontWeight.w500,
+                        decoration: item.isDone
+                            ? TextDecoration.lineThrough
+                            : null,
+                        fontWeight: item.isHighlighted
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -1774,9 +1791,9 @@ class _HomeThoughtBubble extends ConsumerWidget {
                       HapticFeedback.selectionClick();
                       final newText =
                           ThoughtChecklistHelper.toggleItemHighlight(
-                        thought.content,
-                        item.index,
-                      );
+                            thought.content,
+                            item.index,
+                          );
                       await ref
                           .read(thoughtDaoProvider)
                           .setContent(thought.id, newText);
@@ -1814,47 +1831,36 @@ class _HomeThoughtBubble extends ConsumerWidget {
                 HapticFeedback.mediumImpact();
                 final now = DateTime.now();
                 final isFullHigh = isHighPriorityContent(thought.content);
+                final created = <int>[];
                 for (final it in items) {
                   final isHigh = it.isHighlighted || isFullHigh;
-                  await ref.read(taskDaoProvider).insertTask(
-                        TaskTableCompanion.insert(
-                          title: it.text,
-                          priority: drift.Value(isHigh ? 'high' : 'medium'),
-                          plannedDate: drift.Value(now),
-                          actualCompletedDate: drift.Value(
-                            it.isDone ? now : null,
+                  created.add(
+                    await ref
+                        .read(taskDaoProvider)
+                        .insertTask(
+                          TaskTableCompanion.insert(
+                            title: it.text,
+                            priority: drift.Value(isHigh ? 'high' : 'medium'),
+                            plannedDate: drift.Value(now),
+                            actualCompletedDate: drift.Value(
+                              it.isDone ? now : null,
+                            ),
                           ),
                         ),
-                      );
+                  );
                 }
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Converted ${items.length} items to today’s activities',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(
-                                  context,
-                                ).hideCurrentSnackBar();
-                                context.push('/today');
-                              },
-                              child: const Text('View'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  final dao = ref.read(taskDaoProvider);
+                  showUndoSnackbar(
+                    context,
+                    message: created.length == 1
+                        ? '1 item added to today'
+                        : '${created.length} items added to today',
+                    onUndo: () async {
+                      for (final id in created) {
+                        await dao.deleteTask(id);
+                      }
+                    },
                   );
                 }
               },
@@ -1866,9 +1872,7 @@ class _HomeThoughtBubble extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: c.accentTint,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: c.accent.withValues(alpha: 0.25),
-                  ),
+                  border: Border.all(color: c.accent.withValues(alpha: 0.25)),
                 ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -1883,8 +1887,7 @@ class _HomeThoughtBubble extends ConsumerWidget {
                       const SizedBox(width: 5),
                       Text(
                         'Convert to activities',
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: AscentTextStyles.caption.copyWith(
                           fontWeight: FontWeight.w600,
                           color: c.accent,
                         ),

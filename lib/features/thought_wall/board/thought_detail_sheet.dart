@@ -192,7 +192,7 @@ class ThoughtDetailSheet extends ConsumerWidget {
                   displayContent(thought.content).trim(),
                   style: AppTypography.thoughtContent(
                     color: g.ink,
-                  ).copyWith(fontSize: 17),
+                  ).copyWith(fontSize: AscentTextStyles.interfaceBody.fontSize),
                 ),
               if (showPrompt && !locked) ...[
                 const SizedBox(height: AppSpace.s12),
@@ -414,10 +414,34 @@ class _DetailAction extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
   @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: EdgeInsets.zero,
-    leading: Icon(icon, color: color ?? context.glass.inkSecondary, size: 22),
-    title: Text(label, style: TextStyle(color: color)),
-    onTap: onTap,
-  );
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Semantics(
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+            child: Row(
+              children: [
+                Icon(icon, color: color ?? g.inkSecondary, size: 22),
+                const SizedBox(width: AppSpace.s16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AscentTextStyles.body.copyWith(
+                      color: color ?? g.ink,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

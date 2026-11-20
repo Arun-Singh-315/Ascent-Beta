@@ -23,13 +23,19 @@ import 'thought_actions.dart';
 Future<bool> convertThoughtWithQuickAdd(
   BuildContext context,
   WidgetRef ref,
-  Thought thought,
-) async {
+  Thought thought, {
+  bool remind = false,
+}) async {
   final db = ref.read(databaseProvider);
   final existing = await db.taskDao.getTaskLinkedToThought(thought.id);
   if (!context.mounted) return false;
   if (existing != null) {
-    return applyThoughtAction(context, db, [thought], 'todo');
+    return applyThoughtAction(
+      context,
+      db,
+      [thought],
+      remind ? 'reminder' : 'todo',
+    );
   }
   final text = displayContent(thought.content);
   final title = ThoughtActions.extractTitle(text);
@@ -37,7 +43,12 @@ Future<bool> convertThoughtWithQuickAdd(
   final saved = await showAscentSheet<bool>(
     context: context,
     builder: (sheet) =>
-        _QuickAddFromThought(title: title, notes: notes, thoughtId: thought.id),
+        _QuickAddFromThought(
+          title: title,
+          notes: notes,
+          thoughtId: thought.id,
+          remind: remind,
+        ),
   );
   return saved ?? false;
 }
@@ -47,11 +58,13 @@ class _QuickAddFromThought extends StatelessWidget {
     required this.title,
     required this.notes,
     required this.thoughtId,
+    required this.remind,
   });
 
   final String title;
   final String? notes;
   final int thoughtId;
+  final bool remind;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +90,7 @@ class _QuickAddFromThought extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  'Make it a to-do',
+                  remind ? 'Remind me' : 'Make it a to-do',
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: AscentTextStyles.dialogTitle.copyWith(color: g.ink),
@@ -95,7 +108,9 @@ class _QuickAddFromThought extends StatelessWidget {
               AppSpace.s12,
             ),
             child: Text(
-              'Add a day, time or reminder by typing, e.g. “tomorrow 7am 30m”.',
+              remind
+                  ? 'Say when by typing, e.g. “tomorrow 7am”.'
+                  : 'Add a day, time or reminder by typing, e.g. “tomorrow 7am 30m”.',
               style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
             ),
           ),
@@ -103,6 +118,7 @@ class _QuickAddFromThought extends StatelessWidget {
             initialTitle: title,
             notes: notes,
             linkedThoughtId: thoughtId,
+            remind: remind,
             onSaved: (_) => Navigator.of(context).pop(true),
           ),
         ],
