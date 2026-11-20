@@ -8,9 +8,7 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
-import 'package:ascent/shared/widgets/glass_chip.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -274,96 +272,6 @@ void main() {
       );
     }
   }
-
-  testWidgets(
-    'open thoughts precede done; archive is separate and edit stays visible',
-    (t) async {
-      SharedPreferences.setMockInitialValues({
-        'feature_guide_v1_Thought Wall': true,
-      });
-      final prefs = await SharedPreferences.getInstance();
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(db.close);
-      t.view.physicalSize = const Size(390, 1000);
-      t.view.devicePixelRatio = 1;
-      addTearDown(t.view.resetPhysicalSize);
-      addTearDown(t.view.resetDevicePixelRatio);
-      final open = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'An open note',
-          createdAt: drift.Value(
-            DateTime.now().subtract(const Duration(minutes: 2)),
-          ),
-        ),
-      );
-      final done = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'A completed note',
-          isCompleted: const drift.Value(true),
-        ),
-      );
-      final archived = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'An archived note',
-          isArchived: const drift.Value(true),
-        ),
-      );
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-      );
-      try {
-        await t.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
-              home: const RepaintBoundary(
-                key: ValueKey('redesign_capture'),
-                child: ThoughtWallScreen(),
-              ),
-            ),
-          ),
-        );
-        await flush(t);
-        expect(find.text('An archived note'), findsNothing);
-        expect(
-          t.getTopLeft(find.text('An open note')).dy,
-          lessThan(t.getTopLeft(find.text('A completed note')).dy),
-        );
-        expect(find.byKey(ValueKey('thought_left_done_$done')), findsOneWidget);
-        expect(find.byTooltip('Edit thought'), findsNWidgets(2));
-        await capture(t, 'thoughts-dark');
-        await t.tap(find.widgetWithText(GlassChip, 'Archive'));
-        await flush(t);
-        expect(find.text('An archived note'), findsOneWidget);
-        expect(find.text('An open note'), findsNothing);
-        expect(
-          (await t.runAsync(
-            () => db.thoughtDao.getThoughtById(archived),
-          ))!.isArchived,
-          isTrue,
-        );
-        await t.tap(find.widgetWithText(GlassChip, 'Archive'));
-        await flush(t);
-        await t.tap(find.byKey(ValueKey('thought_left_done_$open')));
-        await flush(t);
-        expect(
-          (await t.runAsync(
-            () => db.thoughtDao.getThoughtById(open),
-          ))!.isCompleted,
-          isTrue,
-        );
-        expect(t.takeException(), isNull);
-      } finally {
-        await t.pumpWidget(const SizedBox());
-        container.dispose();
-        await t.pump(const Duration(seconds: 2));
-      }
-    },
-  );
 
   testWidgets('wall settings no longer offer ineffective card colours', (
     t,

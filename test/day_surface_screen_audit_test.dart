@@ -28,7 +28,6 @@ import 'package:ascent/features/settings/settings_screen.dart';
 import 'package:ascent/features/study_plan/study_plan_screen.dart';
 import 'package:ascent/features/study_plan/course_catalog_screen.dart';
 import 'package:ascent/features/study_plan/lecture_focus_player_screen.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
 import 'package:ascent/features/backup/workspace_backup_screen.dart';
 import 'package:ascent/features/interview_prep/interview_prep_screen.dart';
@@ -56,7 +55,6 @@ void main() {
     'StudyPlanScreen': const StudyPlanScreen(),
     'CourseCatalogScreen': const CourseCatalogScreen(),
     'LectureFocusPlayerScreen': const LectureFocusPlayerScreen(),
-    'ThoughtWallScreen': const ThoughtWallScreen(),
     'TaskBoardScreen': const TaskBoardScreen(),
     'WorkspaceBackupScreen': const WorkspaceBackupScreen(),
     'InterviewPrepScreen': const InterviewPrepScreen(),

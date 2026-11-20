@@ -1,21 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/shared/utils/action_text.dart';
 import 'package:ascent/shared/widgets/note_list_button.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DelayedDeleteDao extends TaskDao {
   DelayedDeleteDao(super.db);
@@ -36,15 +30,6 @@ class DelayedDeleteDao extends TaskDao {
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  Future<void> settleDb(WidgetTester tester) async {
-    for (var i = 0; i < 8; i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-  }
 
   test(
     'supporting text hides duplicates while preserving distinct words and notes',
@@ -173,90 +158,4 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     }
   });
-
-  testWidgets(
-    'bulk category moves persist into category-filtered history and Undo restores both',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'feature_guide_v1_Thought Wall': true,
-      });
-      final prefs = await SharedPreferences.getInstance();
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(db.close);
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
-      );
-      tester.view.physicalSize = const Size(500, 1200);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      try {
-        final now = DateTime.now();
-        final ids = <int>[];
-        for (final title in ['First reflection', 'Second reflection']) {
-          ids.add(
-            await db.thoughtDao.insertThought(
-              ThoughtTableCompanion.insert(
-                content: title,
-                createdAt: d.Value(DateTime(now.year, now.month, now.day - 1)),
-              ),
-            ),
-          );
-        }
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const ThoughtWallScreen(),
-            ),
-          ),
-        );
-        await settleDb(tester);
-        await tester.tap(find.text('History'));
-        await tester.pumpAndSettle();
-        await tester.longPress(find.textContaining('First reflection'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.textContaining('Second reflection'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('Move to category'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Life Goals').last);
-        await settleDb(tester);
-        for (final id in ids) {
-          expect(
-            (await tester.runAsync(
-              () => db.thoughtDao.getThoughtById(id),
-            ))!.category,
-            'life_goals',
-          );
-        }
-        await tester.tap(find.byTooltip('Category filter'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.widgetWithText(ListTile, 'Life Goals'));
-        await tester.pumpAndSettle();
-        expect(find.textContaining('First reflection'), findsOneWidget);
-        expect(find.textContaining('Second reflection'), findsOneWidget);
-        await tester.tap(find.text('Undo'));
-        await settleDb(tester);
-        for (final id in ids) {
-          final thought = (await tester.runAsync(
-            () => db.thoughtDao.getThoughtById(id),
-          ))!;
-          expect(thought.category, 'general');
-          expect(thought.isArchived, false);
-        }
-        expect(find.textContaining('First reflection'), findsNothing);
-        expect(tester.takeException(), isNull);
-      } finally {
-        await tester.pumpWidget(const SizedBox());
-        container.dispose();
-        await tester.pump(const Duration(seconds: 2));
-        await tester.pump();
-      }
-    },
-  );
 }

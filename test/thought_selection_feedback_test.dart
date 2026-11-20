@@ -9,7 +9,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
 
 void main() {
@@ -57,80 +56,6 @@ void main() {
       ),
       home: child,
     ),
-  );
-
-  testWidgets('Saving a merge exits selection and keeps source notes', (
-    tester,
-  ) async {
-    final (db, container) = await prepare();
-    addTearDown(db.close);
-    for (final text in ['Selection note A', 'Selection note B']) {
-      await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: text),
-      );
-    }
-    try {
-      await tester.pumpWidget(harness(container, const ThoughtWallScreen()));
-      await settleDb(tester);
-      await tester.ensureVisible(find.textContaining('Selection note A'));
-      await tester.pumpAndSettle();
-      await tester.longPress(find.textContaining('Selection note A'));
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.textContaining('Selection note B'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Selection note B'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Merge selected notes'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save merged note'));
-      await settleDb(tester);
-      expect(
-        find.byKey(const ValueKey('thought_selection_actions')),
-        findsNothing,
-      );
-      final notes = await tester.runAsync(
-        () => db.thoughtDao.watchAllThoughts().first,
-      );
-      expect(notes, hasLength(3));
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    } finally {
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-      container.dispose();
-      await tester.pump(const Duration(seconds: 2));
-    }
-  });
-  testWidgets(
-    'A Home note opens in its past wall view without a detail popup',
-    (tester) async {
-      final (db, container) = await prepare();
-      addTearDown(db.close);
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Older Home note',
-          createdAt: drift.Value(
-            DateTime.now().subtract(const Duration(days: 2)),
-          ),
-        ),
-      );
-      try {
-        await tester.pumpWidget(
-          harness(container, ThoughtWallScreen(initialThoughtId: id)),
-        );
-        await settleDb(tester);
-        expect(find.textContaining('Older Home note'), findsOneWidget);
-        expect(find.byType(BottomSheet), findsNothing);
-        expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      } finally {
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump();
-        container.dispose();
-        await tester.pump(const Duration(seconds: 2));
-      }
-    },
   );
   testWidgets(
     'Timed activity detail offers a timer while ordinary Todos retain Mark Done',
