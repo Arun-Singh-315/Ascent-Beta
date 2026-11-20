@@ -353,7 +353,8 @@ void main() {
         expect(dismissibleFinder, findsOneWidget);
 
         final dismissible = tester.widget<Dismissible>(dismissibleFinder);
-        expect(dismissible.direction, DismissDirection.endToStart);
+        // Right completes, left moves or deletes (CLAUDE.md §5.2).
+        expect(dismissible.direction, DismissDirection.horizontal);
 
         // Perform swipe left
         await tester.drag(dismissibleFinder, const Offset(-500, 0));

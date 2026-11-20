@@ -311,9 +311,11 @@ void main() {
       );
       await t.drag(tile, const Offset(-600, 0));
       await flush(t);
-      expect(find.text('Keep'), findsOneWidget);
-      await t.tap(find.text('Keep'));
+      // Swipe left offers a menu; dismissing it changes nothing.
+      expect(find.text('Delete'), findsOneWidget);
+      await t.tapAt(const Offset(5, 5));
       await flush(t);
+      expect(await t.runAsync(() => db.taskDao.getTaskById(id)), isNotNull);
       expect(
         (await t.runAsync(() => db.taskDao.getTaskById(id)))!.isArchived,
         isFalse,
