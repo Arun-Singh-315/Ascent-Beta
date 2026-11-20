@@ -21,12 +21,15 @@ void main() {
     });
 
     test('Ingredient scaling multiplies correctly for 1, 2, 3, and 4 cups', () {
-      final masalaChai = BuiltInBrewingRecipes.all
-          .firstWhere((r) => r.id == 'kadak_masala_chai');
-      final waterIngredient =
-          masalaChai.ingredients.firstWhere((i) => i.name == 'Water');
-      final teaIngredient =
-          masalaChai.ingredients.firstWhere((i) => i.name == 'CTC Black Tea');
+      final masalaChai = BuiltInBrewingRecipes.all.firstWhere(
+        (r) => r.id == 'kadak_masala_chai',
+      );
+      final waterIngredient = masalaChai.ingredients.firstWhere(
+        (i) => i.name == 'Water',
+      );
+      final teaIngredient = masalaChai.ingredients.firstWhere(
+        (i) => i.name == 'CTC Black Tea',
+      );
 
       // 1 cup
       expect(waterIngredient.scaledFormatted(1), '100 ml');

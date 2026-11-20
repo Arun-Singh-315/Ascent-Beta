@@ -202,19 +202,44 @@ void main() {
     },
   );
 
-  testWidgets('Shortcut editor actions sit above shell navigation', (tester) async {
-    await tester.pumpWidget(app(Scaffold(body: Stack(children: [
-      Navigator(onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => Scaffold(
-        body: Padding(padding: const EdgeInsets.all(24),
-          child: HomeShortcutPanel(shortcuts: const [], badgeCounts: const {})),
-      ))),
-      Align(alignment: Alignment.bottomCenter, child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {},
-        child: const SizedBox(height: 160, width: double.infinity,
-          child: ColoredBox(color: Colors.grey)),
-      )),
-    ]))));
+  testWidgets('Shortcut editor actions sit above shell navigation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Stack(
+            children: [
+              Navigator(
+                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    body: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: HomeShortcutPanel(
+                        shortcuts: const [],
+                        badgeCounts: const {},
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                  child: const SizedBox(
+                    height: 160,
+                    width: double.infinity,
+                    child: ColoredBox(color: Colors.grey),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
     await settle(tester);
     await tester.tap(find.byKey(const ValueKey('edit_home_shortcuts')));
     await settle(tester);

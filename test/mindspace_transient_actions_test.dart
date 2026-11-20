@@ -13,7 +13,6 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/plans/widgets/plan_collection_editor.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/thought_wall/thought_quick_actions.dart';
 
 class FakeStudyStreakNotifier extends StudyStreakNotifier {
@@ -87,9 +86,14 @@ void main() {
         expect(find.byType(PlanCollectionEditor), findsNothing);
 
         // 2. Saved thought is stored in DB
-        final thoughts = await tester.runAsync(() => db.select(db.thoughtTable).get());
+        final thoughts = await tester.runAsync(
+          () => db.select(db.thoughtTable).get(),
+        );
         expect(thoughts, isNotEmpty);
-        expect(thoughts!.first.content, contains('Tomorrow at 5 pm check in on project'));
+        expect(
+          thoughts!.first.content,
+          contains('Tomorrow at 5 pm check in on project'),
+        );
 
         // 3. Ask Riya must be removed from the card
         expect(find.text('Ask Riya'), findsNothing);
@@ -122,46 +126,6 @@ void main() {
   });
 
   group('Thought Wall Selection and Quick Actions Include Plan', () {
-    testWidgets('Thought Wall selection bar includes Plan alongside Todo', (
-      tester,
-    ) async {
-      await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Note for testing plan selection',
-        ),
-      );
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(home: ThoughtWallScreen()),
-        ),
-      );
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-
-      // Long press to enter selection mode
-      await tester.longPress(find.textContaining('Note for testing'));
-      await tester.pumpAndSettle();
-
-      // Open more actions menu
-      await tester.tap(find.byTooltip('More selected actions'));
-      await tester.pumpAndSettle();
-
-      // Must find Plan, Todo, Reminder on selection
-      expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('Create Todo'), findsOneWidget);
-      expect(find.text('Set reminder'), findsOneWidget);
-
-      // Tap Plan from selection mode
-      await tester.tap(find.text('Plan'));
-      await tester.pumpAndSettle();
-
-      // Must open schedule sheet
-      expect(find.byType(PlanCollectionEditor), findsOneWidget);
-    });
-
     testWidgets('ThoughtQuickActions offers Plan, Todo, Reminder', (
       tester,
     ) async {

@@ -41,7 +41,9 @@ void main() {
       // In-memory sqlite db doesn't require explicit close
     });
 
-    testWidgets('App boots cleanly to Home and mounts root shell', (tester) async {
+    testWidgets('App boots cleanly to Home and mounts root shell', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -65,49 +67,54 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('Main navigation shell switches between primary tabs without error', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            databaseProvider.overrideWithValue(db),
-            pendingReminderEffectsProvider.overrideWith((ref) {}),
-          ],
-          child: const AscentApp(),
-        ),
-      );
+    testWidgets(
+      'Main navigation shell switches between primary tabs without error',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              databaseProvider.overrideWithValue(db),
+              pendingReminderEffectsProvider.overrideWith((ref) {}),
+            ],
+            child: const AscentApp(),
+          ),
+        );
 
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 1500));
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Verify Tab 0 (Home) is loaded
-      expect(ascentRouter.state.uri.path, AscentRoutes.home);
+        // Verify Tab 0 (Home) is loaded
+        expect(ascentRouter.state.uri.path, AscentRoutes.home);
 
-      // Switch to Tab 1 (Reminders)
-      ascentRouter.go(AscentRoutes.reminders);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(ascentRouter.state.uri.path, AscentRoutes.reminders);
+        // Switch to Tab 1 (Reminders)
+        ascentRouter.go(AscentRoutes.reminders);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(ascentRouter.state.uri.path, AscentRoutes.reminders);
 
-      // Switch to Tab 2 (Money)
-      ascentRouter.go(AscentRoutes.money);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(ascentRouter.state.uri.path, AscentRoutes.money);
+        // Switch to Tab 2 (Money)
+        ascentRouter.go(AscentRoutes.money);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(ascentRouter.state.uri.path, AscentRoutes.money);
 
-      // Switch to Tab 3 (More)
-      ascentRouter.go(AscentRoutes.more);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(ascentRouter.state.uri.path, AscentRoutes.more);
+        // Switch to Tab 3 (More)
+        ascentRouter.go(AscentRoutes.more);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(ascentRouter.state.uri.path, AscentRoutes.more);
 
-      // Revert to Tab 0 (Home)
-      ascentRouter.go(AscentRoutes.home);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(ascentRouter.state.uri.path, AscentRoutes.home);
+        // Revert to Tab 0 (Home)
+        ascentRouter.go(AscentRoutes.home);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(ascentRouter.state.uri.path, AscentRoutes.home);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('Key standalone routes resolve and mount cleanly', (tester) async {
+    testWidgets('Key standalone routes resolve and mount cleanly', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

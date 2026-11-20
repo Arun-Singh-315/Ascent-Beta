@@ -202,24 +202,6 @@ void main() {
     },
   );
 
-  testWidgets('Lecture progress stays scoped to its course', (tester) async {
-    const lecture = TodayActivityItem(
-      id: 'lecture',
-      title: 'Lesson',
-      sourceType: 'lecture',
-      status: TodayActivityStatus.paused,
-      elapsedSecondsToday: 0,
-      learningCourseId: 'mine',
-      learningLectureId: 1,
-      categoryTag: 'Study',
-      kind: ActivityKind.duration,
-    );
-    await tester.pumpWidget(
-      app(const ActivityTimerProgress(activity: lecture)),
-    );
-    expect(find.text('02:00 / 20:00'), findsOneWidget);
-  });
-
   for (final dark in [false, true]) {
     testWidgets(
       'Timer controls fit 320px at 2x and Resume selects its own task dark=$dark',

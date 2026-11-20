@@ -17,11 +17,12 @@ void main() {
     await db.close();
   });
 
-  Widget buildSubject({double textScale = 1.0, Size size = const Size(390, 844)}) {
+  Widget buildSubject({
+    double textScale = 1.0,
+    Size size = const Size(390, 844),
+  }) {
     return ProviderScope(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-      ],
+      overrides: [databaseProvider.overrideWithValue(db)],
       child: MaterialApp(
         theme: ThemeData(
           brightness: Brightness.light,
@@ -38,7 +39,9 @@ void main() {
     );
   }
 
-  testWidgets('AddActivityScreen creates a task and saves to database', (tester) async {
+  testWidgets('AddActivityScreen creates a task and saves to database', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
@@ -46,7 +49,10 @@ void main() {
     expect(find.text('What needs to be done?'), findsOneWidget);
 
     // Enter text
-    await tester.enterText(find.byType(TextField).first, 'Read Clean Code Chapter 4');
+    await tester.enterText(
+      find.byType(TextField).first,
+      'Read Clean Code Chapter 4',
+    );
     await tester.pumpAndSettle();
 
     // Tap "30m Focus"
@@ -64,11 +70,15 @@ void main() {
     expect(tasks.first.estimatedMinutes, 30);
   });
 
-  testWidgets('AddActivityScreen 320px width & 2.0x text scale immunity', (tester) async {
+  testWidgets('AddActivityScreen 320px width & 2.0x text scale immunity', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(320, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(buildSubject(size: const Size(320, 700), textScale: 2.0));
+    await tester.pumpWidget(
+      buildSubject(size: const Size(320, 700), textScale: 2.0),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

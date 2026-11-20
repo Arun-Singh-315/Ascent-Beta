@@ -22,7 +22,9 @@ void main() {
     await db.close();
   });
 
-  testWidgets('Thought bubble does not clutter inline chips inside the bubble', (tester) async {
+  testWidgets('Thought bubble does not clutter inline chips inside the bubble', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -43,8 +45,12 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          thoughtCategoriesStreamProvider.overrideWith((ref) => Stream.value({'philosophy': 'Philosophy'})),
+          recentThoughtsStreamProvider.overrideWith(
+            (ref) => Stream.value([thought]),
+          ),
+          thoughtCategoriesStreamProvider.overrideWith(
+            (ref) => Stream.value({'philosophy': 'Philosophy'}),
+          ),
         ],
         child: MaterialApp(
           theme: AscentTheme.light(),
@@ -60,7 +66,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify thought text is visible
-    expect(find.textContaining('Simplicity is the prerequisite'), findsOneWidget);
+    expect(
+      find.textContaining('Simplicity is the prerequisite'),
+      findsOneWidget,
+    );
 
     // Verify inline clutter chips (Plan, Todo, Reminder, Both) are NOT cluttering inside the thought bubble
     expect(find.byKey(const ValueKey('home_thought_quick_1')), findsNothing);

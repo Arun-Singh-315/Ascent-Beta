@@ -8,26 +8,11 @@ void main() {
         NotificationService.destinationForPayload('/ai-assistant'),
         '/ai-assistant',
       );
-      expect(
-        NotificationService.destinationForPayload('/vault'),
-        '/vault',
-      );
-      expect(
-        NotificationService.destinationForPayload('/today'),
-        '/today',
-      );
-      expect(
-        NotificationService.destinationForPayload('/things'),
-        '/things',
-      );
-      expect(
-        NotificationService.destinationForPayload('/history'),
-        '/history',
-      );
-      expect(
-        NotificationService.destinationForPayload('/plans'),
-        '/plans',
-      );
+      expect(NotificationService.destinationForPayload('/vault'), '/vault');
+      expect(NotificationService.destinationForPayload('/today'), '/today');
+      expect(NotificationService.destinationForPayload('/things'), '/things');
+      expect(NotificationService.destinationForPayload('/history'), '/history');
+      expect(NotificationService.destinationForPayload('/plans'), '/plans');
       expect(
         NotificationService.destinationForPayload('/promises'),
         '/promises',
@@ -36,10 +21,7 @@ void main() {
         NotificationService.destinationForPayload('/medicine'),
         '/medicine',
       );
-      expect(
-        NotificationService.destinationForPayload('/walk'),
-        '/walk',
-      );
+      expect(NotificationService.destinationForPayload('/walk'), '/walk');
       expect(
         NotificationService.destinationForPayload('/chai-break'),
         '/chai-break',
@@ -98,7 +80,9 @@ void main() {
         '/thought-wall?thought=5',
       );
       expect(
-        NotificationService.destinationForPayload('/things?focus=42&mode=wrapup'),
+        NotificationService.destinationForPayload(
+          '/things?focus=42&mode=wrapup',
+        ),
         '/things?focus=42&mode=wrapup',
       );
       expect(
@@ -115,7 +99,9 @@ void main() {
 
     test('supports ascent:// custom scheme deep links', () {
       expect(
-        NotificationService.destinationForPayload('ascent://open/things?focus=99'),
+        NotificationService.destinationForPayload(
+          'ascent://open/things?focus=99',
+        ),
         '/things?focus=99',
       );
       expect(
@@ -147,23 +133,31 @@ void main() {
       );
     });
 
-    test('safely falls back to /home for invalid, malicious, or empty payloads', () {
-      expect(NotificationService.destinationForPayload(null), '/home');
-      expect(NotificationService.destinationForPayload(''), '/home');
-      expect(NotificationService.destinationForPayload('   '), '/home');
-      expect(NotificationService.destinationForPayload('/unregistered/route'), '/home');
-      expect(
-        NotificationService.destinationForPayload('https://malicious.site/today'),
-        '/home',
-      );
-      expect(
-        NotificationService.destinationForPayload('javascript:alert(1)'),
-        '/home',
-      );
-      expect(
-        NotificationService.destinationForPayload('random_text_not_a_route'),
-        '/home',
-      );
-    });
+    test(
+      'safely falls back to /home for invalid, malicious, or empty payloads',
+      () {
+        expect(NotificationService.destinationForPayload(null), '/home');
+        expect(NotificationService.destinationForPayload(''), '/home');
+        expect(NotificationService.destinationForPayload('   '), '/home');
+        expect(
+          NotificationService.destinationForPayload('/unregistered/route'),
+          '/home',
+        );
+        expect(
+          NotificationService.destinationForPayload(
+            'https://malicious.site/today',
+          ),
+          '/home',
+        );
+        expect(
+          NotificationService.destinationForPayload('javascript:alert(1)'),
+          '/home',
+        );
+        expect(
+          NotificationService.destinationForPayload('random_text_not_a_route'),
+          '/home',
+        );
+      },
+    );
   });
 }

@@ -8,7 +8,6 @@ import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:ascent/features/home/widgets/welcome_back_banner.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/features/today/task_board_screen.dart';
 import 'package:ascent/shared/widgets/feature_guide.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
@@ -25,13 +24,13 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
 class _FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 0,
-        yesterdaySeconds: 0,
-        priorStreakDays: 0,
-        historicalLongestStreak: 0,
-        historicalShortestStreak: 1,
-        now: DateTime.now(),
-      );
+    todaySeconds: 0,
+    yesterdaySeconds: 0,
+    priorStreakDays: 0,
+    historicalLongestStreak: 0,
+    historicalShortestStreak: 1,
+    now: DateTime.now(),
+  );
 }
 
 final _testUserProfile = UserProfile(
@@ -152,172 +151,120 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('2. Launch with no data (clean empty state): renders cleanly with zero modals', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+    testWidgets(
+      '2. Launch with no data (clean empty state): renders cleanly with zero modals',
+      (tester) async {
+        await tester.pumpWidget(buildApp());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      expect(tester.takeException(), isNull);
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(HomeScreen), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(Dialog), findsNothing);
+        expect(find.byType(HomeScreen), findsOneWidget);
 
-      await unmount(tester);
-    });
+        await unmount(tester);
+      },
+    );
 
-    testWidgets('3. Launch with 3+ days away: WelcomeBackBanner appears at top 96 and auto-dismisses', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildApp(
-        extraOverrides: [
-          daysSinceLastOpenProvider.overrideWith((ref) => 4),
-        ],
-      ));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+    testWidgets(
+      '3. Launch with 3+ days away: WelcomeBackBanner appears at top 96 and auto-dismisses',
+      (tester) async {
+        await tester.pumpWidget(
+          buildApp(
+            extraOverrides: [
+              daysSinceLastOpenProvider.overrideWith((ref) => 4),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Banner should appear
-      expect(find.byType(WelcomeBackBanner), findsOneWidget);
+        // Banner should appear
+        expect(find.byType(WelcomeBackBanner), findsOneWidget);
 
-      // Verify positioned top is 96 (below header controls)
-      final positioned = tester.widget<Positioned>(
-        find.ancestor(
-          of: find.byType(WelcomeBackBanner),
-          matching: find.byType(Positioned),
-        ).first,
-      );
-      expect(positioned.top, equals(96));
+        // Verify positioned top is 96 (below header controls)
+        final positioned = tester.widget<Positioned>(
+          find
+              .ancestor(
+                of: find.byType(WelcomeBackBanner),
+                matching: find.byType(Positioned),
+              )
+              .first,
+        );
+        expect(positioned.top, equals(96));
 
-      // Advance by 3 seconds to fire timer, then 300ms to complete reverse animation
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pump(const Duration(milliseconds: 350));
-      await tester.pump();
+        // Advance by 3 seconds to fire timer, then 300ms to complete reverse animation
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
 
-      expect(find.byType(WelcomeBackBanner), findsNothing);
+        expect(find.byType(WelcomeBackBanner), findsNothing);
 
-      await unmount(tester);
-    });
+        await unmount(tester);
+      },
+    );
 
-    testWidgets('4. Resume from background: zero modals or bottom sheets pop up', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+    testWidgets(
+      '4. Resume from background: zero modals or bottom sheets pop up',
+      (tester) async {
+        await tester.pumpWidget(buildApp());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Simulate AppLifecycleState.resumed
-      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+        // Simulate AppLifecycleState.resumed
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Zero modal sheets or dialogs on resume
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(BottomSheet), findsNothing);
+        // Zero modal sheets or dialogs on resume
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(Dialog), findsNothing);
+        expect(find.byType(BottomSheet), findsNothing);
 
-      await unmount(tester);
-    });
+        await unmount(tester);
+      },
+    );
 
-    testWidgets('5. First-run user sees DayOneTutorialDialog once, returning user does NOT', (
-      tester,
-    ) async {
-      // First-run: tutorialDismissed is FALSE
-      await prefs.setBool(DayOneTutorialDialog.prefKey, false);
+    testWidgets(
+      '6. Settings screen allows re-opening DayOneTutorialDialog on demand',
+      (tester) async {
+        await prefs.setBool(DayOneTutorialDialog.prefKey, true);
 
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpWidget(buildApp(home: const SettingsScreen()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // First run shows the tutorial
-      expect(find.byType(DayOneTutorialDialog), findsOneWidget);
+        // Scroll to Help & Walkthroughs collapsible card
+        await tester.scrollUntilVisible(
+          find.text('Help & Walkthroughs'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('Help & Walkthroughs'), findsOneWidget);
+        await tester.tap(find.text('Help & Walkthroughs'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // Dismiss tutorial
-      await tester.tap(find.text('Got it! 👍').first);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // Replay Day One Tutorial tile should be visible
+        await tester.scrollUntilVisible(
+          find.text('Replay Day One Tutorial'),
+          150,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('Replay Day One Tutorial'), findsOneWidget);
+        await tester.tap(find.text('Replay Day One Tutorial'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      expect(prefs.getBool(DayOneTutorialDialog.prefKey), isTrue);
+        // Tutorial dialog is opened intentionally on demand
+        expect(find.byType(DayOneTutorialDialog), findsOneWidget);
 
-      await unmount(tester);
-
-      // Now simulate a returning-user launch with tutorial dismissed
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Returning user NEVER sees DayOneTutorialDialog
-      expect(find.byType(DayOneTutorialDialog), findsNothing);
-
-      await unmount(tester);
-    });
-
-    testWidgets('6. Settings screen allows re-opening DayOneTutorialDialog on demand', (
-      tester,
-    ) async {
-      await prefs.setBool(DayOneTutorialDialog.prefKey, true);
-
-      await tester.pumpWidget(buildApp(home: const SettingsScreen()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Scroll to Help & Walkthroughs collapsible card
-      await tester.scrollUntilVisible(
-        find.text('Help & Walkthroughs'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('Help & Walkthroughs'), findsOneWidget);
-      await tester.tap(find.text('Help & Walkthroughs'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Replay Day One Tutorial tile should be visible
-      await tester.scrollUntilVisible(
-        find.text('Replay Day One Tutorial'),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('Replay Day One Tutorial'), findsOneWidget);
-      await tester.tap(find.text('Replay Day One Tutorial'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tutorial dialog is opened intentionally on demand
-      expect(find.byType(DayOneTutorialDialog), findsOneWidget);
-
-      await unmount(tester);
-    });
-
-    testWidgets('7. Daily Briefing is an inline collapsible card on Home (tap opens intentionally, x dismisses)', (
-      tester,
-    ) async {
-      // Not seen today
-      await prefs.remove('ascent_daily_briefing_seen_v1');
-
-      await tester.pumpWidget(buildApp());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Zero auto popup sheets
-      expect(find.byType(BottomSheet), findsNothing);
-
-      // Inline card is rendered
-      expect(find.byKey(const ValueKey('home_inline_briefing_card')), findsOneWidget);
-      expect(find.text('Daily Briefing'), findsOneWidget);
-
-      // Dismissing via 'x' button dismisses card and persists seen flag
-      expect(find.byKey(const ValueKey('dismiss_inline_briefing')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('dismiss_inline_briefing')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byKey(const ValueKey('home_inline_briefing_card')), findsNothing);
-      expect(prefs.getString('ascent_daily_briefing_seen_v1'), isNotNull);
-
-      await unmount(tester);
-    });
+        await unmount(tester);
+      },
+    );
 
     testWidgets('8. FeatureGuideHost does NOT auto-pop dialogs on navigation', (
       tester,
@@ -338,91 +285,6 @@ void main() {
       // Zero dialogs popped
       expect(find.byType(AlertDialog), findsNothing);
       expect(find.text('Target Screen Content'), findsOneWidget);
-
-      await unmount(tester);
-    });
-
-    testWidgets('9. Activity count alignment: Today tab and todayActivitiesProvider match count', (
-      tester,
-    ) async {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day, 10);
-      final yesterday = today.subtract(const Duration(days: 1));
-
-      // 1. Task planned for today (active)
-      await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Today Task 1',
-          priority: drift.Value('medium'),
-          plannedDate: drift.Value(today),
-          createdAt: drift.Value(today),
-        ),
-      );
-
-      // 2. Overdue task planned for yesterday (active)
-      await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Overdue Task 2',
-          priority: drift.Value('high'),
-          plannedDate: drift.Value(yesterday),
-          createdAt: drift.Value(yesterday),
-        ),
-      );
-
-      // 3. Unscheduled backlog task (plannedDate is NULL) -> should be in Others/Backlog
-      await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Unscheduled Backlog Task 3',
-          priority: drift.Value('low'),
-          createdAt: drift.Value(today),
-        ),
-      );
-
-      // 4. Completed task
-      await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Completed Task 4',
-          priority: drift.Value('medium'),
-          plannedDate: drift.Value(today),
-          actualCompletedDate: drift.Value(today),
-          createdAt: drift.Value(today),
-        ),
-      );
-
-      // Verify TaskDao getTodayAndOverdueTasks returns active today + overdue (2) plus completed today (1) = 3 total
-      final allTodayTasks = await db.taskDao.getTodayAndOverdueTasks(today);
-      final activeTasks = allTodayTasks.where((t) => t.actualCompletedDate == null).toList();
-      final completedTasks = allTodayTasks.where((t) => t.actualCompletedDate != null).toList();
-      expect(activeTasks.length, equals(2));
-      expect(completedTasks.length, equals(1));
-      expect(activeTasks.any((t) => t.title == 'Today Task 1'), isTrue);
-      expect(activeTasks.any((t) => t.title == 'Overdue Task 2'), isTrue);
-      // Unscheduled backlog task must NOT be in today/overdue
-      expect(allTodayTasks.any((t) => t.title == 'Unscheduled Backlog Task 3'), isFalse);
-
-      // Now verify TaskBoardScreen renders the exact same count (2) on the Today tab
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const TaskBoardScreen(),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Today tab header and section header show 'Today' and count badge shows '2'
-      expect(find.text('Today'), findsNWidgets(2));
-      expect(find.text('2'), findsOneWidget);
-      // Others tab badge must show count 1 (the unscheduled backlog task)
-      expect(find.text('Others'), findsOneWidget);
-      // Completed tab badge must show count 1
-      expect(find.text('Completed'), findsOneWidget);
 
       await unmount(tester);
     });

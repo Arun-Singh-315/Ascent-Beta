@@ -34,13 +34,16 @@ void main() {
     await db.close();
   });
 
-  testWidgets('Render high-fidelity Onboarding 6-Screen photos', (tester) async {
+  testWidgets('Render high-fidelity Onboarding 6-Screen photos', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(390 * 2, 844 * 2);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    const outDir = '/home/arunsinghvisen/.gemini/antigravity/brain/c4562752-ff66-4729-a56a-7b6c5dbf97f2';
+    const outDir =
+        '/home/arunsinghvisen/.gemini/antigravity/brain/c4562752-ff66-4729-a56a-7b6c5dbf97f2';
 
     final container = ProviderContainer(
       overrides: [
@@ -68,13 +71,19 @@ void main() {
     Future<void> captureScreen(String fileName) async {
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 10)),
+        );
       }
       await tester.runAsync(() async {
-        final boundary = repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+        final boundary =
+            repaintKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
         if (boundary != null) {
           final image = await boundary.toImage(pixelRatio: 2.0);
-          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+          final byteData = await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
           if (byteData != null) {
             final file = File('$outDir/$fileName');
             await file.writeAsBytes(byteData.buffer.asUint8List());
@@ -94,7 +103,9 @@ void main() {
 
     // Screen 3: Your Name
     container.read(onboardingProvider.notifier).setStep(2);
-    container.read(onboardingProvider.notifier).updateNameRole('Arun', 'Study and growth');
+    container
+        .read(onboardingProvider.notifier)
+        .updateNameRole('Arun', 'Study and growth');
     await tester.pump();
     final nameFinder = find.byKey(const ValueKey('onboarding_name'));
     if (nameFinder.evaluate().isNotEmpty) {
@@ -105,7 +116,9 @@ void main() {
 
     // Screen 4: Birthday
     container.read(onboardingProvider.notifier).setStep(3);
-    container.read(onboardingProvider.notifier).setDateOfBirth(DateTime(2000, 6, 18));
+    container
+        .read(onboardingProvider.notifier)
+        .setDateOfBirth(DateTime(2000, 6, 18));
     await tester.pump();
     await captureScreen('onboarding_4_birthday.png');
 

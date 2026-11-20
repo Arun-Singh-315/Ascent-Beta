@@ -221,9 +221,7 @@ void main() {
                       body: SingleChildScrollView(
                         child: Padding(
                           padding: EdgeInsets.all(16),
-                          child: Column(
-                            children: [ActivityHubCard()],
-                          ),
+                          child: Column(children: [ActivityHubCard()]),
                         ),
                       ),
                     ),
@@ -335,10 +333,7 @@ void main() {
           t.getTopLeft(find.text('An open note')).dy,
           lessThan(t.getTopLeft(find.text('A completed note')).dy),
         );
-        expect(
-          find.byKey(ValueKey('thought_left_done_$done')),
-          findsOneWidget,
-        );
+        expect(find.byKey(ValueKey('thought_left_done_$done')), findsOneWidget);
         expect(find.byTooltip('Edit thought'), findsNWidgets(2));
         await capture(t, 'thoughts-dark');
         await t.tap(find.widgetWithText(GlassChip, 'Archive'));

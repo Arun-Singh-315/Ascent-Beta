@@ -5,47 +5,57 @@ void main() {
   group('HomeCaptureProposal Parsing for Routines & Recurring Plans', () {
     final now = DateTime(2026, 10, 17, 10, 0);
 
-    test('Parses full proposal: Walk every morning at 7 for 30 minutes until 31 October. Remind me and keep asking whether I did it.', () {
-      final input =
-          'Walk every morning at 7 for 30 minutes until 31 October. Remind me and keep asking whether I did it.';
-      final proposal = HomeCaptureProposal.parse(input, now);
+    test(
+      'Parses full proposal: Walk every morning at 7 for 30 minutes until 31 October. Remind me and keep asking whether I did it.',
+      () {
+        final input =
+            'Walk every morning at 7 for 30 minutes until 31 October. Remind me and keep asking whether I did it.';
+        final proposal = HomeCaptureProposal.parse(input, now);
 
-      expect(proposal.scheduledIntent, isTrue);
-      expect(proposal.isRecurring, isTrue);
-      expect(proposal.recurrenceRule, 'daily');
-      expect(proposal.localTime, '07:00');
-      expect(proposal.minutes, 30);
-      expect(proposal.endDate, '2026-10-31');
-      expect(proposal.checkInPolicy, 'gentle');
-      expect(proposal.followUp, isTrue);
-      expect(proposal.title.toLowerCase().contains('walk'), isTrue);
-      expect(proposal.needsEndClarification, isFalse);
-    });
+        expect(proposal.scheduledIntent, isTrue);
+        expect(proposal.isRecurring, isTrue);
+        expect(proposal.recurrenceRule, 'daily');
+        expect(proposal.localTime, '07:00');
+        expect(proposal.minutes, 30);
+        expect(proposal.endDate, '2026-10-31');
+        expect(proposal.checkInPolicy, 'gentle');
+        expect(proposal.followUp, isTrue);
+        expect(proposal.title.toLowerCase().contains('walk'), isTrue);
+        expect(proposal.needsEndClarification, isFalse);
+      },
+    );
 
-    test('Parses weekday routines: study math every weekday at 8:30 am until 2026-11-15 remind me', () {
-      final input = 'study math every weekday at 8:30 am until 2026-11-15 remind me';
-      final proposal = HomeCaptureProposal.parse(input, now);
+    test(
+      'Parses weekday routines: study math every weekday at 8:30 am until 2026-11-15 remind me',
+      () {
+        final input =
+            'study math every weekday at 8:30 am until 2026-11-15 remind me';
+        final proposal = HomeCaptureProposal.parse(input, now);
 
-      expect(proposal.scheduledIntent, isTrue);
-      expect(proposal.isRecurring, isTrue);
-      expect(proposal.recurrenceRule, 'weekdays');
-      expect(proposal.localTime, '08:30');
-      expect(proposal.endDate, '2026-11-15');
-      expect(proposal.checkInPolicy, 'off'); // No follow-up requested
-      expect(proposal.title.toLowerCase().contains('study math'), isTrue);
-    });
+        expect(proposal.scheduledIntent, isTrue);
+        expect(proposal.isRecurring, isTrue);
+        expect(proposal.recurrenceRule, 'weekdays');
+        expect(proposal.localTime, '08:30');
+        expect(proposal.endDate, '2026-11-15');
+        expect(proposal.checkInPolicy, 'off'); // No follow-up requested
+        expect(proposal.title.toLowerCase().contains('study math'), isTrue);
+      },
+    );
 
-    test('Flags missing end date when repetition is requested: practice guitar every day at 6 pm', () {
-      final input = 'practice guitar every day at 6 pm';
-      final proposal = HomeCaptureProposal.parse(input, now);
+    test(
+      'Flags missing end date when repetition is requested: practice guitar every day at 6 pm',
+      () {
+        final input = 'practice guitar every day at 6 pm';
+        final proposal = HomeCaptureProposal.parse(input, now);
 
-      expect(proposal.scheduledIntent, isTrue);
-      expect(proposal.isRecurring, isTrue);
-      expect(proposal.recurrenceRule, 'daily');
-      expect(proposal.localTime, '18:00');
-      expect(proposal.endDate, isNull);
-      expect(proposal.needsEndClarification, isTrue);
-    });
+        expect(proposal.scheduledIntent, isTrue);
+        expect(proposal.isRecurring, isTrue);
+        expect(proposal.recurrenceRule, 'daily');
+        expect(proposal.localTime, '18:00');
+        expect(proposal.endDate, isNull);
+        expect(proposal.needsEndClarification, isTrue);
+      },
+    );
 
     test('Flags missing am/pm when ambiguous: workout every morning at 7', () {
       // "every morning at 7" -> morning indicates am!
@@ -73,13 +83,17 @@ void main() {
       expect(proposal.at?.minute, 0);
     });
 
-    test('Ordinary reflections stay ordinary thoughts without schedule intent', () {
-      final input = 'I really enjoyed walking in the autumn breeze this morning.';
-      final proposal = HomeCaptureProposal.parse(input, now);
+    test(
+      'Ordinary reflections stay ordinary thoughts without schedule intent',
+      () {
+        final input =
+            'I really enjoyed walking in the autumn breeze this morning.';
+        final proposal = HomeCaptureProposal.parse(input, now);
 
-      expect(proposal.scheduledIntent, isFalse);
-      expect(proposal.isRecurring, isFalse);
-      expect(proposal.at, isNull);
-    });
+        expect(proposal.scheduledIntent, isFalse);
+        expect(proposal.isRecurring, isFalse);
+        expect(proposal.at, isNull);
+      },
+    );
   });
 }

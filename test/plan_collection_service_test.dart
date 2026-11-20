@@ -403,21 +403,18 @@ void main() {
       // 1. User records a thought containing 4 checklist items
       const thoughtText =
           '-- wake up early\n-- gym\n-- need to focus\n--Avoid food';
-      final thoughtId = await db.into(db.thoughtTable).insert(
-        ThoughtTableCompanion.insert(
-          content: thoughtText,
-          mood: const Value('thought'),
-        ),
-      );
+      final thoughtId = await db
+          .into(db.thoughtTable)
+          .insert(
+            ThoughtTableCompanion.insert(
+              content: thoughtText,
+              mood: const Value('thought'),
+            ),
+          );
 
       // 2. Parser identifies the 4 independent items
       final parsed = PlanItemDraft.parseList(thoughtText);
-      expect(parsed, [
-        'wake up early',
-        'gym',
-        'need to focus',
-        'Avoid food',
-      ]);
+      expect(parsed, ['wake up early', 'gym', 'need to focus', 'Avoid food']);
 
       // 3. User customizes each item in the plan editor with different reminders
       final tomorrow = DateTime(now.year, now.month, now.day + 1);

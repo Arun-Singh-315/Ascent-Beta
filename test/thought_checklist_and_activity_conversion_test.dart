@@ -101,204 +101,230 @@ Morning Routine:
       await db.close();
     });
 
-    testWidgets('Renders checklist with individual checkboxes in thought bubble and toggles them', (tester) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: '''
+    testWidgets(
+      'Renders checklist with individual checkboxes in thought bubble and toggles them',
+      (tester) async {
+        final id = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: '''
 - Wake up early
 - Drink lemon tea
 - Morning walk
 ''',
-        ),
-      );
-      final thought = (await db.thoughtDao.getThoughtById(id))!;
+          ),
+        );
+        final thought = (await db.thoughtDao.getThoughtById(id))!;
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          latestHomeThoughtProvider.overrideWith((ref) => Stream.value(thought)),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => Stream.value([thought]),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => Stream.value(thought),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(compact: true),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  child: ThoughtWallHomePreview(compact: true),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verify all 3 items appear as checklist items
-      expect(find.text('Wake up early'), findsOneWidget);
-      expect(find.text('Drink lemon tea'), findsOneWidget);
-      expect(find.text('Morning walk'), findsOneWidget);
+        // Verify all 3 items appear as checklist items
+        expect(find.text('Wake up early'), findsOneWidget);
+        expect(find.text('Drink lemon tea'), findsOneWidget);
+        expect(find.text('Morning walk'), findsOneWidget);
 
-      // Verify individual check boxes exist
-      final check0 = find.byKey(ValueKey('thought_${id}_check_0'));
-      expect(check0, findsOneWidget);
+        // Verify individual check boxes exist
+        final check0 = find.byKey(ValueKey('thought_${id}_check_0'));
+        expect(check0, findsOneWidget);
 
-      // Tap first check box
-      await tester.tap(check0);
-      await tester.pumpAndSettle();
+        // Tap first check box
+        await tester.tap(check0);
+        await tester.pumpAndSettle();
 
-      // Verify database content has been updated to marked done
-      final updatedThought = await db.thoughtDao.getThoughtById(id);
-      expect(updatedThought!.content.contains('- [x] Wake up early'), isTrue);
-    });
+        // Verify database content has been updated to marked done
+        final updatedThought = await db.thoughtDao.getThoughtById(id);
+        expect(updatedThought!.content.contains('- [x] Wake up early'), isTrue);
+      },
+    );
 
-    testWidgets('Convert to Activities button converts thought checklist items into today tasks', (tester) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: '''
+    testWidgets(
+      'Convert to Activities button converts thought checklist items into today tasks',
+      (tester) async {
+        final id = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: '''
 - Wake up
 - Drink lemon tea
 - Morning walk
 - Revise notes
 - Gym session
 ''',
-        ),
-      );
-      final thought = (await db.thoughtDao.getThoughtById(id))!;
+          ),
+        );
+        final thought = (await db.thoughtDao.getThoughtById(id))!;
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          latestHomeThoughtProvider.overrideWith((ref) => Stream.value(thought)),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => Stream.value([thought]),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => Stream.value(thought),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(compact: true),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  child: ThoughtWallHomePreview(compact: true),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Find "Convert to activities" button
-      final convertBtn = find.byKey(ValueKey('thought_${id}_convert_to_activities'));
-      expect(convertBtn, findsOneWidget);
+        // Find "Convert to activities" button
+        final convertBtn = find.byKey(
+          ValueKey('thought_${id}_convert_to_activities'),
+        );
+        expect(convertBtn, findsOneWidget);
 
-      await tester.ensureVisible(convertBtn);
-      await tester.tap(convertBtn);
-      await tester.pumpAndSettle();
+        await tester.ensureVisible(convertBtn);
+        await tester.tap(convertBtn);
+        await tester.pumpAndSettle();
 
-      // Verify 5 tasks were inserted into the task DAO
-      final tasks = await db.select(db.taskTable).get();
-      expect(tasks.length, 5);
-      final titles = tasks.map((t) => t.title).toSet();
-      expect(titles.contains('Wake up'), isTrue);
-      expect(titles.contains('Drink lemon tea'), isTrue);
-      expect(titles.contains('Gym session'), isTrue);
-    });
+        // Verify 5 tasks were inserted into the task DAO
+        final tasks = await db.select(db.taskTable).get();
+        expect(tasks.length, 5);
+        final titles = tasks.map((t) => t.title).toSet();
+        expect(titles.contains('Wake up'), isTrue);
+        expect(titles.contains('Drink lemon tea'), isTrue);
+        expect(titles.contains('Gym session'), isTrue);
+      },
+    );
 
-    testWidgets('Mark full thought done toggles completion on the whole thought', (tester) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: '- Task 1\n- Task 2',
-        ),
-      );
-      final thought = (await db.thoughtDao.getThoughtById(id))!;
+    testWidgets(
+      'Mark full thought done toggles completion on the whole thought',
+      (tester) async {
+        final id = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: '- Task 1\n- Task 2'),
+        );
+        final thought = (await db.thoughtDao.getThoughtById(id))!;
 
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
-          latestHomeThoughtProvider.overrideWith((ref) => Stream.value(thought)),
-        ],
-      );
-      addTearDown(container.dispose);
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => Stream.value([thought]),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => Stream.value(thought),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(compact: true),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  child: ThoughtWallHomePreview(compact: true),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final fullDoneBtn = find.byKey(ValueKey('thought_${id}_full_done_btn'));
-      expect(fullDoneBtn, findsOneWidget);
+        final fullDoneBtn = find.byKey(ValueKey('thought_${id}_full_done_btn'));
+        expect(fullDoneBtn, findsOneWidget);
 
-      await tester.tap(fullDoneBtn);
-      await tester.pumpAndSettle();
+        await tester.tap(fullDoneBtn);
+        await tester.pumpAndSettle();
 
-      final completedThought = await db.thoughtDao.getThoughtById(id);
-      expect(completedThought!.isCompleted, isTrue);
-    });
+        final completedThought = await db.thoughtDao.getThoughtById(id);
+        expect(completedThought!.isCompleted, isTrue);
+      },
+    );
 
-    testWidgets('Thought Wall empty state is clean and free of prompt spark chips', (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
-          latestHomeThoughtProvider.overrideWith((ref) => Stream.value(null)),
-        ],
-      );
-      addTearDown(container.dispose);
+    testWidgets(
+      'Thought Wall empty state is clean and free of prompt spark chips',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
+            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => Stream.value([]),
+            ),
+            latestHomeThoughtProvider.overrideWith((ref) => Stream.value(null)),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(compact: true),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(
+                  child: ThoughtWallHomePreview(compact: true),
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Zero cheap spark chips
-      expect(find.text('Spark idea'), findsNothing);
-      expect(find.text('Spark an idea'), findsNothing);
-      expect(find.text('Daily win'), findsNothing);
-      expect(find.text('Log a win'), findsNothing);
-      expect(find.text('Self-reflection'), findsNothing);
-      expect(find.text('Reflect'), findsNothing);
+        // Zero cheap spark chips
+        expect(find.text('Spark idea'), findsNothing);
+        expect(find.text('Spark an idea'), findsNothing);
+        expect(find.text('Daily win'), findsNothing);
+        expect(find.text('Log a win'), findsNothing);
+        expect(find.text('Self-reflection'), findsNothing);
+        expect(find.text('Reflect'), findsNothing);
 
-      // Clean tranquil empty state
-      expect(find.text('Your mindspace is clear'), findsOneWidget);
-    });
+        // Clean tranquil empty state
+        expect(find.text('Your mindspace is clear'), findsOneWidget);
+      },
+    );
   });
 }

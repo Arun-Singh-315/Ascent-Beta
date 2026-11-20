@@ -123,16 +123,10 @@ void main() {
       final rename = (await resolver.resolve('Read a book daily'))!.command!;
       await executor.execute(rename, requestId: 'rename', approved: true);
       await run('Pause promise #$id', 'pause');
-      expect(
-        (await promiseRepo.getPromiseById(id))!.isPaused,
-        isTrue,
-      );
+      expect((await promiseRepo.getPromiseById(id))!.isPaused, isTrue);
       await run('Resume promise #$id', 'resume');
       await run('Check in promise #$id', 'checkin');
-      expect(
-        (await promiseRepo.getPromiseById(id))!.isDoneToday,
-        isTrue,
-      );
+      expect((await promiseRepo.getPromiseById(id))!.isDoneToday, isTrue);
       final deleted = await run('Delete promise #$id', 'delete');
       expect(deleted.promiseEffectIds, [id]);
       expect(await promiseRepo.getPromiseById(id), isNull);

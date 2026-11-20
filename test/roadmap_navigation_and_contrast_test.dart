@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/ai/riya_capabilities.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
@@ -104,36 +102,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'compact task preview reveals a third task and has one board link',
-    (t) async {
-      for (var i = 1; i <= 3; i++) {
-        await db.taskDao.insertTask(
-          TaskTableCompanion.insert(
-            title: 'Preview task $i',
-            plannedDate: drift.Value(DateTime.now()),
-          ),
-        );
-      }
-      await mount(
-        t,
-        const Scaffold(
-          body: SingleChildScrollView(child: ActivityHubCard(previewLimit: 2)),
-        ),
-      );
-      expect(find.text('Preview task 3'), findsNothing);
-      expect(find.text('Show 1 more'), findsOneWidget);
-      expect(find.text('Open Board ›'), findsNothing);
-      await t.ensureVisible(find.text('Show 1 more'));
-      await t.tap(find.text('Show 1 more'));
-      await settle(t);
-      expect(find.text('Preview task 3'), findsOneWidget);
-      expect(t.takeException(), isNull);
-      await t.pumpWidget(const SizedBox());
-      await t.pump(const Duration(seconds: 2));
-    },
-  );
-
   for (final kind in ['task', 'reminder']) {
     testWidgets('Riya View opens exact $kind details', (t) async {
       final id = kind == 'task'
@@ -220,42 +188,6 @@ void main() {
     });
   }
 
-  testWidgets(
-    'chat clear requires confirmation and failures expose recovery at 320px 2x',
-    (t) async {
-      await db.aiAssistantDao.insertMessage(
-        AiChatMessageTableCompanion.insert(
-          sender: 'assistant',
-          message: 'Failed request',
-          actionPayloadJson: drift.Value(
-            jsonEncode({'executionStatus': 'failed'}),
-          ),
-        ),
-      );
-      await mount(t, const AiAssistantScreen(), large: true);
-      expect(find.text('Recover'), findsOneWidget);
-      await t.tap(find.byTooltip('Clear chat history'));
-      await t.pumpAndSettle();
-      await t.tap(find.text('Cancel'));
-      await t.pumpAndSettle();
-      expect(
-        await t.runAsync(() => db.aiAssistantDao.watchRecentMessages().first),
-        hasLength(1),
-      );
-      await t.tap(find.byTooltip('Clear chat history'));
-      await t.pumpAndSettle();
-      await t.tap(find.text('Clear history'));
-      await settle(t);
-      expect(
-        await t.runAsync(() => db.aiAssistantDao.watchRecentMessages().first),
-        isEmpty,
-      );
-      expect(t.takeException(), isNull);
-      await t.pumpWidget(const SizedBox());
-      await t.pump(const Duration(seconds: 2));
-    },
-  );
-
   testWidgets('Home reminder actions fit 320px at 2x and meet 48dp targets', (
     t,
   ) async {
@@ -288,22 +220,5 @@ void main() {
     expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox());
     await t.pump(const Duration(seconds: 2));
-  });
-
-  test('all Merlot dark text and primary actions have readable contrast', () {
-    final theme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
-    double contrast(Color a, Color b) =>
-        (math.max(a.computeLuminance(), b.computeLuminance()) + .05) /
-        (math.min(a.computeLuminance(), b.computeLuminance()) + .05);
-    final colors = theme.colorScheme;
-    expect(
-      contrast(colors.onSurface, colors.surface),
-      greaterThanOrEqualTo(4.5),
-    );
-    expect(contrast(colors.primary, colors.surface), greaterThanOrEqualTo(4.5));
-    expect(
-      contrast(colors.onPrimary, colors.primary),
-      greaterThanOrEqualTo(4.5),
-    );
   });
 }

@@ -31,113 +31,124 @@ void main() {
       await db.close();
     });
 
-    testWidgets('Engine creates structured Study Plan with syllabus and study category', (tester) async {
-      late WidgetRef widgetRef;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: Consumer(
-            builder: (context, ref, _) {
-              widgetRef = ref;
-              return const SizedBox();
-            },
+    testWidgets(
+      'Engine creates structured Study Plan with syllabus and study category',
+      (tester) async {
+        late WidgetRef widgetRef;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                widgetRef = ref;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      final response = await engine.processUserPrompt(
-        'Create a 7 day study plan for DSA',
-        widgetRef,
-      );
+        final response = await engine.processUserPrompt(
+          'Create a 7 day study plan for DSA',
+          widgetRef,
+        );
 
-      expect(response.proposedAction, isNotNull);
-      expect(response.proposedAction!.type, AiActionType.studyPlanCreated);
-      final payload = response.proposedAction!.payload;
-      expect(payload['category'], 'study');
-      expect(payload['durationDays'], 7);
-      expect(payload['items'], isA<List>());
-      expect((payload['items'] as List).length, 7);
-    });
+        expect(response.proposedAction, isNotNull);
+        expect(response.proposedAction!.type, AiActionType.studyPlanCreated);
+        final payload = response.proposedAction!.payload;
+        expect(payload['category'], 'study');
+        expect(payload['durationDays'], 7);
+        expect(payload['items'], isA<List>());
+        expect((payload['items'] as List).length, 7);
+      },
+    );
 
-    testWidgets('Engine creates structured Meal Plan with 4 meals and meal category', (tester) async {
-      late WidgetRef widgetRef;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: Consumer(
-            builder: (context, ref, _) {
-              widgetRef = ref;
-              return const SizedBox();
-            },
+    testWidgets(
+      'Engine creates structured Meal Plan with 4 meals and meal category',
+      (tester) async {
+        late WidgetRef widgetRef;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                widgetRef = ref;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      final response = await engine.processUserPrompt(
-        'Create a high protein meal plan for the week',
-        widgetRef,
-      );
+        final response = await engine.processUserPrompt(
+          'Create a high protein meal plan for the week',
+          widgetRef,
+        );
 
-      expect(response.proposedAction, isNotNull);
-      expect(response.proposedAction!.type, AiActionType.mealPlanCreated);
-      final payload = response.proposedAction!.payload;
-      expect(payload['category'], 'meal');
-      expect(payload['targetWaterMl'], 2500);
-      expect(payload['items'], isA<List>());
-      expect((payload['items'] as List).length, 4);
-    });
+        expect(response.proposedAction, isNotNull);
+        expect(response.proposedAction!.type, AiActionType.mealPlanCreated);
+        final payload = response.proposedAction!.payload;
+        expect(payload['category'], 'meal');
+        expect(payload['targetWaterMl'], 2500);
+        expect(payload['items'], isA<List>());
+        expect((payload['items'] as List).length, 4);
+      },
+    );
 
-    testWidgets('AiActionExecution saves Study Plan and categorizes tasks without polluting buffer', (tester) async {
-      late WidgetRef widgetRef;
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: Consumer(
-            builder: (context, ref, _) {
-              widgetRef = ref;
-              return const SizedBox();
-            },
+    testWidgets(
+      'AiActionExecution saves Study Plan and categorizes tasks without polluting buffer',
+      (tester) async {
+        late WidgetRef widgetRef;
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: Consumer(
+              builder: (context, ref, _) {
+                widgetRef = ref;
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      final response = await engine.processUserPrompt(
-        'Create a study plan for DSA',
-        widgetRef,
-      );
+        final response = await engine.processUserPrompt(
+          'Create a study plan for DSA',
+          widgetRef,
+        );
 
-      final executor = AiActionExecution(db);
-      final result = await executor.execute(response.proposedAction!);
+        final executor = AiActionExecution(db);
+        final result = await executor.execute(response.proposedAction!);
 
-      expect(result.message, contains('Activated'));
+        expect(result.message, contains('Activated'));
 
-      // Check PlanCollectionTable
-      final collections = await db.select(db.planCollectionTable).get();
-      expect(collections.length, 1);
-      expect(collections.first.description, contains('study'));
+        // Check PlanCollectionTable
+        final collections = await db.select(db.planCollectionTable).get();
+        expect(collections.length, 1);
+        expect(collections.first.description, contains('study'));
 
-      // Check Tasks carry category notes and do not buffer as unclassified
-      final tasks = await db.select(db.taskTable).get();
-      expect(tasks.length, 7);
-      for (final task in tasks) {
-        expect(task.notes, contains('[Category: study]'));
-      }
+        // Check Tasks carry category notes and do not buffer as unclassified
+        final tasks = await db.select(db.taskTable).get();
+        expect(tasks.length, 7);
+        for (final task in tasks) {
+          expect(task.notes, contains('[Category: study]'));
+        }
 
-      // Check PlanCollectionItems
-      final items = await db.select(db.planCollectionItemTable).get();
-      expect(items.length, 7);
-    });
+        // Check PlanCollectionItems
+        final items = await db.select(db.planCollectionItemTable).get();
+        expect(items.length, 7);
+      },
+    );
 
-    testWidgets('AiActionExecution saves Meal Plan with scheduled reminders', (tester) async {
+    testWidgets('AiActionExecution saves Meal Plan with scheduled reminders', (
+      tester,
+    ) async {
       late WidgetRef widgetRef;
       await tester.pumpWidget(
         ProviderScope(
@@ -177,128 +188,153 @@ void main() {
       }
     });
 
-    testWidgets('Riya AI Chat UI has zero double ticks (done_all) and renders serene glass cards', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'Riya AI Chat UI has zero double ticks (done_all) and renders serene glass cards',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
-          ],
-          child: const MaterialApp(
-            home: AiAssistantScreen(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
+            ],
+            child: const MaterialApp(home: AiAssistantScreen()),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Ensure double tick icon is completely eliminated
-      expect(find.byIcon(Icons.done_all_rounded), findsNothing);
+        // Ensure double tick icon is completely eliminated
+        expect(find.byIcon(Icons.done_all_rounded), findsNothing);
 
-      // Verify Study Plan and Meal Plan quick chips are visible
-      expect(find.text('Study Plan'), findsOneWidget);
-      expect(find.text('Meal Plan'), findsOneWidget);
+        // Verify Study Plan and Meal Plan quick chips are visible
+        expect(find.text('Study Plan'), findsOneWidget);
+        expect(find.text('Meal Plan'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
-    testWidgets('RiyaStudyPlanCard and RiyaMealPlanCard survive 320px width & 2.0x font scaling without overflow', (tester) async {
-      tester.view.physicalSize = const Size(320 * 2, 800 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'RiyaStudyPlanCard and RiyaMealPlanCard survive 320px width & 2.0x font scaling without overflow',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 2, 800 * 2);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final dummyStudyPlan = {
-        'title': 'DSA Mastery Sprint',
-        'subject': 'Data Structures',
-        'durationDays': 7,
-        'dailyMinutes': 90,
-        'category': 'study',
-        'items': [
-          {'title': 'Day 1: Arrays & Two Pointers', 'minutes': 90, 'notes': 'Array basics'},
-          {'title': 'Day 2: Sliding Window', 'minutes': 90, 'notes': 'Two pointer patterns'},
-        ],
-      };
-
-      final dummyMealPlan = {
-        'title': 'Clean Eating Nutrition',
-        'dietType': 'Clean High-Protein',
-        'targetWaterMl': 2500,
-        'category': 'meal',
-        'items': [
-          {'time': '08:30', 'title': 'Breakfast: Oats & Eggs', 'notes': 'Protein rich', 'calories': 400},
-          {'time': '13:30', 'title': 'Lunch: Brown Rice & Chicken', 'notes': 'Balanced macros', 'calories': 650},
-        ],
-      };
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
+        final dummyStudyPlan = {
+          'title': 'DSA Mastery Sprint',
+          'subject': 'Data Structures',
+          'durationDays': 7,
+          'dailyMinutes': 90,
+          'category': 'study',
+          'items': [
+            {
+              'title': 'Day 1: Arrays & Two Pointers',
+              'minutes': 90,
+              'notes': 'Array basics',
+            },
+            {
+              'title': 'Day 2: Sliding Window',
+              'minutes': 90,
+              'notes': 'Two pointer patterns',
+            },
           ],
-          child: MaterialApp(
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 800),
-                textScaler: TextScaler.linear(2.0),
-              ),
-              child: Scaffold(
-                body: ListView(
-                  children: [
-                    RiyaStudyPlanCard(planData: dummyStudyPlan),
-                    RiyaMealPlanCard(planData: dummyMealPlan),
-                  ],
+        };
+
+        final dummyMealPlan = {
+          'title': 'Clean Eating Nutrition',
+          'dietType': 'Clean High-Protein',
+          'targetWaterMl': 2500,
+          'category': 'meal',
+          'items': [
+            {
+              'time': '08:30',
+              'title': 'Breakfast: Oats & Eggs',
+              'notes': 'Protein rich',
+              'calories': 400,
+            },
+            {
+              'time': '13:30',
+              'title': 'Lunch: Brown Rice & Chicken',
+              'notes': 'Balanced macros',
+              'calories': 650,
+            },
+          ],
+        };
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(320, 800),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: Scaffold(
+                  body: ListView(
+                    children: [
+                      RiyaStudyPlanCard(planData: dummyStudyPlan),
+                      RiyaMealPlanCard(planData: dummyMealPlan),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verify no exceptions or overflows occurred
-      expect(tester.takeException(), isNull);
-      expect(find.text('DSA Mastery Sprint'), findsOneWidget);
-      expect(find.text('Clean Eating Nutrition'), findsOneWidget);
+        // Verify no exceptions or overflows occurred
+        expect(tester.takeException(), isNull);
+        expect(find.text('DSA Mastery Sprint'), findsOneWidget);
+        expect(find.text('Clean Eating Nutrition'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
-    testWidgets('StudyPlanScreen displays active plan and syllabus milestones cleanly at 320px', (tester) async {
-      tester.view.physicalSize = const Size(320 * 2, 800 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'StudyPlanScreen displays active plan and syllabus milestones cleanly at 320px',
+      (tester) async {
+        tester.view.physicalSize = const Size(320 * 2, 800 * 2);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: const MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(
-                size: Size(320, 800),
-                textScaler: TextScaler.linear(2.0),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: const MaterialApp(
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: Size(320, 800),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: StudyPlanScreen(),
               ),
-              child: StudyPlanScreen(),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Study Plan Hub'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Study Plan Hub'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }

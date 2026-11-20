@@ -15,66 +15,60 @@ void main() {
     required String content,
     String mood = 'thought',
     bool isCompleted = false,
-  }) =>
-      Thought(
-        id: id,
-        content: content,
-        category: 'wall',
-        mood: mood,
-        colorHex: '#000000',
-        createdAt: now,
-        isPinned: false,
-        isArchived: false,
-        isCompleted: isCompleted,
-      );
+  }) => Thought(
+    id: id,
+    content: content,
+    category: 'wall',
+    mood: mood,
+    colorHex: '#000000',
+    createdAt: now,
+    isPinned: false,
+    isArchived: false,
+    isCompleted: isCompleted,
+  );
 
   Widget wrapWidget(Widget child, {bool dark = false}) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: dark ? AscentTheme.dark() : AscentTheme.light(),
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 360,
-              child: child,
-            ),
-          ),
-        ),
-      );
+    debugShowCheckedModeBanner: false,
+    theme: dark ? AscentTheme.dark() : AscentTheme.light(),
+    home: Scaffold(
+      body: Center(child: SizedBox(width: 360, child: child)),
+    ),
+  );
 
   group('BoardCard Hug Width', () {
-    testWidgets('Short text hugs width tightly (significantly less than maxWidth)', (tester) async {
-      final thought = makeThought(id: 1, content: 'wat about me');
+    testWidgets(
+      'Short text hugs width tightly (significantly less than maxWidth)',
+      (tester) async {
+        final thought = makeThought(id: 1, content: 'wat about me');
 
-      await tester.pumpWidget(
-        wrapWidget(
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 340),
-              child: BoardCard(
-                thought: thought,
-                index: 0,
-                now: now,
+        await tester.pumpWidget(
+          wrapWidget(
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 340),
+                child: BoardCard(thought: thought, index: 0, now: now),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final cardFinder = find.byType(BoardCard);
-      expect(cardFinder, findsOneWidget);
-      final size = tester.getSize(cardFinder);
+        final cardFinder = find.byType(BoardCard);
+        expect(cardFinder, findsOneWidget);
+        final size = tester.getSize(cardFinder);
 
-      // Card must hug the short text and never blow up to full maxWidth (340px)
-      expect(size.width, lessThan(260.0));
-      expect(size.width, greaterThanOrEqualTo(190.0));
-    });
+        // Card must hug the short text and never blow up to full maxWidth (340px)
+        expect(size.width, lessThan(260.0));
+        expect(size.width, greaterThanOrEqualTo(190.0));
+      },
+    );
 
     testWidgets('Long text expands to full maxWidth', (tester) async {
       final thought = makeThought(
         id: 2,
-        content: 'This is a long reflection explaining multiple thoughts, plans, and daily observations across multiple lines to verify that it expands naturally.',
+        content:
+            'This is a long reflection explaining multiple thoughts, plans, and daily observations across multiple lines to verify that it expands naturally.',
       );
 
       await tester.pumpWidget(
@@ -83,11 +77,7 @@ void main() {
             alignment: Alignment.centerLeft,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340),
-              child: BoardCard(
-                thought: thought,
-                index: 0,
-                now: now,
-              ),
+              child: BoardCard(thought: thought, index: 0, now: now),
             ),
           ),
         ),
@@ -99,10 +89,7 @@ void main() {
     });
 
     testWidgets('Checklists keep full maxWidth', (tester) async {
-      final thought = makeThought(
-        id: 3,
-        content: '[ ] Milk\n[ ] Eggs',
-      );
+      final thought = makeThought(id: 3, content: '[ ] Milk\n[ ] Eggs');
 
       await tester.pumpWidget(
         wrapWidget(
@@ -110,11 +97,7 @@ void main() {
             alignment: Alignment.centerLeft,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 340),
-              child: BoardCard(
-                thought: thought,
-                index: 0,
-                now: now,
-              ),
+              child: BoardCard(thought: thought, index: 0, now: now),
             ),
           ),
         ),
@@ -125,7 +108,9 @@ void main() {
       expect(size.width, equals(340.0));
     });
 
-    testWidgets('Selection mode keeps full maxWidth for ease of tapping', (tester) async {
+    testWidgets('Selection mode keeps full maxWidth for ease of tapping', (
+      tester,
+    ) async {
       final thought = makeThought(id: 4, content: 'short');
 
       await tester.pumpWidget(
@@ -152,39 +137,48 @@ void main() {
   });
 
   group('BoardCard & BoardHeroCard Night Styling', () {
-    testWidgets('BoardCard renders transparent fill and mood-tinted hairline in dark mode when bubbleFilled is false', (tester) async {
-      final thought = makeThought(id: 5, content: 'so its alll about love', mood: 'win');
+    testWidgets(
+      'BoardCard renders transparent fill and mood-tinted hairline in dark mode when bubbleFilled is false',
+      (tester) async {
+        final thought = makeThought(
+          id: 5,
+          content: 'so its alll about love',
+          mood: 'win',
+        );
 
-      await tester.pumpWidget(
-        wrapWidget(
-          BoardCard(
-            thought: thought,
-            index: 0,
-            now: now,
-            appearance: const ThoughtWallAppearance(bubbleFilled: false),
+        await tester.pumpWidget(
+          wrapWidget(
+            BoardCard(
+              thought: thought,
+              index: 0,
+              now: now,
+              appearance: const ThoughtWallAppearance(bubbleFilled: false),
+            ),
+            dark: true,
           ),
-          dark: true,
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final container = tester.widget<AnimatedContainer>(
-        find.descendant(
-          of: find.byType(BoardCard),
-          matching: find.byType(AnimatedContainer),
-        ).first,
-      );
-      final decoration = container.decoration as BoxDecoration;
+        final container = tester.widget<AnimatedContainer>(
+          find
+              .descendant(
+                of: find.byType(BoardCard),
+                matching: find.byType(AnimatedContainer),
+              )
+              .first,
+        );
+        final decoration = container.decoration as BoxDecoration;
 
-      // Transparent night canvas fill
-      expect(decoration.color, equals(Colors.transparent));
+        // Transparent night canvas fill
+        expect(decoration.color, equals(Colors.transparent));
 
-      // No blurry shadow bleeding through the transparent bubble interior
-      expect(decoration.boxShadow, isEmpty);
+        // No blurry shadow bleeding through the transparent bubble interior
+        expect(decoration.boxShadow, isEmpty);
 
-      // Border is not the old hardcoded near-invisible navy #262933
-      final border = decoration.border as Border;
-      expect(border.top.color, isNot(equals(const Color(0xFF262933))));
-    });
+        // Border is not the old hardcoded near-invisible navy #262933
+        final border = decoration.border as Border;
+        expect(border.top.color, isNot(equals(const Color(0xFF262933))));
+      },
+    );
   });
 }

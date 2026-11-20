@@ -68,13 +68,18 @@ void main() {
         expect(find.text('Your personal sanctuary'), findsOneWidget);
         expect(find.text('Climb a little,\nevery day.'), findsOneWidget);
         expect(
-          find.text('Plans, focus, routines and a gentle companion, all in one calm place.'),
+          find.text(
+            'Plans, focus, routines and a gentle companion, all in one calm place.',
+          ),
           findsOneWidget,
         );
 
         // Check action button
         expect(find.text('Let’s begin'), findsOneWidget);
-        expect(find.text('Private, local and crafted for your peace of mind.'), findsOneWidget);
+        expect(
+          find.text('Private, local and crafted for your peace of mind.'),
+          findsOneWidget,
+        );
 
         expect(tester.takeException(), isNull);
       },
@@ -130,7 +135,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('1 of 4'), findsOneWidget);
-        expect(find.text('Everything for your day, in one calm place.'), findsOneWidget);
+        expect(
+          find.text('Everything for your day, in one calm place.'),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
 
         // Advance to Screen 3: Your Name

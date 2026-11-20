@@ -206,7 +206,7 @@ void main() {
 
       expect(find.text('DSA Sliding Window Practice'), findsOneWidget);
       expect(find.text('45m target'), findsOneWidget);
-        // DSA item verification
+      // DSA item verification
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
     });

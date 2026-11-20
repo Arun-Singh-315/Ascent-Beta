@@ -151,48 +151,48 @@ void main() {
     await tester.pump(Duration.zero);
   });
 
-    testWidgets(
-      'homepage no longer shows inline daily check-in button; sheet can be opened on demand',
-      (tester) async {
-        final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-        await prefs.setString('ascent_money_checked_date', todayStr);
-        await db.waterDao.addWater(3000);
-        await prefs.setBool('ascent_quick_start_v1', true);
-        await prefs.setBool(dailyBriefingAutoOpenKey, false);
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: Builder(
-                builder: (context) => Scaffold(
-                  body: const HomeScreen(),
-                  floatingActionButton: FloatingActionButton(
-                    onPressed: () =>
-                        DailyBriefingCard.show(context, DateTime.now()),
-                  ),
+  testWidgets(
+    'homepage no longer shows inline daily check-in button; sheet can be opened on demand',
+    (tester) async {
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      await prefs.setString('ascent_money_checked_date', todayStr);
+      await db.waterDao.addWater(3000);
+      await prefs.setBool('ascent_quick_start_v1', true);
+      await prefs.setBool(dailyBriefingAutoOpenKey, false);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: const HomeScreen(),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () =>
+                      DailyBriefingCard.show(context, DateTime.now()),
                 ),
               ),
             ),
           ),
-        );
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pumpAndSettle();
-        expect(find.text('Open daily check-in'), findsNothing);
-        await tester.tap(find.byType(FloatingActionButton));
-        await tester.pumpAndSettle();
-        final toggle = find.byType(AscentSwitchRow);
-        await tester.ensureVisible(toggle);
-        await tester.tap(toggle);
-        await tester.pumpAndSettle();
-        expect(prefs.getBool(dailyBriefingAutoOpenKey), true);
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+      expect(find.text('Open daily check-in'), findsNothing);
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+      final toggle = find.byType(AscentSwitchRow);
+      await tester.ensureVisible(toggle);
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(prefs.getBool(dailyBriefingAutoOpenKey), true);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    },
+  );
 
   test('empty records do not imply failure or fabricate progress', () {
     final summary = DailyBriefing.fromRecords(
@@ -255,8 +255,11 @@ void main() {
           ),
           GoRoute(
             path: '/ai-assistant',
-            builder: (_, state) =>
-                Scaffold(body: Text(state.uri.queryParameters['prompt'] ?? 'Riya destination')),
+            builder: (_, state) => Scaffold(
+              body: Text(
+                state.uri.queryParameters['prompt'] ?? 'Riya destination',
+              ),
+            ),
           ),
         ],
       );
@@ -313,10 +316,7 @@ void main() {
       await tester.ensureVisible(find.text('Ask Riya'));
       await tester.tap(find.text('Ask Riya'));
       await tester.pumpAndSettle();
-      expect(
-        find.text('Riya destination'),
-        findsOneWidget,
-      );
+      expect(find.text('Riya destination'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
     });

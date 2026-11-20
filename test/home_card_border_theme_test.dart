@@ -40,256 +40,295 @@ void main() {
   });
 
   group('Home Cards Dark vs Day Theme Border Integrity Tests', () {
-    testWidgets('Dark Home keeps content surfaces and gives Learning and Mind Palace quiet opaque shells', (tester) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Thought in dark mode'),
-      );
-      final thought = (await db.thoughtDao.getThoughtById(id))!;
+    testWidgets(
+      'Dark Home keeps content surfaces and gives Learning and Mind Palace quiet opaque shells',
+      (tester) async {
+        final id = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: 'Thought in dark mode'),
+        );
+        final thought = (await db.thoughtDao.getThoughtById(id))!;
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value([thought]),
-            ),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value(const []),
-            ),
-            currentStreakStreamProvider.overrideWith(
-              (ref) => Stream.value(0),
-            ),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Theme(
-              data: HomeTheme.from(AscentTheme.dark()),
-              child: const Scaffold(
-                body: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      ThoughtWallHomePreview(),
-                      ActivityHubCard(),
-                      LearningHubCard(),
-                      QuickModulesNavHub(),
-                    ],
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([thought]),
+              ),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value(const []),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(0),
+              ),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.dark(),
+              home: Theme(
+                data: HomeTheme.from(AscentTheme.dark()),
+                child: const Scaffold(
+                  body: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ThoughtWallHomePreview(),
+                        ActivityHubCard(),
+                        LearningHubCard(),
+                        QuickModulesNavHub(),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // 1. Life & Health card baseline
-      final lifeAndHealthFinder = find.descendant(
-        of: find.byType(QuickModulesNavHub),
-        matching: find.byType(GlassSurface),
-      ).first;
-      final lifeGlass = tester.widget<GlassSurface>(lifeAndHealthFinder);
-      // In dark mode, Life & Health uses null customBorder and null fillColor (inheriting g.edge and g.fill)
-      expect(lifeGlass.customBorder, isNull);
-      expect(lifeGlass.fillColor, isNull);
+        // 1. Life & Health card baseline
+        final lifeAndHealthFinder = find
+            .descendant(
+              of: find.byType(QuickModulesNavHub),
+              matching: find.byType(GlassSurface),
+            )
+            .first;
+        final lifeGlass = tester.widget<GlassSurface>(lifeAndHealthFinder);
+        // In dark mode, Life & Health uses null customBorder and null fillColor (inheriting g.edge and g.fill)
+        expect(lifeGlass.customBorder, isNull);
+        expect(lifeGlass.fillColor, isNull);
 
-      // 2. Things Hub card
-      final activityCardFinder = find.byKey(const ValueKey('home_activity_card'));
-      final activityGlass = tester.widget<GlassSurface>(activityCardFinder);
-      expect(activityGlass.customBorder, isNull,
-          reason: 'Things Hub card in dark mode should match Life & Health (null customBorder to use g.edge)');
-      expect(activityGlass.fillColor, isNull,
-          reason: 'Things Hub card in dark mode should match Life & Health (null fillColor to use g.fill)');
+        // 2. Things Hub card
+        final activityCardFinder = find.byKey(
+          const ValueKey('home_activity_card'),
+        );
+        final activityGlass = tester.widget<GlassSurface>(activityCardFinder);
+        expect(
+          activityGlass.customBorder,
+          isNull,
+          reason:
+              'Things Hub card in dark mode should match Life & Health (null customBorder to use g.edge)',
+        );
+        expect(
+          activityGlass.fillColor,
+          isNull,
+          reason:
+              'Things Hub card in dark mode should match Life & Health (null fillColor to use g.fill)',
+        );
 
-      // 3. Learning card
-      final learningCardFinder = find.descendant(
-        of: find.byType(LearningHubCard),
-        matching: find.byType(GlassSurface),
-      ).first;
-      final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
-      expect(learningGlass.customBorder, isNotNull);
-      expect(learningGlass.fillColor, isNull);
-      expect(learningGlass.enableBlur, isFalse);
+        // 3. Learning card
+        final learningCardFinder = find
+            .descendant(
+              of: find.byType(LearningHubCard),
+              matching: find.byType(GlassSurface),
+            )
+            .first;
+        final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
+        expect(learningGlass.customBorder, isNotNull);
+        expect(learningGlass.fillColor, isNull);
+        expect(learningGlass.enableBlur, isFalse);
 
-      // 4. Recent Thought card (Mind Space container)
-      final mindSpaceFinder = find.byKey(const ValueKey('home_mind_space_card'));
-      final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
-      expect(mindSpaceGlass.customBorder, isNotNull);
-      expect(mindSpaceGlass.fillColor, isNull);
-      expect(mindSpaceGlass.enableBlur, isFalse);
+        // 4. Recent Thought card (Mind Space container)
+        final mindSpaceFinder = find.byKey(
+          const ValueKey('home_mind_space_card'),
+        );
+        final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
+        expect(mindSpaceGlass.customBorder, isNotNull);
+        expect(mindSpaceGlass.fillColor, isNull);
+        expect(mindSpaceGlass.enableBlur, isFalse);
 
-      // 5. Write a thought composer card (AppCard at top of Mind Space)
-      // Check the AppCard decoration border
-      final composerCardFinder = find.descendant(
-        of: find.byType(ThoughtWallHomePreview),
-        matching: find.byType(TextField),
-      );
-      expect(composerCardFinder, findsOneWidget);
-
-      // Find the parent decorated container/card of the composer
-      final appCardDecorations = tester.widgetList<Container>(
-        find.descendant(
+        // 5. Write a thought composer card (AppCard at top of Mind Space)
+        // Check the AppCard decoration border
+        final composerCardFinder = find.descendant(
           of: find.byType(ThoughtWallHomePreview),
-          matching: find.byType(Container),
-        ),
-      ).where((c) => c.decoration is BoxDecoration).map((c) => c.decoration as BoxDecoration).toList();
+          matching: find.byType(TextField),
+        );
+        expect(composerCardFinder, findsOneWidget);
 
-      final composerDeco = appCardDecorations.firstWhere(
-        (d) => d.borderRadius == BorderRadius.circular(16),
-      );
-      final border = composerDeco.border as Border?;
-      expect(border, isNotNull);
-      // In dark mode, border must NOT be opaque white (a == 1.0)
-      expect(border!.top.color.a, isNot(equals(1.0)));
-      expect(border.top.color.a, greaterThan(0));
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('Day Home keeps content separation and quiet Learning and Mind Palace shells', (tester) async {
-      final id = await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Thought in daylight'),
-      );
-      final thought = (await db.thoughtDao.getThoughtById(id))!;
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value([thought]),
-            ),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value(const []),
-            ),
-            currentStreakStreamProvider.overrideWith(
-              (ref) => Stream.value(0),
-            ),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.classicClay),
-            home: Theme(
-              data: HomeTheme.from(
-                AscentTheme.light(preset: DayThemePreset.classicClay),
+        // Find the parent decorated container/card of the composer
+        final appCardDecorations = tester
+            .widgetList<Container>(
+              find.descendant(
+                of: find.byType(ThoughtWallHomePreview),
+                matching: find.byType(Container),
               ),
-              child: const Scaffold(
-                body: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      ThoughtWallHomePreview(),
-                      ActivityHubCard(),
-                      LearningHubCard(),
-                      QuickModulesNavHub(),
-                    ],
+            )
+            .where((c) => c.decoration is BoxDecoration)
+            .map((c) => c.decoration as BoxDecoration)
+            .toList();
+
+        final composerDeco = appCardDecorations.firstWhere(
+          (d) => d.borderRadius == BorderRadius.circular(16),
+        );
+        final border = composerDeco.border as Border?;
+        expect(border, isNotNull);
+        // In dark mode, border must NOT be opaque white (a == 1.0)
+        expect(border!.top.color.a, isNot(equals(1.0)));
+        expect(border.top.color.a, greaterThan(0));
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Day Home keeps content separation and quiet Learning and Mind Palace shells',
+      (tester) async {
+        final id = await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: 'Thought in daylight'),
+        );
+        final thought = (await db.thoughtDao.getThoughtById(id))!;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([thought]),
+              ),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value(const []),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(0),
+              ),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(preset: DayThemePreset.classicClay),
+              home: Theme(
+                data: HomeTheme.from(
+                  AscentTheme.light(preset: DayThemePreset.classicClay),
+                ),
+                child: const Scaffold(
+                  body: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ThoughtWallHomePreview(),
+                        ActivityHubCard(),
+                        LearningHubCard(),
+                        QuickModulesNavHub(),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
+        // 1. Life & Health card in light mode
+        final lifeAndHealthFinder = find
+            .descendant(
+              of: find.byType(QuickModulesNavHub),
+              matching: find.byType(GlassSurface),
+            )
+            .first;
+        final lifeGlass = tester.widget<GlassSurface>(lifeAndHealthFinder);
+        expect(lifeGlass.fillColor, equals(Colors.white));
+        expect(lifeGlass.customBorder, isNull);
+        expect(lifeGlass.enableBlur, isFalse);
 
-      // 1. Life & Health card in light mode
-      final lifeAndHealthFinder = find.descendant(
-        of: find.byType(QuickModulesNavHub),
-        matching: find.byType(GlassSurface),
-      ).first;
-      final lifeGlass = tester.widget<GlassSurface>(lifeAndHealthFinder);
-      expect(lifeGlass.fillColor, equals(Colors.white));
-      expect(lifeGlass.customBorder, isNull);
-      expect(lifeGlass.enableBlur, isFalse);
+        // 2. Things Hub card in light mode
+        final activityCardFinder = find.byKey(
+          const ValueKey('home_activity_card'),
+        );
+        final activityGlass = tester.widget<GlassSurface>(activityCardFinder);
+        expect(activityGlass.fillColor, isNull);
+        expect(activityGlass.customBorder, isNull);
 
-      // 2. Things Hub card in light mode
-      final activityCardFinder = find.byKey(const ValueKey('home_activity_card'));
-      final activityGlass = tester.widget<GlassSurface>(activityCardFinder);
-      expect(activityGlass.fillColor, isNull);
-      expect(activityGlass.customBorder, isNull);
+        // 3. Learning card in light mode
+        final learningCardFinder = find
+            .descendant(
+              of: find.byType(LearningHubCard),
+              matching: find.byType(GlassSurface),
+            )
+            .first;
+        final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
+        expect(learningGlass.fillColor, isNull);
+        expect(learningGlass.enableBlur, isFalse);
+        expect(learningGlass.customBorder, isNotNull);
+        expect(learningGlass.customBorder!.top.width, .75);
 
-      // 3. Learning card in light mode
-      final learningCardFinder = find.descendant(
-        of: find.byType(LearningHubCard),
-        matching: find.byType(GlassSurface),
-      ).first;
-      final learningGlass = tester.widget<GlassSurface>(learningCardFinder);
-      expect(learningGlass.fillColor, isNull);
-      expect(learningGlass.enableBlur, isFalse);
-      expect(learningGlass.customBorder, isNotNull);
-      expect(learningGlass.customBorder!.top.width, .75);
+        // 4. Recent Thought card in light mode
+        final mindSpaceFinder = find.byKey(
+          const ValueKey('home_mind_space_card'),
+        );
+        final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
+        expect(mindSpaceGlass.fillColor, isNull);
+        expect(mindSpaceGlass.enableBlur, isFalse);
+        expect(mindSpaceGlass.customBorder, isNotNull);
+        expect(mindSpaceGlass.customBorder!.top.width, .75);
 
-      // 4. Recent Thought card in light mode
-      final mindSpaceFinder = find.byKey(const ValueKey('home_mind_space_card'));
-      final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
-      expect(mindSpaceGlass.fillColor, isNull);
-      expect(mindSpaceGlass.enableBlur, isFalse);
-      expect(mindSpaceGlass.customBorder, isNotNull);
-      expect(mindSpaceGlass.customBorder!.top.width, .75);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      },
+    );
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    });
+    testWidgets(
+      'In Frozen Sky (Nordic) mode: cards remain styled with frozen palette',
+      (tester) async {
+        final nordicDark = AscentTheme.dark(preset: DayThemePreset.nordicSky);
+        final homeNordic = HomeTheme.from(nordicDark);
+        final g = homeNordic.extension<AscentGlass>()!;
+        expect(g.frozen, isTrue);
 
-    testWidgets('In Frozen Sky (Nordic) mode: cards remain styled with frozen palette', (tester) async {
-      final nordicDark = AscentTheme.dark(preset: DayThemePreset.nordicSky);
-      final homeNordic = HomeTheme.from(nordicDark);
-      final g = homeNordic.extension<AscentGlass>()!;
-      expect(g.frozen, isTrue);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value(const []),
-            ),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value(const []),
-            ),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-          ],
-          child: MaterialApp(
-            theme: nordicDark,
-            home: Theme(
-              data: homeNordic,
-              child: const Scaffold(
-                body: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      ActivityHubCard(),
-                      LearningHubCard(),
-                      QuickModulesNavHub(),
-                    ],
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value(const []),
+              ),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value(const []),
+              ),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+            ],
+            child: MaterialApp(
+              theme: nordicDark,
+              home: Theme(
+                data: homeNordic,
+                child: const Scaffold(
+                  body: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ActivityHubCard(),
+                        LearningHubCard(),
+                        QuickModulesNavHub(),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Cards should render properly in frozen mode
-      expect(find.byKey(const ValueKey('home_activity_card')), findsOneWidget);
-      expect(find.byType(LearningHubCard), findsOneWidget);
-      expect(find.byType(QuickModulesNavHub), findsOneWidget);
+        // Cards should render properly in frozen mode
+        expect(
+          find.byKey(const ValueKey('home_activity_card')),
+          findsOneWidget,
+        );
+        expect(find.byType(LearningHubCard), findsOneWidget);
+        expect(find.byType(QuickModulesNavHub), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

@@ -198,12 +198,18 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('TODAY’S EXECUTION'), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsNothing);
-      expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
       await tester.scrollUntilVisible(
         find.byType(ActivityHubCard),
         100,
         scrollable: find.byType(Scrollable).first,
       );
+      // Mind preview now sits below the Today timeline (CLAUDE.md §5.1).
+      await tester.scrollUntilVisible(
+        find.byType(ThoughtWallHomePreview),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
       await settle(tester);
       await capture(tester, key, 'home-light-empty');
       await tester.scrollUntilVisible(

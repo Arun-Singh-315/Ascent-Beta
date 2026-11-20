@@ -3,18 +3,21 @@ import 'package:ascent/core/services/plan_recurrence_engine.dart';
 
 void main() {
   group('PlanRecurrenceEngine', () {
-    test('Daily recurrence generates all dates from start to end inclusive', () {
-      final dates = PlanRecurrenceEngine.calculateEligibleDates(
-        startDate: '2026-10-18',
-        endDate: '2026-10-31',
-        recurrenceRule: 'daily',
-      );
+    test(
+      'Daily recurrence generates all dates from start to end inclusive',
+      () {
+        final dates = PlanRecurrenceEngine.calculateEligibleDates(
+          startDate: '2026-10-18',
+          endDate: '2026-10-31',
+          recurrenceRule: 'daily',
+        );
 
-      expect(dates.length, 14);
-      expect(dates.first, '2026-10-18');
-      expect(dates.last, '2026-10-31');
-      expect(dates.contains('2026-11-01'), isFalse);
-    });
+        expect(dates.length, 14);
+        expect(dates.first, '2026-10-18');
+        expect(dates.last, '2026-10-31');
+        expect(dates.contains('2026-11-01'), isFalse);
+      },
+    );
 
     test('Weekdays recurrence skips Saturdays and Sundays', () {
       // 2026-10-19 is Monday, 2026-10-25 is Sunday
@@ -120,27 +123,30 @@ void main() {
       expect(checkIns[0].time, DateTime(2026, 10, 18, 7, 40));
     });
 
-    test('Calculates check-in timings for Gentle policy (first, +30m, +90m)', () {
-      final start = DateTime(2026, 10, 18, 7, 0);
-      final checkIns = PlanRecurrenceEngine.calculateCheckInTimes(
-        startTime: start,
-        policy: 'gentle',
-        expectedDurationMinutes: 30,
-      );
+    test(
+      'Calculates check-in timings for Gentle policy (first, +30m, +90m)',
+      () {
+        final start = DateTime(2026, 10, 18, 7, 0);
+        final checkIns = PlanRecurrenceEngine.calculateCheckInTimes(
+          startTime: start,
+          policy: 'gentle',
+          expectedDurationMinutes: 30,
+        );
 
-      expect(checkIns.length, 3);
-      // Attempt 0: 7:40 am
-      expect(checkIns[0].attemptIndex, 0);
-      expect(checkIns[0].time, DateTime(2026, 10, 18, 7, 40));
+        expect(checkIns.length, 3);
+        // Attempt 0: 7:40 am
+        expect(checkIns[0].attemptIndex, 0);
+        expect(checkIns[0].time, DateTime(2026, 10, 18, 7, 40));
 
-      // Attempt 1: 7:40 + 30m = 8:10 am
-      expect(checkIns[1].attemptIndex, 1);
-      expect(checkIns[1].time, DateTime(2026, 10, 18, 8, 10));
+        // Attempt 1: 7:40 + 30m = 8:10 am
+        expect(checkIns[1].attemptIndex, 1);
+        expect(checkIns[1].time, DateTime(2026, 10, 18, 8, 10));
 
-      // Attempt 2: 7:40 + 90m = 9:10 am
-      expect(checkIns[2].attemptIndex, 2);
-      expect(checkIns[2].time, DateTime(2026, 10, 18, 9, 10));
-    });
+        // Attempt 2: 7:40 + 90m = 9:10 am
+        expect(checkIns[2].attemptIndex, 2);
+        expect(checkIns[2].time, DateTime(2026, 10, 18, 9, 10));
+      },
+    );
 
     test('Calculates closeTime (cutoff) after last check-in or end of day', () {
       final start = DateTime(2026, 10, 18, 7, 0);

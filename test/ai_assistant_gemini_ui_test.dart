@@ -17,9 +17,7 @@ void main() {
     late SharedPreferences prefs;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({
-        'ascent_assistant_name': 'Riya',
-      });
+      SharedPreferences.setMockInitialValues({'ascent_assistant_name': 'Riya'});
       prefs = await SharedPreferences.getInstance();
       db = AppDatabase.forTesting(NativeDatabase.memory());
     });
@@ -139,9 +137,9 @@ void main() {
             child: MaterialApp(
               theme: ThemeData.dark(),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(2.0),
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
               home: const AiAssistantScreen(),

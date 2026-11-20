@@ -13,7 +13,8 @@ void main() {
         NotificationService.ongoingLectureNotificationId !=
             NotificationService.ongoingSessionNotificationId,
         isTrue,
-        reason: 'Lecture and generic session notifications must have distinct IDs to prevent collisions',
+        reason:
+            'Lecture and generic session notifications must have distinct IDs to prevent collisions',
       );
       expect(
         NotificationService.ongoingFocusNotificationId !=
@@ -53,9 +54,9 @@ void main() {
             child: MaterialApp(
               theme: ThemeData.light(),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(2.0),
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
               home: const MoreScreen(),
@@ -81,7 +82,8 @@ void main() {
         final reminder = Reminder(
           alarmEnabled: false,
           id: 42,
-          title: 'Review System Architecture with long title that wraps multiple lines',
+          title:
+              'Review System Architecture with long title that wraps multiple lines',
           scheduledAt: DateTime(2026, 10, 18, 12, 0),
           isActive: true,
           createdAt: DateTime(2026, 10, 18, 9, 0),
@@ -93,9 +95,9 @@ void main() {
             child: MaterialApp(
               theme: ThemeData.light(),
               builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(2.0),
-                ),
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
               home: Scaffold(body: InAppReminderDialog(reminder: reminder)),

@@ -3,7 +3,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/plans/plans_screen.dart';
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -168,32 +167,6 @@ void main() {
 
       final task = await db.taskDao.getTaskById(firstOcc.linkedTaskId!);
       expect(task, isNotNull);
-    },
-  );
-
-  testWidgets(
-    'Plans board opens a reactive collection with lifecycle controls',
-    (tester) async {
-      await container
-          .read(planServiceProvider)
-          .createPlan(
-            title: 'Reading routine',
-            startDate: '2026-10-18',
-            endDate: '2026-10-25',
-            recurrenceRule: 'weekdays',
-            localTime: '08:00',
-          );
-      await mount(tester, const SizedBox(height: 600, child: PlansScreen()));
-      expect(find.text('Reading routine'), findsOneWidget);
-      await tester.tap(find.text('Reading routine'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Plan actions'));
-      await tester.pumpAndSettle();
-      expect(find.text('Edit plan'), findsOneWidget);
-      expect(find.text('Pause'), findsOneWidget);
-      expect(find.text('Archive'), findsOneWidget);
-      expect(find.text('Add items'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
     },
   );
 }

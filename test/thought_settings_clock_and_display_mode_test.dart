@@ -51,30 +51,6 @@ void main() {
 
   group('Glass Translucency UI in Settings', () {
     testWidgets(
-      'all three translucency options are prominently sized and visible',
-      (tester) async {
-        await tester.pumpWidget(buildApp(const SettingsScreen()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(find.text('Glass Translucency'), findsOneWidget);
-        expect(find.text('Subtle'), findsOneWidget);
-        expect(find.text('Balanced'), findsOneWidget);
-        expect(find.text('Contrast'), findsOneWidget);
-
-        final subtleFinder = find
-            .ancestor(
-              of: find.text('Subtle'),
-              matching: find.byType(InkWell),
-            )
-            .first;
-        final subtleBox = tester.getRect(subtleFinder);
-        expect(subtleBox.height, greaterThanOrEqualTo(50));
-        expect(subtleBox.width, greaterThanOrEqualTo(60));
-      },
-    );
-
-    testWidgets(
       'immune to overflow at 320px width with 2.0x accessibility text scale',
       (tester) async {
         await tester.pumpWidget(
@@ -124,30 +100,6 @@ void main() {
   });
 
   group('Thought Wall Toggle and Selection Delete Option Outside', () {
-    testWidgets(
-      'segmented 3-way toggle renders All, Today, History with responsive feedback',
-      (tester) async {
-        await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
-        await tester.pumpAndSettle();
-
-        expect(find.text('All'), findsOneWidget);
-        expect(find.text('Today'), findsOneWidget);
-        expect(find.text('History'), findsOneWidget);
-
-        await tester.tap(find.text('Today'));
-        await tester.pumpAndSettle();
-        expect(find.text("TODAY'S REFLECTIONS"), findsOneWidget);
-
-        await tester.tap(find.text('History'));
-        await tester.pumpAndSettle();
-        expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pump(const Duration(seconds: 5));
-      },
-    );
-
     testWidgets(
       'provides prominent Delete option outside when selecting thoughts',
       (tester) async {

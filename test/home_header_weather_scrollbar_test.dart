@@ -35,184 +35,218 @@ void main() {
   }
 
   group('HomeHeader Layout & Weather Design Tests', () {
-    testWidgets('Header has no day/night toggle or duplicate weather button in Row 1', (tester) async {
-      final prefs = await SharedPreferences.getInstance();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayFestivalProvider.overrideWith((ref) => null),
-            currentStreakStreamProvider.overrideWith((ref) => Stream.value(0)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: HomeHeader(profile: null),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Row 1 contains Avatar, Date, and HomeWeather capsule
-      expect(find.byKey(const ValueKey('home_profile_button')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_date')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_weather')), findsOneWidget);
-
-      // Redundant day/night toggle and duplicate weather button must NOT exist in the header
-      expect(find.byKey(const ValueKey('home_day_night_toggle')), findsNothing);
-      expect(find.byKey(const ValueKey('home_weather_button')), findsNothing);
-
-      // Verify header has distinct styling: gradient + hairline border, no extra shadow (Phase 1)
-      final headerContainer = tester.widget<Container>(find.byKey(const ValueKey('home_day_header')));
-      final decoration = headerContainer.decoration as BoxDecoration;
-      expect(decoration.border, isNotNull);
-      expect(decoration.gradient, isNotNull);
-      expect(decoration.boxShadow, isNull);
-    });
-
-    testWidgets('Header chips use Wrap and have zero horizontal scrolling with all chips populated', (tester) async {
-      final prefs = await SharedPreferences.getInstance();
-      final now = DateTime(2026, 11, 15);
-      final profile = createTestProfile();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayFestivalProvider.overrideWith((ref) => const FestivalEvent(
-              id: 'diwali',
-              name: 'Diwali',
-              greeting: 'Happy Diwali',
-              thought: 'May light triumph over darkness.',
-              riyaWish: 'Happy Diwali',
-              month: 11,
-              day: 15,
-            )),
-            currentStreakStreamProvider.overrideWith((ref) => Stream.value(7)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: HomeHeader(profile: profile, now: now),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // All chips are rendered
-      expect(find.byKey(const ValueKey('home_festival_banner')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_rashi')), findsOneWidget);
-      expect(find.byKey(const ValueKey('home_streak_chip')), findsOneWidget);
-
-      // Header chips must NOT be inside a horizontal scrollview
-      final horizontalScrollables = find.byWidgetPredicate(
-        (widget) => widget is SingleChildScrollView && widget.scrollDirection == Axis.horizontal,
-      );
-      expect(horizontalScrollables, findsNothing);
-
-      // Chips are contained in a Wrap widget
-      expect(find.byType(Wrap), findsWidgets);
-    });
-
-    testWidgets('Header is immune to overflow at 320px width with 2.0x accessibility text scale', (tester) async {
-      final prefs = await SharedPreferences.getInstance();
-      final now = DateTime(2026, 11, 15);
-      final profile = createTestProfile(name: 'Arun Singh Visen');
-
-      tester.view.physicalSize = const Size(320 * 3, 844 * 3);
-      tester.view.devicePixelRatio = 3.0;
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayFestivalProvider.overrideWith((ref) => const FestivalEvent(
-              id: 'diwali',
-              name: 'Diwali',
-              greeting: 'Happy Diwali',
-              thought: 'May light triumph over darkness.',
-              riyaWish: 'Happy Diwali',
-              month: 11,
-              day: 15,
-            )),
-            currentStreakStreamProvider.overrideWith((ref) => Stream.value(12)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 844),
-                textScaler: TextScaler.linear(2.0),
+    testWidgets(
+      'Header has no day/night toggle or duplicate weather button in Row 1',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              todayFestivalProvider.overrideWith((ref) => null),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(0),
               ),
-              child: Scaffold(
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(body: HomeHeader(profile: null)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Row 1 contains Avatar, Date, and HomeWeather capsule
+        expect(
+          find.byKey(const ValueKey('home_profile_button')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('home_date')), findsOneWidget);
+        expect(find.byKey(const ValueKey('home_weather')), findsOneWidget);
+
+        // Redundant day/night toggle and duplicate weather button must NOT exist in the header
+        expect(
+          find.byKey(const ValueKey('home_day_night_toggle')),
+          findsNothing,
+        );
+        expect(find.byKey(const ValueKey('home_weather_button')), findsNothing);
+
+        // Verify header has distinct styling: gradient + hairline border, no extra shadow (Phase 1)
+        final headerContainer = tester.widget<Container>(
+          find.byKey(const ValueKey('home_day_header')),
+        );
+        final decoration = headerContainer.decoration as BoxDecoration;
+        expect(decoration.border, isNotNull);
+        expect(decoration.gradient, isNotNull);
+        expect(decoration.boxShadow, isNull);
+      },
+    );
+
+    testWidgets(
+      'Header chips use Wrap and have zero horizontal scrolling with all chips populated',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
+        final now = DateTime(2026, 11, 15);
+        final profile = createTestProfile();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              todayFestivalProvider.overrideWith(
+                (ref) => const FestivalEvent(
+                  id: 'diwali',
+                  name: 'Diwali',
+                  greeting: 'Happy Diwali',
+                  thought: 'May light triumph over darkness.',
+                  riyaWish: 'Happy Diwali',
+                  month: 11,
+                  day: 15,
+                ),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(7),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: Scaffold(
                 body: HomeHeader(profile: profile, now: now),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Zero exceptions and zero RenderFlex overflow
-      expect(tester.takeException(), isNull);
-    });
+        // All chips are rendered
+        expect(
+          find.byKey(const ValueKey('home_festival_banner')),
+          findsOneWidget,
+        );
+        expect(find.byKey(const ValueKey('home_rashi')), findsOneWidget);
+        expect(find.byKey(const ValueKey('home_streak_chip')), findsOneWidget);
+
+        // Header chips must NOT be inside a horizontal scrollview
+        final horizontalScrollables = find.byWidgetPredicate(
+          (widget) =>
+              widget is SingleChildScrollView &&
+              widget.scrollDirection == Axis.horizontal,
+        );
+        expect(horizontalScrollables, findsNothing);
+
+        // Chips are contained in a Wrap widget
+        expect(find.byType(Wrap), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Header is immune to overflow at 320px width with 2.0x accessibility text scale',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
+        final now = DateTime(2026, 11, 15);
+        final profile = createTestProfile(name: 'Arun Singh Visen');
+
+        tester.view.physicalSize = const Size(320 * 3, 844 * 3);
+        tester.view.devicePixelRatio = 3.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              todayFestivalProvider.overrideWith(
+                (ref) => const FestivalEvent(
+                  id: 'diwali',
+                  name: 'Diwali',
+                  greeting: 'Happy Diwali',
+                  thought: 'May light triumph over darkness.',
+                  riyaWish: 'Happy Diwali',
+                  month: 11,
+                  day: 15,
+                ),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(12),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(320, 844),
+                  textScaler: TextScaler.linear(2.0),
+                ),
+                child: Scaffold(
+                  body: HomeHeader(profile: profile, now: now),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Zero exceptions and zero RenderFlex overflow
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('WeatherForecastSheet Scrollbar & Navigation Tests', () {
-    testWidgets('WeatherForecastSheet features a persistent side scrollbar and close button', (tester) async {
-      final prefs = await SharedPreferences.getInstance();
+    testWidgets(
+      'WeatherForecastSheet features a persistent side scrollbar and close button',
+      (tester) async {
+        final prefs = await SharedPreferences.getInstance();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            homeWeatherProvider.overrideWith(
-              (ref) async => {
-                'current': {
-                  'temperature_2m': 21.0,
-                  'apparent_temperature': 21.6,
-                  'relative_humidity_2m': 65,
-                  'weather_code': 3,
-                  'wind_speed_10m': 5.8,
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              homeWeatherProvider.overrideWith(
+                (ref) async => {
+                  'current': {
+                    'temperature_2m': 21.0,
+                    'apparent_temperature': 21.6,
+                    'relative_humidity_2m': 65,
+                    'weather_code': 3,
+                    'wind_speed_10m': 5.8,
+                  },
+                  'daily': {
+                    'time': ['2026-11-15', '2026-11-16', '2026-11-17'],
+                    'temperature_2m_min': [19.0, 19.6, 19.2],
+                    'temperature_2m_max': [27.0, 29.2, 29.7],
+                    'precipitation_probability_max': [0, 0, 0],
+                  },
                 },
-                'daily': {
-                  'time': ['2026-11-15', '2026-11-16', '2026-11-17'],
-                  'temperature_2m_min': [19.0, 19.6, 19.2],
-                  'temperature_2m_max': [27.0, 29.2, 29.7],
-                  'precipitation_probability_max': [0, 0, 0],
-                },
-              },
-            ),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: WeatherForecastSheet(),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(body: WeatherForecastSheet()),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // 1. Verify visible side scrollbar exists and wraps content
-      expect(find.byType(Scrollbar), findsOneWidget);
-      final scrollbar = tester.widget<Scrollbar>(find.byType(Scrollbar));
-      expect(scrollbar.thumbVisibility, isTrue);
+        // 1. Verify visible side scrollbar exists and wraps content
+        expect(find.byType(Scrollbar), findsOneWidget);
+        final scrollbar = tester.widget<Scrollbar>(find.byType(Scrollbar));
+        expect(scrollbar.thumbVisibility, isTrue);
 
-      // 2. Verify close button exists
-      expect(find.byKey(const ValueKey('close_weather_sheet')), findsOneWidget);
+        // 2. Verify close button exists
+        expect(
+          find.byKey(const ValueKey('close_weather_sheet')),
+          findsOneWidget,
+        );
 
-      // 3. Verify city name and weather title
-      expect(find.text('Weather & Forecast'), findsOneWidget);
-      expect(find.text('Bengaluru, India'), findsOneWidget);
-      expect(find.text('Choose your city'), findsOneWidget);
+        // 3. Verify city name and weather title
+        expect(find.text('Weather & Forecast'), findsOneWidget);
+        expect(find.text('Bengaluru, India'), findsOneWidget);
+        expect(find.text('Choose your city'), findsOneWidget);
 
-      // 4. Tap close button pops
-      await tester.tap(find.byKey(const ValueKey('close_weather_sheet')));
-      await tester.pumpAndSettle();
-    });
+        // 4. Tap close button pops
+        await tester.tap(find.byKey(const ValueKey('close_weather_sheet')));
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }

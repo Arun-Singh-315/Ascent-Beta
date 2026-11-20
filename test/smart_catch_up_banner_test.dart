@@ -85,13 +85,13 @@ void main() {
 
         // Hydration is a centered check-in with explicit logging actions.
         expect(find.text('Hydration check'), findsOneWidget);
-      expect(find.text('Just drank · 250 mL'), findsOneWidget);
+        expect(find.text('Just drank · 250 mL'), findsOneWidget);
 
-      await tester.tap(find.text('Just drank · 250 mL'));
+        await tester.tap(find.text('Just drank · 250 mL'));
         await tester.pumpAndSettle();
 
         expect(find.text('A quick summary'), findsOneWidget);
-      expect(find.textContaining('Logged 250 mL.'), findsOneWidget);
+        expect(find.textContaining('Logged 250 mL.'), findsOneWidget);
 
         // Database received 250 mL log
         final logs = await db.select(db.waterLogTable).get();

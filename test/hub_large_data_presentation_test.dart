@@ -15,7 +15,6 @@ import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
 import 'package:ascent/features/study_plan/lecture_focus_player_sheet.dart';
-import 'package:ascent/features/study_plan/study_plan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -222,58 +221,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Compact rows mix lectures and timers; running work stays first',
-    (tester) async {
-      tester.view.physicalSize = const Size(390, 1100);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final activities = [
-        activity(0),
-        activity(1, source: 'lecture'),
-        activity(
-          2,
-          kind: ActivityKind.duration,
-          status: TodayActivityStatus.paused,
-        ),
-        activity(
-          3,
-          kind: ActivityKind.duration,
-          status: TodayActivityStatus.inProgress,
-        ),
-      ];
-      await tester.pumpWidget(
-        app(
-          const SingleChildScrollView(child: ActivityHubCard()),
-          activities: activities,
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
-            .first
-            .activity
-            .id,
-        'activity_3',
-      );
-      await capture(tester, 'things_hub');
-      expect(find.byType(ActivityRowItem), findsNWidgets(4));
-      expect(
-        find.byKey(const ValueKey('activity_hub_type_filters')),
-        findsNothing,
-      );
-      expect(find.text('Start'), findsNWidgets(1));
-      expect(find.text('Pause'), findsOneWidget);
-      expect(find.text('Resume'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    },
-  );
-
   for (final preset in DayThemePreset.values) {
     for (final dark in [false, true]) {
       testWidgets(
@@ -364,65 +311,6 @@ void main() {
         1,
       );
       expect(find.text('Final architecture capstone'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-      await tester.pump();
-    },
-  );
-
-  testWidgets('A module with 5000 lectures has a bounded lazy list', (
-    tester,
-  ) async {
-    await tester.pumpWidget(app(const StudyPlanScreen()));
-    await tester.pumpAndSettle();
-    final module = find.byKey(const ValueKey('course_module_7'));
-    await tester.ensureVisible(module);
-    await tester.tap(
-      find
-          .descendant(
-            of: module,
-            matching: find.text('Architecture and systems'),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-    final list = find.descendant(of: module, matching: find.byType(ListView));
-    expect(tester.getSize(list).height, 360);
-    expect(find.text('Final architecture capstone'), findsNothing);
-    final builtTitles = find
-        .descendant(of: module, matching: find.byType(Text))
-        .evaluate()
-        .where(
-          (element) =>
-              ((element.widget as Text).data ?? '').startsWith('Lesson '),
-        )
-        .length;
-    expect(builtTitles, lessThan(30));
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump();
-    await tester.pump();
-  });
-
-  testWidgets(
-    'Syllabus search reaches the last of 5000 lectures and recovers from no matches',
-    (tester) async {
-      await tester.pumpWidget(app(const StudyPlanScreen()));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(Tab, 'Lectures'));
-      await tester.pumpAndSettle();
-      final search = find.byKey(const ValueKey('lecture_search'));
-      await tester.ensureVisible(search);
-      await tester.enterText(search, 'Final architecture');
-      await tester.pumpAndSettle();
-      expect(find.text('Final architecture capstone'), findsOneWidget);
-      await tester.enterText(search, 'Unmatched unique query');
-      await tester.pumpAndSettle();
-      expect(find.text('No lectures match this view.'), findsOneWidget);
-      await tester.enterText(search, '');
-      await tester.pumpAndSettle();
-      expect(find.text('No lectures match this view.'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

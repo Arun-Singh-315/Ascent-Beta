@@ -61,8 +61,10 @@ void main() {
       expect(highlighted.contains('★ Drink lemon tea'), isTrue);
 
       // Unhighlight item 1
-      final unhighlighted =
-          ThoughtChecklistHelper.toggleItemHighlight(highlighted, 1);
+      final unhighlighted = ThoughtChecklistHelper.toggleItemHighlight(
+        highlighted,
+        1,
+      );
       expect(unhighlighted.contains('★ Drink lemon tea'), isFalse);
       expect(unhighlighted.contains('Drink lemon tea'), isTrue);
     });
@@ -109,8 +111,12 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
             studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            recentThoughtsStreamProvider.overrideWith((ref) => db.thoughtDao.watchRecentThoughts()),
-            latestHomeThoughtProvider.overrideWith((ref) => db.thoughtDao.watchLatestThought()),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => db.thoughtDao.watchRecentThoughts(),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => db.thoughtDao.watchLatestThought(),
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -143,8 +149,9 @@ void main() {
         expect(updatedThought!.content.contains('★ Urgent promise'), isTrue);
 
         // Tap "Convert to activities"
-        final convertBtn =
-            find.byKey(ValueKey('thought_${id}_convert_to_activities'));
+        final convertBtn = find.byKey(
+          ValueKey('thought_${id}_convert_to_activities'),
+        );
         await tester.ensureVisible(convertBtn);
         await tester.tap(convertBtn);
         await tester.pumpAndSettle();
@@ -153,12 +160,14 @@ void main() {
         final tasks = await db.select(db.taskTable).get();
         expect(tasks.length, 2);
 
-        final urgentTask =
-            tasks.firstWhere((t) => t.title.contains('Urgent promise'));
+        final urgentTask = tasks.firstWhere(
+          (t) => t.title.contains('Urgent promise'),
+        );
         expect(urgentTask.priority, 'high');
 
-        final normalTask =
-            tasks.firstWhere((t) => t.title.contains('Normal task'));
+        final normalTask = tasks.firstWhere(
+          (t) => t.title.contains('Normal task'),
+        );
         expect(normalTask.priority, 'medium');
       },
     );
@@ -178,8 +187,12 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
             studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            recentThoughtsStreamProvider.overrideWith((ref) => db.thoughtDao.watchRecentThoughts()),
-            latestHomeThoughtProvider.overrideWith((ref) => db.thoughtDao.watchLatestThought()),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => db.thoughtDao.watchRecentThoughts(),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => db.thoughtDao.watchLatestThought(),
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -199,8 +212,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final highlightThoughtBtn =
-            find.byKey(ValueKey('thought_${id}_star_thought_btn'));
+        final highlightThoughtBtn = find.byKey(
+          ValueKey('thought_${id}_star_thought_btn'),
+        );
         expect(highlightThoughtBtn, findsOneWidget);
 
         // Tap to highlight full statement
@@ -235,8 +249,12 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
             timeTrackingProvider.overrideWith(_FakeTimeTrackingNotifier.new),
             studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            recentThoughtsStreamProvider.overrideWith((ref) => db.thoughtDao.watchRecentThoughts()),
-            latestHomeThoughtProvider.overrideWith((ref) => db.thoughtDao.watchLatestThought()),
+            recentThoughtsStreamProvider.overrideWith(
+              (ref) => db.thoughtDao.watchRecentThoughts(),
+            ),
+            latestHomeThoughtProvider.overrideWith(
+              (ref) => db.thoughtDao.watchLatestThought(),
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -264,7 +282,10 @@ void main() {
 
         expect(tester.takeException(), isNull);
         expect(find.byKey(ValueKey('thought_${id}_star_0')), findsOneWidget);
-        expect(find.byKey(ValueKey('thought_${id}_star_thought_btn')), findsOneWidget);
+        expect(
+          find.byKey(ValueKey('thought_${id}_star_thought_btn')),
+          findsOneWidget,
+        );
       },
     );
   });

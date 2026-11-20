@@ -88,9 +88,7 @@ void main() {
               latestHomeThoughtProvider.overrideWith(
                 (ref) => Stream.value(thought),
               ),
-              allPromisesStreamProvider.overrideWith(
-                (ref) => Stream.value([]),
-              ),
+              allPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
             ],
             child: MaterialApp(
               theme: theme,
@@ -163,7 +161,8 @@ void main() {
         );
         final glass = bubbleContext.glass;
         final background = Color.alphaBlend(
-          box.color!, Color.alphaBlend(glass.fill, glass.bg),
+          box.color!,
+          Color.alphaBlend(glass.fill, glass.bg),
         );
         if (!dark && preset != DayThemePreset.merlotLinen) {
           final expectedSurface = preset == DayThemePreset.nordicSky
@@ -301,7 +300,7 @@ void main() {
             });
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 2));
+            await tester.pump(const Duration(seconds: 2));
           }
         },
       );
