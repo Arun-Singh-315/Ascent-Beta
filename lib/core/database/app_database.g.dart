@@ -2926,6 +2926,50 @@ class $ThoughtTableTable extends ThoughtTable
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _carriedOnMeta = const VerificationMeta(
+    'carriedOn',
+  );
+  @override
+  late final GeneratedColumn<DateTime> carriedOn = GeneratedColumn<DateTime>(
+    'carried_on',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bulletStyleMeta = const VerificationMeta(
+    'bulletStyle',
+  );
+  @override
+  late final GeneratedColumn<String> bulletStyle = GeneratedColumn<String>(
+    'bullet_style',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2938,6 +2982,10 @@ class $ThoughtTableTable extends ThoughtTable
     isCompleted,
     promptQuestion,
     createdAt,
+    completedAt,
+    archivedAt,
+    carriedOn,
+    bulletStyle,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3016,6 +3064,36 @@ class $ThoughtTableTable extends ThoughtTable
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
+    if (data.containsKey('carried_on')) {
+      context.handle(
+        _carriedOnMeta,
+        carriedOn.isAcceptableOrUnknown(data['carried_on']!, _carriedOnMeta),
+      );
+    }
+    if (data.containsKey('bullet_style')) {
+      context.handle(
+        _bulletStyleMeta,
+        bulletStyle.isAcceptableOrUnknown(
+          data['bullet_style']!,
+          _bulletStyleMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3065,6 +3143,22 @@ class $ThoughtTableTable extends ThoughtTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
+      carriedOn: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}carried_on'],
+      ),
+      bulletStyle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bullet_style'],
+      ),
     );
   }
 
@@ -3085,6 +3179,20 @@ class Thought extends DataClass implements Insertable<Thought> {
   final bool isCompleted;
   final String? promptQuestion;
   final DateTime createdAt;
+
+  /// Set when [isCompleted] flips to true, cleared when it flips back.
+  final DateTime? completedAt;
+
+  /// Set when [isArchived] flips to true, cleared when it flips back.
+  final DateTime? archivedAt;
+
+  /// Last day the thought was brought to Today. [createdAt] never changes, so
+  /// the original date is always known and no duplicate record is needed.
+  final DateTime? carriedOn;
+
+  /// 'todo' (circle before each bullet), 'bullet' (plain), or null (use the
+  /// user's default). A view choice only: content is never rewritten.
+  final String? bulletStyle;
   const Thought({
     required this.id,
     required this.content,
@@ -3096,6 +3204,10 @@ class Thought extends DataClass implements Insertable<Thought> {
     required this.isCompleted,
     this.promptQuestion,
     required this.createdAt,
+    this.completedAt,
+    this.archivedAt,
+    this.carriedOn,
+    this.bulletStyle,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3112,6 +3224,18 @@ class Thought extends DataClass implements Insertable<Thought> {
       map['prompt_question'] = Variable<String>(promptQuestion);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    if (!nullToAbsent || carriedOn != null) {
+      map['carried_on'] = Variable<DateTime>(carriedOn);
+    }
+    if (!nullToAbsent || bulletStyle != null) {
+      map['bullet_style'] = Variable<String>(bulletStyle);
+    }
     return map;
   }
 
@@ -3129,6 +3253,18 @@ class Thought extends DataClass implements Insertable<Thought> {
           ? const Value.absent()
           : Value(promptQuestion),
       createdAt: Value(createdAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
+      carriedOn: carriedOn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(carriedOn),
+      bulletStyle: bulletStyle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bulletStyle),
     );
   }
 
@@ -3148,6 +3284,10 @@ class Thought extends DataClass implements Insertable<Thought> {
       isCompleted: serializer.fromJson<bool>(json['isCompleted']),
       promptQuestion: serializer.fromJson<String?>(json['promptQuestion']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+      carriedOn: serializer.fromJson<DateTime?>(json['carriedOn']),
+      bulletStyle: serializer.fromJson<String?>(json['bulletStyle']),
     );
   }
   @override
@@ -3164,6 +3304,10 @@ class Thought extends DataClass implements Insertable<Thought> {
       'isCompleted': serializer.toJson<bool>(isCompleted),
       'promptQuestion': serializer.toJson<String?>(promptQuestion),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+      'carriedOn': serializer.toJson<DateTime?>(carriedOn),
+      'bulletStyle': serializer.toJson<String?>(bulletStyle),
     };
   }
 
@@ -3178,6 +3322,10 @@ class Thought extends DataClass implements Insertable<Thought> {
     bool? isCompleted,
     Value<String?> promptQuestion = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> completedAt = const Value.absent(),
+    Value<DateTime?> archivedAt = const Value.absent(),
+    Value<DateTime?> carriedOn = const Value.absent(),
+    Value<String?> bulletStyle = const Value.absent(),
   }) => Thought(
     id: id ?? this.id,
     content: content ?? this.content,
@@ -3191,6 +3339,10 @@ class Thought extends DataClass implements Insertable<Thought> {
         ? promptQuestion.value
         : this.promptQuestion,
     createdAt: createdAt ?? this.createdAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+    carriedOn: carriedOn.present ? carriedOn.value : this.carriedOn,
+    bulletStyle: bulletStyle.present ? bulletStyle.value : this.bulletStyle,
   );
   Thought copyWithCompanion(ThoughtTableCompanion data) {
     return Thought(
@@ -3210,6 +3362,16 @@ class Thought extends DataClass implements Insertable<Thought> {
           ? data.promptQuestion.value
           : this.promptQuestion,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
+      carriedOn: data.carriedOn.present ? data.carriedOn.value : this.carriedOn,
+      bulletStyle: data.bulletStyle.present
+          ? data.bulletStyle.value
+          : this.bulletStyle,
     );
   }
 
@@ -3225,7 +3387,11 @@ class Thought extends DataClass implements Insertable<Thought> {
           ..write('isArchived: $isArchived, ')
           ..write('isCompleted: $isCompleted, ')
           ..write('promptQuestion: $promptQuestion, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('carriedOn: $carriedOn, ')
+          ..write('bulletStyle: $bulletStyle')
           ..write(')'))
         .toString();
   }
@@ -3242,6 +3408,10 @@ class Thought extends DataClass implements Insertable<Thought> {
     isCompleted,
     promptQuestion,
     createdAt,
+    completedAt,
+    archivedAt,
+    carriedOn,
+    bulletStyle,
   );
   @override
   bool operator ==(Object other) =>
@@ -3256,7 +3426,11 @@ class Thought extends DataClass implements Insertable<Thought> {
           other.isArchived == this.isArchived &&
           other.isCompleted == this.isCompleted &&
           other.promptQuestion == this.promptQuestion &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.completedAt == this.completedAt &&
+          other.archivedAt == this.archivedAt &&
+          other.carriedOn == this.carriedOn &&
+          other.bulletStyle == this.bulletStyle);
 }
 
 class ThoughtTableCompanion extends UpdateCompanion<Thought> {
@@ -3270,6 +3444,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
   final Value<bool> isCompleted;
   final Value<String?> promptQuestion;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime?> archivedAt;
+  final Value<DateTime?> carriedOn;
+  final Value<String?> bulletStyle;
   const ThoughtTableCompanion({
     this.id = const Value.absent(),
     this.content = const Value.absent(),
@@ -3281,6 +3459,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.isCompleted = const Value.absent(),
     this.promptQuestion = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.carriedOn = const Value.absent(),
+    this.bulletStyle = const Value.absent(),
   });
   ThoughtTableCompanion.insert({
     this.id = const Value.absent(),
@@ -3293,6 +3475,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.isCompleted = const Value.absent(),
     this.promptQuestion = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.carriedOn = const Value.absent(),
+    this.bulletStyle = const Value.absent(),
   }) : content = Value(content);
   static Insertable<Thought> custom({
     Expression<int>? id,
@@ -3305,6 +3491,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Expression<bool>? isCompleted,
     Expression<String>? promptQuestion,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? archivedAt,
+    Expression<DateTime>? carriedOn,
+    Expression<String>? bulletStyle,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3317,6 +3507,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       if (isCompleted != null) 'is_completed': isCompleted,
       if (promptQuestion != null) 'prompt_question': promptQuestion,
       if (createdAt != null) 'created_at': createdAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (carriedOn != null) 'carried_on': carriedOn,
+      if (bulletStyle != null) 'bullet_style': bulletStyle,
     });
   }
 
@@ -3331,6 +3525,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Value<bool>? isCompleted,
     Value<String?>? promptQuestion,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? completedAt,
+    Value<DateTime?>? archivedAt,
+    Value<DateTime?>? carriedOn,
+    Value<String?>? bulletStyle,
   }) {
     return ThoughtTableCompanion(
       id: id ?? this.id,
@@ -3343,6 +3541,10 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       isCompleted: isCompleted ?? this.isCompleted,
       promptQuestion: promptQuestion ?? this.promptQuestion,
       createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+      archivedAt: archivedAt ?? this.archivedAt,
+      carriedOn: carriedOn ?? this.carriedOn,
+      bulletStyle: bulletStyle ?? this.bulletStyle,
     );
   }
 
@@ -3379,6 +3581,18 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (carriedOn.present) {
+      map['carried_on'] = Variable<DateTime>(carriedOn.value);
+    }
+    if (bulletStyle.present) {
+      map['bullet_style'] = Variable<String>(bulletStyle.value);
+    }
     return map;
   }
 
@@ -3394,7 +3608,11 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
           ..write('isArchived: $isArchived, ')
           ..write('isCompleted: $isCompleted, ')
           ..write('promptQuestion: $promptQuestion, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('carriedOn: $carriedOn, ')
+          ..write('bulletStyle: $bulletStyle')
           ..write(')'))
         .toString();
   }
@@ -28480,6 +28698,10 @@ typedef $$ThoughtTableTableCreateCompanionBuilder =
       Value<bool> isCompleted,
       Value<String?> promptQuestion,
       Value<DateTime> createdAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime?> archivedAt,
+      Value<DateTime?> carriedOn,
+      Value<String?> bulletStyle,
     });
 typedef $$ThoughtTableTableUpdateCompanionBuilder =
     ThoughtTableCompanion Function({
@@ -28493,6 +28715,10 @@ typedef $$ThoughtTableTableUpdateCompanionBuilder =
       Value<bool> isCompleted,
       Value<String?> promptQuestion,
       Value<DateTime> createdAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime?> archivedAt,
+      Value<DateTime?> carriedOn,
+      Value<String?> bulletStyle,
     });
 
 final class $$ThoughtTableTableReferences
@@ -28684,6 +28910,26 @@ class $$ThoughtTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get carriedOn => $composableBuilder(
+    column: $table.carriedOn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bulletStyle => $composableBuilder(
+    column: $table.bulletStyle,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -28900,6 +29146,26 @@ class $$ThoughtTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get carriedOn => $composableBuilder(
+    column: $table.carriedOn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bulletStyle => $composableBuilder(
+    column: $table.bulletStyle,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ThoughtTableTableAnnotationComposer
@@ -28946,6 +29212,24 @@ class $$ThoughtTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get carriedOn =>
+      $composableBuilder(column: $table.carriedOn, builder: (column) => column);
+
+  GeneratedColumn<String> get bulletStyle => $composableBuilder(
+    column: $table.bulletStyle,
+    builder: (column) => column,
+  );
 
   Expression<T> taskTableRefs<T extends Object>(
     Expression<T> Function($$TaskTableTableAnnotationComposer a) f,
@@ -29151,6 +29435,10 @@ class $$ThoughtTableTableTableManager
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> promptQuestion = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<DateTime?> carriedOn = const Value.absent(),
+                Value<String?> bulletStyle = const Value.absent(),
               }) => ThoughtTableCompanion(
                 id: id,
                 content: content,
@@ -29162,6 +29450,10 @@ class $$ThoughtTableTableTableManager
                 isCompleted: isCompleted,
                 promptQuestion: promptQuestion,
                 createdAt: createdAt,
+                completedAt: completedAt,
+                archivedAt: archivedAt,
+                carriedOn: carriedOn,
+                bulletStyle: bulletStyle,
               ),
           createCompanionCallback:
               ({
@@ -29175,6 +29467,10 @@ class $$ThoughtTableTableTableManager
                 Value<bool> isCompleted = const Value.absent(),
                 Value<String?> promptQuestion = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<DateTime?> carriedOn = const Value.absent(),
+                Value<String?> bulletStyle = const Value.absent(),
               }) => ThoughtTableCompanion.insert(
                 id: id,
                 content: content,
@@ -29186,6 +29482,10 @@ class $$ThoughtTableTableTableManager
                 isCompleted: isCompleted,
                 promptQuestion: promptQuestion,
                 createdAt: createdAt,
+                completedAt: completedAt,
+                archivedAt: archivedAt,
+                carriedOn: carriedOn,
+                bulletStyle: bulletStyle,
               ),
           withReferenceMapper: (p0) => p0
               .map(

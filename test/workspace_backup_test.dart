@@ -93,6 +93,50 @@ void main() {
     expect((await db.thoughtDao.getThoughtById(id))!.category, category);
   });
 
+  test('schema 24 backup restores with thought lifecycle dates filled', () async {
+    final open = await db.thoughtDao.insertThought(
+      ThoughtTableCompanion.insert(content: 'Still open'),
+    );
+    final done = await db.thoughtDao.insertThought(
+      ThoughtTableCompanion.insert(content: 'Finished'),
+    );
+    await db.thoughtDao.setCompleted(done, true);
+    final envelope = jsonDecode(await service.export()) as Map<String, dynamic>;
+    final payload = envelope['payload'] as Map<String, dynamic>;
+    // Make it look like a backup from before schema 25.
+    payload['schema'] = 24;
+    for (final row in (payload['tables'] as Map)['thoughts'] as List) {
+      for (final column in [
+        'completed_at',
+        'archived_at',
+        'carried_on',
+        'bullet_style',
+      ]) {
+        (row as Map).remove(column);
+      }
+    }
+    Object? canonical(Object? value) {
+      if (value is Map) {
+        final keys = value.keys.cast<String>().toList()..sort();
+        return {for (final k in keys) k: canonical(value[k])};
+      }
+      if (value is List) return value.map(canonical).toList();
+      return value;
+    }
+
+    envelope['sha256'] = sha256
+        .convert(utf8.encode(jsonEncode(canonical(payload))))
+        .toString();
+    await service.restore(jsonEncode(envelope), confirmed: true);
+
+    final restoredDone = (await db.thoughtDao.getThoughtById(done))!;
+    expect(restoredDone.isCompleted, isTrue);
+    expect(restoredDone.completedAt, isNotNull);
+    final restoredOpen = (await db.thoughtDao.getThoughtById(open))!;
+    expect(restoredOpen.completedAt, isNull);
+    expect(restoredOpen.carriedOn, isNull);
+  });
+
   test('schema 19 backup imports the empty custom category registry', () async {
     final id = await db.thoughtDao.insertThought(
       ThoughtTableCompanion.insert(content: 'Earlier note'),
