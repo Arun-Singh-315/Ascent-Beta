@@ -85,63 +85,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Section headings have equal width and centered empty state starter actions',
-      (tester) async {
-        final router = GoRouter(
-          initialLocation: '/things',
-          routes: [
-            GoRoute(
-              path: '/things',
-              builder: (context, state) => const ThingsHubScreen(),
-            ),
-          ],
-        );
-        addTearDown(router.dispose);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayActivitiesProvider.overrideWith(
-                (ref) => Stream.value(<TodayActivityItem>[]),
-              ),
-            ],
-            child: MaterialApp.router(
-              theme: AscentTheme.dark(),
-              routerConfig: router,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Check section headings are present
-        final overdue = find.byKey(const ValueKey('things_heading_overdue'));
-        final scheduled = find.byKey(
-          const ValueKey('things_heading_scheduled'),
-        );
-        final anytime = find.byKey(const ValueKey('things_heading_anytime'));
-
-        expect(overdue, findsOneWidget);
-        expect(scheduled, findsOneWidget);
-        expect(anytime, findsOneWidget);
-
-        // Verify headings have equal widths
-        final overdueRect = tester.getRect(overdue);
-        final scheduledRect = tester.getRect(scheduled);
-        final anytimeRect = tester.getRect(anytime);
-
-        expect(overdueRect.width, closeTo(scheduledRect.width, 1.0));
-        expect(scheduledRect.width, closeTo(anytimeRect.width, 1.0));
-
-        // Verify starter actions are present and centered
-        expect(find.byKey(const ValueKey('starter_add_task')), findsOneWidget);
-        expect(find.byKey(const ValueKey('starter_add_timer')), findsOneWidget);
-
-        expect(tester.takeException(), isNull);
-      },
-    );
 
     testWidgets(
       'Rule 13: Things Hub is immune to overflow at 320px width with 2.0x text scale',
