@@ -383,13 +383,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        if (find.text('Remove').evaluate().isNotEmpty) {
-          await tester.tap(find.text('Remove'));
-          await tester.pumpAndSettle();
-        }
+        await tester.tap(find.text('Remove from today'));
+        await tester.pumpAndSettle();
 
-        // Verify SnackBar text says "Removed from today's activities" (never "deleted")
-        expect(find.text('Removed from today\'s activities'), findsOneWidget);
+        // The snackbar says it was removed from today (never "deleted").
+        expect(
+          find.text('Removed “Spring Boot: Intro” from today'),
+          findsOneWidget,
+        );
         expect(find.textContaining('deleted'), findsNothing);
 
         // Advance clock past SnackBar duration (2s) so pending timer clears cleanly
