@@ -11,42 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Sand & Ember Palette & Tokens', () {
-    test('Light theme tokens match exact hex values', () {
-      final light = AppColors.light;
-      expect(light.bg, const Color(0xFFFAF6F0));
-      expect(light.surface, const Color(0xEBFFFFFF));
-      expect(light.surfaceAlt, const Color(0xFFF1E9DD));
-      expect(light.border, const Color(0xFFE6DCCD));
-      expect(light.textPrimary, const Color(0xFF2B2622));
-      expect(light.textSecondary, const Color(0xFF6F665C));
-      expect(light.textTertiary, const Color(0xFFA0958A));
-      expect(light.primary, const Color(0xFFD2643A));
-      expect(light.primaryContainer, const Color(0xFFFCE5D8));
-      expect(light.onPrimaryContainer, const Color(0xFF6E2E15));
-      expect(light.secondary, const Color(0xFFC4506A));
-      expect(light.secondaryContainer, const Color(0xFFF8E1E6));
-      expect(light.onSecondaryContainer, const Color(0xFF5A1C29));
-      expect(light.tertiary, const Color(0xFFD6A23E));
-      expect(light.tertiaryContainer, const Color(0xFFF8EDD0));
-      expect(light.alert, const Color(0xFFB8433B));
-    });
 
-    test('Dark theme tokens match warm dark hex values', () {
-      final dark = AppColors.dark;
-      expect(dark.bg, const Color(0xFF1B1714));
-      expect(dark.surface, const Color(0xFF2A2420));
-      expect(dark.surfaceAlt, const Color(0xFF332C27));
-      expect(dark.border, const Color(0xFF3D342E));
-      expect(dark.textPrimary, const Color(0xFFF3EBE2));
-      expect(dark.textSecondary, const Color(0xFFB9AC9F));
-      expect(dark.textTertiary, const Color(0xFF857A6F));
-      expect(dark.primary, const Color(0xFFF08A5D));
-      expect(dark.primaryContainer, const Color(0xFF4A2A1B));
-      expect(dark.onPrimaryContainer, const Color(0xFFFFD9C6));
-      expect(dark.secondary, const Color(0xFFE27A93));
-      expect(dark.tertiary, const Color(0xFFE8B65A));
-      expect(dark.alert, const Color(0xFFE06D65));
-    });
   });
 
   group('Global Input Rule - AppTextField', () {

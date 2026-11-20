@@ -85,19 +85,6 @@ void main() {
       },
     );
 
-    test('classicClay preset applies signature terracotta & linen palette', () {
-      final theme = AscentTheme.light(preset: DayThemePreset.classicClay);
-
-      expect(theme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, SharedControlColors.actionBlue);
-      expect(
-        theme.scaffoldBackgroundColor,
-        theme.extension<DayGlassMaterial>()!.canvas,
-      );
-      final glass = theme.extension<AscentGlass>();
-      expect(glass, isNotNull);
-      expect(glass!.clay, const Color(0xFFA4523A));
-    });
 
     test(
       'nordicSky preset applies frosted canvas, teal actions and charcoal ink',

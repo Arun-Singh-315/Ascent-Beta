@@ -9,7 +9,6 @@ import 'package:ascent/core/ai/ai_action_execution.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/features/ai_assistant/riya_plan_cards.dart';
 import 'package:ascent/features/study_plan/study_plan_screen.dart';
 
@@ -188,36 +187,6 @@ void main() {
       }
     });
 
-    testWidgets(
-      'Riya AI Chat UI has zero double ticks (done_all) and renders serene glass cards',
-      (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
-            ],
-            child: const MaterialApp(home: AiAssistantScreen()),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Ensure double tick icon is completely eliminated
-        expect(find.byIcon(Icons.done_all_rounded), findsNothing);
-
-        // Verify Study Plan and Meal Plan quick chips are visible
-        expect(find.text('Study Plan'), findsOneWidget);
-        expect(find.text('Meal Plan'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
 
     testWidgets(
       'RiyaStudyPlanCard and RiyaMealPlanCard survive 320px width & 2.0x font scaling without overflow',

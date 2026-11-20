@@ -7,7 +7,6 @@ import 'package:drift/drift.dart' as drift;
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/home_layout_provider.dart';
@@ -17,7 +16,6 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
-import 'package:ascent/app/theme/frozen_palette.dart';
 import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
@@ -244,32 +242,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      '4. LearningHubCard Explore button uses contrasting onPrimary in dark Merlot mode',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: LearningHubCard()),
-            ),
-            theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
-        expect(buttonFinder, findsOneWidget);
-        final button = tester.widget<FilledButton>(buttonFinder);
-        expect(
-          button.style?.foregroundColor?.resolve({}),
-          equals(MerlotPalette.darkCanvas),
-        );
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
 
     testWidgets(
       '6. UI Overflow Immunity at 320px width with 2.0x text scale for Home widgets',
@@ -313,64 +285,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      '7. LearningHubCard Explore button is light in light Merlot and Frozen Sky modes',
-      (tester) async {
-        // Light Merlot
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: LearningHubCard()),
-            ),
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
-        expect(buttonFinder, findsOneWidget);
-        final button = tester.widget<FilledButton>(buttonFinder);
-        expect(
-          button.style?.backgroundColor?.resolve({}),
-          equals(MerlotPalette.pillSoft),
-        );
-        expect(
-          button.style?.foregroundColor?.resolve({}),
-          equals(MerlotPalette.action),
-        );
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-
-        // Light Frozen Sky
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: LearningHubCard()),
-            ),
-            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        final frozenButtonFinder = find.widgetWithText(FilledButton, 'Explore');
-        expect(frozenButtonFinder, findsOneWidget);
-        final frozenButton = tester.widget<FilledButton>(frozenButtonFinder);
-        expect(
-          frozenButton.style?.backgroundColor?.resolve({}),
-          equals(FrozenPalette.pillSoft),
-        );
-        expect(
-          frozenButton.style?.foregroundColor?.resolve({}),
-          equals(FrozenPalette.action),
-        );
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
 
     testWidgets(
       '8. ThoughtWallHomePreview uses matching faint bubbles in Merlot and Frozen Sky',

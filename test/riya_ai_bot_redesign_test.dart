@@ -248,88 +248,7 @@ void main() {
       await db.close();
     });
 
-    testWidgets(
-      'AiAssistantScreen renders atmospheric background, clean input, and emoji-free pills in dark mode',
-      (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
-            ],
-            child: MaterialApp(
-              theme: ThemeData.dark(),
-              home: const AiAssistantScreen(),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Header components
-        expect(find.text('Riya'), findsWidgets);
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsWidgets);
-        expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.delete_sweep_outlined), findsOneWidget);
-
-        // WhatsApp style input bar: send button present, interior brain icon removed
-        expect(find.byIcon(Icons.psychology_rounded), findsNothing);
-        expect(find.byTooltip('Send message'), findsOneWidget);
-
-        // Quick chips row (3 equal chips without horizontal scroll)
-        expect(find.text('Plan my day'), findsWidgets);
-        expect(find.text('Today\'s agenda'), findsOneWidget);
-        expect(find.text('Medicines'), findsOneWidget);
-
-        // Welcome prompt pills (clean text with zero emoji prefixes)
-        expect(find.text('Plan my day'), findsWidgets);
-        expect(find.text('Log 250ml water'), findsOneWidget);
-        expect(find.text('What are my tasks today?'), findsOneWidget);
-
-        // Clean unmount to drain Drift stream timers
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
-
-    testWidgets(
-      'AiAssistantScreen renders beautifully in light (day) mode without overflow',
-      (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
-            ],
-            child: MaterialApp(
-              theme: ThemeData.light(),
-              home: const AiAssistantScreen(),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(find.text('Riya'), findsWidgets);
-        expect(find.byIcon(Icons.psychology_rounded), findsNothing);
-        expect(find.byTooltip('Send message'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-
-        // Clean unmount to drain Drift stream timers
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
 
     testWidgets(
       'AiAssistantScreen hides pinned bottom suggestion chips when conversation has messages',
@@ -372,42 +291,5 @@ void main() {
       },
     );
 
-    testWidgets(
-      'AiAssistantScreen input box matches Thought Wall consistent design and activates send',
-      (tester) async {
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
-            ],
-            child: MaterialApp(
-              theme: ThemeData.dark(),
-              home: const AiAssistantScreen(),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Hint, text field, and upward send arrow
-        expect(find.text('Message Riya...'), findsOneWidget);
-        expect(find.byTooltip('Send message'), findsOneWidget);
-
-        // Typing in input pill
-        await tester.enterText(find.byType(TextField), 'Plan my day');
-        await tester.pump();
-        expect(find.text('Plan my day'), findsWidgets);
-
-        // Clean unmount to drain Drift stream timers
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
   });
 }

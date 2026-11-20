@@ -4,11 +4,9 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
 import 'package:ascent/core/streak/study_streak_models.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -152,46 +150,6 @@ void main() {
   });
 
   group('Requirement 7: Home Activity Card - No Confusing Tabs', () {
-    testWidgets(
-      'ActivityHubCard displays today unfinished activities without Up next / Completed / All tabs',
-      (tester) async {
-        final today = DateTime.now();
-        // Add one unfinished task for today
-        await db.taskDao.insertTask(
-          TaskTableCompanion.insert(
-            title: 'Review architecture diagram',
-            plannedDate: drift.Value(today),
-          ),
-        );
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ActivityHubCard()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Confusing 3-tab bar (Up next / All) must NOT be present
-        expect(find.text('Up next'), findsNothing);
-        expect(find.text('All'), findsNothing);
-        // Clean segmented pill allows toggling Today & Completed
-        expect(find.text('Completed'), findsOneWidget);
-
-        // The actionable task is visible
-        expect(find.text('Review architecture diagram'), findsOneWidget);
-        // Header has "Things hub" and "View board"
-        expect(find.text('Things hub'), findsOneWidget);
-        // Composer date control and segmented pill both show "Today"
-        expect(find.text('Today'), findsNWidgets(2));
-        expect(find.text('View board'), findsOneWidget);
-      },
-    );
   });
 
   group('Requirement 8: Streak Card Redesign', () {

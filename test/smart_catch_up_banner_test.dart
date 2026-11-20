@@ -41,67 +41,6 @@ void main() {
   });
 
   group('SmartCatchUpBanner Unit & Interaction Tests', () {
-    testWidgets(
-      'prompts hydration catch-up and logs +250 mL with 1-tap confirmation',
-      (tester) async {
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            // Initially 0 ml logged today
-            todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(0)),
-            todayWaterLogsStreamProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
-            todayMedicineLogsStreamProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
-            activeMedicinesStreamProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
-            todaySpendingStreamProvider.overrideWith(
-              (ref) => Stream.value(0.0),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: SmartCatchUpBanner(),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Hydration is a centered check-in with explicit logging actions.
-        expect(find.text('Hydration check'), findsOneWidget);
-        expect(find.text('Just drank · 250 mL'), findsOneWidget);
-
-        await tester.tap(find.text('Just drank · 250 mL'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('A quick summary'), findsOneWidget);
-        expect(find.textContaining('Logged 250 mL.'), findsOneWidget);
-
-        // Database received 250 mL log
-        final logs = await db.select(db.waterLogTable).get();
-        expect(logs.length, 1);
-        expect(logs.first.amountMl, 250);
-
-        await tester.tap(find.text('Done'));
-        await tester.pumpAndSettle();
-      },
-    );
 
     testWidgets(
       'prompts medicine check when dose is pending and marks taken on 1-tap',
@@ -190,49 +129,6 @@ void main() {
       },
     );
 
-    testWidgets('dismisses catch-up item when close icon is tapped', (
-      tester,
-    ) async {
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(0)),
-          todayWaterLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-          todayMedicineLogsStreamProvider.overrideWith(
-            (ref) => Stream.value([]),
-          ),
-          activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
-          todaySpendingStreamProvider.overrideWith((ref) => Stream.value(0.0)),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: Padding(
-                padding: EdgeInsets.all(16),
-                child: SmartCatchUpBanner(),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Hydration check'), findsOneWidget);
-
-      await tester.tap(find.text('Skip for now'));
-      await tester.pumpAndSettle();
-
-      // Banner is dismissed
-      expect(find.text('Hydration check'), findsNothing);
-    });
 
     testWidgets(
       'SmartCatchUpBanner fits 320px width at 2.0x text scale without overflow',

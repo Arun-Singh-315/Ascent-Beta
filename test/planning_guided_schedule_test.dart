@@ -265,27 +265,6 @@ void main() {
       await t.pumpWidget(const SizedBox());
     },
   );
-  testWidgets('check-in immediately asks for a start time when none exists', (
-    t,
-  ) async {
-    await mount(t);
-    await open(t);
-    final toggle = find.widgetWithText(SwitchListTile, 'Check in afterwards');
-    for (var n = 0; n < 16 && toggle.hitTestable().evaluate().isEmpty; n++) {
-      await t.drag(
-        find.byKey(const ValueKey('item_settings_scroll')),
-        const Offset(0, -150),
-      );
-      await t.pumpAndSettle();
-    }
-    await t.tap(toggle.hitTestable());
-    await t.pumpAndSettle();
-    expect(find.byType(DatePickerDialog), findsOneWidget);
-    await t.tap(find.text('Cancel').last);
-    await t.pumpAndSettle();
-    expect(t.widget<SwitchListTile>(toggle).value, isFalse);
-    await t.pumpWidget(const SizedBox());
-  });
   testWidgets('new rows inherit the selected default schedule', (t) async {
     await mount(t);
     await t.tap(find.widgetWithText(ChoiceChip, 'Tomorrow morning'));

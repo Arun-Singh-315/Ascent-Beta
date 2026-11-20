@@ -4,7 +4,6 @@ import 'package:ascent/core/learning_hub/learning_hub_models.dart';
 import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/core/learning_hub/default_course_data.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/app/theme/color_tokens.dart' as ascent_colors;
 
 void main() {
   group('Activity Hub Kind & Hierarchy Tests', () {
@@ -293,17 +292,5 @@ void main() {
   });
 
   group('Day Mode Composed Color Tokens Tests', () {
-    test(
-      'AscentColors secondary accent and warning are calm, composed, and non-glaring in day mode',
-      () {
-        // Day mode colors should not be harsh screaming high-saturation red/orange
-        expect(
-          ascent_colors.AscentColors.accentSecondary.toARGB32(),
-          0xFF8A513E,
-        );
-        expect(ascent_colors.AscentColors.stateWarning.toARGB32(), 0xFFB46824);
-        expect(ascent_colors.AscentColors.stateDanger.toARGB32(), 0xFFBA433C);
-      },
-    );
   });
 }

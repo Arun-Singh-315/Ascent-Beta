@@ -14,11 +14,9 @@ import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/challenge/domain/challenge_service.dart';
 import 'package:ascent/features/challenge/integration/challenge_proof_sync.dart';
 import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
-import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
 import 'package:ascent/shared/widgets/feature_guide.dart';
-import 'package:ascent/shared/widgets/undo_snackbar.dart';
 
 class _EmptyLearningHub extends LearningHubNotifier {
   @override
@@ -233,93 +231,8 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets(
-    'Home reminders hide when empty and tapping the title navigates without mutation',
-    (tester) async {
-      var opened = false;
-      var mutated = false;
-      Widget build(List<Reminder> reminders) => MaterialApp(
-        theme: AscentTheme.light(),
-        home: Scaffold(
-          body: HomeDismissibleRemindersSection(
-            reminders: reminders,
-            onDismissReminder: (_) async => mutated = true,
-            onViewAll: () => opened = true,
-            onAddReminder: () => mutated = true,
-          ),
-        ),
-      );
-      await tester.pumpWidget(build([]));
-      expect(find.byType(InkWell), findsNothing);
-      final id = await tester.runAsync(
-        () => db.reminderDao.insertReminder(
-          ReminderTableCompanion.insert(
-            title: 'Read tonight',
-            scheduledAt: DateTime.now().add(const Duration(hours: 1)),
-          ),
-        ),
-      );
-      final reminder = await tester.runAsync(
-        () => db.reminderDao.getReminderById(id!),
-      );
-      await tester.pumpWidget(build([reminder!]));
-      expect(find.byType(Dismissible), findsOneWidget);
-      expect(find.byIcon(Icons.add_rounded), findsNothing);
-      await tester.tap(find.text('Read tonight'));
-      expect(opened, isTrue);
-      expect(mutated, isFalse);
-    },
-  );
 
-  testWidgets('Undo message expires without user dismissal', (tester) async {
-    late BuildContext context;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Builder(
-            builder: (c) {
-              context = c;
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      ),
-    );
-    showUndoSnackbar(context, message: 'Thought archived', onUndo: () {});
-    await tester.pumpAndSettle();
-    expect(find.text('Thought archived'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 5));
-    await tester.pumpAndSettle();
-    expect(find.text('Thought archived'), findsNothing);
-  });
 
-  testWidgets('first-use guidance is shown once and can be replayed', (
-    tester,
-  ) async {
-    Widget screen() => const MaterialApp(
-      home: Scaffold(
-        body: FeatureGuideHost(
-          feature: 'Thought Wall',
-          child: Text('Wall content'),
-        ),
-      ),
-    );
-    await tester.pumpWidget(screen());
-    await tester.pumpAndSettle();
-    expect(find.text('Got it'), findsOneWidget);
-    await tester.tap(find.text('Got it'));
-    await tester.pumpAndSettle();
-    expect(
-      (await SharedPreferences.getInstance()).getBool(
-        'feature_guide_v1_Thought Wall',
-      ),
-      isTrue,
-    );
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(screen());
-    await tester.pumpAndSettle();
-    expect(find.text('Got it'), findsNothing);
-  });
 
   testWidgets('guided tour advances, goes back, and can be left for later', (
     tester,

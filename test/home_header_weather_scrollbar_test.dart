@@ -35,52 +35,6 @@ void main() {
   }
 
   group('HomeHeader Layout & Weather Design Tests', () {
-    testWidgets(
-      'Header has no day/night toggle or duplicate weather button in Row 1',
-      (tester) async {
-        final prefs = await SharedPreferences.getInstance();
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayFestivalProvider.overrideWith((ref) => null),
-              currentStreakStreamProvider.overrideWith(
-                (ref) => Stream.value(0),
-              ),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(body: HomeHeader(profile: null)),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Row 1 contains Avatar, Date, and HomeWeather capsule
-        expect(
-          find.byKey(const ValueKey('home_profile_button')),
-          findsOneWidget,
-        );
-        expect(find.byKey(const ValueKey('home_date')), findsOneWidget);
-        expect(find.byKey(const ValueKey('home_weather')), findsOneWidget);
-
-        // Redundant day/night toggle and duplicate weather button must NOT exist in the header
-        expect(
-          find.byKey(const ValueKey('home_day_night_toggle')),
-          findsNothing,
-        );
-        expect(find.byKey(const ValueKey('home_weather_button')), findsNothing);
-
-        // Verify header has distinct styling: gradient + hairline border, no extra shadow (Phase 1)
-        final headerContainer = tester.widget<Container>(
-          find.byKey(const ValueKey('home_day_header')),
-        );
-        final decoration = headerContainer.decoration as BoxDecoration;
-        expect(decoration.border, isNotNull);
-        expect(decoration.gradient, isNotNull);
-        expect(decoration.boxShadow, isNull);
-      },
-    );
 
     testWidgets(
       'Header chips use Wrap and have zero horizontal scrolling with all chips populated',

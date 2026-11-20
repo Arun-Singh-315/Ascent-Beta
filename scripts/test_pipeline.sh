@@ -2,6 +2,7 @@
 # ==============================================================================
 # Ascent Test Pipeline & Quality Gate Runner
 # Usage:
+#   ./scripts/test_pipeline.sh changed [base]   - Only tests affected by your changes (daily loop)
 #   ./scripts/test_pipeline.sh smoke            - Fast sanity suite (<15s)
 #   ./scripts/test_pipeline.sh integrity        - UI overflow & completeness tests
 #   ./scripts/test_pipeline.sh feature <name>   - Tests for specific domain
@@ -19,6 +20,31 @@ echo " Ascent CI/CD Quality Pipeline: mode [$MODE]"
 echo "=========================================================="
 
 case "$MODE" in
+  changed)
+    # Fast daily loop: only the tests touched by this branch's changes —
+    # changed test files, plus tests that import a changed lib file.
+    BASE="${FEATURE_TARGET:-origin/main}"
+    CHANGED=$( { git diff --name-only "$BASE"...HEAD; git diff --name-only; git ls-files --others --exclude-standard; } | sort -u )
+    TESTS=$(
+      for f in $CHANGED; do
+        [ -f "$f" ] || continue
+        case "$f" in
+          test/*_test.dart) echo "$f" ;;
+          lib/*.dart)
+            grep -rlF "package:ascent/${f#lib/}" test --include='*_test.dart' || true ;;
+        esac
+      done | sort -u
+    )
+    if [ -z "$TESTS" ]; then
+      echo "No tests affected by changes against $BASE."
+      exit 0
+    fi
+    echo "Running $(echo "$TESTS" | wc -l) affected test files against $BASE..."
+    flutter analyze lib
+    # shellcheck disable=SC2086
+    flutter test --timeout 90s -j "$(nproc)" $TESTS
+    ;;
+
   smoke)
     echo "Running smoke tests (Target <15s)..."
     flutter test test/smoke/app_smoke_test.dart test/widget_test.dart

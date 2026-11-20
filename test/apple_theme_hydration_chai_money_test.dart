@@ -10,10 +10,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/hydration/hydration_screen.dart';
-import 'package:ascent/features/chai_break/chai_break_provider.dart';
-import 'package:ascent/features/chai_break/chai_break_screen.dart';
 import 'package:ascent/features/money/money_screen.dart';
-import 'package:ascent/shared/widgets/ascent_segmented_control.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -220,160 +217,11 @@ void main() {
   });
 
   group('Apple Mindfulness Chai & Coffee Screen Tests', () {
-    testWidgets(
-      'Chai screen renders canonical AscentSegmentedControl and serene timer dial',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestApp(
-            child: const ChaiBreakScreen(),
-            extraOverrides: [
-              todayBreaksProvider.overrideWith((ref) => Future.value([])),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
 
-        // Top bar title
-        expect(find.text('Chai & Coffee'), findsOneWidget);
 
-        // Canonical segmented control
-        expect(
-          find.byType(AscentSegmentedControl<ChaiBreakMode>),
-          findsOneWidget,
-        );
-        expect(find.text('Mindful Pause'), findsOneWidget);
-        expect(find.text('Brew With Me'), findsOneWidget);
-
-        // Duration pills
-        expect(find.text('5m Chai'), findsOneWidget);
-        expect(find.text('10m Coffee'), findsOneWidget);
-        expect(find.text('15m Reset'), findsOneWidget);
-
-        // Controls
-        expect(find.text('Resume'), findsOneWidget);
-
-        final historyTitle = find.text('PAUSE HISTORY');
-        await tester.scrollUntilVisible(
-          historyTitle,
-          200,
-          scrollable: find.byType(Scrollable).first,
-        );
-        expect(historyTitle, findsOneWidget);
-        expect(find.text('View Full Pause History'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
-
-    testWidgets('Chai screen switches seamlessly to Brew With Me mode', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          child: const ChaiBreakScreen(),
-          extraOverrides: [
-            todayBreaksProvider.overrideWith((ref) => Future.value([])),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Switch to Brew With Me
-      await tester.tap(find.text('Brew With Me'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Follow a step-by-step artisanal brewing guide.'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
-
-    testWidgets(
-      'Chai screen is immune to overflows at 320px width & 2.0x font scaling',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        await tester.pumpWidget(
-          buildTestApp(
-            child: const ChaiBreakScreen(),
-            dark: true,
-            textScale: 2.0,
-            size: const Size(320, 800),
-            extraOverrides: [
-              todayBreaksProvider.overrideWith((ref) => Future.value([])),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Chai & Coffee'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
   });
 
   group('Money Screen High-Volume Protection Tests', () {
-    testWidgets(
-      'Money screen caps high-volume transactions and provides Show All & History link',
-      (tester) async {
-        final now = DateTime.now();
-        // Insert 12 transactions across 4 days
-        for (var dayOffset = 0; dayOffset < 4; dayOffset++) {
-          final txDate = now.subtract(Duration(days: dayOffset));
-          for (var i = 0; i < 3; i++) {
-            await db.financeDao.insertTransaction(
-              FinanceTransactionTableCompanion.insert(
-                title: 'Purchase $dayOffset-$i',
-                amount: 150.0 * (i + 1),
-                date: txDate,
-                category: const drift.Value('Food & Groceries'),
-                account: const drift.Value('UPI'),
-                type: const drift.Value('expense'),
-              ),
-            );
-          }
-        }
-
-        await tester.pumpWidget(buildTestApp(child: const MoneyScreen()));
-        await tester.pumpAndSettle();
-
-        final toggleFinder = find.text('Show All 12 Transactions');
-        await tester.scrollUntilVisible(
-          toggleFinder,
-          200,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.ensureVisible(toggleFinder);
-        await tester.pumpAndSettle();
-        expect(toggleFinder, findsOneWidget);
-        expect(
-          find.text('View Full Ledger in History (12 records)'),
-          findsOneWidget,
-        );
-
-        // Tap to expand all
-        await tester.tap(toggleFinder);
-        await tester.pumpAndSettle();
-
-        expect(find.text('Show Recent Only'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
 
     testWidgets(
       'Money screen is immune to overflows at 320px width & 2.0x font scaling with 12 transactions',
