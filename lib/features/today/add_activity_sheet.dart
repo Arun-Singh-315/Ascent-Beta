@@ -306,20 +306,17 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       }
       if (mounted) {
         HapticFeedback.lightImpact();
-        final messenger = ScaffoldMessenger.of(context);
+        // The app-level messenger keeps the message after the sheet closes.
+        AscentSnackBar.show(context, message: message);
         Navigator.of(context).pop();
-        messenger.showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e is StateError
-                  ? e.message.toString()
-                  : 'Could not save. Try again.',
-            ),
-          ),
+        AscentSnackBar.error(
+          context,
+          message: e is StateError
+              ? e.message.toString()
+              : 'Could not save. Try again.',
         );
       }
     } finally {
@@ -370,8 +367,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       Expanded(
                         child: Text(
                           widget.existingTask != null
-                              ? 'Edit Activity'
-                              : 'Add Activity',
+                              ? 'Edit activity'
+                              : 'Add activity',
                           style: AscentTextStyles.displaySmall
                               .copyWith(color: context.textPrimary)
                               .merge(AppTypeRoles.typeRole2),
@@ -916,8 +913,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     child: AscentButton.tonal(
                       compact: true,
                       label: widget.existingTask != null
-                          ? 'Save Changes'
-                          : 'Create Activity',
+                          ? 'Save changes'
+                          : 'Add activity',
                       icon: widget.existingTask != null
                           ? Icons.check_rounded
                           : Icons.add_rounded,
