@@ -78,8 +78,9 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 
 1. **Plan page (shipped, #58):** real "Day 3 of 28 · dates" from the sessions, a 7-day strip (done / partly / missed / upcoming), a streak that forgives one missed day a week and skips rest days, and "On track" or "2 sessions behind".
 2. **Catch up (shipped, #58):** plan sessions are protected (their reminders and history belong to the plan), so *Catch up today* marks each missed session skipped and adds a "(catch up)" to-do for today; one Undo reverses both.
-3. **Next:** *Make it lighter* (daily → weekdays, shorter minutes) and *Extend* (add weeks within 90 days).
-4. **Riya rebalance:** "I missed two days of DSA" → proposes the catch-up as a reviewable card.
+3. **Make it lighter (shipped, #59):** daily steps become weekdays and timed steps about a quarter shorter (never under 10 min), from the next session on; past history stays. Undo restores the previous rhythm.
+4. **Add a week (shipped, #59):** every repeating step runs 7 days longer, within the 90-day limit. Undo restores the old end date.
+5. **Riya rebalance:** "I missed two days of DSA" → proposes the catch-up as a reviewable card.
 
 ## 8. Reliability notes
 
@@ -98,7 +99,7 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 - [ ] Deleting a plan leaves no orphan to-dos, reminders or notifications.
 - [x] Plan page progress strip and Catch up with Undo (`plan_progress_test.dart`).
 - [x] Generated study and meal plans save every item (`plan_generator_test.dart`).
-- [ ] Make it lighter / Extend.
+- [x] Make it lighter / Add a week, with Undo (`plan_adjust_test.dart`).
 
 ## 10. Code map
 
@@ -107,6 +108,7 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 | Templates, drafts, plan from a sentence | `lib/features/plans/plan_templates.dart` |
 | Study and meal generators | `lib/features/plans/plan_generator.dart`, `widgets/plan_generator_sheet.dart` |
 | Progress and catch up | `lib/features/plans/plan_progress.dart`, `widgets/plan_progress_card.dart` |
+| Lighter and extend | `lib/features/plans/plan_adjust.dart` |
 | Template sheet | `lib/features/plans/widgets/plan_template_sheet.dart` |
 | Plans screen | `lib/features/plans/plans_screen.dart` |
 | Plan page | `lib/features/plans/widgets/plan_collection_detail.dart` |
