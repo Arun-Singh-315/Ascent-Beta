@@ -6,8 +6,6 @@ import 'package:ascent/core/services/festival_service.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/home_weather.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
-import 'package:ascent/shared/widgets/thought_excerpt.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -224,59 +222,6 @@ void main() {
   });
 
   group('Thought Wall Screen Renovated Atmosphere & Bubbles Tests', () {
-    testWidgets(
-      'Mindspace bubbles render with balanced margins and inline expansion',
-      (tester) async {
-        tester.view.physicalSize = const Size(400 * 2, 1000 * 2);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        final longThought = List.generate(
-          10,
-          (i) => 'Mindspace line $i: deep learning and creative synthesis.',
-        ).join('\n');
-        await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(
-            content: longThought,
-            createdAt: Value(DateTime.now()),
-          ),
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              home: const ThoughtWallScreen(),
-            ),
-          ),
-        );
-        await settle(tester);
-
-        expect(find.text('Mindspace'), findsOneWidget);
-
-        // Find ThoughtExcerpt inside ThoughtCardBubble
-        expect(find.byType(ThoughtExcerpt), findsOneWidget);
-        final showMore = find.text('Show more');
-        expect(showMore, findsOneWidget);
-
-        // Tap "Show more" inside Mindspace wall
-        await tester.tap(showMore);
-        await settle(tester);
-
-        // Expanded inline: shows "Show less" with zero popups
-        expect(find.text('Show less'), findsOneWidget);
-        expect(find.byType(Dialog), findsNothing);
-        expect(find.byType(BottomSheet), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      },
-    );
 
     testWidgets('320px width & 2.0x accessibility text scale immunity', (
       tester,

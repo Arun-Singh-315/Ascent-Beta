@@ -247,29 +247,15 @@ Future<bool> moveThoughtsToSpace(
 }
 
 /// Deletes thoughts and offers Undo. Returns how many were removed.
+///
+/// Undo-first (CLAUDE.md §1.8): no confirmation, because Undo restores
+/// everything, including links and reminders.
 Future<int> deleteThoughtsWithUndo(
   BuildContext context,
   WidgetRef ref,
-  List<Thought> thoughts, {
-  bool confirm = true,
-}) async {
+  List<Thought> thoughts,
+) async {
   if (thoughts.isEmpty) return 0;
-  if (confirm) {
-    final confirmed = await AscentDialog.confirm(
-      context: context,
-      title: thoughts.length == 1
-          ? 'Delete this thought?'
-          : 'Delete ${thoughts.length} thoughts?',
-      content: thoughts.length == 1
-          ? 'Are you sure you want to delete this thought? You can undo this action.'
-          : 'Are you sure you want to delete ${thoughts.length} thoughts? You can undo this action.',
-      confirmLabel: 'Delete',
-      cancelLabel: 'Keep',
-      isDestructive: true,
-      icon: Icons.delete_outline_rounded,
-    );
-    if (confirmed != true) return 0;
-  }
   HapticFeedback.mediumImpact();
   final dao = ref.read(thoughtDaoProvider);
   try {
@@ -293,8 +279,8 @@ Future<int> deleteThoughtsWithUndo(
       AscentSnackBar.undo(
         context,
         message: snapshots.length == 1
-            ? 'Thought removed'
-            : '${snapshots.length} thoughts removed',
+            ? 'Thought deleted'
+            : '${snapshots.length} thoughts deleted',
         onUndo: () async {
           for (final snapshot in snapshots) {
             try {

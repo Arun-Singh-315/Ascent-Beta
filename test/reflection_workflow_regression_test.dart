@@ -1,11 +1,7 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/medicine/medicine_time_dialog.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,15 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
-
-  Future<void> settle(WidgetTester t) async {
-    for (var i = 0; i < 8; i++) {
-      await t.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
-      );
-      await t.pump(const Duration(milliseconds: 100));
-    }
-  }
 
   test(
     'quick categories persist including an intentionally empty list',
@@ -111,50 +98,4 @@ void main() {
       },
     );
   }
-
-  testWidgets('create a category directly on an empty wall', (t) async {
-    SharedPreferences.setMockInitialValues({
-      'feature_guide_v1_Thought Wall': true,
-    });
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    addTearDown(db.close);
-    final container = ProviderContainer(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-        sharedPreferencesProvider.overrideWithValue(
-          await SharedPreferences.getInstance(),
-        ),
-      ],
-    );
-    await t.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          theme: AscentTheme.light(),
-          home: const ThoughtWallScreen(),
-        ),
-      ),
-    );
-    await settle(t);
-    await t.tap(find.byTooltip('Category filter'));
-    await t.pumpAndSettle();
-    await t.tap(find.byTooltip('Create category'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byType(TextField).last, 'Personal');
-    await t.tap(find.text('Create'));
-    await settle(t);
-    expect(
-      (await t.runAsync(() => db.thoughtDao.watchCategories().first))!.values,
-      contains('Personal'),
-    );
-    expect(
-      await t.runAsync(() => db.thoughtDao.watchAllThoughts().first),
-      isEmpty,
-    );
-    expect(t.takeException(), isNull);
-    await t.pumpWidget(const SizedBox());
-    container.dispose();
-
-    await t.pump(const Duration(seconds: 2));
-  });
 }

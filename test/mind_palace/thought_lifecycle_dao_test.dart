@@ -79,10 +79,16 @@ void main() {
     final b = await add('b', nov18);
     final done = await add('c', nov18);
     await dao.setCompleted(done, true, now: nov18);
-    expect(await dao.carryAllEarlierToToday(now: nov20), 2);
+    final previous = await dao.carryAllEarlierToToday(now: nov20);
+    expect(previous.keys, unorderedEquals([a, b]));
     expect(placeOf(await get(a), nov20), ThoughtPlace.today);
     expect(placeOf(await get(b), nov20), ThoughtPlace.today);
     expect(placeOf(await get(done), nov20), ThoughtPlace.done);
+
+    // Undo puts them back where they were.
+    await dao.restoreCarriedOn(previous);
+    expect(placeOf(await get(a), nov20), ThoughtPlace.earlier);
+    expect(placeOf(await get(b), nov20), ThoughtPlace.earlier);
   });
 
   test('Today stream loads only today rows; Earlier only older open', () async {

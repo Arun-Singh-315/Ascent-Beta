@@ -9,14 +9,10 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/thought_theme.dart';
 import 'package:ascent/shared/widgets/app_chip.dart';
 import 'package:ascent/shared/widgets/capped_chip_wrap.dart';
-import 'package:ascent/shared/widgets/section_card.dart';
 import 'package:ascent/shared/widgets/thought_excerpt.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -286,66 +282,5 @@ void main() {
   });
 
   group('Phase 5: 320px Width & 2.0x Text Scale Immunity', () {
-    testWidgets(
-      'Home Header, SectionCard, and ThoughtCardBubble are immune to overflow at 320px & 2.0x scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
-
-        final thought = Thought(
-          id: 501,
-          content:
-              'Long thought running across multiple lines to verify immunity at 320px and 2.0x text scale.',
-          mood: 'idea',
-          category: 'work',
-          colorHex: '#2F6F6A',
-          isPinned: false,
-          isArchived: false,
-          isCompleted: false,
-          createdAt: DateTime.now(),
-        );
-
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 800),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: ProviderScope(
-              overrides: [
-                databaseProvider.overrideWithValue(db),
-                sharedPreferencesProvider.overrideWithValue(prefs),
-              ],
-              child: MaterialApp(
-                theme: AscentTheme.dark(),
-                home: Scaffold(
-                  body: ListView(
-                    children: [
-                      HomeHeader(profile: null, now: DateTime(2026, 11, 15)),
-                      SectionCard(
-                        icon: Icons.bubble_chart_rounded,
-                        title: 'Mindspace',
-                        child: ThoughtCardBubble(
-                          thought: thought,
-                          index: 0,
-                          role: ThoughtCardRole.hero,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      },
-    );
   });
 }

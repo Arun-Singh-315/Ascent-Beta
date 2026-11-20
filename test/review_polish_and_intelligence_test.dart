@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:ascent/features/thought_wall/thought_share.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/shared/widgets/ascent_logo.dart';
 
 void main() {

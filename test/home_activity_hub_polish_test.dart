@@ -8,7 +8,6 @@ import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:drift/drift.dart' as drift;
@@ -372,44 +371,6 @@ void main() {
         expect(taskAfter, isNull);
 
         // Verify Undo snackbar appears
-        expect(find.text('Undo'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'Thought Wall screen supports swipe to delete (endToStart) with Undo snackbar',
-      (tester) async {
-        final thoughtDao = container.read(thoughtDaoProvider);
-        final thoughtId = await thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Important deep insight note'),
-        );
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(body: ThoughtWallScreen()),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final thoughtDismissible = find.byKey(ValueKey('thought_$thoughtId'));
-        expect(thoughtDismissible, findsOneWidget);
-
-        final dismissible = tester.widget<Dismissible>(thoughtDismissible);
-        expect(dismissible.direction, DismissDirection.horizontal);
-
-        // Swipe left to delete
-        await tester.drag(thoughtDismissible, const Offset(-500, 0));
-        await tester.pumpAndSettle();
-
-        // Verify thought was deleted from database
-        final thoughtAfter = await thoughtDao.getThoughtById(thoughtId);
-        expect(thoughtAfter, isNull);
-
-        // Verify Undo snackbar is visible
         expect(find.text('Undo'), findsOneWidget);
       },
     );

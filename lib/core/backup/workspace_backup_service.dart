@@ -357,6 +357,55 @@ class WorkspaceBackupService {
       }
       payload['schema'] = 24;
     }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 24 &&
+        db.schemaVersion >= 25 &&
+        payload['tables'] is Map) {
+      // Schema 25 added thought lifecycle dates and bullet style. Fill them
+      // the way the database migration does: done/archived thoughts take
+      // their latest matching history event, else their creation time.
+      final tables = payload['tables'] as Map;
+      final latest = {
+        'completed': <String, Object>{},
+        'archived': <String, Object>{},
+      };
+      for (final event in tables['history_events'] as List? ?? []) {
+        final e = event as Map;
+        final byId = latest[e['action']];
+        final module = e['module'];
+        final at = e['occurred_at'];
+        if (byId == null ||
+            (module != 'thoughts' && module != 'promises') ||
+            at is! Comparable) {
+          continue;
+        }
+        final id = '${e['entity_id']}';
+        final seen = byId[id];
+        if (seen == null || at.compareTo(seen) > 0) {
+          byId[id] = at;
+        }
+      }
+      for (final row in tables['thoughts'] as List? ?? []) {
+        final t = row as Map;
+        final id = '${t['id']}';
+        t.putIfAbsent(
+          'completed_at',
+          () => t['is_completed'] == 1
+              ? latest['completed']![id] ?? t['created_at']
+              : null,
+        );
+        t.putIfAbsent(
+          'archived_at',
+          () => t['is_archived'] == 1
+              ? latest['archived']![id] ?? t['created_at']
+              : null,
+        );
+        t.putIfAbsent('carried_on', () => null);
+        t.putIfAbsent('bullet_style', () => null);
+      }
+      payload['schema'] = 25;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {

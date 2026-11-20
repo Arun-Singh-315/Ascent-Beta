@@ -9,7 +9,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:drift/native.dart';
 import 'support/returning_user_guides.dart';
 
@@ -100,49 +99,6 @@ void main() {
   });
 
   group('Thought Wall Toggle and Selection Delete Option Outside', () {
-    testWidgets(
-      'provides prominent Delete option outside when selecting thoughts',
-      (tester) async {
-        // Seed a thought
-        await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Note to be deleted outside'),
-        );
-
-        await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Note to be deleted outside'), findsOneWidget);
-
-        // Long press the card to enter selection mode
-        await tester.longPress(find.text('Note to be deleted outside'));
-        await tester.pumpAndSettle();
-
-        // Selection actions bar is now displayed at bottom
-        expect(
-          find.byKey(const ValueKey('thought_selection_actions')),
-          findsOneWidget,
-        );
-        // Verify Delete button is directly present outside on the bar
-        expect(find.widgetWithText(TextButton, 'Delete'), findsOneWidget);
-        expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
-        expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
-
-        // Tap Delete outside
-        await tester.tap(find.widgetWithText(TextButton, 'Delete'));
-        await tester.pumpAndSettle();
-
-        // Verify undo snackbar is shown
-        expect(find.text('Thought removed'), findsOneWidget);
-        expect(find.text('Undo'), findsOneWidget);
-
-        // Verify thought is removed from active list
-        expect(find.text('Note to be deleted outside'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pump(const Duration(seconds: 5));
-      },
-    );
   });
 
   group('Home Thought Preview Custom Tone and Font Typography', () {

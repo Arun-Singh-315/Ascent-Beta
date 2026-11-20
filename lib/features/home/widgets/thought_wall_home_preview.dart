@@ -1200,12 +1200,7 @@ class _ThoughtWallHomePreviewState
                     if (direction == DismissDirection.endToStart) {
                       ThoughtExpandedRegistry.collapse(latest.id);
                       if (context.mounted) {
-                        await deleteThoughtsWithUndo(
-                          context,
-                          ref,
-                          [latest],
-                          confirm: false,
-                        );
+                        await deleteThoughtsWithUndo(context, ref, [latest]);
                       }
                       return true;
                     } else {

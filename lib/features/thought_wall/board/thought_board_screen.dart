@@ -16,6 +16,8 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/local_day_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
+import '../../../shared/widgets/skeleton_shimmer.dart';
+import '../../../shared/widgets/undo_snackbar.dart';
 import '../../../shared/widgets/app_chip.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
@@ -346,34 +348,36 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     }
   }
 
-  Future<void> _bringAll(int count) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(count == 1 ? 'Bring 1 thought to Today?' : 'Bring $count thoughts to Today?'),
-        content: const Text('They keep their original dates.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            key: const ValueKey('bring_all_confirm'),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Bring all'),
-          ),
-        ],
-      ),
-    );
-    if (ok != true || !mounted) return;
+  /// Writing prompts for an empty Today. A prompt alone isn't a useful
+  /// thought, so tapping one starts the sentence in the composer.
+  static const _starterPrompts = [
+    'One thing I’m grateful for',
+    'An idea I don’t want to lose',
+    'What’s on my mind right now',
+  ];
+
+  void _startWith(String prompt) {
+    HapticFeedback.selectionClick();
+    _input.text = '$prompt: ';
+    _input.selection = TextSelection.collapsed(offset: _input.text.length);
+    _focus.requestFocus();
+  }
+
+  /// Undo-first (CLAUDE.md §1.8): bring everything over, offer Undo.
+  Future<void> _bringAll() async {
+    HapticFeedback.lightImpact();
+    final dao = ref.read(thoughtDaoProvider);
     try {
-      final moved = await ref.read(thoughtDaoProvider).carryAllEarlierToToday();
+      final previous = await dao.carryAllEarlierToToday();
       if (!mounted) return;
       setState(() => _earlierOpen = false);
-      AscentSnackBar.show(
+      final moved = previous.length;
+      showUndoSnackbar(
         context,
-        message: moved == 1 ? '1 thought brought to Today' : '$moved thoughts brought to Today',
-        icon: Icons.today_rounded,
+        message: moved == 1
+            ? '1 thought brought to Today'
+            : '$moved thoughts brought to Today',
+        onUndo: () => dao.restoreCarriedOn(previous),
       );
     } catch (_) {
       if (mounted) {
@@ -572,7 +576,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         quiet: true,
         controller: _input,
         focusNode: _focus,
-        hint: 'Write a thought…',
+        hint: 'e.g. Idea for the weekend trip',
         busy: _saving,
         minHeight: 56,
         onSend: (_) => _send(),
@@ -766,7 +770,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
             ),
             TextButton(
               key: const ValueKey('earlier_bring_all'),
-              onPressed: () => _bringAll(count),
+              onPressed: _bringAll,
               child: Text('Bring all', style: TextStyle(color: g.clay)),
             ),
           ],
@@ -999,6 +1003,14 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
             subtitle: 'Write below. Add #movies (or any space) to file a thought straight into it.',
             actionLabel: 'Write a thought',
             onAction: _focus.requestFocus,
+            starters: [
+              for (final prompt in _starterPrompts)
+                EmptyStarter(
+                  label: prompt,
+                  icon: Icons.edit_outlined,
+                  onTap: () => _startWith(prompt),
+                ),
+            ],
           );
         }
       case PalaceTab.done:
@@ -1092,7 +1104,20 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           },
         );
       }
-      if (loading) return const Center(child: CircularProgressIndicator());
+      if (loading) {
+        // Skeletons shaped like thought cards (CLAUDE.md §6.2).
+        return ListView(
+          key: const ValueKey('palace_loading'),
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          children: [
+            for (final h in const [96.0, 72.0, 120.0, 84.0]) ...[
+              SkeletonShimmer.card(height: h),
+              const SizedBox(height: 10),
+            ],
+          ],
+        );
+      }
       return CustomScrollView(
         key: ValueKey('palace_list_${_tab.name}'),
         controller: _scroll,
