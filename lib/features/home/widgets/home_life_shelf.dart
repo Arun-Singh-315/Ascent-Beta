@@ -156,7 +156,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
   }
 
   Widget _buildWaterPanel(AppColors c, int water, int goal) {
-    final left = (goal - water).clamp(0, goal);
     final filledSegments = ((water / goal) * 10).round().clamp(0, 10);
 
     return Column(
@@ -183,7 +182,7 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
                 alignment: Alignment.centerLeft,
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  '$water ml',
+                  water == 0 ? '–' : '$water ml',
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w700,
@@ -232,9 +231,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
         ),
         const SizedBox(height: 8),
 
-        // Caption: 2000 ml left · Goal 2500 ml
+        // Live pace for this time of day, not just a number.
         Text(
-          left > 0 ? '$left ml left · Goal $goal ml' : 'Goal reached · $goal ml',
+          waterPaceLine(water, goal, DateTime.now()),
+          key: const ValueKey('home_water_pace'),
           style: TextStyle(
             fontSize: 12,
             color: c.textSecondary,
@@ -596,4 +596,25 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
       ],
     );
   }
+}
+
+/// One line about where today's water stands for the time of day. The day
+/// is spread over 7:00–22:00, so 50 % by mid-afternoon is "on track".
+String waterPaceLine(int water, int goal, DateTime now) {
+  if (goal <= 0) return 'Set a daily goal to see your pace';
+  if (water >= goal) return 'Goal reached · $goal ml today';
+  final left = goal - water;
+  final minutes = now.hour * 60 + now.minute;
+  const start = 7 * 60, end = 22 * 60;
+  if (minutes < start) {
+    return water == 0
+        ? 'Start the day with a glass of water'
+        : '$left ml to go · Goal $goal ml';
+  }
+  final share = ((minutes - start) / (end - start)).clamp(0.0, 1.0);
+  final expected = (goal * share).round();
+  final behind = ((expected - water) / 50).round() * 50;
+  if (behind <= 100) return 'On track · $left ml to go';
+  if (minutes >= end) return '$left ml short of today’s goal';
+  return 'About $behind ml behind for now · a glass catches you up';
 }

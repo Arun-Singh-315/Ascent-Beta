@@ -32,6 +32,7 @@ import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_assistant_hero_card.dart';
 import 'widgets/home_now_card.dart';
+import 'widgets/home_feed_entrance.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
@@ -298,33 +299,50 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                           // 2. Now card: the single "what should I do now?"
                           // answer (CLAUDE.md §5.1).
-                          const HomeNowCard(),
+                          const HomeFeedEntrance(
+                            index: 0,
+                            child: HomeNowCard(),
+                          ),
 
                           // 3. Quick tools row
-                          HomeShortcutPanel(
-                            shortcuts: layout.shortcuts,
-                            showReminders: layout.visible.contains('reminders'),
+                          HomeFeedEntrance(
+                            index: 1,
+                            child: HomeShortcutPanel(
+                              shortcuts: layout.shortcuts,
+                              showReminders: layout.visible.contains(
+                                'reminders',
+                              ),
+                            ),
                           ),
 
                           // 4. Today timeline (Things), capped at 4 rows
                           if (layout.visible.contains('today'))
-                            ActivityHubCard(
-                              previewLimit: layout.compact.contains('today')
-                                  ? 3
-                                  : 4,
+                            HomeFeedEntrance(
+                              index: 2,
+                              child: ActivityHubCard(
+                                previewLimit: layout.compact.contains('today')
+                                    ? 3
+                                    : 4,
+                              ),
                             ),
 
                           // 5. Mind preview with inline capture
                           if (layout.visible.contains('mind'))
-                            const ThoughtWallHomePreview(
-                              previewLimit: 2,
-                              compact: true,
+                            const HomeFeedEntrance(
+                              index: 3,
+                              child: ThoughtWallHomePreview(
+                                previewLimit: 2,
+                                compact: true,
+                              ),
                             ),
 
                           // 6. Life shelf
                           if (layout.visible.contains('life') &&
                               layout.tools.isNotEmpty)
-                            const HomeLifeShelf(),
+                            const HomeFeedEntrance(
+                              index: 4,
+                              child: HomeLifeShelf(),
+                            ),
 
                           // Plans only get their own card when Things is
                           // hidden, because Things already has a Plans tab.
@@ -334,9 +352,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             ),
 
                           // 7. Assistant card
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
-                            child: HomeAssistantHeroCard(),
+                          const HomeFeedEntrance(
+                            index: 5,
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                              child: HomeAssistantHeroCard(),
+                            ),
                           ),
 
                           PlanningNotificationHandler(

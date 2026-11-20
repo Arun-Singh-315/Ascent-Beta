@@ -1,3 +1,4 @@
+import 'home_resurfaced_thought.dart';
 import '../../../shared/widgets/undo_snackbar.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/ascent_sheet.dart';
@@ -1434,6 +1435,7 @@ class _ThoughtWallHomePreviewState
               ),
             ),
           ],
+          const HomeResurfacedThought(),
         ],
       ),
     );
