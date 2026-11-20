@@ -17,7 +17,7 @@ import '../../home/widgets/home_schedule_sheet.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../drop_thought_sheet.dart';
 import '../thought_action_ui.dart';
-import '../thought_wall_screen.dart' show shareThought;
+import '../thought_share.dart' show shareThought;
 import 'board_actions.dart';
 import 'board_logic.dart';
 import 'space_style.dart';

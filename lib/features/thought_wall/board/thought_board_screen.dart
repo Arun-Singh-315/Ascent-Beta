@@ -13,31 +13,45 @@ import '../../../app/theme/text_styles.dart';
 import '../../../app/theme/thought_theme.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/local_day_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
-import '../../../shared/widgets/ascent_scaffold.dart';
-import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/app_chip.dart';
+import '../../../shared/widgets/app_text_field.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/ascent_scaffold.dart';
+import '../../../shared/widgets/ascent_segmented_control.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/message_composer.dart';
 import '../../promises/providers/promise_providers.dart';
+import '../drop_thought_sheet.dart';
 import '../thought_action_ui.dart';
 import '../thought_category_action.dart';
 import '../thought_wall_appearance_sheet.dart';
 import '../thought_wall_preferences.dart';
-import '../thought_wall_screen.dart' show shareMultipleThoughts;
+import '../thought_share.dart' show shareMultipleThoughts;
+import '../utils/thought_checklist_helper.dart';
 import 'board_actions.dart';
 import 'board_background.dart';
-import 'board_cards.dart';
 import 'board_logic.dart';
-import 'board_preferences.dart';
-import 'board_routes.dart';
-import 'spaces_shelf.dart';
-import 'thought_detail_sheet.dart';
+import 'palace_card.dart';
+import 'palace_providers.dart';
+import 'thought_lifecycle.dart';
+import 'thought_lines.dart';
 
-/// The Mindspace: a calm board of thoughts. Cards carry no buttons. Spaces
-/// (Movies, Books …) sit in one row on top; everything you can do with a
-/// thought is behind a tap.
+/// One drawn row of a tab: a header, a card, or a control. Built lazily, so a
+/// tab with thousands of thoughts only builds what is on screen.
+class _Entry {
+  const _Entry(this.key, this.builder);
+  final String key;
+  final WidgetBuilder builder;
+}
+
+/// The Mind Palace: Today, Done, Archive and History in one row of tabs.
+///
+/// Every thought is one record; each tab is a view of its dates. Reading a
+/// thought never opens a popup: the card grows in place.
 class ThoughtBoardScreen extends ConsumerStatefulWidget {
   const ThoughtBoardScreen({super.key, this.initialThoughtId});
 
@@ -51,6 +65,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     with WidgetsBindingObserver {
   final _input = TextEditingController();
   final _focus = FocusNode();
+  final _search = TextEditingController();
   final _scroll = ScrollController();
   NoteDraftBinding? _draft;
   Timer? _dayTimer;
@@ -60,8 +75,16 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   bool _selecting = false;
   bool _saving = false;
   bool _applying = false;
-  bool _showDone = false;
-  int? _openedId;
+  bool _searching = false;
+  bool _earlierOpen = false;
+  PalaceTab _tab = PalaceTab.today;
+  int _doneLimit = palacePageSize;
+  int _archiveLimit = palacePageSize;
+  DateTime? _historyDay;
+  int? _highlightId;
+
+  /// Thoughts drawn by the current tab; selection is trimmed to these.
+  List<Thought> _visible = const [];
 
   @override
   void initState() {
@@ -93,6 +116,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      ref.read(localClockProvider.notifier).refresh();
       setState(() {});
       _scheduleDayChange();
     } else if (state == AppLifecycleState.paused ||
@@ -101,12 +125,15 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     }
   }
 
+  /// At midnight the views are recomputed: archived-today tags leave Today and
+  /// open thoughts move to the Earlier row. No data changes.
   void _scheduleDayChange() {
     _dayTimer?.cancel();
     final now = DateTime.now();
     final next = DateTime(now.year, now.month, now.day + 1);
     _dayTimer = Timer(next.difference(now), () {
       if (!mounted) return;
+      ref.read(localClockProvider.notifier).refresh();
       setState(() {});
       _scheduleDayChange();
     });
@@ -119,13 +146,14 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     _draft?.dispose();
     _input.dispose();
     _focus.dispose();
+    _search.dispose();
     _scroll.dispose();
     _unlockedNotifier?.lockAll();
     super.dispose();
   }
 
-  /// A thought opened from Home: on the wall it becomes the top card; inside a
-  /// space, that space opens.
+  /// A thought opened from Home goes to the tab it lives in and opens
+  /// expanded there.
   Future<void> _openFromHome() async {
     final id = widget.initialThoughtId;
     if (id == null) return;
@@ -138,21 +166,39 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       );
       return;
     }
-    if (thought.isArchived) {
-      context.push(thoughtSpaceLocation(archiveSpaceKey, highlight: id));
-      return;
-    }
-    if (thought.category != wallCategoryKey) {
-      context.push(thoughtSpaceLocation(thought.category, highlight: id));
-      return;
-    }
+    ref.read(palaceFilterProvider.notifier).clear();
+    _search.clear();
+    final place = placeOf(thought, DateTime.now());
     setState(() {
-      _openedId = id;
-      _showDone = thought.isCompleted;
+      _highlightId = id;
       _selected.clear();
       _selecting = false;
+      _searching = false;
+      _tab = switch (place) {
+        ThoughtPlace.today ||
+        ThoughtPlace.archivedToday ||
+        ThoughtPlace.earlier => PalaceTab.today,
+        ThoughtPlace.done => PalaceTab.done,
+        ThoughtPlace.archive => PalaceTab.archive,
+      };
+      _earlierOpen = place == ThoughtPlace.earlier;
     });
-    if (thought.isCompleted) await ThoughtDetailSheet.show(context, thought);
+  }
+
+  void _setTab(PalaceTab tab) {
+    if (tab == _tab) return;
+    setState(() {
+      _tab = tab;
+      _selected.clear();
+      _selecting = false;
+      _highlightId = null;
+      if (tab == PalaceTab.history) {
+        _searching = false;
+        _search.clear();
+        ref.read(palaceFilterProvider.notifier).setQuery('');
+      }
+    });
+    if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
   Future<void> _send() async {
@@ -176,18 +222,21 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           );
       if (_input.text.trim() == raw) _input.clear();
       if (!mounted) return;
-      setState(() => _openedId = null);
+      // A space filter that would hide the new thought is dropped.
+      final filter = ref.read(palaceFilterProvider);
+      final landed = tag?.key ?? wallCategoryKey;
+      if (filter.space != null && filter.space != landed) {
+        ref.read(palaceFilterProvider.notifier).setSpace(null);
+      }
+      setState(() => _highlightId = null);
       if (tag != null) {
         AscentSnackBar.show(
           context,
           message: 'Added to ${categories[tag.key]}',
           icon: Icons.folder_outlined,
-          actionLabel: 'Open',
-          onAction: () async {
-            if (mounted) context.push(thoughtSpaceLocation(tag.key));
-          },
         );
-      } else if (_scroll.hasClients) {
+      }
+      if (_scroll.hasClients) {
         _scroll.animateTo(
           0,
           duration: const Duration(milliseconds: 300),
@@ -213,7 +262,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       final key = await ref
           .read(thoughtDaoProvider)
           .createCategoryAndMove(name, const []);
-      if (mounted) context.push(thoughtSpaceLocation(key));
+      if (mounted) ref.read(palaceFilterProvider.notifier).setSpace(key);
     } catch (e) {
       if (mounted) {
         AscentSnackBar.error(
@@ -249,78 +298,207 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     _selected.clear();
   });
 
-  List<Thought> _selectedThoughts(List<Thought> all) =>
-      all.where((t) => _selected.contains(t.id)).toList();
+  List<Thought> _selectedThoughts() =>
+      _visible.where((t) => _selected.contains(t.id)).toList();
 
-  Future<void> _more(List<Thought> picked) async {
-    final db = ref.read(databaseProvider);
-    if (picked.any(
-      (t) => isPrivateLocked(
-        t,
-        ref.read(privatePromiseIdsProvider),
-        ref.read(unlockedPromiseIdsProvider),
+  // Actions -----------------------------------------------------------------
+
+  bool _anyLocked(List<Thought> picked) => picked.any(
+    (t) => isPrivateLocked(
+      t,
+      ref.read(privatePromiseIdsProvider),
+      ref.read(unlockedPromiseIdsProvider),
+    ),
+  );
+
+  Future<void> _toggleItem(Thought t, int itemIndex) async {
+    final dao = ref.read(thoughtDaoProvider);
+    try {
+      final text = ThoughtChecklistHelper.toggleItemDone(t.content, itemIndex);
+      await dao.setContent(t.id, text);
+      // Unticking a bullet reopens a done thought. Ticking the last one only
+      // offers "Mark thought done" on the card; it never ticks by itself.
+      if (t.isCompleted && !allItemsDone(displayContent(text))) {
+        await dao.setCompleted(t.id, false);
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not update. Try again.');
+      }
+    }
+  }
+
+  Future<void> _bring(List<Thought> thoughts) async {
+    HapticFeedback.selectionClick();
+    final dao = ref.read(thoughtDaoProvider);
+    try {
+      final moved = await dao.carryToToday(thoughts.map((t) => t.id));
+      if (!mounted) return;
+      AscentSnackBar.show(
+        context,
+        message: moved == 1 ? '1 thought brought to Today' : '$moved thoughts brought to Today',
+        icon: Icons.today_rounded,
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not update. Try again.');
+      }
+    }
+  }
+
+  Future<void> _bringAll(int count) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(count == 1 ? 'Bring 1 thought to Today?' : 'Bring $count thoughts to Today?'),
+        content: const Text('They keep their original dates.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            key: const ValueKey('bring_all_confirm'),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Bring all'),
+          ),
+        ],
       ),
-    )) {
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final moved = await ref.read(thoughtDaoProvider).carryAllEarlierToToday();
+      if (!mounted) return;
+      setState(() => _earlierOpen = false);
+      AscentSnackBar.show(
+        context,
+        message: moved == 1 ? '1 thought brought to Today' : '$moved thoughts brought to Today',
+        icon: Icons.today_rounded,
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not update. Try again.');
+      }
+    }
+  }
+
+  Future<void> _bulkDone(List<Thought> picked) async {
+    final dao = ref.read(thoughtDaoProvider);
+    var applied = 0;
+    await ref.read(databaseProvider).transaction(() async {
+      for (final t in picked) {
+        final current = await dao.getThoughtById(t.id);
+        if (current != null && !current.isCompleted) {
+          await dao.setCompleted(t.id, true);
+          applied++;
+        }
+      }
+    });
+    if (!mounted) return;
+    AscentSnackBar.show(
+      context,
+      message: BulkResult(applied, picked.length - applied).summary('done'),
+      icon: Icons.check_circle_outline_rounded,
+    );
+  }
+
+  /// The "More" menu. [single] adds the actions that only make sense for one
+  /// thought (pin, copy, bullet style).
+  Future<void> _more(List<Thought> picked, {bool single = false}) async {
+    final db = ref.read(databaseProvider);
+    if (_anyLocked(picked)) {
       AscentSnackBar.error(
         context,
-        message:
-            'Unlock private commitments before sharing or converting them.',
+        message: 'Unlock private commitments before sharing or converting them.',
       );
       return;
     }
+    final t = picked.first;
     final action = await showAscentActionMenu<String>(
       context: context,
       title: 'More actions',
       actions: [
-        const AscentAction(
-          'todo',
-          'Convert to Todo',
-          Icons.add_task_rounded,
-        ),
+        if (single)
+          AscentAction(
+            'pin',
+            t.isPinned ? 'Unpin' : 'Pin to top',
+            Icons.push_pin_outlined,
+          ),
+        const AscentAction('move', 'Move to space', Icons.folder_outlined),
+        const AscentAction('todo', 'Convert to Todo', Icons.add_task_rounded),
         const AscentAction(
           'reminder',
           'Set Reminder',
           Icons.notifications_active_outlined,
         ),
         if (picked.length > 1)
+          const AscentAction('merge', 'Merge Thoughts', Icons.merge_rounded),
+        const AscentAction('share', 'Share', Icons.share_outlined),
+        if (single) ...[
+          const AscentAction('copy', 'Copy text', Icons.copy_outlined),
           const AscentAction(
-            'merge',
-            'Merge Thoughts',
-            Icons.merge_rounded,
+            'bullets_todo',
+            'Bullets as todo circles',
+            Icons.radio_button_unchecked_rounded,
           ),
+          const AscentAction(
+            'bullets_plain',
+            'Bullets as plain bullets',
+            Icons.format_list_bulleted_rounded,
+          ),
+          if (t.bulletStyle != null)
+            const AscentAction(
+              'bullets_default',
+              'Bullets: use my default',
+              Icons.restart_alt_rounded,
+            ),
+        ],
         const AscentAction(
-          'share',
-          'Share Thoughts',
-          Icons.share_outlined,
+          'delete',
+          'Delete',
+          Icons.delete_outline_rounded,
+          destructive: true,
         ),
       ],
     );
     if (action == null || !mounted) return;
-    if (picked.any(
-      (t) => isPrivateLocked(
-        t,
-        ref.read(privatePromiseIdsProvider),
-        ref.read(unlockedPromiseIdsProvider),
-      ),
-    )) {
-      AscentSnackBar.error(
-        context,
-        message:
-            'Unlock private commitments before sharing or converting them.',
-      );
-      return;
+    if (_anyLocked(picked)) return;
+    final dao = ref.read(thoughtDaoProvider);
+    switch (action) {
+      case 'pin':
+        await dao.togglePin(t.id);
+      case 'copy':
+        await Clipboard.setData(ClipboardData(text: displayContent(t.content)));
+        if (mounted) {
+          AscentSnackBar.show(context, message: 'Copied', icon: Icons.copy_outlined);
+        }
+      case 'bullets_todo':
+        await dao.setBulletStyle(t.id, BulletStyle.todo.storage);
+      case 'bullets_plain':
+        await dao.setBulletStyle(t.id, BulletStyle.bullet.storage);
+      case 'bullets_default':
+        await dao.setBulletStyle(t.id, null);
+      case 'move':
+        final pick = await showSpacePicker(context);
+        if (pick == null || !mounted) return;
+        final moved = await moveThoughtsToSpace(context, ref, picked, pick);
+        if (moved && mounted && _selecting) _stopSelecting();
+      case 'delete':
+        final removed = await deleteThoughtsWithUndo(context, ref, picked);
+        if (removed > 0 && mounted && _selecting) _stopSelecting();
+      case 'share':
+        await shareMultipleThoughts(picked);
+      default:
+        final saved = await applyThoughtAction(context, db, picked, action);
+        if (saved && mounted && _selecting) _stopSelecting();
     }
-    if (action == 'share') {
-      await shareMultipleThoughts(picked);
-      return;
-    }
-    final saved = await applyThoughtAction(context, db, picked, action);
-    if (saved && mounted) _stopSelecting();
   }
 
-  Widget _selectionBar(List<Thought> all) {
+  // Selection bar -----------------------------------------------------------
+
+  Widget _selectionBar() {
     final g = context.glass;
-    final picked = _selectedThoughts(all);
+    final picked = _selectedThoughts();
     final enabled = picked.isNotEmpty && !_applying;
     Future<void> run(Future<void> Function() job) async {
       if (!enabled || _applying) return;
@@ -359,40 +537,10 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           runSpacing: AppSpace.s8,
           children: [
             ChoicePill(
-              key: const ValueKey('select_move'),
-              icon: Icons.folder_outlined,
-              label: 'Move',
-              onTap: !enabled
-                  ? null
-                  : () async {
-                      final pick = await showSpacePicker(context);
-                      if (pick == null || !mounted) return;
-                      final moved = await moveThoughtsToSpace(
-                        context,
-                        ref,
-                        picked,
-                        pick,
-                      );
-                      if (moved && mounted) _stopSelecting();
-                    },
-            ),
-            ChoicePill(
               key: const ValueKey('select_done'),
               icon: Icons.check_circle_outline_rounded,
               label: 'Done',
-              onTap: !enabled
-                  ? null
-                  : () => run(() async {
-                      final dao = ref.read(thoughtDaoProvider);
-                      await ref.read(databaseProvider).transaction(() async {
-                        for (final t in picked.where((t) => !t.isCompleted)) {
-                          final current = await dao.getThoughtById(t.id);
-                          if (current != null && !current.isCompleted) {
-                            await dao.toggleCompleted(t.id);
-                          }
-                        }
-                      });
-                    }),
+              onTap: !enabled ? null : () => run(() => _bulkDone(picked)),
             ),
             ChoicePill(
               key: const ValueKey('select_archive'),
@@ -403,17 +551,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   : () => run(
                       () => archiveThoughtsWithUndo(context, ref, picked),
                     ),
-            ),
-            ChoicePill(
-              key: const ValueKey('select_delete'),
-              icon: Icons.delete_outline_rounded,
-              label: 'Delete',
-              color: g.errorInk,
-              onTap: !enabled
-                  ? null
-                  : () => run(() async {
-                      await deleteThoughtsWithUndo(context, ref, picked);
-                    }),
             ),
             ChoicePill(
               key: const ValueKey('select_more'),
@@ -427,7 +564,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     );
   }
 
-  Widget _composer(AscentGlass g) {
+  Widget _composer() {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 0, 16, 16.0 + math.max(12.0, bottomInset)),
@@ -443,105 +580,346 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     );
   }
 
-  // Board -------------------------------------------------------------------
+  // Rows --------------------------------------------------------------------
 
-  Widget _sectionHeader(AscentGlass g, String label, int count) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      AppSpace.s4,
-      AppSpace.s16,
-      AppSpace.s4,
-      AppSpace.s8,
-    ),
-    child: Row(
-      children: [
-        Flexible(
-          child: Text(
-            label,
-            style: AscentTextStyles.sectionHeading.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
+  _Entry _header(String id, String label, int count) => _Entry('h_$id', (
+    context,
+  ) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s4,
+        AppSpace.s16,
+        AppSpace.s4,
+        AppSpace.s8,
+      ),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: AscentTextStyles.sectionHeading.copyWith(
+                color: g.ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
             ),
-            overflow: TextOverflow.ellipsis,
           ),
+          const SizedBox(width: AppSpace.s8),
+          if (count > 0)
+            Text(
+              '$count',
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: g.inkMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+        ],
+      ),
+    );
+  });
+
+  _Entry _card(
+    String id,
+    Thought t,
+    DateTime now,
+    ThoughtWallAppearance appearance,
+    Map<String, String> categories, {
+    ThoughtPlace? place,
+    bool earlier = false,
+    String? note,
+  }) {
+    return _Entry('c_$id', (context) {
+      final locked = isPrivateLocked(
+        t,
+        ref.watch(privatePromiseIdsProvider),
+        ref.watch(unlockedPromiseIdsProvider),
+      );
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AppSpace.s10),
+        child: PalaceCard(
+          key: ValueKey('palace_card_$id'),
+          thought: t,
+          now: now,
+          appearance: appearance,
+          place: place ?? placeOf(t, now),
+          spaceName: t.category == wallCategoryKey ? null : categories[t.category],
+          note: note,
+          isSelected: _selected.contains(t.id),
+          isSelectionMode: _selecting,
+          isLocked: locked,
+          highlight: _highlightId == t.id,
+          onSelectToggle: () => _toggle(t.id),
+          onLongPress: () => _selecting ? _toggle(t.id) : _startSelecting(t.id),
+          onDoubleTap: () => toggleThoughtDone(context, ref, t),
+          onUnlock: () => unlockPrivateThought(ref, t),
+          onToggleItem: (i) => _toggleItem(t, i),
+          onDone: () => toggleThoughtDone(context, ref, t),
+          onEdit: () => DropThoughtSheet.show(context, existingThought: t),
+          onArchive: () => archiveThoughtsWithUndo(context, ref, [t]),
+          onMore: () => _more([t], single: true),
+          onBring: earlier ? () => _bring([t]) : null,
         ),
-        const SizedBox(width: AppSpace.s8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: g.claySoft,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
-              width: 0.8,
-            ),
-          ),
-          child: Text(
-            '$count',
-            style: AscentTextStyles.labelSmall.copyWith(
-              color: g.clay,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
+      );
+    });
+  }
+
+  /// Highlighted thought first, so a thought opened from Home is on screen.
+  List<Thought> _hoist(List<Thought> list) {
+    final id = _highlightId;
+    if (id == null) return list;
+    final i = list.indexWhere((t) => t.id == id);
+    if (i <= 0) return list;
+    return [list[i], ...list.take(i), ...list.skip(i + 1)];
+  }
+
+  List<_Entry> _dayGroups(
+    List<Thought> thoughts,
+    DateTime now,
+    DateTime Function(Thought) dateOf,
+    ThoughtWallAppearance appearance,
+    Map<String, String> categories,
+  ) {
+    final entries = <_Entry>[];
+    final id = _highlightId;
+    final hoisted = id == null ? null : thoughts.where((t) => t.id == id).firstOrNull;
+    if (hoisted != null) {
+      entries.add(_card('${hoisted.id}', hoisted, now, appearance, categories));
+    }
+    final rest = hoisted == null
+        ? thoughts
+        : thoughts.where((t) => t.id != hoisted.id).toList();
+    for (final group in groupByDay(rest, now, dateOf)) {
+      entries.add(
+        _header('${_tab.name}_${group.day.millisecondsSinceEpoch}', group.label, group.thoughts.length),
+      );
+      for (final t in group.thoughts) {
+        entries.add(_card('${t.id}', t, now, appearance, categories));
+      }
+    }
+    return entries;
+  }
+
+  _Entry _showMore(VoidCallback onTap) => _Entry('show_more', (context) {
+    final g = context.glass;
+    return Align(
+      alignment: Alignment.center,
+      child: TextButton(
+        key: const ValueKey('palace_show_more'),
+        onPressed: onTap,
+        child: Text('Show more', style: TextStyle(color: g.clay)),
+      ),
+    );
+  });
+
+  _Entry _earlierRow(
+    int count,
+    List<Thought> earlier,
+    ThoughtWallAppearance appearance,
+  ) => _Entry('earlier_row', (context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: g.edge),
         ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                key: const ValueKey('earlier_row_toggle'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => setState(() => _earlierOpen = !_earlierOpen),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s8,
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Icon(
+                        _earlierOpen
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        size: 20,
+                        color: g.inkSecondary,
+                      ),
+                      const SizedBox(width: AppSpace.s8),
+                      Flexible(
+                        child: Text(
+                          '$count from earlier',
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: g.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            TextButton(
+              key: const ValueKey('earlier_bring_all'),
+              onPressed: () => _bringAll(count),
+              child: Text('Bring all', style: TextStyle(color: g.clay)),
+            ),
+          ],
+        ),
+      ),
+    );
+  });
+
+  // Tabs --------------------------------------------------------------------
+
+  Widget _tabs() => Padding(
+    padding: const EdgeInsets.fromLTRB(AppSpace.s16, AppSpace.s4, AppSpace.s16, AppSpace.s8),
+    child: AscentSegmentedControl<PalaceTab>(
+      key: const ValueKey('palace_tabs'),
+      selected: _tab,
+      onChanged: _setTab,
+      segments: const [
+        AscentSegment(value: PalaceTab.today, label: 'Today', key: ValueKey('tab_today')),
+        AscentSegment(value: PalaceTab.done, label: 'Done', key: ValueKey('tab_done')),
+        AscentSegment(value: PalaceTab.archive, label: 'Archive', key: ValueKey('tab_archive')),
+        AscentSegment(value: PalaceTab.history, label: 'History', key: ValueKey('tab_history')),
       ],
     ),
   );
 
-  Widget _grid(
-    List<Thought> thoughts, {
-    required Widget Function(Thought, int) card,
-    required ThoughtBoardLayout layout,
-    required double width,
-  }) {
-    if (layout == ThoughtBoardLayout.stream ||
-        width < 340 ||
-        MediaQuery.textScalerOf(context).scale(1) >= 1.45) {
-      return Column(
+  Widget _searchField() => Padding(
+    padding: const EdgeInsets.fromLTRB(AppSpace.s16, 0, AppSpace.s16, AppSpace.s8),
+    child: AppTextField(
+      key: const ValueKey('palace_search'),
+      controller: _search,
+      autofocus: true,
+      hintText: 'Search this tab',
+      prefixIcon: const Icon(Icons.search_rounded),
+      onChanged: ref.read(palaceFilterProvider.notifier).setQuery,
+    ),
+  );
+
+  /// Space filter. Shown only when at least one space exists.
+  Widget? _spaceChips(Map<String, String> categories, PalaceFilter filter) {
+    final spaces = categories.entries.where((e) => e.key != wallCategoryKey).toList();
+    if (spaces.isEmpty) return null;
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        key: const ValueKey('palace_space_chips'),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s16),
         children: [
-          for (var i = 0; i < thoughts.length; i++) ...[
-            Align(
-              alignment:
-                  i.isEven ? Alignment.centerLeft : Alignment.centerRight,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: width * 0.92),
-                child: card(thoughts[i], i),
-              ),
+          AppChip(
+            label: 'All',
+            isSelected: filter.space == null,
+            onTap: () => ref.read(palaceFilterProvider.notifier).setSpace(null),
+          ),
+          for (final e in spaces) ...[
+            const SizedBox(width: 8),
+            AppChip(
+              key: ValueKey('space_chip_${e.key}'),
+              label: e.value,
+              isSelected: filter.space == e.key,
+              onTap: () => ref.read(palaceFilterProvider.notifier).setSpace(e.key),
             ),
-            const SizedBox(height: AppSpace.s10),
           ],
-        ],
-      );
-    }
-    final columnWidth = (width - AppSpace.s10) / 2;
-    final indexed = [
-      for (var i = 0; i < thoughts.length; i++) (thoughts[i], i),
-    ];
-    final columns = balanceColumns<(Thought, int)>(
-      indexed,
-      2,
-      (item) => estimateCardHeight(item.$1, columnWidth: columnWidth),
-    );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (var c = 0; c < columns.length; c++) ...[
-          if (c > 0) const SizedBox(width: AppSpace.s10),
-          Expanded(
-            child: Column(
-              children: [
-                for (final item in columns[c]) ...[
-                  card(item.$1, item.$2),
-                  const SizedBox(height: AppSpace.s10),
-                ],
-              ],
-            ),
+          const SizedBox(width: 8),
+          AppChip(
+            key: const ValueKey('space_chip_new'),
+            label: 'New space',
+            icon: Icons.add_rounded,
+            onTap: _newSpace,
           ),
         ],
-      ],
+      ),
     );
   }
+
+  Widget _historyStrip(DateTime today, List<Thought> activity) {
+    final g = context.glass;
+    final counts = historyDayCounts(activity);
+    final selected = dayOf(_historyDay ?? today);
+    final days = [for (var i = 0; i < 14; i++) today.subtract(Duration(days: i))];
+    final weekdays = const ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    return SizedBox(
+      height: 72,
+      child: ListView(
+        key: const ValueKey('history_strip'),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s16, vertical: AppSpace.s4),
+        children: [
+          GestureDetector(
+            key: const ValueKey('history_pick_date'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: selected,
+                firstDate: DateTime(2020),
+                lastDate: today,
+              );
+              if (picked != null && mounted) {
+                setState(() => _historyDay = dayOf(picked));
+              }
+            },
+            child: SizedBox(
+              width: 48,
+              child: Icon(Icons.calendar_month_outlined, color: g.ink),
+            ),
+          ),
+          for (final d in days)
+            GestureDetector(
+              key: ValueKey('history_day_${d.year}_${d.month}_${d.day}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _historyDay = d),
+              child: Container(
+                width: 48,
+                margin: const EdgeInsets.only(right: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: d == selected ? g.clay.withValues(alpha: .14) : Colors.transparent,
+                  border: Border.all(color: d == selected ? g.clay : g.edge),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      weekdays[d.weekday - 1],
+                      style: AscentTextStyles.labelSmall.copyWith(color: g.inkMuted),
+                    ),
+                    Text(
+                      '${d.day}',
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: (counts[d] ?? 0) > 0 ? g.clay : Colors.transparent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Build -------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) => Theme(
@@ -552,70 +930,202 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   Widget _buildBoard(BuildContext context) {
     final g = context.glass;
     final appearance = ref.watch(thoughtWallAppearanceProvider);
-    final layout = ref.watch(thoughtBoardLayoutProvider);
     final categories =
         ref.watch(thoughtCategoriesStreamProvider).value ??
         ThoughtDao.builtInCategories;
-    final activeAsync = ref.watch(allThoughtsStreamProvider);
-    if (activeAsync.hasError && !activeAsync.hasValue) {
-      return AscentScaffold(
-        title: 'Mindspace',
-        showFeatureHelp: false,
-        body: EmptyState(
+    final filter = ref.watch(palaceFilterProvider);
+    final today = ref.watch(localDayProvider);
+    final now = DateTime.now();
+
+    var loading = false;
+    Object? error;
+    var empty = const EmptyState(
+      icon: Icons.bubble_chart_rounded,
+      title: 'Nothing here yet',
+      subtitle: 'Write a thought below.',
+    );
+    var entries = <_Entry>[];
+    var visible = <Thought>[];
+    Widget? beforeList;
+
+    switch (_tab) {
+      case PalaceTab.today:
+        final todayAsync = ref.watch(palaceTodayProvider);
+        final earlierAsync = ref.watch(palaceEarlierProvider);
+        loading = (todayAsync.isLoading && !todayAsync.hasValue) ||
+            (earlierAsync.isLoading && !earlierAsync.hasValue);
+        error = todayAsync.hasError && !todayAsync.hasValue
+            ? todayAsync.error
+            : (earlierAsync.hasError && !earlierAsync.hasValue ? earlierAsync.error : null);
+        final all = [...?todayAsync.value, ...?earlierAsync.value];
+        final content = buildTodayContent(all, now);
+        void section(String id, String label, List<Thought> list) {
+          if (list.isEmpty) return;
+          entries.add(_header(id, label, list.length));
+          for (final t in _hoist(list)) {
+            entries.add(_card('${t.id}', t, now, appearance, categories));
+          }
+        }
+
+        if (content.earlier.isNotEmpty && !_selecting) {
+          entries.add(_earlierRow(content.earlier.length, content.earlier, appearance));
+          if (_earlierOpen) {
+            for (final t in _hoist(content.earlier)) {
+              entries.add(_card('${t.id}', t, now, appearance, categories, earlier: true));
+            }
+          }
+        }
+        section('pinned', 'Pinned', content.pinned);
+        section('today', 'Today', content.open);
+        section('done_today', 'Done today', content.doneToday);
+        section('archived_today', 'Archived today', content.archivedToday);
+        visible = [
+          ...content.pinned,
+          ...content.open,
+          ...content.doneToday,
+          ...content.archivedToday,
+          if (_earlierOpen) ...content.earlier,
+        ];
+        if (filter.isActive && entries.isEmpty) {
+          empty = const EmptyState(
+            icon: Icons.search_off_rounded,
+            title: 'No matches today',
+            subtitle: 'Try another space or search.',
+          );
+        } else {
+          empty = EmptyState(
+            icon: Icons.bubble_chart_rounded,
+            title: 'Nothing for today yet',
+            subtitle: 'Write below. Add #movies (or any space) to file a thought straight into it.',
+            actionLabel: 'Write a thought',
+            onAction: _focus.requestFocus,
+          );
+        }
+      case PalaceTab.done:
+        final async = ref.watch(palaceDoneProvider(_doneLimit));
+        loading = async.isLoading && !async.hasValue;
+        error = async.hasError && !async.hasValue ? async.error : null;
+        final list = async.value ?? const <Thought>[];
+        visible = list;
+        entries = _dayGroups(list, now, doneDate, appearance, categories);
+        if (list.length >= _doneLimit) {
+          entries.add(_showMore(() => setState(() => _doneLimit += palacePageSize)));
+        }
+        empty = EmptyState(
+          icon: Icons.check_circle_outline_rounded,
+          title: filter.isActive ? 'No matches' : 'Nothing done yet',
+          subtitle: filter.isActive
+              ? 'Try another space or search.'
+              : 'Thoughts you tick off appear here, grouped by day.',
+        );
+      case PalaceTab.archive:
+        final async = ref.watch(palaceArchiveProvider(_archiveLimit));
+        loading = async.isLoading && !async.hasValue;
+        error = async.hasError && !async.hasValue ? async.error : null;
+        final list = async.value ?? const <Thought>[];
+        visible = list;
+        entries = _dayGroups(list, now, archiveDate, appearance, categories);
+        if (list.length >= _archiveLimit) {
+          entries.add(_showMore(() => setState(() => _archiveLimit += palacePageSize)));
+        }
+        empty = EmptyState(
+          icon: Icons.archive_outlined,
+          title: filter.isActive ? 'No matches' : 'Archive is empty',
+          subtitle: filter.isActive
+              ? 'Try another space or search.'
+              : 'Archived thoughts are kept here, grouped by day.',
+        );
+      case PalaceTab.history:
+        final day = dayOf(_historyDay ?? today);
+        final async = ref.watch(palaceHistoryDayProvider(day));
+        final activity = ref.watch(palaceActivityProvider).value ?? const <Thought>[];
+        loading = async.isLoading && !async.hasValue;
+        error = async.hasError && !async.hasValue ? async.error : null;
+        beforeList = _historyStrip(today, activity);
+        final events = historyForDay(async.value ?? const <Thought>[], day);
+        const order = [
+          (HistoryKind.written, 'Written'),
+          (HistoryKind.carriedIn, 'Carried in'),
+          (HistoryKind.finished, 'Finished'),
+          (HistoryKind.archived, 'Archived'),
+        ];
+        final seen = <int>{};
+        for (final (kind, label) in order) {
+          final ofKind = events.where((e) => e.kind == kind).toList();
+          if (ofKind.isEmpty) continue;
+          entries.add(_header('hist_${kind.name}', label, ofKind.length));
+          for (final e in ofKind) {
+            if (seen.add(e.thought.id)) visible.add(e.thought);
+            entries.add(
+              _card('${kind.name}_${e.thought.id}', e.thought, now, appearance, categories, note: e.note),
+            );
+          }
+        }
+        empty = EmptyState(
+          icon: Icons.history_rounded,
+          title: 'Nothing on ${dayHeading(day, now).toLowerCase() == 'today' ? 'today' : dayHeading(day, now)}',
+          subtitle: 'Thoughts written, finished, archived or carried in on this day show here.',
+        );
+    }
+
+    _visible = visible;
+    _selected.retainAll(visible.map((t) => t.id));
+    if (_selected.isEmpty) _selecting = false;
+
+    final chips = _tab == PalaceTab.history ? null : _spaceChips(categories, filter);
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final showComposer = _tab == PalaceTab.today && !_selecting;
+
+    Widget list() {
+      if (error != null) {
+        return EmptyState(
           icon: Icons.cloud_off_outlined,
           title: 'Could not load your thoughts',
           subtitle: 'Your records have not been changed.',
           actionLabel: 'Retry',
-          onAction: () => ref.invalidate(allThoughtsStreamProvider),
-        ),
+          onAction: () {
+            ref.invalidate(palaceTodayProvider);
+            ref.invalidate(palaceEarlierProvider);
+            ref.invalidate(palaceDoneProvider);
+            ref.invalidate(palaceArchiveProvider);
+            ref.invalidate(palaceHistoryDayProvider);
+          },
+        );
+      }
+      if (loading) return const Center(child: CircularProgressIndicator());
+      return CustomScrollView(
+        key: ValueKey('palace_list_${_tab.name}'),
+        controller: _scroll,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          if (beforeList != null) SliverToBoxAdapter(child: beforeList),
+          if (entries.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 140),
+                child: empty,
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpace.s16,
+                AppSpace.s4,
+                AppSpace.s16,
+                _selecting ? 90.0 : (showComposer ? 160.0 : 40.0),
+              ),
+              sliver: SliverList.builder(
+                itemCount: entries.length,
+                itemBuilder: (context, i) => KeyedSubtree(
+                  key: ValueKey(entries[i].key),
+                  child: entries[i].builder(context),
+                ),
+              ),
+            ),
+        ],
       );
     }
-    final active = activeAsync.value ?? <Thought>[];
-    final archived =
-        ref.watch(archivedThoughtsStreamProvider).value ?? <Thought>[];
-    final privateIds = ref.watch(privatePromiseIdsProvider);
-    final unlocked = ref.watch(unlockedPromiseIdsProvider);
-    final now = DateTime.now();
-
-    final wall = active.where((t) => t.category == wallCategoryKey).toList();
-    final visibleWall = wall.where((t) => !t.isCompleted || _showDone).toList();
-    _selected.retainAll(visibleWall.map((t) => t.id));
-    if (_selected.isEmpty) _selecting = false;
-
-    final lockedIds = {
-      for (final t in wall)
-        if (isPrivateLocked(t, privateIds, unlocked)) t.id,
-    };
-    final content = buildBoardContent(
-      wall,
-      now: now,
-      heroId: _openedId,
-      excludedFromHero: lockedIds,
-    );
-    final spaces = buildSpaceSummaries(categories, active, archived);
-    final media = MediaQuery.of(context);
-    final keyboardOpen = media.viewInsets.bottom > 0;
-
-    Widget cardFor(Thought t, int index) => BoardCard(
-      key: ValueKey('board_card_${t.id}'),
-      thought: t,
-      index: index,
-      now: now,
-      appearance: appearance,
-      isSelected: _selected.contains(t.id),
-      isSelectionMode: _selecting,
-      isLocked: lockedIds.contains(t.id),
-      onTap: () {
-        if (_selecting) return _toggle(t.id);
-        if (lockedIds.contains(t.id)) {
-          unlockPrivateThought(ref, t);
-        } else {
-          ThoughtDetailSheet.show(context, t);
-        }
-      },
-      onLongPress: () => _selecting ? _toggle(t.id) : _startSelecting(t.id),
-      onDoubleTap: () => toggleThoughtDone(context, ref, t),
-    );
 
     return PopScope(
       canPop: !_selecting,
@@ -641,7 +1151,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 TextButton(
                   key: const ValueKey('select_all'),
                   onPressed: () => setState(() {
-                    final ids = visibleWall.map((t) => t.id).toSet();
+                    final ids = _visible.map((t) => t.id).toSet();
                     if (_selected.length == ids.length) {
                       _selected.clear();
                       _selecting = false;
@@ -649,134 +1159,71 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                       _selected.addAll(ids);
                     }
                   }),
-                  child: Text(
-                    _selected.length == visibleWall.length ? 'None' : 'All',
-                  ),
+                  child: Text(_selected.length == _visible.length ? 'None' : 'All'),
                 ),
               ]
             : [
-                IconButton(
-                  key: const ValueKey('board_top_promises'),
-                  tooltip: 'Commitments',
-                  icon: Icon(Icons.handshake_outlined, color: g.ink),
-                  onPressed: () => context.push('/promises'),
-                ),
+                if (_tab != PalaceTab.history)
+                  IconButton(
+                    key: const ValueKey('palace_search_toggle'),
+                    tooltip: _searching ? 'Close search' : 'Search',
+                    icon: Icon(
+                      _searching ? Icons.search_off_rounded : Icons.search_rounded,
+                      color: g.ink,
+                    ),
+                    onPressed: () {
+                      setState(() => _searching = !_searching);
+                      if (!_searching) {
+                        _search.clear();
+                        ref.read(palaceFilterProvider.notifier).setQuery('');
+                      }
+                    },
+                  ),
                 PopupMenuButton<String>(
                   key: const ValueKey('board_settings'),
                   tooltip: 'Settings',
                   icon: Icon(Icons.tune_rounded, color: g.ink),
-                  onSelected: (value) async {
-                    if (value == 'archive') {
-                      context.push(thoughtSpaceLocation(archiveSpaceKey));
-                    } else if (value == 'history') {
-                      context.push('/history?module=thoughts');
-                    } else if (value == 'promises') {
-                      context.push('/promises');
-                    } else if (value == 'layout') {
-                      try {
-                        await ref
-                            .read(thoughtBoardLayoutProvider.notifier)
-                            .set(
-                              layout == ThoughtBoardLayout.board
-                                  ? ThoughtBoardLayout.stream
-                                  : ThoughtBoardLayout.board,
-                            );
-                      } catch (_) {
-                        if (context.mounted) {
-                          AscentSnackBar.error(
-                            context,
-                            message: 'Could not save the layout.',
-                          );
-                        }
-                      }
-                    } else if (value == 'background') {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        useRootNavigator: true,
-                        useSafeArea: true,
-                        isScrollControlled: true,
-                        showDragHandle: true,
-                        builder: (_) => const BoardBackgroundSheet(),
-                      );
-                    } else {
-                      showModalBottomSheet<void>(
-                        context: context,
-                        useRootNavigator: true,
-                        useSafeArea: true,
-                        isScrollControlled: true,
-                        builder: (_) => const ThoughtWallAppearanceSheet(),
-                      );
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'space':
+                        _newSpace();
+                      case 'promises':
+                        context.push('/promises');
+                      case 'background':
+                        showModalBottomSheet<void>(
+                          context: context,
+                          useRootNavigator: true,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          showDragHandle: true,
+                          builder: (_) => const BoardBackgroundSheet(),
+                        );
+                      default:
+                        showModalBottomSheet<void>(
+                          context: context,
+                          useRootNavigator: true,
+                          useSafeArea: true,
+                          isScrollControlled: true,
+                          builder: (_) => const ThoughtWallAppearanceSheet(),
+                        );
                     }
                   },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'archive',
-                      child: Row(
-                        children: [
-                          Icon(Icons.archive_outlined, size: 18),
-                          SizedBox(width: 10),
-                          Text('Archive'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'history',
-                      child: Row(
-                        children: [
-                          Icon(Icons.history_rounded, size: 18),
-                          SizedBox(width: 10),
-                          Text('History ledger'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'background',
-                      child: Row(
-                        children: [
-                          Icon(Icons.palette_outlined, size: 18),
-                          SizedBox(width: 10),
-                          Text('Background'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'appearance',
-                      child: Row(
-                        children: [
-                          Icon(Icons.auto_awesome_outlined, size: 18),
-                          SizedBox(width: 10),
-                          Text('Wall appearance'),
-                        ],
-                      ),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'space',
+                      child: Row(children: [Icon(Icons.create_new_folder_outlined, size: 18), SizedBox(width: 10), Text('New space')]),
                     ),
                     PopupMenuItem(
-                      value: 'layout',
-                      child: Row(
-                        children: [
-                          Icon(
-                            layout == ThoughtBoardLayout.board
-                                ? Icons.view_agenda_outlined
-                                : Icons.dashboard_outlined,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            layout == ThoughtBoardLayout.board
-                                ? 'Switch to List view'
-                                : 'Switch to Grid view',
-                          ),
-                        ],
-                      ),
+                      value: 'background',
+                      child: Row(children: [Icon(Icons.palette_outlined, size: 18), SizedBox(width: 10), Text('Background')]),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
+                      value: 'appearance',
+                      child: Row(children: [Icon(Icons.auto_awesome_outlined, size: 18), SizedBox(width: 10), Text('Wall appearance')]),
+                    ),
+                    PopupMenuItem(
                       value: 'promises',
-                      child: Row(
-                        children: [
-                          Icon(Icons.handshake_outlined, size: 18),
-                          SizedBox(width: 10),
-                          Text('Your promises'),
-                        ],
-                      ),
+                      child: Row(children: [Icon(Icons.handshake_outlined, size: 18), SizedBox(width: 10), Text('Your promises')]),
                     ),
                   ],
                 ),
@@ -785,143 +1232,25 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           child: Stack(
             children: [
               Positioned.fill(
-                child: activeAsync.isLoading && !activeAsync.hasValue
-                    ? const Center(child: CircularProgressIndicator())
-                    : LayoutBuilder(
-                        builder: (context, constraints) {
-                          final inner = constraints.maxWidth - AppSpace.s16 * 2;
-                          return CustomScrollView(
-                            controller: _scroll,
-                            slivers: [
-                              if (!_selecting && !keyboardOpen)
-                                SliverToBoxAdapter(
-                                  child: SpacesShelf(
-                                    spaces: spaces,
-                                    archivedCount: archived.length,
-                                    onOpen: (s) => context.push(
-                                      thoughtSpaceLocation(s.key),
-                                    ),
-                                    onNew: _newSpace,
-                                    onOpenArchive: () => context.push(
-                                      thoughtSpaceLocation(archiveSpaceKey),
-                                    ),
-                                  ),
-                                ),
-                              if (content.isEmpty)
-                                SliverFillRemaining(
-                                  hasScrollBody: false,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 140),
-                                    child: EmptyState(
-                                      icon: Icons.bubble_chart_rounded,
-                                      title: 'Your wall is empty',
-                                      subtitle:
-                                          'Write below. Add #movies (or any space) '
-                                          'to file a thought straight into it.',
-                                      actionLabel: 'Write a thought',
-                                      onAction: _focus.requestFocus,
-                                    ),
-                                  ),
-                                )
-                              else
-                                SliverPadding(
-                                  padding: EdgeInsets.fromLTRB(
-                                    AppSpace.s16,
-                                    AppSpace.s4,
-                                    AppSpace.s16,
-                                    _selecting ? 90.0 : 160.0,
-                                  ),
-                                  sliver: SliverList.list(
-                                    children: [
-                                      for (final section
-                                          in content.sections) ...[
-                                        _sectionHeader(
-                                          g,
-                                          section.label,
-                                          section.thoughts.length,
-                                        ),
-                                        _grid(
-                                          section.thoughts,
-                                          card: cardFor,
-                                          layout: layout,
-                                          width: inner,
-                                        ),
-                                      ],
-                                      if (content.done.isNotEmpty) ...[
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: AppSpace.s8,
-                                          ),
-                                          child: Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: TextButton.icon(
-                                              key: const ValueKey(
-                                                'board_done_toggle',
-                                              ),
-                                              onPressed: () => setState(
-                                                () => _showDone = !_showDone,
-                                              ),
-                                              icon: Icon(
-                                                _showDone
-                                                    ? Icons.expand_less_rounded
-                                                    : Icons.expand_more_rounded,
-                                              ),
-                                              label: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    'Done',
-                                                    style: AscentTextStyles.bodyMedium.copyWith(
-                                                      color: g.ink,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                                                    decoration: BoxDecoration(
-                                                      color: g.claySoft,
-                                                      borderRadius: BorderRadius.circular(10),
-                                                      border: Border.all(
-                                                        color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.2),
-                                                        width: 0.8,
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      '${content.done.length}',
-                                                      style: AscentTextStyles.labelSmall.copyWith(
-                                                        color: g.clay,
-                                                        fontWeight: FontWeight.w700,
-                                                        fontSize: 11.5,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        if (_showDone)
-                                          _grid(
-                                            content.done,
-                                            card: cardFor,
-                                            layout: layout,
-                                            width: inner,
-                                          ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
+                child: Column(
+                  children: [
+                    if (!_selecting) _tabs(),
+                    if (_searching && !_selecting && _tab != PalaceTab.history) _searchField(),
+                    if (chips != null && !_selecting && !keyboardOpen) ...[
+                      chips,
+                      const SizedBox(height: AppSpace.s4),
+                    ],
+                    Expanded(child: list()),
+                  ],
+                ),
               ),
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _selecting ? _selectionBar(wall) : _composer(g),
+                child: _selecting
+                    ? _selectionBar()
+                    : (showComposer ? _composer() : const SizedBox.shrink()),
               ),
             ],
           ),

@@ -155,7 +155,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -163,6 +163,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
       await _createThoughtLinkIndex();
       await _createPlanningIndexes();
+      await _createThoughtDateIndexes();
       await HistoryLedger.install(this);
       // Seed built-in categories on fresh install
       await into(sessionCategoryTable).insert(
@@ -335,8 +336,58 @@ class AppDatabase extends _$AppDatabase {
         }
         await HistoryLedger.install(this);
       }
+      if (from < 25) {
+        await addColumnSafely(thoughtTable, thoughtTable.completedAt);
+        await addColumnSafely(thoughtTable, thoughtTable.archivedAt);
+        await addColumnSafely(thoughtTable, thoughtTable.carriedOn);
+        await addColumnSafely(thoughtTable, thoughtTable.bulletStyle);
+        await _backfillThoughtLifecycleDates();
+        await _createThoughtDateIndexes();
+        // The thought trigger gained the 'carried' action; recreate it.
+        for (final operation in ['insert', 'update', 'delete']) {
+          await customStatement(
+            'DROP TRIGGER IF EXISTS history_thoughts_$operation',
+          );
+        }
+        await HistoryLedger.install(this);
+      }
     },
   );
+
+  Future<void> _createThoughtDateIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS thoughts_completed_at ON thoughts(completed_at)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS thoughts_archived_at ON thoughts(archived_at)',
+    );
+  }
+
+  /// Existing done/archived thoughts take the time of their latest matching
+  /// history event, else their creation time, so day-wise lists work at once.
+  Future<void> _backfillThoughtLifecycleDates() async {
+    Future<void> fill(String column, String flag, String action) =>
+        customStatement('''UPDATE thoughts SET $column = COALESCE(
+          (SELECT MAX(h.occurred_at) FROM history_events h
+           WHERE h.module IN ('thoughts','promises')
+             AND h.entity_id = CAST(thoughts.id AS TEXT)
+             AND h.action = '$action'),
+          created_at) WHERE $flag = 1 AND $column IS NULL''');
+    final tables = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='history_events'",
+    ).get();
+    if (tables.isEmpty) {
+      await customStatement(
+        'UPDATE thoughts SET completed_at = created_at WHERE is_completed = 1 AND completed_at IS NULL',
+      );
+      await customStatement(
+        'UPDATE thoughts SET archived_at = created_at WHERE is_archived = 1 AND archived_at IS NULL',
+      );
+      return;
+    }
+    await fill('completed_at', 'is_completed', 'completed');
+    await fill('archived_at', 'is_archived', 'archived');
+  }
 
   Future<void> _createPlanningIndexes() async {
     await customStatement(

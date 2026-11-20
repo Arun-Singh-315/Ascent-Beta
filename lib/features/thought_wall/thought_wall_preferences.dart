@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers/settings_provider.dart';
+import 'board/thought_lines.dart';
 
 const thoughtWallAppearanceKey = 'ascent_thought_wall_appearance_v1';
 
@@ -21,6 +22,7 @@ class ThoughtWallAppearance {
     this.density = ThoughtCardDensity.compact,
     this.bubbleFilled = false,
     this.bubbleBorderWidth = 1.0,
+    this.defaultBullets = BulletStyle.todo,
   });
   final ThoughtCardStyle style;
   final ThoughtCardTone tone;
@@ -28,18 +30,23 @@ class ThoughtWallAppearance {
   final bool bubbleFilled;
   final double bubbleBorderWidth;
 
+  /// How bullets look when a thought has no style of its own.
+  final BulletStyle defaultBullets;
+
   ThoughtWallAppearance copyWith({
     ThoughtCardStyle? style,
     ThoughtCardTone? tone,
     ThoughtCardDensity? density,
     bool? bubbleFilled,
     double? bubbleBorderWidth,
+    BulletStyle? defaultBullets,
   }) => ThoughtWallAppearance(
     style: style ?? this.style,
     tone: tone ?? this.tone,
     density: density ?? this.density,
     bubbleFilled: bubbleFilled ?? this.bubbleFilled,
     bubbleBorderWidth: bubbleBorderWidth ?? this.bubbleBorderWidth,
+    defaultBullets: defaultBullets ?? this.defaultBullets,
   );
 
   Map<String, Object> toJson() => {
@@ -49,6 +56,7 @@ class ThoughtWallAppearance {
     'density': density.name,
     'bubbleFilled': bubbleFilled,
     'bubbleBorderWidth': bubbleBorderWidth,
+    'defaultBullets': defaultBullets.storage,
   };
 
   factory ThoughtWallAppearance.fromJson(Map<String, dynamic> json) {
@@ -71,6 +79,9 @@ class ThoughtWallAppearance {
           ThoughtCardDensity.compact,
       bubbleFilled: json['bubbleFilled'] as bool? ?? true,
       bubbleBorderWidth: (json['bubbleBorderWidth'] as num?)?.toDouble() ?? 1.8,
+      defaultBullets:
+          BulletStyle.fromStorage(json['defaultBullets'] as String?) ??
+          BulletStyle.todo,
     );
   }
 }

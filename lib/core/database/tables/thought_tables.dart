@@ -16,6 +16,20 @@ class ThoughtTable extends Table {
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
   TextColumn get promptQuestion => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// Set when [isCompleted] flips to true, cleared when it flips back.
+  DateTimeColumn get completedAt => dateTime().nullable()();
+
+  /// Set when [isArchived] flips to true, cleared when it flips back.
+  DateTimeColumn get archivedAt => dateTime().nullable()();
+
+  /// Last day the thought was brought to Today. [createdAt] never changes, so
+  /// the original date is always known and no duplicate record is needed.
+  DateTimeColumn get carriedOn => dateTime().nullable()();
+
+  /// 'todo' (circle before each bullet), 'bullet' (plain), or null (use the
+  /// user's default). A view choice only: content is never rewritten.
+  TextColumn get bulletStyle => text().nullable()();
 }
 
 @DataClassName('ThoughtCategory')
