@@ -1,6 +1,8 @@
 # Mind Space implementation and verification
 
-Working branch: `feature/mindspace-feedback`. Reviewed on 13 October 2026. This document describes the current worktree, not a shipped release. The original acceptance requirements remain in [the feedback plan](MIND_SPACE_FEEDBACK_PLAN.md).
+> **Superseded where it conflicts.** Since 20 November 2026 the product rules, palette, typography and component contracts are defined only in [CLAUDE.md](../CLAUDE.md). Keep this file for history and behaviour details; follow CLAUDE.md for any visual or UX decision.
+
+Working branch: `feature/mindspace-feedback`. Reviewed on 13 October 2026. This document describes the current worktree, not a shipped release. The original feedback plan was a temporary planning file and has been removed; its acceptance cases are reflected in the behaviour below.
 
 ## Implemented behavior
 

@@ -1,5 +1,7 @@
 # Ascent visual upgrade — implementation handoff
 
+> **Superseded where it conflicts.** Since 20 November 2026 the product rules, palette, typography and component contracts are defined only in [CLAUDE.md](../CLAUDE.md). Keep this file for history and behaviour details; follow CLAUDE.md for any visual or UX decision.
+
 Version 1.0 · 29 October 2026 · Status: specification ready for implementation; implementation and visual approval are not yet complete.
 
 ## 1. Instructions to the implementer

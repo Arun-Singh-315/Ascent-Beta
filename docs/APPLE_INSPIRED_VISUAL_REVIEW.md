@@ -1,5 +1,7 @@
 # Ascent: Apple-inspired visual and interaction review
 
+> **Superseded where it conflicts.** Since 20 November 2026 the product rules, palette, typography and component contracts are defined only in [CLAUDE.md](../CLAUDE.md). Keep this file for history and behaviour details; follow CLAUDE.md for any visual or UX decision.
+
 Reviewed 29 October 2026. Requested deliverable: research and recommendations, without implementing a redesign.
 
 ## Recommendation

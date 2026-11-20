@@ -5,7 +5,7 @@ Current source map · reviewed 12 October 2026. Route definitions in `lib/app/ro
 | Area | Entry points | Source under `lib/features/` |
 | --- | --- | --- |
 | Workspace entry | `/`, `/onboarding`; local Quick Start/profile rules | `splash/`, `onboarding/` |
-| Home | `/home`; inline notes, activity/learning previews, everyday tools, Riya gateway | `home/` |
+| Home | `/home`; inline notes, activity/learning previews, everyday tools, assistant gateway | `home/` |
 | Today | `/today`; activities and task board | `today/` |
 | Reminders | `/reminders`; upcoming/overdue records, notifications and optional alarms | `reminders/` |
 | Money | `/money`; transactions, budgets and savings goals | `money/` |
@@ -18,18 +18,18 @@ Current source map · reviewed 12 October 2026. Route definitions in `lib/app/ro
 | Hydration | `/hydration`; water logging and goals | `hydration/` |
 | Medicine | `/medicine`; prescriptions, schedule and logs | `medicine/` |
 | Walking | `/walk`; tracking and session history | `walk/` |
-| Applications | `/pipeline`, `/pipeline/:id`; application records and email invite parsing | `pipeline/` |
-| DSA | `/dsa`; problem tracking | `dsa/` |
-| Interview preparation | `/interview-prep`; questions and preparation | `interview_prep/` |
+| Career (optional module): applications | `/pipeline`, `/pipeline/:id`; application records and email invite parsing | `pipeline/` |
+| Career: DSA | `/dsa`; problem tracking | `dsa/` |
+| Career: interview preparation | `/interview-prep`; questions and preparation | `interview_prep/` |
 | Consistency | `/consistency`; recorded consistency history | `consistency/` |
-| Resume Vault | `/resume-vault`; supported attachment management | `resume_vault/` |
+| Career: resume vault | `/resume-vault`; supported attachment management | `resume_vault/` |
 | Reader | `/book-reader`; PDF reading and note capture | `book_reader/` |
 | Analytics | `/analytics`, `/analytics/series/:id`; tracked progress and series reports | `analytics/` |
-| Riya | `/ai-assistant`; chat, supported local commands and verified action receipts | `ai_assistant/`, with command services in `core/ai/` |
+| Assistant | `/ai-assistant`; chat, supported local commands and verified action receipts | `ai_assistant/`, with command services in `core/ai/` |
 | Settings | `/settings`; preferences and help entry points | `settings/` |
 | Workspace backup | `/backup`; export, restore preview and recovery | `backup/` |
 
-Riya's Home Ask button opens a compact chat sheet using the same saved conversation as `/ai-assistant`. Local Todo/Promise commands ask for a missing title or day, show inline Save/Delete reviews, and return live record cards. Todo cards offer completion, rename, rescheduling and deletion; Promise cards offer check-in, rename, start-day changes, pause/resume and deletion. Existing detail/session sheets handle full schedules and timed or milestone tracking. Private Promises stay masked and are managed through the Promises screen. These commands use deterministic offline parsing, transaction receipts and retryable notification effects; they do not require an online model.
+The assistant's Home Ask button opens a compact chat sheet using the same saved conversation as `/ai-assistant`. Local Todo/Promise commands ask for a missing title or day, show inline Save/Delete reviews, and return live record cards. Todo cards offer completion, rename, rescheduling and deletion; Promise cards offer check-in, rename, start-day changes, pause/resume and deletion. Existing detail/session sheets handle full schedules and timed or milestone tracking. Private Promises stay masked and are managed through the Promises screen. These commands use deterministic offline parsing, transaction receipts and retryable notification effects; they do not require an online model.
 
 The shell has four branches: Home, Reminders, Money and More. Challenges are a separate routed tool, not a fifth shell branch. No `/login` route or credential provider is required to enter the local workspace.
 

@@ -1,5 +1,7 @@
 # Ascent: crisp monochrome Home and Calendar implementation handoff
 
+> **Superseded where it conflicts.** Since 20 November 2026 the product rules, palette, typography and component contracts are defined only in [CLAUDE.md](../CLAUDE.md). Keep this file for history and behaviour details; follow CLAUDE.md for any visual or UX decision.
+
 Date: 9 November 2026. Status: **implementation in progress; batch 2 checkpoint below**.
 
 Requested outcome: keep the recently improved Home experience, make the current-date blue much quieter, and apply an iPhone-inspired visual discipline: clear typography, white/light-grey surfaces, true-black dark canvas, restrained cards, and clean Back/Next controls. This is a maintained user-requested handoff, not a temporary planning file.
