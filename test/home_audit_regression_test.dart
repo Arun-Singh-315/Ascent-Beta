@@ -277,7 +277,7 @@ void main() {
       );
       await t.tap(find.text('Actions'));
       await flush(t);
-      await t.tap(find.text('Move to Tomorrow'));
+      await t.tap(find.text('Move to tomorrow'));
       await flush(t);
       final task = await t.runAsync(() => db.taskDao.getTaskById(id));
       final reminder = await t.runAsync(

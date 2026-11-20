@@ -101,24 +101,17 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify quick action sheet options are presented
-        expect(find.text('Mark as Done'), findsOneWidget);
-        expect(find.text('Move to Tomorrow'), findsOneWidget);
-        expect(find.text('Edit Activity'), findsOneWidget);
+        expect(find.text('Mark as done'), findsOneWidget);
+        expect(find.text('Move to tomorrow'), findsOneWidget);
+        expect(find.text('Edit activity'), findsOneWidget);
         expect(find.text('Delete activity'), findsOneWidget);
 
-        // Tap Delete from Today -> verify confirmation dialog appears
+        // Delete is Undo-first: no confirmation dialog, Undo in the snackbar.
         await tester.tap(find.text('Delete activity'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Delete activity?'), findsOneWidget);
-        expect(find.text('Keep'), findsOneWidget);
-        expect(find.text('Delete'), findsOneWidget);
-
-        // Tap Keep -> cancels deletion safely
-        await tester.tap(find.text('Keep'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Submit tax documents'), findsOneWidget);
+        expect(find.text('Delete activity?'), findsNothing);
+        expect(find.text('Undo'), findsOneWidget);
       },
     );
 
@@ -164,7 +157,7 @@ void main() {
         await tester.tap(moreButton);
         await tester.pumpAndSettle();
 
-        expect(find.text('Mark as Done'), findsOneWidget);
+        expect(find.text('Mark as done'), findsOneWidget);
         expect(find.text('Delete activity'), findsOneWidget);
       },
     );

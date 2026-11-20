@@ -34,6 +34,7 @@ import '../../plans/widgets/plan_protection_dialog.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
+import '../../../shared/widgets/undo_snackbar.dart';
 
 bool _removesFromTodayOnly(TodayActivityItem activity) =>
     activity.sourceType == 'lecture' || activity.linkedTaskId == null;
@@ -81,6 +82,257 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Swipes (CLAUDE.md §5.2): right = complete, left = reschedule or delete.
+  // Both are Undo-first; nothing asks for confirmation.
+  // ---------------------------------------------------------------------------
+
+  bool get _canComplete =>
+      activity.linkedTaskId != null && activity.sourceType != 'lecture';
+
+  bool get _canReschedule =>
+      _canComplete &&
+      !activity.isDailyStanding &&
+      activity.sourceType != 'medicine';
+
+  Widget _swipeable({
+    required Key key,
+    required bool enabled,
+    required Widget child,
+  }) {
+    final direction = !enabled
+        ? DismissDirection.none
+        : _canComplete
+        ? DismissDirection.horizontal
+        : DismissDirection.endToStart;
+    return Dismissible(
+      key: key,
+      direction: direction,
+      dismissThresholds: const {
+        DismissDirection.startToEnd: 0.35,
+        DismissDirection.endToStart: 0.35,
+      },
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          HapticFeedback.lightImpact();
+          await completeActivityWithUndo(context, ref, activity);
+          return false; // The row updates from the data stream.
+        }
+        return _onSwipeLeft();
+      },
+      onDismissed: (_) => _deleteWithUndo(),
+      background: _swipeBackground(
+        context,
+        alignment: Alignment.centerLeft,
+        color: context.doneInk,
+        icon: Icons.check_circle_rounded,
+        label: 'Complete',
+      ),
+      secondaryBackground: _swipeBackground(
+        context,
+        alignment: Alignment.centerRight,
+        color: context.isDark
+            ? SharedControlColors.actionBlueDark
+            : SharedControlColors.actionBlue,
+        icon: Icons.more_horiz_rounded,
+        label: _canReschedule ? 'Move or delete' : 'Remove',
+      ),
+      child: child,
+    );
+  }
+
+  /// Returns true only when the row should be dismissed (i.e. deleted).
+  Future<bool> _onSwipeLeft() async {
+    if (activity.linkedTaskId != null) {
+      final protection = await ref
+          .read(taskDaoProvider)
+          .getTaskProtection(activity.linkedTaskId!);
+      if (protection != null) {
+        HapticFeedback.mediumImpact();
+        if (mounted) await showPlanProtectionDialog(context, ref, protection);
+        return false;
+      }
+    }
+    if (!mounted) return false;
+    final todayOnly = _removesFromTodayOnly(activity);
+    final choice = await showAscentActionMenu<String>(
+      context: context,
+      title: activity.title,
+      actions: [
+        if (_canReschedule) ...[
+          const AscentAction(
+            'tomorrow',
+            'Move to tomorrow',
+            Icons.next_plan_outlined,
+          ),
+          const AscentAction('pick', 'Pick a day', Icons.event_outlined),
+        ],
+        AscentAction(
+          'delete',
+          todayOnly ? 'Remove from today' : 'Delete',
+          Icons.delete_outline_rounded,
+          destructive: true,
+        ),
+      ],
+    );
+    if (!mounted || choice == null) return false;
+    if (choice == 'delete') return true;
+    final now = DateTime.now();
+    DateTime? day;
+    if (choice == 'tomorrow') {
+      day = DateTime(now.year, now.month, now.day + 1);
+    } else {
+      final current = activity.plannedDate;
+      final today = DateTime(now.year, now.month, now.day);
+      day = await showDatePicker(
+        context: context,
+        initialDate: current != null && !current.isBefore(today)
+            ? current
+            : today.add(const Duration(days: 1)),
+        firstDate: today,
+        lastDate: DateTime(now.year + 2, now.month, now.day),
+      );
+    }
+    if (day != null && mounted) await _rescheduleWithUndo(day);
+    return false;
+  }
+
+  /// Moves the task (and its reminders) to [day], keeping its time of day.
+  Future<void> _rescheduleWithUndo(DateTime day) async {
+    final dao = ref.read(taskDaoProvider);
+    final id = activity.linkedTaskId!;
+    final original = activity.plannedDate;
+    final title = activity.title;
+    try {
+      final moved = await dao.moveToDay(id, day);
+      if (!mounted) return;
+      if (!moved) {
+        AscentSnackBar.show(
+          context,
+          message: 'This activity could not be moved.',
+        );
+        return;
+      }
+      HapticFeedback.lightImpact();
+      final now = DateTime.now();
+      final tomorrow = DateTime(now.year, now.month, now.day + 1);
+      final when = DateUtils.isSameDay(day, tomorrow)
+          ? 'tomorrow'
+          : DateFormat('EEE, d MMM').format(day);
+      showUndoSnackbar(
+        context,
+        message: 'Moved “$title” to $when',
+        onUndo: () async {
+          if (original != null) {
+            await dao.moveToDay(id, original);
+          } else {
+            // It had no date: make it an anytime thing again.
+            await dao.updateTask(
+              TaskTableCompanion(
+                id: Value(id),
+                plannedDate: const Value(null),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
+          }
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not move this activity. Please retry.',
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteWithUndo() async {
+    HapticFeedback.mediumImpact();
+    // Capture dependencies before the row disappears from its parent stream.
+    final container = ProviderScope.containerOf(context, listen: false);
+    final removed = activity;
+    final taskDao = container.read(taskDaoProvider);
+    final dismissed = container.read(
+      dismissedTodayActivityIdsProvider.notifier,
+    );
+    // Never leave a dismissed Dismissible in the tree while awaiting I/O.
+    setState(() => _removed = true);
+    try {
+      await deleteTodayActivity(container, removed);
+      if (!mounted) return;
+      showUndoSnackbar(
+        context,
+        message: _removesFromTodayOnly(removed)
+            ? 'Removed “${removed.title}” from today'
+            : 'Deleted “${removed.title}”',
+        onUndo: () async {
+          try {
+            if (removed.linkedTaskId != null &&
+                removed.sourceType != 'lecture') {
+              final restored = await taskDao.restoreDeletedTask(
+                removed.linkedTaskId!,
+              );
+              if (!restored) throw StateError('not restored');
+            }
+            await dismissed.unDismissActivityId(removed.id);
+            if (mounted) setState(() => _removed = false);
+          } catch (_) {
+            if (mounted) {
+              AscentSnackBar.error(
+                context,
+                message: 'Could not restore this activity.',
+              );
+            }
+          }
+        },
+      );
+    } catch (_) {
+      await dismissed.unDismissActivityId(removed.id);
+      if (mounted) {
+        setState(() => _removed = false);
+        AscentSnackBar.error(
+          context,
+          message: 'Could not delete this activity. Try again.',
+        );
+      }
+    }
+  }
+
+  static Widget _swipeBackground(
+    BuildContext context, {
+    required Alignment alignment,
+    required Color color,
+    required IconData icon,
+    required String label,
+  }) {
+    final leading = alignment == Alignment.centerLeft;
+    final content = [
+      Icon(icon, color: color, size: 20),
+      const SizedBox(width: 6),
+      Text(label, style: AscentTextStyles.labelMedium.copyWith(color: color)),
+    ];
+    return Container(
+      alignment: alignment,
+      padding: EdgeInsets.only(
+        left: leading ? AppSpace.s16 : 0,
+        right: leading ? 0 : AppSpace.s16,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: context.isDark ? 0.20 : 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: alignment,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: leading ? content : content.reversed.toList(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_removed) return const SizedBox.shrink();
@@ -106,176 +358,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
-        child: Dismissible(
+        child: _swipeable(
           key: ValueKey(activity.id),
-          direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
-          confirmDismiss: (direction) async {
-            if (activity.linkedTaskId != null) {
-              final taskDao = ref.read(taskDaoProvider);
-              final protection = await taskDao.getTaskProtection(
-                activity.linkedTaskId!,
-              );
-              if (protection != null) {
-                HapticFeedback.mediumImpact();
-                if (context.mounted) {
-                  await showPlanProtectionDialog(context, ref, protection);
-                }
-                return false;
-              }
-            }
-            if (context.mounted) {
-              final confirmed = await AscentDialog.confirm(
-                context: context,
-                title: _removesFromTodayOnly(activity)
-                    ? 'Remove from today?'
-                    : 'Delete activity?',
-                content: _removesFromTodayOnly(activity)
-                    ? 'Hide this activity for today? Its history stays saved.'
-                    : 'Delete "${activity.title}"? You can undo this action from the notification.',
-                confirmLabel: _removesFromTodayOnly(activity)
-                    ? 'Remove'
-                    : 'Delete',
-                cancelLabel: 'Keep',
-                isDestructive: true,
-                icon: Icons.delete_outline_rounded,
-              );
-              return confirmed == true;
-            }
-            return true;
-          },
-          onDismissed: (_) async {
-            HapticFeedback.mediumImpact();
-            // Capture dependencies before the row disappears from its parent stream.
-            final container = ProviderScope.containerOf(context, listen: false);
-            final messenger = ScaffoldMessenger.of(context);
-            final removedActivity = activity;
-            final taskDao = container.read(taskDaoProvider);
-            final dismissed = container.read(
-              dismissedTodayActivityIdsProvider.notifier,
-            );
-            // Never leave a dismissed Dismissible in the tree while awaiting I/O.
-            setState(() => _removed = true);
-            try {
-              await deleteTodayActivity(container, removedActivity);
-              if (!messenger.mounted) return;
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    removedActivity.sourceType == 'lecture'
-                        ? "Removed from today's activities"
-                        : 'Activity "${removedActivity.title}" deleted',
-                  ),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () async {
-                      try {
-                        if (removedActivity.linkedTaskId != null &&
-                            removedActivity.sourceType != 'lecture') {
-                          final restored = await taskDao.restoreDeletedTask(
-                            removedActivity.linkedTaskId!,
-                          );
-                          if (!restored) {
-                            if (!messenger.mounted) return;
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Could not restore this activity.'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-                        await dismissed.unDismissActivityId(removedActivity.id);
-                        if (mounted) setState(() => _removed = false);
-                      } catch (_) {
-                        if (!messenger.mounted) return;
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Could not restore this activity.'),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              );
-            } catch (_) {
-              await dismissed.unDismissActivityId(removedActivity.id);
-              if (mounted) setState(() => _removed = false);
-              if (!messenger.mounted) return;
-              messenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Could not delete this activity. Try again.'),
-                ),
-              );
-            }
-          },
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: AppSpace.s16),
-            decoration: BoxDecoration(
-              color: SharedControlColors.actionBlue.withValues(
-                alpha: context.isDark ? 0.20 : 0.12,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: SharedControlColors.actionBlue,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Complete',
-                    style: TextStyle(
-                      color: SharedControlColors.actionBlue,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          secondaryBackground: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: AppSpace.s16),
-            decoration: BoxDecoration(
-              color: SharedControlColors.dueRed.withValues(
-                alpha: context.isDark ? 0.20 : 0.12,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: SharedControlColors.dueRed,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.delete_outline_rounded,
-                    color: SharedControlColors.dueRed,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          enabled: !isDone,
           child: GestureDetector(
             onLongPress: () => showActivityActions(context, ref, activity),
             child: AnimatedContainer(
@@ -847,7 +932,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ),
         ),
       ),
-    )));
+        )));
   }
 
   Future<void> _setStar(bool selected) async {
@@ -949,37 +1034,12 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         final task = await dao.getTaskById(target.linkedTaskId!);
         if (task?.actualCompletedDate != null && context.mounted) {
           if (widget.onViewCompleted != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Expanded(
-                      child: Text('Task completed'),
-                    ),
-                    Builder(
-                      builder: (btnContext) {
-                        return TextButton(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(btnContext).hideCurrentSnackBar();
-                            widget.onViewCompleted?.call();
-                          },
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'View completed',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+            AscentSnackBar.show(
+              context,
+              message: 'Task completed',
+              icon: Icons.check_circle_rounded,
+              actionLabel: 'View completed',
+              onAction: () => widget.onViewCompleted?.call(),
             );
           } else {
             AscentSnackBar.applaud(
@@ -1578,176 +1638,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         clipBehavior: Clip.antiAlias,
-        child: Dismissible(
+        child: _swipeable(
           key: ValueKey('activity_dismiss_${activity.id}'),
-          direction: done || _completing
-              ? DismissDirection.none
-              : DismissDirection.endToStart,
-          confirmDismiss: (direction) async {
-            if (activity.linkedTaskId != null) {
-              final taskDao = ref.read(taskDaoProvider);
-              final protection = await taskDao.getTaskProtection(
-                activity.linkedTaskId!,
-              );
-              if (protection != null) {
-                HapticFeedback.mediumImpact();
-                if (context.mounted) {
-                  await showPlanProtectionDialog(context, ref, protection);
-                }
-                return false;
-              }
-            }
-            if (context.mounted) {
-              final confirmed = await AscentDialog.confirm(
-                context: context,
-                title: _removesFromTodayOnly(activity)
-                    ? 'Remove from today?'
-                    : 'Delete activity?',
-                content: _removesFromTodayOnly(activity)
-                    ? 'Hide this activity for today? Its history stays saved.'
-                    : 'Delete "${activity.title}"? You can undo this action from the notification.',
-                confirmLabel: _removesFromTodayOnly(activity)
-                    ? 'Remove'
-                    : 'Delete',
-                cancelLabel: 'Keep',
-                isDestructive: true,
-                icon: Icons.delete_outline_rounded,
-              );
-              return confirmed == true;
-            }
-            return true;
-          },
-          onDismissed: (_) async {
-            HapticFeedback.mediumImpact();
-            final container = ProviderScope.containerOf(context, listen: false);
-            final messenger = ScaffoldMessenger.of(context);
-            final removedActivity = activity;
-            final taskDao = container.read(taskDaoProvider);
-            final dismissed = container.read(
-              dismissedTodayActivityIdsProvider.notifier,
-            );
-            setState(() => _removed = true);
-            try {
-              await deleteTodayActivity(container, removedActivity);
-              if (!messenger.mounted) return;
-              messenger.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    removedActivity.sourceType == 'lecture'
-                        ? "Removed from today's activities"
-                        : 'Activity "${removedActivity.title}" deleted',
-                  ),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () async {
-                      try {
-                        if (removedActivity.linkedTaskId != null &&
-                            removedActivity.sourceType != 'lecture') {
-                          final restored = await taskDao.restoreDeletedTask(
-                            removedActivity.linkedTaskId!,
-                          );
-                          if (!restored) {
-                            if (!messenger.mounted) return;
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Could not restore this activity.'),
-                              ),
-                            );
-                            return;
-                          }
-                        }
-                        await dismissed.unDismissActivityId(removedActivity.id);
-                        if (mounted) setState(() => _removed = false);
-                      } catch (_) {
-                        if (!messenger.mounted) return;
-                        messenger.showSnackBar(
-                          const SnackBar(
-                            content: Text('Could not restore this activity.'),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              );
-            } catch (_) {
-              await dismissed.unDismissActivityId(removedActivity.id);
-              if (mounted) setState(() => _removed = false);
-              if (!messenger.mounted) return;
-              messenger.showSnackBar(
-                const SnackBar(
-                  content: Text('Could not delete this activity. Try again.'),
-                ),
-              );
-            }
-          },
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 16),
-            decoration: BoxDecoration(
-              color: SharedControlColors.actionBlue.withValues(
-                alpha: context.isDark ? 0.20 : 0.12,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: SharedControlColors.actionBlue,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Complete',
-                    style: TextStyle(
-                      color: SharedControlColors.actionBlue,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          secondaryBackground: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: SharedControlColors.dueRed.withValues(
-                alpha: context.isDark ? 0.20 : 0.12,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Delete',
-                    style: TextStyle(
-                      color: SharedControlColors.dueRed,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    Icons.delete_outline_rounded,
-                    color: SharedControlColors.dueRed,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          enabled: !done && !_completing,
           child: IgnorePointer(
             ignoring: _completing,
             child: AnimatedSlide(
@@ -1841,27 +1734,18 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 label: const Text('Later'),
                 onPressed: () async {
                   HapticFeedback.lightImpact();
-                  final delay = await showModalBottomSheet<Duration>(
+                  final minutes = await showAscentActionMenu<int>(
                     context: context,
-                    useRootNavigator: true,
-                    useSafeArea: true,
-                    builder: (ctx) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const ListTile(title: Text('Ask me again in…')),
-                          for (final minutes in [15, 30, 60])
-                            ListTile(
-                              title: Text('$minutes minutes'),
-                              onTap: () => Navigator.pop(
-                                ctx,
-                                Duration(minutes: minutes),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                    title: 'Ask me again in…',
+                    actions: const [
+                      AscentAction(15, '15 minutes', Icons.schedule_rounded),
+                      AscentAction(30, '30 minutes', Icons.schedule_rounded),
+                      AscentAction(60, '1 hour', Icons.schedule_rounded),
+                    ],
                   );
+                  final delay = minutes == null
+                      ? null
+                      : Duration(minutes: minutes);
                   if (delay != null && context.mounted) {
                     if (dueCheckIn.isRoutine) {
                       await ref
@@ -2083,7 +1967,7 @@ Future<void> showActivityActions(
           (activity.targetMinutes ?? 0) <= 0)
         const AscentAction(
           'done',
-          'Mark as Done',
+          'Mark as done',
           Icons.check_circle_outline_rounded,
         ),
       if (!isDone && activity.linkedTaskId != null && !isLecture)
@@ -2097,11 +1981,11 @@ Future<void> showActivityActions(
       if (activity.linkedTaskId != null && !isDone && !isLecture)
         const AscentAction(
           'tomorrow',
-          'Move to Tomorrow',
+          'Move to tomorrow',
           Icons.next_plan_outlined,
         ),
       if (!isLecture && activity.linkedTaskId != null && !isDone)
-        const AscentAction('edit', 'Edit Activity', Icons.edit_outlined),
+        const AscentAction('edit', 'Edit activity', Icons.edit_outlined),
       AscentAction(
         'delete',
         _removesFromTodayOnly(activity)
@@ -2200,57 +2084,37 @@ Future<void> showActivityActions(
       }
       await AddActivitySheet.show(context, existingTask: task);
     } else if (action == 'delete') {
-      final confirmed = await AscentDialog.confirm(
-        context: context,
-        title: _removesFromTodayOnly(activity)
-            ? 'Remove from today?'
-            : 'Delete activity?',
-        content: _removesFromTodayOnly(activity)
-            ? 'Hide this activity for today? Its history stays saved.'
-            : 'Delete "${activity.title}"? You can undo this action from the notification.',
-        confirmLabel: _removesFromTodayOnly(activity) ? 'Remove' : 'Delete',
-        cancelLabel: 'Keep',
-        isDestructive: true,
-        icon: Icons.delete_outline_rounded,
-      );
-      if (confirmed != true || !context.mounted) return;
+      // Undo-first (CLAUDE.md §1.8): no confirmation, Undo in the snackbar.
+      HapticFeedback.mediumImpact();
       final container = ProviderScope.containerOf(context, listen: false);
-      final messenger = ScaffoldMessenger.of(context);
       final removed = activity;
       await deleteTodayActivity(container, removed);
-      if (!messenger.mounted) return;
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            removed.sourceType == 'lecture'
-                ? "Removed from today's activities"
-                : 'Activity "${removed.title}" deleted',
-          ),
-          action: SnackBarAction(
-            label: 'Undo',
-            onPressed: () async {
-              try {
-                if (removed.linkedTaskId != null &&
-                    removed.sourceType != 'lecture') {
-                  if (!await dao.restoreDeletedTask(removed.linkedTaskId!)) {
-                    throw StateError('Restore unavailable');
-                  }
-                }
-                await container
-                    .read(dismissedTodayActivityIdsProvider.notifier)
-                    .unDismissActivityId(removed.id);
-              } catch (_) {
-                if (messenger.mounted) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Could not restore this activity.'),
-                    ),
-                  );
-                }
+      if (!context.mounted) return;
+      showUndoSnackbar(
+        context,
+        message: _removesFromTodayOnly(removed)
+            ? 'Removed “${removed.title}” from today'
+            : 'Deleted “${removed.title}”',
+        onUndo: () async {
+          try {
+            if (removed.linkedTaskId != null &&
+                removed.sourceType != 'lecture') {
+              if (!await dao.restoreDeletedTask(removed.linkedTaskId!)) {
+                throw StateError('Restore unavailable');
               }
-            },
-          ),
-        ),
+            }
+            await container
+                .read(dismissedTodayActivityIdsProvider.notifier)
+                .unDismissActivityId(removed.id);
+          } catch (_) {
+            if (context.mounted) {
+              AscentSnackBar.error(
+                context,
+                message: 'Could not restore this activity.',
+              );
+            }
+          }
+        },
       );
     }
   } catch (_) {

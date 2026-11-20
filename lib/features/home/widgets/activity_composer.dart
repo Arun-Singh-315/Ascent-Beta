@@ -23,6 +23,11 @@ import '../../../core/services/quick_add_parser.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
 import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/widgets/undo_snackbar.dart';
+import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_dialog.dart';
+import '../../../shared/widgets/ascent_sheet.dart';
+import '../../../app/theme/text_styles.dart';
 
 /// Type first. Optional controls keep the normal path to a single send.
 class ActivityComposer extends ConsumerStatefulWidget {
@@ -264,44 +269,9 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   }
 
   Future<void> _duration() async {
-    var durationText = '$_minutes';
-    final picked = await showDialog<int>(
+    final picked = await showAscentFrostedDialog<int>(
       context: context,
-      builder: (ctx) {
-        String? error;
-        return StatefulBuilder(
-          builder: (ctx, setDialog) => AlertDialog(
-            title: const Text('Timer duration'),
-            content: TextFormField(
-              initialValue: durationText,
-              onChanged: (value) => durationText = value,
-              autofocus: true,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                hintText: 'Minutes (1–1440)',
-                errorText: error,
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final value = int.tryParse(durationText.trim());
-                  if (value == null || value < 1 || value > 1440) {
-                    setDialog(() => error = 'Enter 1–1440 minutes.');
-                    return;
-                  }
-                  Navigator.pop(ctx, value);
-                },
-                child: const Text('Apply'),
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => _MinutesDialog(initial: _minutes),
     );
     if (picked != null && mounted) setState(() => _minutes = picked);
   }
@@ -456,16 +426,8 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
 
   Future<void> _options() async {
     _effectiveFocus.unfocus();
-    await showModalBottomSheet<void>(
+    await showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      constraints: BoxConstraints(
-        maxWidth: 600,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-      ),
       builder: (sheetContext) => StatefulBuilder(
         builder: (ctx, refresh) {
           final g = ctx.glass;
@@ -474,121 +436,132 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             if (ctx.mounted) refresh(() {});
           }
 
-          return Scrollbar(
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Activity options',
-                          style: TextStyle(
-                            color: g.ink,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w600,
-                          ),
+          Future<void> chooseDate() async {
+            final choice = await showAscentActionMenu<String>(
+              context: ctx,
+              title: 'Day',
+              actions: const [
+                AscentAction('today', 'Today', Icons.today_outlined),
+                AscentAction('tomorrow', 'Tomorrow', Icons.next_plan_outlined),
+                AscentAction('date', 'Pick a day', Icons.event_outlined),
+              ],
+            );
+            if (choice != null) await _pickDate(choice);
+          }
+
+          Future<void> chooseReminder() async {
+            final choice = await showAscentActionMenu<String>(
+              context: ctx,
+              title: 'Reminder',
+              actions: const [
+                AscentAction(
+                  'time',
+                  'Choose time',
+                  Icons.notifications_none_rounded,
+                ),
+                AscentAction('off', 'Off', Icons.notifications_off_outlined),
+              ],
+            );
+            if (choice != null) await _pickReminder(choice);
+          }
+
+          final valueStyle = AscentTextStyles.supportingText.copyWith(
+            color: g.inkMuted,
+          );
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Activity options',
+                        style: AscentTextStyles.dialogTitle.copyWith(
+                          color: g.ink,
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(sheetContext),
-                        child: const Text('Done'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  AscentSegmentedControl<ActivityKind>(
-                    segments: const [
-                      AscentSegment(value: ActivityKind.todo, label: 'To-do'),
-                      AscentSegment(
-                        value: ActivityKind.duration,
-                        label: 'Timer',
-                      ),
-                      AscentSegment(
-                        value: ActivityKind.flexible,
-                        label: 'Flexible',
-                      ),
-                    ],
-                    selected: _kind,
-                    onChanged: (value) {
-                      setState(() => _kind = value);
-                      refresh(() {});
-                    },
-                  ),
-                  if (_kind == ActivityKind.duration)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Duration'),
-                      trailing: Text('$_minutes min'),
-                      onTap: () => edit(_duration),
                     ),
-                  PopupMenuButton<String>(
-                    tooltip: 'Activity date',
-                    onSelected: (value) => edit(() => _pickDate(value)),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'today', child: Text('Today')),
-                      PopupMenuItem(value: 'tomorrow', child: Text('Tomorrow')),
-                      PopupMenuItem(value: 'date', child: Text('Choose date')),
-                    ],
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 20,
-                      ),
-                      title: const Text('Schedule'),
-                      trailing: Text(
-                        _date == null
-                            ? 'Today'
-                            : DateFormat('d MMM').format(_day),
-                      ),
+                    AscentButton.ghost(
+                      label: 'Done',
+                      compact: true,
+                      onPressed: () => Navigator.pop(sheetContext),
                     ),
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: 'Activity reminder',
-                    onSelected: (value) => edit(() => _pickReminder(value)),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'off', child: Text('Off')),
-                      PopupMenuItem(value: 'time', child: Text('Choose time')),
-                    ],
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 20,
-                      ),
-                      title: const Text('Reminder'),
-                      trailing: Text(_reminder?.format(context) ?? 'Off'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                AscentSegmentedControl<ActivityKind>(
+                  segments: const [
+                    AscentSegment(value: ActivityKind.todo, label: 'To-do'),
+                    AscentSegment(value: ActivityKind.duration, label: 'Timer'),
+                    AscentSegment(
+                      value: ActivityKind.flexible,
+                      label: 'Flexible',
                     ),
-                  ),
+                  ],
+                  selected: _kind,
+                  onChanged: (value) {
+                    setState(() => _kind = value);
+                    refresh(() {});
+                  },
+                ),
+                if (_kind == ActivityKind.duration)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Star this activity'),
-                    trailing: AscentStarButton(
-                      selected: _starred,
-                      onChanged: (value) {
-                        setState(() => _starred = value);
-                        refresh(() {});
-                      },
-                    ),
+                    title: const Text('Duration'),
+                    trailing: Text('$_minutes min', style: valueStyle),
+                    onTap: () => edit(_duration),
                   ),
-                  AscentSwitchRow(
-                    title: 'Keep on until I turn it off',
-                    helper: _isDailyStanding
-                        ? 'Repeats every day automatically until toggled off'
-                        : 'One-time to-do for today',
-                    value: _isDailyStanding,
-                    onChanged: (val) {
-                      setState(() => _isDailyStanding = val);
+                ListTile(
+                  key: const ValueKey('activity_option_day'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today_outlined, size: 20),
+                  title: const Text('Day'),
+                  trailing: Text(
+                    _date == null ? 'Today' : _dayLabel(_day),
+                    style: valueStyle,
+                  ),
+                  onTap: () => edit(chooseDate),
+                ),
+                ListTile(
+                  key: const ValueKey('activity_option_reminder'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 20,
+                  ),
+                  title: const Text('Reminder'),
+                  trailing: Text(
+                    _reminder?.format(ctx) ?? 'Off',
+                    style: valueStyle,
+                  ),
+                  onTap: () => edit(chooseReminder),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Star this activity'),
+                  trailing: AscentStarButton(
+                    selected: _starred,
+                    onChanged: (value) {
+                      setState(() => _starred = value);
                       refresh(() {});
                     },
                   ),
-                ],
-              ),
+                ),
+                AscentSwitchRow(
+                  title: 'Keep on until I turn it off',
+                  helper: _isDailyStanding
+                      ? 'Repeats every day until you turn it off'
+                      : 'One-time to-do',
+                  value: _isDailyStanding,
+                  onChanged: (val) {
+                    setState(() => _isDailyStanding = val);
+                    refresh(() {});
+                  },
+                ),
+              ],
             ),
           );
         },
@@ -697,9 +670,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                               enrichment.categoryLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
+                              style: AscentTextStyles.labelSmall.copyWith(
                                 color: g.ink,
                               ),
                             ),
@@ -723,9 +694,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                         ),
                         child: Text(
                           enrichment.smartLens.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                          style: AscentTextStyles.labelSmall.copyWith(
                             color: g.inkMuted,
                           ),
                         ),
@@ -751,27 +720,36 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           },
           extraAction: Tooltip(
             message: _isDailyStanding
-                ? 'Daily standing active (repeats every day)'
-                : 'Keep every day until turned off',
-            child: Material(
-              color: Colors.transparent,
-              shape: const CircleBorder(),
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: _saving
-                    ? null
-                    : () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _isDailyStanding = !_isDailyStanding);
-                      },
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.repeat_rounded,
-                    size: 20,
-                    color: _isDailyStanding
-                        ? context.c.accent
-                        : context.c.textSecondary,
+                ? 'Repeats every day. Tap to make it one-time'
+                : 'Repeat every day',
+            child: Semantics(
+              button: true,
+              toggled: _isDailyStanding,
+              label: 'Repeat every day',
+              excludeSemantics: true,
+              child: Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: _saving
+                      ? null
+                      : () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _isDailyStanding = !_isDailyStanding);
+                        },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                    child: Icon(
+                      Icons.repeat_rounded,
+                      size: 20,
+                      color: _isDailyStanding
+                          ? context.c.accent
+                          : context.c.textSecondary,
+                    ),
                   ),
                 ),
               ),
@@ -782,15 +760,12 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         if (_effectiveFocus.hasFocus || hasText || customized)
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton.icon(
+            child: AscentButton.ghost(
               key: const ValueKey('activity_options'),
+              label: summary.isEmpty ? 'Options' : 'Options · $summary',
+              icon: Icons.settings_outlined,
+              compact: true,
               onPressed: _saving ? null : _options,
-              icon: const Icon(Icons.settings_outlined, size: 16),
-              label: Text(
-                summary.isEmpty ? 'Options' : summary,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             ),
           ),
         if (_error != null)
@@ -798,13 +773,94 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               _error!,
-              style: const TextStyle(
-                color: SharedControlColors.dueRed,
-                fontSize: 12,
+              style: AscentTextStyles.caption.copyWith(
+                color: context.glass.isDark
+                    ? SharedControlColors.dueRedDark
+                    : SharedControlColors.dueRed,
               ),
             ),
           ),
       ],
     );
   }
+}
+
+/// Asks for a timer length. Owns its controller so it is only disposed after
+/// the dialog has finished animating out.
+class _MinutesDialog extends StatefulWidget {
+  const _MinutesDialog({required this.initial});
+  final int initial;
+
+  @override
+  State<_MinutesDialog> createState() => _MinutesDialogState();
+}
+
+class _MinutesDialogState extends State<_MinutesDialog> {
+  late final _controller = TextEditingController(text: '${widget.initial}');
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _apply() {
+    final value = int.tryParse(_controller.text.trim());
+    if (value == null || value < 1 || value > 1440) {
+      setState(() => _error = 'Enter 1–1440 minutes.');
+      return;
+    }
+    Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AscentDialog(
+    title: 'Timer length',
+    icon: Icons.timer_outlined,
+    contentWidget: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextField(
+          key: const ValueKey('activity_duration_field'),
+          controller: _controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          hintText: 'Minutes, e.g. 25',
+          onSubmitted: (_) => _apply(),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            _error!,
+            style: AscentTextStyles.caption.copyWith(
+              color: context.glass.isDark
+                  ? SharedControlColors.dueRedDark
+                  : SharedControlColors.dueRed,
+            ),
+          ),
+        ],
+      ],
+    ),
+    actions: [
+      Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          AscentButton.secondary(
+            label: 'Cancel',
+            compact: true,
+            onPressed: () => Navigator.pop(context),
+          ),
+          AscentButton.primary(
+            label: 'Apply',
+            compact: true,
+            onPressed: _apply,
+          ),
+        ],
+      ),
+    ],
+  );
 }

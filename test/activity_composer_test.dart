@@ -36,13 +36,17 @@ void main() {
           theme: HomeTheme.from(
             AscentTheme.light(preset: DayThemePreset.nordicSky),
           ),
-          home: Scaffold(
-            body: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: ActivityComposer(),
-              ),
+          // Keep the real screen size; only the text scale changes.
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const Scaffold(
+            body: Padding(
+              padding: EdgeInsets.all(16),
+              child: ActivityComposer(),
             ),
           ),
         ),
@@ -108,16 +112,20 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timer').last);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('30 min'));
+      await tester.tap(find.widgetWithText(ListTile, '30 min'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextFormField), '0');
+      final minutesField = find.descendant(
+        of: find.byKey(const ValueKey('activity_duration_field')),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(minutesField, '0');
       await tester.tap(find.text('Apply'));
       await tester.pumpAndSettle();
       expect(find.text('Enter 1–1440 minutes.'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
-      expect(find.text('30 min'), findsOneWidget);
-      await tester.tap(find.byTooltip('Activity date'));
+      expect(find.widgetWithText(ListTile, '30 min'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('activity_option_day')));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Tomorrow').last);
       await tester.pumpAndSettle();
@@ -154,14 +162,16 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey('activity_options')));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byTooltip('Activity reminder'));
-    await tester.tap(find.byTooltip('Activity reminder'));
+    final reminderRow = find.byKey(const ValueKey('activity_option_reminder'));
+    await tester.ensureVisible(reminderRow);
+    await tester.pumpAndSettle();
+    await tester.tap(reminderRow);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Choose time'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Reminder off'), findsNothing);
+    expect(find.widgetWithText(ListTile, 'Off'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
