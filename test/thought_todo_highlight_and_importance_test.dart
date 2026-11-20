@@ -72,10 +72,10 @@ void main() {
     test('toggling item done preserves highlight status', () {
       const text = '- [ ] ★ Important to-do';
       final toggled = ThoughtChecklistHelper.toggleItemDone(text, 0);
-      expect(toggled.contains('- [x] ★ Important to-do'), isTrue);
+      expect(toggled.contains('☑ ★ Important to-do'), isTrue);
 
       final undone = ThoughtChecklistHelper.toggleItemDone(toggled, 0);
-      expect(undone.contains('- [ ] ★ Important to-do'), isTrue);
+      expect(undone.contains('☐ ★ Important to-do'), isTrue);
     });
   });
 

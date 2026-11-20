@@ -217,7 +217,7 @@ void main() {
     await settle(tester);
     await tester.enterText(find.byType(TextField), 'An idea worth keeping.');
     await tester.pump();
-    await tester.tap(find.byTooltip('Send capture'));
+    await tester.tap(find.byTooltip('Save thought'));
     await settle(tester);
     await tester.runAsync(() async {
       final thoughts = await db.thoughtDao.watchAllThoughts().first;

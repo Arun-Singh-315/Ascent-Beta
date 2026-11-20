@@ -38,11 +38,16 @@ class ThoughtChecklistHelper {
   ThoughtChecklistHelper._();
 
   static final RegExp _checkedBoxRegex = RegExp(
-    r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[[xX]\]\s+(.*)$',
+    r'^\s*(?:(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[[xX]\]|☑)\s+(.*)$',
   );
   static final RegExp _uncheckedBoxRegex = RegExp(
-    r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[\s*\]\s+(.*)$',
+    r'^\s*(?:(?:[-*•]|-->|->|→|\d+[\.\)])?\s*\[\s*\]|☐)\s+(.*)$',
   );
+
+  /// Whether [line] is a checklist line (a tick box), as opposed to a plain
+  /// bullet or numbered line.
+  static bool isCheckboxLine(String line) =>
+      _checkedBoxRegex.hasMatch(line) || _uncheckedBoxRegex.hasMatch(line);
   static final RegExp _bulletOrNumberedRegex = RegExp(
     r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])\s+(.*)$',
   );
@@ -160,7 +165,7 @@ class ThoughtChecklistHelper {
 
     final targetItem = items[targetIndex];
     final newDone = !targetItem.isDone;
-    final prefix = newDone ? '- [x] ' : '- [ ] ';
+    final prefix = newDone ? '☑ ' : '☐ ';
     final highlightMarker = targetItem.isHighlighted ? '★ ' : '';
     lines[targetItem.lineIndex] = '$prefix$highlightMarker${targetItem.text}';
 
@@ -182,9 +187,9 @@ class ThoughtChecklistHelper {
 
     String prefix;
     if (_checkedBoxRegex.hasMatch(targetItem.rawLine)) {
-      prefix = '- [x] ';
+      prefix = '☑ ';
     } else if (_uncheckedBoxRegex.hasMatch(targetItem.rawLine)) {
-      prefix = '- [ ] ';
+      prefix = '☐ ';
     } else {
       final match = RegExp(
         r'^\s*(?:[-*•]|-->|->|→|\d+[\.\)])\s*',
@@ -204,7 +209,7 @@ class ThoughtChecklistHelper {
 
     if (items.isEmpty) return text;
 
-    final prefix = done ? '- [x] ' : '- [ ] ';
+    final prefix = done ? '☑ ' : '☐ ';
     for (final item in items) {
       final highlightMarker = item.isHighlighted ? '★ ' : '';
       lines[item.lineIndex] = '$prefix$highlightMarker${item.text}';

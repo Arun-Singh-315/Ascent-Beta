@@ -7,6 +7,7 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/ascent_composer.dart';
 import '../../shared/widgets/app_text_field.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -454,30 +455,45 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
               const SizedBox(height: 18),
 
-              Row(
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
                 children: [
-                  InlineListAddButton(
-                    controller: _contentController,
-                    focusNode: _contentFocus,
-                    enabled: !_isSaving,
+                  AscentButton.tonal(
+                    key: const ValueKey('thought_add_checklist'),
+                    label: 'Checklist item',
+                    icon: Icons.checklist_rounded,
+                    compact: true,
+                    onPressed: _isSaving
+                        ? null
+                        : () {
+                            AscentComposer.insertChecklistItem(
+                              _contentController,
+                            );
+                            _contentFocus.requestFocus();
+                          },
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Add plan item (→) or to-do (•) line',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: context.textMuted,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  AscentButton.secondary(
+                    key: const ValueKey('thought_add_bullet'),
+                    label: 'Bullet',
+                    icon: Icons.format_list_bulleted_rounded,
+                    onPressed: _isSaving
+                        ? null
+                        : () {
+                            NoteListButton.insertNextItem(_contentController);
+                            _contentFocus.requestFocus();
+                          },
                   ),
                 ],
               ),
+              const SizedBox(height: 18),
 
               // Submit Button
               AscentButton.primary(
                 label: _isSaving
                     ? 'Saving…'
                     : widget.existingThought != null
-                    ? 'Save Changes'
+                    ? 'Save changes'
                     : (_isPinned ? 'Pin to Wall (Pinned)' : 'Pin to Mindspace'),
                 expanded: true,
                 icon: widget.existingThought != null

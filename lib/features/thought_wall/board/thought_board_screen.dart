@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/next_step_chips.dart';
+import '../../../core/services/quick_add_parser.dart';
+import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
@@ -124,7 +127,92 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   bool _inputEmpty = true;
   void _onInputChanged() {
     final empty = _input.text.trim().isEmpty;
+    if (!empty && _nextSteps.isNotEmpty) _clearNextSteps();
     if (empty != _inputEmpty && mounted) setState(() => _inputEmpty = empty);
+  }
+
+  // Next steps ---------------------------------------------------------------
+
+  /// Suggestions for the thought just saved, shown above the composer.
+  List<NextStep> _nextSteps = const [];
+  Timer? _nextStepsTimer;
+
+  void _clearNextSteps() {
+    _nextStepsTimer?.cancel();
+    if (mounted && _nextSteps.isNotEmpty) {
+      setState(() => _nextSteps = const []);
+    }
+  }
+
+  /// A thought that mentions a day or time can become a reminder; one with
+  /// two or more checklist lines can become to-dos. Nothing else is offered.
+  void _suggestNextSteps(int id, String text) {
+    final steps = <NextStep>[];
+    final parsed = parseQuickAdd(text.split('\n').first, DateTime.now());
+    if (parsed.day != null || parsed.hasTime) {
+      final when = [
+        if (parsed.day != null) _relativeDay(parsed.day!),
+        if (parsed.hasTime)
+          TimeOfDay(
+            hour: parsed.hour!,
+            minute: parsed.minute ?? 0,
+          ).format(context),
+      ].join(' ');
+      steps.add(
+        NextStep(
+          id: 'remind',
+          label: 'Remind me $when',
+          icon: Icons.notifications_active_outlined,
+          onTap: () => _runNextStep(id, (t) async {
+            await convertThoughtWithQuickAdd(context, ref, t, remind: true);
+          }),
+        ),
+      );
+    }
+    final ticks = parseThoughtLines(
+      text,
+    ).where((l) => l.isItem && l.isCheckbox).length;
+    if (ticks >= 2) {
+      steps.add(
+        NextStep(
+          id: 'todos',
+          label: 'Make these $ticks to-dos',
+          icon: Icons.add_task_rounded,
+          onTap: () => _runNextStep(id, (t) async {
+            await applyThoughtAction(context, ref.read(databaseProvider), [
+              t,
+            ], 'todo');
+          }),
+        ),
+      );
+    }
+    _nextStepsTimer?.cancel();
+    setState(() => _nextSteps = steps);
+    if (steps.isNotEmpty) {
+      _nextStepsTimer = Timer(const Duration(seconds: 12), _clearNextSteps);
+    }
+  }
+
+  Future<void> _runNextStep(
+    int id,
+    Future<void> Function(Thought) action,
+  ) async {
+    _clearNextSteps();
+    final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
+    if (thought == null || !mounted) return;
+    await action(thought);
+  }
+
+  static String _relativeDay(DateTime day) {
+    final now = DateTime.now();
+    final diff = DateTime.utc(
+      day.year,
+      day.month,
+      day.day,
+    ).difference(DateTime.utc(now.year, now.month, now.day)).inDays;
+    if (diff == 0) return 'today';
+    if (diff == 1) return 'tomorrow';
+    return DateFormat('EEE d MMM').format(day);
   }
 
   Future<void> _checkClipboard() async {
@@ -218,6 +306,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _dayTimer?.cancel();
+    _nextStepsTimer?.cancel();
     if (_listening) {
       _listening = false; // the stop callback must not rebuild a dead state
       _voice?.stop();
@@ -285,7 +374,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     final tag = parseSpaceTag(raw, categories);
     setState(() => _saving = true);
     try {
-      await ref
+      final id = await ref
           .read(thoughtDaoProvider)
           .insertThought(
             ThoughtTableCompanion.insert(
@@ -303,6 +392,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         ref.read(palaceFilterProvider.notifier).setSpace(null);
       }
       setState(() => _highlightId = null);
+      _suggestNextSteps(id, tag?.text ?? raw);
       if (tag != null) {
         AscentSnackBar.show(
           context,
@@ -547,18 +637,18 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           const AscentAction('copy', 'Copy text', Icons.copy_outlined),
           const AscentAction(
             'bullets_todo',
-            'Bullets as todo circles',
+            'Show every line as a checklist',
             Icons.radio_button_unchecked_rounded,
           ),
           const AscentAction(
             'bullets_plain',
-            'Bullets as plain bullets',
+            'Show as a plain list',
             Icons.format_list_bulleted_rounded,
           ),
           if (t.bulletStyle != null)
             const AscentAction(
               'bullets_default',
-              'Bullets: use my default',
+              'Show lines as written',
               Icons.restart_alt_rounded,
             ),
         ],
@@ -759,7 +849,12 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_canPaste && _inputEmpty && !_listening)
+          if (_nextSteps.isNotEmpty && _inputEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.s8),
+              child: NextStepChips(steps: _nextSteps),
+            ),
+          if (_canPaste && _inputEmpty && !_listening && _nextSteps.isEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpace.s8),
               child: AppChip(

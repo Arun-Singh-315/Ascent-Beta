@@ -178,7 +178,7 @@ My Schedule:
     test('toggling "->" item converts to checkbox correctly', () {
       const text = '-> Wake up\n-> Gym';
       final toggled = ThoughtChecklistHelper.toggleItemDone(text, 0);
-      expect(toggled.contains('- [x] Wake up'), isTrue);
+      expect(toggled.contains('☑ Wake up'), isTrue);
     });
   });
 

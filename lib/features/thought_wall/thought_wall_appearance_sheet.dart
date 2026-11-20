@@ -198,8 +198,9 @@ class _ThoughtWallAppearanceSheetState
                   runSpacing: 8,
                   children: [
                     for (final (label, icon, style) in [
-                      ('Todo circles', Icons.radio_button_unchecked_rounded, BulletStyle.todo),
-                      ('Plain bullets', Icons.circle, BulletStyle.bullet),
+                      ('As written', Icons.checklist_rounded, BulletStyle.asWritten),
+                      ('All checklist', Icons.radio_button_unchecked_rounded, BulletStyle.todo),
+                      ('All plain', Icons.circle, BulletStyle.bullet),
                     ])
                       ChoiceChip(
                         key: ValueKey('default_bullets_${style.name}'),

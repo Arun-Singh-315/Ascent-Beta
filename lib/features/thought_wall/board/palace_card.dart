@@ -152,7 +152,7 @@ class _PalaceCardState extends State<PalaceCard> {
     BulletStyle style,
     bool enabled,
   ) {
-    if (style == BulletStyle.todo) {
+    if (style.showsCircle(line)) {
       final done = line.isDone;
       return GestureDetector(
         key: ValueKey('bullet_toggle_${thought.id}_${line.itemIndex}'),
@@ -276,11 +276,11 @@ class _PalaceCardState extends State<PalaceCard> {
                         fontWeight: line.isHighlighted
                             ? FontWeight.w700
                             : null,
-                        color: style == BulletStyle.todo && line.isDone
+                        color: style.showsCircle(line) && line.isDone
                             ? g.inkMuted
                             : g.ink,
                         decoration:
-                            style == BulletStyle.todo && line.isDone
+                            style.showsCircle(line) && line.isDone
                             ? TextDecoration.lineThrough
                             : null,
                       ),
@@ -524,7 +524,7 @@ class _PalaceCardState extends State<PalaceCard> {
         final offerDone =
             showStrip &&
             listLike &&
-            style == BulletStyle.todo &&
+            style != BulletStyle.bullet &&
             !thought.isCompleted &&
             !thought.isArchived &&
             allItemsDone(displayContent(thought.content));

@@ -1164,27 +1164,37 @@ class _ThoughtWallHomePreviewState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. AppInputBar(hint: "What's on your mind?", leadingIcon: Icons.add)
+          // 1. Capture: checklist button, text, and a way into the full
+          //    editor (moods, pin) that keeps whatever was typed.
           AppInputBar(
             controller: _controller,
             focusNode: _focusNode,
-            hint: 'Jot a thought…',
-            submitTooltip: 'Send capture',
-            leadingIcon: Icons.add,
-            // "+" opens the full capture sheet (moods, pin, checklist) and
-            // carries whatever was already typed without discarding on cancel.
-            onLeadingTap: () async {
-              HapticFeedback.lightImpact();
-              final draft = _controller.text;
-              FocusScope.of(context).unfocus();
-              final saved = await DropThoughtSheet.show(
-                context,
-                initialText: draft,
-              );
-              if (saved == true && mounted) {
-                _controller.clear();
-              }
-            },
+            hint: 'e.g. Idea for the weekend trip',
+            submitTooltip: 'Save thought',
+            checklist: true,
+            extraAction: _controller.text.trim().isEmpty
+                ? null
+                : IconButton(
+                    key: const ValueKey('home_thought_expand'),
+                    tooltip: 'Open the full editor',
+                    icon: Icon(
+                      Icons.open_in_full_rounded,
+                      size: 20,
+                      color: context.glass.inkSecondary,
+                    ),
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      final draft = _controller.text;
+                      FocusScope.of(context).unfocus();
+                      final saved = await DropThoughtSheet.show(
+                        context,
+                        initialText: draft,
+                      );
+                      if (saved == true && mounted) {
+                        _controller.clear();
+                      }
+                    },
+                  ),
             onSubmit: _send,
           ),
           const SizedBox(height: 14),

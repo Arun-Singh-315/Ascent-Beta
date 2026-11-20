@@ -58,10 +58,8 @@ void main() {
     'type and send defaults to To-do today, no reminder; rapid send creates one record',
     (tester) async {
       await mount(tester);
-      expect(
-        tester.widget<IconButton>(find.byType(IconButton)).onPressed,
-        isNull,
-      );
+      // Nothing typed yet: Add stays hidden.
+      expect(find.byTooltip('Add activity'), findsNothing);
       expect(find.text('To-do'), findsNothing);
       expect(find.text('Today'), findsNothing);
       expect(find.text('Reminder off'), findsNothing);
