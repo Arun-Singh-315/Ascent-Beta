@@ -177,10 +177,14 @@ class _PlanTemplateSheetState extends ConsumerState<PlanTemplateSheet> {
             key: const ValueKey('plan_template_weeks'),
             selected: _weeks,
             onChanged: (w) => setState(() => _weeks = w),
-            segments: const [
-              AscentSegment(value: 2, label: '2 weeks'),
-              AscentSegment(value: 4, label: '4 weeks'),
-              AscentSegment(value: 8, label: '8 weeks'),
+            segments: [
+              for (final w in ({
+                2,
+                4,
+                8,
+                widget.template.weeks,
+              }.toList()..sort()))
+                AscentSegment(value: w, label: w == 1 ? '1 week' : '$w weeks'),
             ],
           ),
           const SizedBox(height: AppSpace.s16),

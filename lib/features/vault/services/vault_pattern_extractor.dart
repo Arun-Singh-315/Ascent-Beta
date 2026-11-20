@@ -175,7 +175,20 @@ class VaultPatternExtractor {
 
     final charList = chars.toString();
     final random = Random.secure();
-    return List.generate(length, (_) => charList[random.nextInt(charList.length)]).join();
+    String pick(String from) => from[random.nextInt(from.length)];
+    // Always include each kind once, so a "strong" password never comes out
+    // without a digit or symbol by chance; then shuffle the positions.
+    final out = <String>[
+      pick('abcdefghijklmnopqrstuvwxyz'),
+      pick('ABCDEFGHIJKLMNOPQRSTUVWXYZ'),
+      pick(numbers),
+      if (includeSymbols) pick('!@#\$%^&*(),.?:{}|<>'),
+    ];
+    while (out.length < length) {
+      out.add(pick(charList));
+    }
+    out.shuffle(random);
+    return out.take(length).join();
   }
 
   /// Calculates password strength score (0 to 100).

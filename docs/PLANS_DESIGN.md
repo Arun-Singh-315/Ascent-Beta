@@ -58,8 +58,9 @@ Nothing from a plan lives *only* on the Plans screen: daily use happens in Thing
 | Path | Status | What happens |
 |---|---|---|
 | **Template** (Study, Meals, Fitness, Morning) | **Shipped (#57)** | Opens ready: name, 2/4/8 weeks, steps on/off, time per step, Daily/Weekdays, live preview "12 sessions a week · first one tomorrow 7:00 · shows up in Things". *Start plan* saves it. |
+| **Ascent makes it** (study, meals) | **Shipped (#58)** | *Study plan:* type a subject (DSA, Python, Physics… or anything), pick 7/14/30 days, minutes and time. Ascent lays out one topic a day from a built-in curriculum, a revision day every fourth day and a mock test on the last day. *Meal plan:* pick a goal (Balanced, High protein, Vegetarian, Weight loss) and 1–2 weeks; Ascent fills breakfast 8:30, lunch 13:30 and dinner 20:00 with familiar dishes that don't repeat within a week. The sheet previews the first days; *Create plan* saves every item as a dated to-do with its reminder. Offline. |
 | **Blank plan** | Existing | The plan creator: add steps one by one or paste a list. |
-| **From a sentence** | Next | "Study DSA 1 hour daily till 15 Jan" → the same template sheet, pre-filled by the quick-add parser. |
+| **From a sentence** | **Shipped (#58)** | "Study DSA 1 hour daily till 15 Jan" → the template sheet, pre-filled (title, minutes, daily/weekdays, time, weeks from "till …" or "for N weeks"). |
 | **From Riya** | Partly existing | Riya proposes a study or meal plan card; *Save* should open the same sheet so there is one review screen. |
 | **From a thought** | Existing (conversion sheet) | A checklist thought can become plan steps. |
 
@@ -75,9 +76,10 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 
 ## 7. Progress and adapting (next slices)
 
-1. **Plan page:** a 7-day strip (done / missed / upcoming dots), streak with a grace day, "on track" or "2 behind".
-2. **Adapt in one tap:** *Catch up* (move missed sessions into free slots this week), *Make it lighter* (switch a daily step to weekdays or shorten its minutes), *Extend* (add weeks, within the 90-day limit).
-3. **Riya rebalance:** "I missed two days of DSA" → proposes the catch-up as a reviewable card.
+1. **Plan page (shipped, #58):** real "Day 3 of 28 · dates" from the sessions, a 7-day strip (done / partly / missed / upcoming), a streak that forgives one missed day a week and skips rest days, and "On track" or "2 sessions behind".
+2. **Catch up (shipped, #58):** plan sessions are protected (their reminders and history belong to the plan), so *Catch up today* marks each missed session skipped and adds a "(catch up)" to-do for today; one Undo reverses both.
+3. **Next:** *Make it lighter* (daily → weekdays, shorter minutes) and *Extend* (add weeks within 90 days).
+4. **Riya rebalance:** "I missed two days of DSA" → proposes the catch-up as a reviewable card.
 
 ## 8. Reliability notes
 
@@ -94,13 +96,17 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 - [ ] On a phone: tomorrow's sessions appear in Things and the 7:00 reminder fires with the app closed.
 - [ ] Pausing a plan removes its upcoming reminders; resuming restores them from today.
 - [ ] Deleting a plan leaves no orphan to-dos, reminders or notifications.
-- [ ] Plan page progress strip and adapt actions (§7).
+- [x] Plan page progress strip and Catch up with Undo (`plan_progress_test.dart`).
+- [x] Generated study and meal plans save every item (`plan_generator_test.dart`).
+- [ ] Make it lighter / Extend.
 
 ## 10. Code map
 
 | Piece | File |
 |---|---|
-| Templates and drafts | `lib/features/plans/plan_templates.dart` |
+| Templates, drafts, plan from a sentence | `lib/features/plans/plan_templates.dart` |
+| Study and meal generators | `lib/features/plans/plan_generator.dart`, `widgets/plan_generator_sheet.dart` |
+| Progress and catch up | `lib/features/plans/plan_progress.dart`, `widgets/plan_progress_card.dart` |
 | Template sheet | `lib/features/plans/widgets/plan_template_sheet.dart` |
 | Plans screen | `lib/features/plans/plans_screen.dart` |
 | Plan page | `lib/features/plans/widgets/plan_collection_detail.dart` |

@@ -12,6 +12,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/services/plan_collection_service.dart';
 import '../../shared/widgets/app_surfaces.dart';
+import '../../shared/widgets/ascent_composer.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -22,6 +23,7 @@ import 'plan_templates.dart';
 import 'planning_providers.dart';
 import 'widgets/plan_collection_detail.dart';
 import 'widgets/plan_detail_sheet.dart';
+import 'widgets/plan_generator_sheet.dart';
 import 'widgets/plan_template_sheet.dart';
 
 final allPlansStreamProvider = StreamProvider<List<PlanDefinition>>(
@@ -40,6 +42,26 @@ class PlansScreen extends ConsumerStatefulWidget {
 class _PlansScreenState extends ConsumerState<PlansScreen> {
   String _status = 'active';
   bool _handledInitialPlan = false;
+  final _describe = TextEditingController();
+
+  @override
+  void dispose() {
+    _describe.dispose();
+    super.dispose();
+  }
+
+  /// "Study DSA 1 hour daily till 15 Jan" → the same review sheet, filled in.
+  Future<void> _fromSentence(String text) async {
+    if (text.trim().isEmpty) return;
+    FocusScope.of(context).unfocus();
+    final template = planFromSentence(text.trim(), DateTime.now());
+    HapticFeedback.selectionClick();
+    final id = await showPlanTemplateSheet(context, template);
+    if (id == null || !mounted) return;
+    _describe.clear();
+    setState(() => _status = 'active');
+    await showPlanCollectionDetail(context, id);
+  }
 
   void _checkInitialPlan(List<PlanDefinition> plans) {
     if (_handledInitialPlan || widget.initialPlanId == null) return;
@@ -50,6 +72,14 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
         if (mounted) showPlanDetailSheet(context, target);
       });
     }
+  }
+
+  Future<void> _generate(PlanKind kind) async {
+    HapticFeedback.selectionClick();
+    final id = await showPlanGeneratorSheet(context, kind);
+    if (id == null || !mounted) return;
+    setState(() => _status = 'active');
+    await showPlanCollectionDetail(context, id);
   }
 
   Future<void> _startTemplate(PlanTemplate template) async {
@@ -80,6 +110,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(child: _templates(g)),
+          SliverToBoxAdapter(child: _makers(g)),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -145,6 +176,97 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     );
   }
 
+  /// "Let Ascent make one": generated study and meal plans.
+  Widget _makers(AscentGlass g) {
+    Widget row(PlanKind kind, IconData icon, String title, String sub) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpace.s8),
+          child: AppCard(
+            key: ValueKey('plan_make_${kind.name}'),
+            padding: EdgeInsets.zero,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () => _generate(kind),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 64),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s12,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: g.actionInk.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: g.actionInk),
+                      ),
+                      const SizedBox(width: AppSpace.s12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: AscentTextStyles.homeHeadline.copyWith(
+                                color: g.ink,
+                              ),
+                            ),
+                            Text(
+                              sub,
+                              style: AscentTextStyles.caption.copyWith(
+                                color: g.inkSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.auto_awesome_rounded, color: g.actionInk),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s16,
+        AppSpace.s16,
+        AppSpace.s16,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpace.s8),
+            child: Text(
+              'Let Ascent make one',
+              style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+            ),
+          ),
+          row(
+            PlanKind.study,
+            Icons.school_outlined,
+            'Study plan',
+            'Pick a subject, get a topic for every day',
+          ),
+          row(
+            PlanKind.meals,
+            Icons.restaurant_outlined,
+            'Meal plan',
+            'Pick a goal, get a week of meals',
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _templates(AscentGlass g) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -158,6 +280,24 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
         child: Text(
           'Start a plan',
           style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s16,
+          0,
+          AppSpace.s16,
+          AppSpace.s12,
+        ),
+        child: AscentComposer(
+          key: const ValueKey('plans_describe'),
+          controller: _describe,
+          hint: 'e.g. Study DSA 1 hour daily till 15 Jan',
+          submitOnEnter: true,
+          sendTooltip: 'Make a plan',
+          sendKey: const ValueKey('plans_describe_send'),
+          inputFormatters: const [],
+          onSend: _fromSentence,
         ),
       ),
       SizedBox(
