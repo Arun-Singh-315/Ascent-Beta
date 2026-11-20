@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../core/services/plan_collection_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_text_field.dart';
+import '../plan_progress.dart';
+import '../widgets/plan_progress_card.dart';
 import '../planning_providers.dart';
 
 class PlanDetailScreen extends ConsumerStatefulWidget {
@@ -133,10 +135,24 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final total = currentCollection?.total ?? 0;
     final done = currentCollection?.done ?? 0;
 
-    final todayFormatted = dfShort.format(now);
-    final endDate = now.add(Duration(days: widget.spanDays - 1));
-    final dateRangeStr =
-        'Day 1 of ${widget.spanDays} · $todayFormatted – ${dfFull.format(endDate)}';
+    // Real dates from the plan's sessions, not from today.
+    final sessions = ref.watch(planSessionsProvider(widget.collectionId)).value;
+    final progress = sessions == null || sessions.isEmpty
+        ? null
+        : PlanProgress.from(sessions, now);
+    final String dateRangeStr;
+    if (progress?.first != null) {
+      final day = progress!.dayNumber;
+      final lead = day <= 0
+          ? 'Starts ${dfShort.format(progress.first!)}'
+          : day >= progress.totalDays
+          ? 'Last day'
+          : 'Day $day of ${progress.totalDays}';
+      dateRangeStr =
+          '$lead · ${dfShort.format(progress.first!)} – ${dfFull.format(progress.last!)}';
+    } else {
+      dateRangeStr = 'No scheduled sessions yet';
+    }
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -222,7 +238,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       color: c.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  PlanProgressCard(collectionId: widget.collectionId),
+                  const SizedBox(height: 16),
 
                   // Circular Progress Card
                   Container(
@@ -325,7 +343,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
 
                   // Today Section
                   Text(
-                    'Today · $todayFormatted',
+                    'Today · ${dfShort.format(now)}',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

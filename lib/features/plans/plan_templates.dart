@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/plan_collection_service.dart';
+import '../../core/services/quick_add_parser.dart';
 
 /// How often one step of a plan repeats. Matches the recurrence rules the
 /// plan engine understands for collection items.
@@ -208,3 +209,86 @@ List<PlanItemDraft> draftsFor(
 int sessionsPerWeek(List<PlanStep> steps) => steps
     .where((s) => s.enabled)
     .fold(0, (sum, s) => sum + s.repeat.daysPerWeek);
+
+/// Builds a one-step plan from a sentence such as "Study DSA 1 hour daily
+/// till 15 Jan" or "Gym every weekday at 7am for 45 min for 6 weeks". The
+/// result opens in the same sheet as a template, so the user reviews it.
+PlanTemplate planFromSentence(String text, DateTime now) {
+  final lower = text.toLowerCase();
+  final repeat =
+      RegExp(
+        r'\b(week ?days?|every weekday|mon(day)?\s*(-|to)\s*fri(day)?)\b',
+      ).hasMatch(lower)
+      ? PlanRepeat.weekdays
+      : PlanRepeat.daily;
+
+  // How long: "for 6 weeks", "for 10 days", "till/until/by <date>".
+  var weeks = 4;
+  final forWeeks = RegExp(r'\bfor (\d{1,2}) weeks?\b').firstMatch(lower);
+  final forDays = RegExp(r'\bfor (\d{1,3}) days?\b').firstMatch(lower);
+  final until = RegExp(r'\b(till|until|by|upto|up to)\b').firstMatch(lower);
+  if (forWeeks != null) {
+    weeks = int.parse(forWeeks.group(1)!);
+  } else if (forDays != null) {
+    weeks = (int.parse(forDays.group(1)!) / 7).ceil();
+  } else if (until != null) {
+    final endText = text.substring(until.end);
+    final iso = RegExp(r'\d{4}-\d{2}-\d{2}').firstMatch(endText);
+    final end = iso != null
+        ? DateTime.tryParse(iso.group(0)!)
+        : parseQuickAdd(text.substring(until.start).trim(), now).day;
+    if (end != null) {
+      final days =
+          DateTime(
+            end.year,
+            end.month,
+            end.day,
+          ).difference(DateTime(now.year, now.month, now.day)).inDays +
+          1;
+      weeks = (days / 7).ceil();
+    }
+  }
+  weeks = weeks.clamp(1, 12);
+
+  // What and when: everything before the duration/end words.
+  final cut = RegExp(
+    r'\b(till|until|by|upto|up to|for \d{1,3} (weeks?|days?))\b',
+  ).firstMatch(lower);
+  final head = cut == null ? text : text.substring(0, cut.start);
+  final q = parseQuickAdd(head.trim(), now);
+  final title = q.title
+      .replaceAll(
+        RegExp(
+          r'\b(daily|every ?day|each day|every weekday|week ?days?|every morning|every evening|every night|at)\b',
+          caseSensitive: false,
+        ),
+        '',
+      )
+      .replaceAll(RegExp(r'\s{2,}'), ' ')
+      .trim();
+  final time = q.hour != null
+      ? TimeOfDay(hour: q.hour!, minute: q.minute ?? 0)
+      : RegExp(r'\b(evening|night|tonight)\b').hasMatch(lower)
+      ? const TimeOfDay(hour: 20, minute: 0)
+      : RegExp(r'\bmorning\b').hasMatch(lower)
+      ? const TimeOfDay(hour: 7, minute: 0)
+      : const TimeOfDay(hour: 9, minute: 0);
+  final name = title.isEmpty
+      ? 'My plan'
+      : '${title[0].toUpperCase()}${title.substring(1)}';
+  return PlanTemplate(
+    id: 'custom',
+    title: name,
+    blurb: '',
+    icon: Icons.event_repeat_rounded,
+    weeks: weeks,
+    steps: [
+      PlanStep(
+        title: name,
+        time: time,
+        repeat: repeat,
+        minutes: q.durationMinutes,
+      ),
+    ],
+  );
+}
