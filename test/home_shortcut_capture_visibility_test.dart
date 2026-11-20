@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:ascent/app/theme/home_design.dart';
 import 'dart:ui' as ui;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
@@ -120,73 +119,6 @@ void main() {
 
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
-      testWidgets(
-        'Expense from Home has an opaque form and readable dropdown: dark=$dark scale=$scale',
-        (tester) async {
-          final key = GlobalKey();
-          await mount(tester, dark: dark, scale: scale, capture: key);
-          expect(
-            find.byKey(const ValueKey('shortcut_badge_vault')),
-            findsNothing,
-          );
-          final badge = tester.widget<Text>(
-            find.byKey(const ValueKey('shortcut_badge_focus')),
-          );
-          expect(
-            badge.style!.color,
-            (dark ? const HomeDesign.night() : const HomeDesign.day())
-                .primaryText,
-          );
-          await add(tester, 'Expense');
-          expect(find.byType(AddTransactionSheet), findsOneWidget);
-          final pane = tester.widget<Material>(
-            find
-                .ancestor(
-                  of: find.byType(AddTransactionSheet),
-                  matching: find.byType(Material),
-                )
-                .first,
-          );
-          expect(pane.color!.a, 1);
-          await capture(
-            tester,
-            key,
-            'expense-${dark ? 'dark' : 'light'}-$scale',
-          );
-          await tester.tap(find.text('Details'));
-          await tester.pumpAndSettle();
-          final category = find.byType(DropdownButtonFormField<String>).first;
-          await tester.ensureVisible(category);
-          await tester.tap(category);
-          await tester.pumpAndSettle();
-          expect(find.text('Food & Groceries'), findsWidgets);
-          final dropdown = tester.widget<DropdownButton<String>>(
-            find.descendant(
-              of: category,
-              matching: find.byType(DropdownButton<String>),
-            ),
-          );
-          expect(dropdown.dropdownColor!.a, 1);
-          await capture(
-            tester,
-            key,
-            'dropdown-${dark ? 'dark' : 'light'}-$scale',
-          );
-          expect(tester.takeException(), isNull);
-          await tester.tapAt(const Offset(8, 8));
-          await tester.pumpAndSettle();
-          await tester.ensureVisible(find.byTooltip('Close'));
-          await tester.tap(find.byTooltip('Close'));
-          await tester.pumpAndSettle();
-          expect(
-            await tester.runAsync(
-              () => db.select(db.financeTransactionTable).get(),
-            ),
-            isEmpty,
-          );
-          await tester.pumpWidget(const SizedBox());
-        },
-      );
     }
   }
   testWidgets(

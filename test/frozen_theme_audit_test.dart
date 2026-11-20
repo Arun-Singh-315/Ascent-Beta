@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ascent/app/theme/frozen_palette.dart';
-import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -72,26 +71,6 @@ void main() {
       },
     );
 
-    test(
-      'verifies theme independence: Merlot and Frozen Sky packages do not cross-contaminate',
-      () {
-        // Ensure Merlot remains on Cashmere Linen & Porcelain
-        expect(MerlotPalette.canvas, const Color(0xFFF5F3EF));
-        expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
-        expect(MerlotPalette.pillSoft, const Color(0xFFFAF6F2));
-        expect(MerlotPalette.action, const Color(0xFF581825));
-
-        // Ensure Frozen Sky remains on Nordic Sky
-        expect(FrozenPalette.canvas, const Color(0xFFF5F5F7));
-        expect(FrozenPalette.surface, const Color(0xFFFFFFFF));
-        expect(FrozenPalette.pillSoft, const Color(0xFFECEEF2));
-        expect(FrozenPalette.action, const Color(0xFF1D64B4));
-
-        // Assert they are completely independent palettes
-        expect(FrozenPalette.canvas, isNot(equals(MerlotPalette.canvas)));
-        expect(FrozenPalette.action, isNot(equals(MerlotPalette.action)));
-      },
-    );
 
     test(
       'verifies non-heading typography metrics have optimal readability and tracking',

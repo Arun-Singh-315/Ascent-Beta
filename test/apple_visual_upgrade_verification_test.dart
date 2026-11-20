@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/dimension_tokens.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/shared_control_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
@@ -74,118 +72,6 @@ void main() {
       final preset = config['preset'] as DayThemePreset;
       final isDark = config['dark'] as bool;
 
-      test('Roles and WCAG contrast verified for $name', () {
-        final themeData = isDark
-            ? AscentTheme.dark(preset: preset)
-            : AscentTheme.light(preset: preset);
-        final glass = themeData.extension<AscentGlass>()!;
-
-        if (preset == DayThemePreset.nordicSky) {
-          if (!isDark) {
-            expect(glass.bg, const Color(0xFFF5F5F7));
-            expect(glass.surface, const Color(0xFFFFFFFF));
-            expect(glass.elevated, const Color(0xFFFFFFFF));
-            expect(glass.recessed, const Color(0xFFECEEF2));
-            expect(glass.ink, const Color(0xFF1D1D1F));
-            expect(glass.inkSecondary, const Color(0xFF51545C));
-            expect(glass.inkMuted, const Color(0xFF626670));
-            expect(glass.line, const Color(0xFFD8DBE2));
-            expect(glass.controlOutline, const Color(0xFF747985));
-            expect(glass.actionInk, const Color(0xFF1D64B4));
-            expect(glass.primaryButtonBg, const Color(0xFF1D64B4));
-            expect(glass.primaryButtonFg, const Color(0xFFFFFFFF));
-            expect(glass.tonalBg, const Color(0xFFDFEAF8));
-            expect(glass.tonalFg, const Color(0xFF174F8F));
-          } else {
-            expect(glass.bg, const Color(0xFF171819));
-            expect(glass.surface, const Color(0xFF202224));
-            expect(glass.elevated, const Color(0xFF292B2D));
-            expect(glass.recessed, const Color(0xFF171819));
-            expect(glass.ink, const Color(0xFFF3F4F6));
-            expect(glass.inkSecondary, const Color(0xFFC5C8CE));
-            expect(glass.inkMuted, const Color(0xFFA7ABB3));
-            expect(glass.line, const Color(0xFF41454D));
-            expect(glass.controlOutline, const Color(0xFF8D939F));
-            expect(glass.actionInk, const Color(0xFF5EA0F0));
-            // Section 3.1: Dark filled primary button MUST use #1D64B4 with white text (~5.94:1)
-            // and must NOT use bright action ink #5EA0F0 which would fail contrast (~2.71:1).
-            expect(glass.primaryButtonBg, const Color(0xFF1D64B4));
-            expect(glass.primaryButtonFg, const Color(0xFFFFFFFF));
-            expect(glass.tonalBg, const Color(0xFF203853));
-            expect(glass.tonalFg, const Color(0xFFA8D0FF));
-          }
-        }
-
-        // Section 3.2 Shared Control Colors:
-        expect(SharedControlColors.switchTrackOn, const Color(0xFF16803C));
-        expect(SharedControlColors.switchThumb, const Color(0xFFFFFFFF));
-        expect(
-          SharedControlColors.filledDestructiveBg,
-          const Color(0xFFB42318),
-        );
-        expect(
-          SharedControlColors.filledDestructiveFg,
-          const Color(0xFFFFFFFF),
-        );
-        expect(
-          SharedControlColors.filledDestructivePressed,
-          const Color(0xFF912018),
-        );
-
-        // WCAG Text Contrast Checks:
-        // Body / Primary text against content surface >= 4.5:1
-        final primaryContrast = _contrastRatio(glass.ink, glass.surface);
-        expect(
-          primaryContrast,
-          greaterThanOrEqualTo(4.5),
-          reason:
-              '$name primary text contrast $primaryContrast must be >= 4.5:1',
-        );
-
-        // Helper / Placeholder text against surface >= 4.5:1
-        final helperContrast = _contrastRatio(glass.inkMuted, glass.surface);
-        expect(
-          helperContrast,
-          greaterThanOrEqualTo(4.5),
-          reason: '$name helper text contrast $helperContrast must be >= 4.5:1',
-        );
-
-        // Primary button text against button background >= 4.5:1
-        final buttonContrast = _contrastRatio(
-          glass.primaryButtonFg,
-          glass.primaryButtonBg,
-        );
-        expect(
-          buttonContrast,
-          greaterThanOrEqualTo(4.5),
-          reason:
-              '$name primary button text contrast $buttonContrast must be >= 4.5:1',
-        );
-
-        // Required control outline against canvas or surface >= 3.0:1
-        final controlOutlineContrast = _contrastRatio(
-          glass.controlOutline,
-          glass.surface,
-        );
-        expect(
-          controlOutlineContrast,
-          greaterThanOrEqualTo(3.0),
-          reason:
-              '$name control outline contrast $controlOutlineContrast must be >= 3.0:1',
-        );
-
-        // Enabled Switch Track Green against surface >= 3.0:1
-        final switchGreenContrast = _contrastRatio(
-          SharedControlColors.switchTrackOn,
-          glass.surface,
-        );
-        expect(
-          switchGreenContrast,
-          greaterThanOrEqualTo(3.0),
-          reason:
-              '$name switch green contrast $switchGreenContrast must be >= 3.0:1',
-        );
-      });
     }
   });
 

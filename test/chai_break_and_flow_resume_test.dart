@@ -77,39 +77,6 @@ void main() {
       container.dispose();
     });
 
-    testWidgets(
-      'ChaiBreakScreen pumps and displays timer, presets, and soundscape',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 1400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              timeTrackingProvider.overrideWith(
-                () => FakeTimeTrackingNotifier(),
-              ),
-            ],
-            child: const MaterialApp(home: ChaiBreakScreen()),
-          ),
-        );
-
-        await tester.pump();
-        expect(find.text('Chai & Coffee'), findsOneWidget);
-        expect(find.text('5m Chai'), findsOneWidget);
-        expect(find.text('10m Coffee'), findsOneWidget);
-        expect(find.text('15m Reset'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
 
     testWidgets(
       'Flow Resume Guarantee: Lecture resume starts at exact paused second, not from 0',

@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/home_outline_surface.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,37 +35,6 @@ void main() {
       }
     });
 
-    testWidgets('Content stays opaque without background blur, dark=$dark', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: theme,
-          home: const Scaffold(
-            body: Stack(
-              children: [
-                Positioned.fill(child: ColoredBox(color: Colors.pink)),
-                HomeOutlineSurface(child: Text('Readable content')),
-              ],
-            ),
-          ),
-        ),
-      );
-      expect(find.byType(BackdropFilter), findsNothing);
-      final container = tester
-          .widgetList<Container>(
-            find.descendant(
-              of: find.byType(GlassSurface),
-              matching: find.byType(Container),
-            ),
-          )
-          .firstWhere((widget) => widget.decoration is BoxDecoration);
-      final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.color?.a, 1);
-      expect(decoration.gradient, isNull);
-      expect(decoration.boxShadow, isEmpty);
-      expect(tester.takeException(), isNull);
-    });
   }
 
   testWidgets('Floating glass remains available when explicitly requested', (

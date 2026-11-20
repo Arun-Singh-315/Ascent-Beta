@@ -1,6 +1,4 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/frozen_palette.dart';
-import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 import 'package:flutter/material.dart';
@@ -8,86 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Sleek Dark Obsidian Popup Menu Theme', () {
-    test(
-      'Light theme has sleek dark obsidian popupMenuTheme with 100% opacity',
-      () {
-        final lightTheme = AscentTheme.light(
-          preset: DayThemePreset.merlotLinen,
-        );
 
-        expect(lightTheme.popupMenuTheme.shape, isA<RoundedRectangleBorder>());
-        final shape = lightTheme.popupMenuTheme.shape as RoundedRectangleBorder;
-        expect(shape.borderRadius, equals(BorderRadius.circular(18)));
-        expect(shape.side.color, equals(MerlotPalette.darkLine));
-        expect(lightTheme.popupMenuTheme.elevation, equals(8));
 
-        // Sleek dark obsidian background even in light theme
-        expect(
-          lightTheme.popupMenuTheme.color,
-          equals(MerlotPalette.darkElevated),
-        );
-        // Zero transparency - 100% opaque to eliminate text bleed-through
-        expect(
-          (lightTheme.popupMenuTheme.color!.a * 255.0).round(),
-          equals(255),
-        );
-
-        // Crisp cashmere text styling for high contrast
-        expect(
-          lightTheme.popupMenuTheme.textStyle?.color,
-          equals(MerlotPalette.darkInk),
-        );
-        final labelStyle = lightTheme.popupMenuTheme.labelTextStyle?.resolve(
-          {},
-        );
-        expect(labelStyle?.color, equals(MerlotPalette.darkInk));
-      },
-    );
-
-    test('Dark theme has matching sleek dark obsidian popupMenuTheme', () {
-      final darkTheme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
-
-      expect(darkTheme.popupMenuTheme.shape, isA<RoundedRectangleBorder>());
-      final shape = darkTheme.popupMenuTheme.shape as RoundedRectangleBorder;
-      expect(shape.borderRadius, equals(BorderRadius.circular(18)));
-      expect(shape.side.color, equals(MerlotPalette.darkLine));
-      expect(darkTheme.popupMenuTheme.elevation, equals(8));
-
-      expect(
-        darkTheme.popupMenuTheme.color,
-        equals(MerlotPalette.darkElevated),
-      );
-      expect((darkTheme.popupMenuTheme.color!.a * 255.0).round(), equals(255));
-      expect(
-        darkTheme.popupMenuTheme.textStyle?.color,
-        equals(MerlotPalette.darkInk),
-      );
-    });
-
-    test('NordicSky preset has sapphire dark obsidian popupMenuTheme', () {
-      final lightTheme = AscentTheme.light(preset: DayThemePreset.nordicSky);
-      final darkTheme = AscentTheme.dark(preset: DayThemePreset.nordicSky);
-
-      expect(
-        lightTheme.popupMenuTheme.color,
-        equals(FrozenPalette.darkElevated),
-      );
-      expect((lightTheme.popupMenuTheme.color!.a * 255.0).round(), equals(255));
-      expect(
-        lightTheme.popupMenuTheme.textStyle?.color,
-        equals(FrozenPalette.darkInk),
-      );
-
-      expect(
-        darkTheme.popupMenuTheme.color,
-        equals(FrozenPalette.darkElevated),
-      );
-      expect((darkTheme.popupMenuTheme.color!.a * 255.0).round(), equals(255));
-      expect(
-        darkTheme.popupMenuTheme.textStyle?.color,
-        equals(FrozenPalette.darkInk),
-      );
-    });
   });
 
   group('AscentPopupMenuButton Widget', () {

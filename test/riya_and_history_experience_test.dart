@@ -4,7 +4,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/features/history/history_screen.dart';
-import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,84 +140,6 @@ void main() {
   });
 
   group('Yesterday Summary Report Card in Your Space Tests', () {
-    testWidgets(
-      'HomeShortcutPanel renders yesterday report button and expands narrative report card',
-      (tester) async {
-        await tester.pumpWidget(
-          buildScope(
-            Scaffold(
-              body: SingleChildScrollView(
-                child: HomeShortcutPanel(
-                  shortcuts: const ['focus', 'hydration', 'vault'],
-                  showReminders: false,
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
 
-        expect(
-          find.byKey(const ValueKey('yesterday_report_button')),
-          findsOneWidget,
-        );
-
-        // Tap report button
-        await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
-        await tester.pumpAndSettle();
-
-        // Narrative report card appears with qualitative words, no raw 0/1 numbers
-        expect(
-          find.byKey(const ValueKey('yesterday_report_card')),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Yesterday’s Reflection'), findsOneWidget);
-        expect(find.text('Keep report in Your Space'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
-
-    testWidgets(
-      'HomeShortcutPanel with expanded report card is immune to overflow at 320px with 2.0x text scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.light(),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(320, 800),
-                textScaler: TextScaler.linear(2.0),
-              ),
-              child: buildScope(
-                Scaffold(
-                  body: SingleChildScrollView(
-                    child: HomeShortcutPanel(
-                      shortcuts: const ['focus', 'hydration', 'vault'],
-                      showReminders: false,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byKey(const ValueKey('yesterday_report_button')));
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
   });
 }

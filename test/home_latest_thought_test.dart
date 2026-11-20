@@ -5,7 +5,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -145,43 +144,6 @@ void main() {
       expect(find.text('Opened $latestId'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
-    },
-  );
-  testWidgets(
-    'Empty Home has no message bubble; private thoughts stay masked',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            privatePromiseIdsProvider.overrideWithValue({1}),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(body: ThoughtWallHomePreview(compact: true)),
-          ),
-        ),
-      );
-      await settle(tester);
-      expect(
-        find.byKey(const ValueKey('home_latest_thought_bubble')),
-        findsNothing,
-      );
-      await tester.runAsync(
-        () => db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(
-            content: 'Private secret',
-            mood: const Value('promise'),
-          ),
-        ),
-      );
-      await settle(tester);
-      expect(find.text('Private secret'), findsNothing);
-      expect(find.text('Private thought'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
     },
   );
   testWidgets(

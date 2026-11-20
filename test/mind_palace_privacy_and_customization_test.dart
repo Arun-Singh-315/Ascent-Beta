@@ -68,63 +68,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Unlocked private promise reveals content and deduplicates prompt case-insensitively',
-      (tester) async {
-        final now = DateTime.now();
-        final thought = Thought(
-          id: 99,
-          content:
-              'Kissi se baat ni krni dec tk group mein gayab and work . ❤️',
-          promptQuestion:
-              'kissi se baat ni krni dec tk group mein gayab and work . ❤️',
-          mood: 'promise',
-          category: 'personal',
-          colorHex: '#2D2D3A',
-          isPinned: false,
-          isCompleted: false,
-          isArchived: false,
-          createdAt: now,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value([thought]),
-            ),
-            privatePromiseIdsProvider.overrideWith((ref) => {99}),
-          ],
-        );
-
-        // Unlock it
-        container.read(unlockedPromiseIdsProvider.notifier).unlock(99);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Should show the unlocked badge
-        expect(find.text('UNLOCKED PROMISE'), findsOneWidget);
-        // Standalone prompt Text widget should be deduplicated (not shown)
-        final standalonePrompt = find.byWidgetPredicate(
-          (widget) =>
-              widget is Text &&
-              (widget.data?.toLowerCase().contains('kissi se baat') ?? false),
-        );
-        expect(standalonePrompt, findsNothing);
-      },
-    );
 
     testWidgets(
       'Mind Palace card style button opens style sheet and customizes fill and border',

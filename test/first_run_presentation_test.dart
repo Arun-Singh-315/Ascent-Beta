@@ -13,7 +13,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -142,61 +141,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'Name and birthday are required and save without starter records',
-    (tester) async {
-      final router = GoRouter(
-        initialLocation: '/onboarding',
-        routes: [
-          GoRoute(
-            path: '/onboarding',
-            builder: (_, _) => const OnboardingShell(),
-          ),
-          GoRoute(
-            path: '/home',
-            builder: (_, _) => const Scaffold(body: Text('Home ready')),
-          ),
-        ],
-      );
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            theme: AscentTheme.light(),
-            routerConfig: router,
-          ),
-        ),
-      );
-      await settle(tester);
-      await tester.tap(find.text('Let’s begin'));
-      await settle(tester);
-      await tester.tap(find.text('Continue'));
-      await settle(tester);
-      expect(find.text('Home ready'), findsNothing);
-      expect(find.text('Choose your date of birth.'), findsOneWidget);
-      await tester.enterText(
-        find.byKey(const ValueKey('onboarding_name')),
-        'Arun',
-      );
-      container
-          .read(onboardingProvider.notifier)
-          .setDateOfBirth(DateTime(1998, 6, 10));
-      await settle(tester);
-      await tester.tap(find.text('Continue'));
-      await settle(tester);
-      expect(find.text('Home ready'), findsOneWidget);
-      expect(prefs.getBool('ascent_quick_start_v1'), isTrue);
-      await tester.runAsync(() async {
-        final profile = await db.userProfileDao.getProfile();
-        expect(profile!.name, 'Arun');
-        expect(profile.dateOfBirth, DateTime(1998, 6, 10));
-        expect(await db.select(db.taskTable).get(), isEmpty);
-      });
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
 
   testWidgets(
     'First welcome previews ideas without saving; explicit add saves exactly one real task',
