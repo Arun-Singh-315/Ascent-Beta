@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -141,7 +142,7 @@ class ThoughtDetailSheet extends ConsumerWidget {
     void openRoute(String location, {Object? extra}) {
       final router = GoRouter.of(context);
       close();
-      router.push(location, extra: extra);
+      router.open(location, extra: extra);
     }
 
     return SafeArea(

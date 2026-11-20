@@ -14,7 +14,8 @@ import '../features/pipeline/pipeline_screen.dart';
 import '../features/pipeline/card_detail_screen.dart';
 import '../features/analytics/analytics_screen.dart';
 import '../features/analytics/series_report_card_screen.dart';
-import '../features/more/more_screen.dart';
+import '../features/you/you_screen.dart';
+import 'app_navigation.dart';
 import '../features/study_plan/course_catalog_screen.dart';
 import '../features/study_plan/study_plan_screen.dart';
 import '../features/study_plan/lecture_focus_player_screen.dart';
@@ -51,9 +52,9 @@ import '../shared/widgets/feature_guide.dart';
 class AscentRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
-  static const home = '/home';
+  static const home = AscentTabs.home;
   static const history = '/history';
-  static const things = '/things';
+  static const things = AscentTabs.things;
   static const vault = '/vault';
   static const bookReader = '/book-reader';
   static const today = '/today';
@@ -63,15 +64,17 @@ class AscentRoutes {
   static const momentumOnboarding = '/momentum-onboarding';
   static const momentumOnboardingAlt = '/momentum/onboarding';
   static const medicine = '/medicine';
-  static const aiAssistant = '/ai-assistant';
+  static const aiAssistant = AscentTabs.assistant;
   static const hydration = '/hydration';
-  static const thoughtWall = '/thought-wall';
+  static const thoughtWall = AscentTabs.mind;
   static const chaiBreak = '/chai-break';
   static const pipeline = '/pipeline';
   static const pipelineCard = '/pipeline/:id';
   static const analytics = '/analytics';
   static const analyticsSeriesReport = '/analytics/series/:id';
+  /// Legacy location of the old More tab; redirects to [you].
   static const more = '/more';
+  static const you = AscentTabs.you;
   static const studyPlan = '/study-plan';
   static const dsa = '/dsa';
   static const interviewPrep = '/interview-prep';
@@ -126,11 +129,10 @@ final ascentRouter = GoRouter(
       ),
     ),
 
-    // ── Main shell (bottom nav + drawer) ──────────────────────────────────
+    // ── Main shell: Home · Things · Assistant · Mind · You (CLAUDE.md §4) ──
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => MainScaffold(shell: shell),
       branches: [
-        // Tab 0: Home (Unified life overview)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -141,66 +143,98 @@ final ascentRouter = GoRouter(
             ),
           ],
         ),
-
-        // Tab 1: Reminders & Alerts
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.reminders,
+              path: AscentRoutes.things,
+              // A deep link with new parameters starts a fresh hub; returning
+              // to the tab keeps the same location and so keeps its state.
               pageBuilder: (context, state) => NoTransitionPage(
-                child: RemindersScreen(
-                  openCalendar: state.uri.queryParameters['view'] == 'calendar',
-                  initialCalendarDate: DateTime.tryParse(
-                    state.uri.queryParameters['date'] ?? '',
-                  ),
-                  initialReminderId: int.tryParse(
-                    state.uri.queryParameters['reminder'] ?? '',
+                child: ThingsHubScreen(
+                  key: ValueKey('things:${state.uri.query}'),
+                  initialTab: state.uri.queryParameters['tab'],
+                  initialFocusId: state.uri.queryParameters['focus'],
+                  initialMode: state.uri.queryParameters['mode'],
+                ),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AscentRoutes.aiAssistant,
+              pageBuilder: (context, state) => NoTransitionPage(
+                child: Theme(
+                  data: AscentTheme.assistant(Theme.of(context)),
+                  child: FeatureGuideHost(
+                    feature: 'Riya',
+                    child: AiAssistantScreen(
+                      key: ValueKey('assistant:${state.uri.query}'),
+                      initialPrompt: state.uri.queryParameters['prompt'],
+                      sourceThoughtId: int.tryParse(
+                        state.uri.queryParameters['thought'] ?? '',
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ],
         ),
-
-        // Tab 2: Private Vault
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.vault,
-              pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: VaultScreen()),
+              path: AscentRoutes.thoughtWall,
+              pageBuilder: (context, state) => NoTransitionPage(
+                child: ThoughtBoardScreen(
+                  key: ValueKey('mind:${state.uri.query}'),
+                  initialThoughtId: int.tryParse(
+                    state.uri.queryParameters['thought'] ?? '',
+                  ),
+                ),
+              ),
             ),
           ],
         ),
-
-        // Tab 3: More (Hub & tools)
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.more,
+              path: AscentRoutes.you,
               pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: MoreScreen()),
+                  const NoTransitionPage(child: YouScreen()),
             ),
           ],
         ),
       ],
     ),
+    GoRoute(path: AscentRoutes.more, redirect: (_, _) => AscentRoutes.you),
 
+    // Reminders live inside Things; the screen opens over the shell.
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.reminders,
+      builder: (context, state) => RemindersScreen(
+        openCalendar: state.uri.queryParameters['view'] == 'calendar',
+        initialCalendarDate: DateTime.tryParse(
+          state.uri.queryParameters['date'] ?? '',
+        ),
+        initialReminderId: int.tryParse(
+          state.uri.queryParameters['reminder'] ?? '',
+        ),
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.vault,
+      builder: (context, state) => const VaultScreen(),
+    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.history,
       builder: (context, state) => HistoryScreen(
         module: state.uri.queryParameters['module'],
         entity: state.uri.queryParameters['entity'],
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.things,
-      builder: (context, state) => ThingsHubScreen(
-        initialTab: state.uri.queryParameters['tab'],
-        initialFocusId: state.uri.queryParameters['focus'],
-        initialMode: state.uri.queryParameters['mode'],
       ),
     ),
 
@@ -229,22 +263,6 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.aiAssistant,
-      builder: (context, state) => Theme(
-        data: AscentTheme.assistant(Theme.of(context)),
-        child: FeatureGuideHost(
-          feature: 'Riya',
-          child: AiAssistantScreen(
-            initialPrompt: state.uri.queryParameters['prompt'],
-            sourceThoughtId: int.tryParse(
-              state.uri.queryParameters['thought'] ?? '',
-            ),
-          ),
-        ),
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.medicine,
       builder: (context, state) => const MedicineScreen(),
     ),
@@ -257,15 +275,6 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: '/promises',
       builder: (_, _) => const PromisesScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.thoughtWall,
-      builder: (context, state) => ThoughtBoardScreen(
-        initialThoughtId: int.tryParse(
-          state.uri.queryParameters['thought'] ?? '',
-        ),
-      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

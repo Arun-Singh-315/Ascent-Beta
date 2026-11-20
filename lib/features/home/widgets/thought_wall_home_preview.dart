@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/section_card.dart';
@@ -706,7 +707,7 @@ class _ThoughtWallHomePreviewState
                             }
                             return;
                           }
-                          context.push('/thought-wall?thought=${thought.id}');
+                          context.open('/thought-wall?thought=${thought.id}');
                         },
                         child: Container(
                           key: ValueKey('home_thought_${thought.id}'),
@@ -1092,7 +1093,7 @@ class _ThoughtWallHomePreviewState
                   HomeSectionArrowButton(
                     tooltip: 'Open Mindspace',
                     color: const Color(0xFF7C5CB7),
-                    onTap: () => context.push('/thought-wall'),
+                    onTap: () => context.open('/thought-wall'),
                   ),
                 ],
               );
@@ -1155,7 +1156,7 @@ class _ThoughtWallHomePreviewState
       key: const ValueKey('home_mind_space_card'),
       icon: Icons.psychology_alt_outlined,
       title: 'Mindspace',
-      onOpen: () => context.push('/thought-wall'),
+      onOpen: () => context.open('/thought-wall'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1280,7 +1281,7 @@ class _ThoughtWallHomePreviewState
                     locked: locked,
                     timeAgo: _formatTimeAgo(latest.createdAt),
                     maxLines: widget.previewLimit == 1 ? 2 : 4,
-                    onTap: () => context.push('/thought-wall?thought=${latest.id}'),
+                    onTap: () => context.open('/thought-wall?thought=${latest.id}'),
                     onAction: () => showHomeThoughtActions(
                       context,
                       ref,
@@ -1296,7 +1297,7 @@ class _ThoughtWallHomePreviewState
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(Rd.card),
-                onTap: () => context.push('/thought-wall'),
+                onTap: () => context.open('/thought-wall'),
                 child: Container(
                   key: const ValueKey('home_no_active_thoughts'),
                   width: double.infinity,

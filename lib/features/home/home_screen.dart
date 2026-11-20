@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_module_row.dart';
@@ -366,7 +367,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               title: 'Make this space yours',
                               subtitle: 'Choose what belongs on your Home.',
                               actionLabel: 'Open tools',
-                              onAction: () => context.push('/more'),
+                              onAction: () => context.open('/you'),
                             ),
 
                           // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16

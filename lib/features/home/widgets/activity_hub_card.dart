@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/section_card.dart';
@@ -145,7 +146,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       key: const ValueKey('home_activity_card'),
       icon: Icons.checklist_rounded,
       title: 'Things',
-      onOpen: () => context.push('/things'),
+      onOpen: () => context.open('/things'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -401,7 +402,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                   if (hasHero && heroActivity != null)
                                     ThingsHeroCard(
                                       activity: heroActivity,
-                                      onTap: () => context.push(
+                                      onTap: () => context.open(
                                         '/things?focus=${heroActivity.id}',
                                       ),
                                     ),

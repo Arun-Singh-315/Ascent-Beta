@@ -25,6 +25,14 @@ class AscentTextStyles {
     letterSpacing: -0.4,
   );
 
+  /// 34 px · Bold (w700) · h 1.20 · ls −0.4 — iOS Large Title (root tabs)
+  static TextStyle get largeTitle => GoogleFonts.dmSans(
+    fontSize: 34,
+    fontWeight: FontWeight.w700,
+    height: 1.20,
+    letterSpacing: -0.4,
+  );
+
   /// 48 px · Medium (w500) · h 1.15 · ls 0 — Focus timer (JetBrains Mono)
   static TextStyle get focusTimer => GoogleFonts.jetBrainsMono(
     fontSize: 48,

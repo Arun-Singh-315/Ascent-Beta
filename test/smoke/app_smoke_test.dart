@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,20 +88,24 @@ void main() {
         // Verify Tab 0 (Home) is loaded
         expect(ascentRouter.state.uri.path, AscentRoutes.home);
 
-        // Switch to Tab 1 (Reminders)
-        ascentRouter.go(AscentRoutes.reminders);
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(ascentRouter.state.uri.path, AscentRoutes.reminders);
+        // Each of the five tabs, plus the old tab locations.
+        for (final (location, path) in [
+          (AscentRoutes.things, AscentRoutes.things),
+          (AscentRoutes.aiAssistant, AscentRoutes.aiAssistant),
+          (AscentRoutes.thoughtWall, AscentRoutes.thoughtWall),
+          (AscentRoutes.you, AscentRoutes.you),
+          (AscentRoutes.more, AscentRoutes.you),
+          (AscentRoutes.reminders, AscentRoutes.reminders),
+        ]) {
+          ascentRouter.go(location);
+          await tester.pump(const Duration(milliseconds: 300));
+          expect(ascentRouter.state.uri.path, path);
+          expect(tester.takeException(), isNull, reason: location);
+        }
 
-        // Switch to Tab 2 (Money)
         ascentRouter.go(AscentRoutes.money);
         await tester.pump(const Duration(milliseconds: 300));
         expect(ascentRouter.state.uri.path, AscentRoutes.money);
-
-        // Switch to Tab 3 (More)
-        ascentRouter.go(AscentRoutes.more);
-        await tester.pump(const Duration(milliseconds: 300));
-        expect(ascentRouter.state.uri.path, AscentRoutes.more);
 
         // Revert to Tab 0 (Home)
         ascentRouter.go(AscentRoutes.home);
@@ -130,7 +135,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       // Thought Wall
-      ascentRouter.push(AscentRoutes.thoughtWall);
+      ascentRouter.open(AscentRoutes.thoughtWall);
       await tester.pump(const Duration(milliseconds: 300));
       expect(ascentRouter.state.uri.path, AscentRoutes.thoughtWall);
 

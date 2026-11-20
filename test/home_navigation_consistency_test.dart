@@ -1,5 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/shared_control_tokens.dart';
+import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/main_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +24,7 @@ void main() {
             StatefulShellRoute.indexedStack(
               builder: (context, state, shell) => MainScaffold(shell: shell),
               branches: [
-                for (final path in ['home', 'reminders', 'vault', 'more'])
+                for (final path in ['home', 'things', 'ai-assistant', 'thought-wall', 'you'])
                   StatefulShellBranch(
                     routes: [
                       GoRoute(
@@ -53,26 +53,22 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final blue = dark
-            ? SharedControlColors.actionBlueDark
-            : SharedControlColors.actionBlue;
-        for (final icon in [
-          Icons.home_rounded,
-          Icons.notifications_rounded,
-          Icons.lock_rounded,
-          Icons.widgets_rounded,
-        ]) {
-          final target = find.byIcon(icon);
-          await tester.tap(target);
+        final context = tester.element(find.byType(MainScaffold));
+        final active = context.glass.actionInk;
+        final inactive = context.glass.inkMuted;
+        const ids = ['home', 'things', 'assistant', 'mind', 'you'];
+        for (final id in ids) {
+          await tester.tap(find.byKey(ValueKey('tab_$id')));
           await tester.pumpAndSettle();
-          expect(tester.widget<Icon>(target).color, blue);
-          final selectedTile = find
-              .ancestor(of: target, matching: find.byType(AnimatedContainer))
-              .first;
-          final decoration =
-              tester.widget<AnimatedContainer>(selectedTile).decoration!
-                  as BoxDecoration;
-          expect(decoration.color, blue.withValues(alpha: dark ? .18 : .09));
+          for (final other in ids) {
+            final icon = tester.widget<Icon>(
+              find.descendant(
+                of: find.byKey(ValueKey('tab_$other')),
+                matching: find.byType(Icon),
+              ),
+            );
+            expect(icon.color, other == id ? active : inactive, reason: other);
+          }
           expect(tester.takeException(), isNull);
         }
         await tester.pumpWidget(const SizedBox());

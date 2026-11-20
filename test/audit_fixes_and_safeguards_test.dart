@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
-import 'package:ascent/features/more/more_screen.dart';
+import 'package:ascent/features/you/you_screen.dart';
 import 'package:ascent/features/reminders/widgets/in_app_reminder_dialog.dart';
 import 'package:ascent/core/database/app_database.dart';
 
@@ -40,7 +40,7 @@ void main() {
     });
 
     testWidgets(
-      'MoreScreen renders without overflow at 320px width and 2.0x text scale (Rule #13)',
+      'YouScreen renders without overflow at 320px width and 2.0x text scale (Rule #13)',
       (tester) async {
         tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
         tester.view.devicePixelRatio = 2.0;
@@ -59,7 +59,7 @@ void main() {
                 ).copyWith(textScaler: const TextScaler.linear(2.0)),
                 child: child!,
               ),
-              home: const MoreScreen(),
+              home: const YouScreen(),
             ),
           ),
         );

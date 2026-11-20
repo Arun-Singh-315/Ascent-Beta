@@ -1,8 +1,8 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -123,7 +123,7 @@ class _HomeAssistantHeroCardState extends ConsumerState<HomeAssistantHeroCard>
                     if (widget.onTap != null) {
                       widget.onTap!();
                     } else {
-                      context.push('/ai-assistant');
+                      context.open('/ai-assistant');
                     }
                   },
                   child: Padding(

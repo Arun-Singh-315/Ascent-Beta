@@ -125,7 +125,7 @@ void main() {
         }
 
         final routes = ascentRouter.configuration.routes;
-        // Reminders route is present in shell
+        // Reminders route is still registered
         expect(hasRoute(routes, AscentRoutes.reminders), isTrue);
         // Study / Task board route is present as parent route
         expect(hasRoute(routes, AscentRoutes.today), isTrue);
@@ -134,18 +134,23 @@ void main() {
       },
     );
 
-    testWidgets('MainScaffold tabs reflect Reminders in Tab 1', (tester) async {
-      // Find shell branch definition
+    testWidgets('Reminders open over the shell, not as a tab', (tester) async {
       final shellRoute =
           ascentRouter.configuration.routes.firstWhere(
                 (r) => r is StatefulShellRoute,
               )
               as StatefulShellRoute;
-      expect(shellRoute.branches.length, 4);
-      // Branch 1 contains /reminders
-      final branch1 = shellRoute.branches[1];
+      expect(shellRoute.branches.length, 5);
       expect(
-        branch1.routes.any(
+        shellRoute.branches.any(
+          (b) => b.routes.any(
+            (r) => r is GoRoute && r.path == AscentRoutes.reminders,
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        ascentRouter.configuration.routes.any(
           (r) => r is GoRoute && r.path == AscentRoutes.reminders,
         ),
         isTrue,

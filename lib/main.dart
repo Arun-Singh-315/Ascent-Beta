@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
 import 'app/theme/app_theme.dart';
+import 'app/app_navigation.dart';
 import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
@@ -115,8 +116,10 @@ Future<void> main() async {
       return;
     }
     if (currentUri != destination) {
-      if (destination != '/home' && !destination.startsWith('/home?')) {
-        ascentRouter.go('/home');
+      // Tab roots (Home, Things, Assistant, Mind, You) open as their tab;
+      // anything else opens over Home so back returns there.
+      if (AscentTabs.indexOf(destination) == null) {
+        ascentRouter.go(AscentTabs.home);
         ascentRouter.push(destination);
       } else {
         ascentRouter.go(destination);

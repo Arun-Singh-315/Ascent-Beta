@@ -51,7 +51,8 @@ void main() {
     await dao.carryToToday([id], now: nov20);
     await dao.setCompleted(id, true, now: nov20);
     final t = await get(id);
-    final kinds = (day) => historyForDay([t], day).map((e) => e.kind).toSet();
+    Set<HistoryKind> kinds(DateTime day) =>
+        historyForDay([t], day).map((e) => e.kind).toSet();
     expect(kinds(dayOf(nov18)), {HistoryKind.written});
     expect(kinds(dayOf(nov20)), {HistoryKind.carriedIn, HistoryKind.finished});
     expect(placeOf(t, nov20), ThoughtPlace.today); // done today

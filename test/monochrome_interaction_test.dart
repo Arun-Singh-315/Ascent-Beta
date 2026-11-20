@@ -42,7 +42,7 @@ void main() {
           StatefulShellRoute.indexedStack(
             builder: (_, _, shell) => MainScaffold(shell: shell),
             branches: [
-              for (final name in ['home', 'reminders', 'vault', 'more'])
+              for (final name in ['home', 'things', 'ai-assistant', 'thought-wall', 'you'])
                 StatefulShellBranch(
                   routes: [
                     GoRoute(
@@ -80,7 +80,7 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
-      for (final label in ['Home', 'Reminders', 'Vault', 'More']) {
+      for (final label in ['Home', 'Things', 'Riya', 'Mind', 'You']) {
         expect(find.text(label), findsOneWidget);
         expect(
           t.renderObject<RenderParagraph>(find.text(label)).didExceedMaxLines,
@@ -90,7 +90,7 @@ void main() {
       }
       expect(find.text('Reachable content'), findsOneWidget);
       expect(t.takeException(), isNull);
-      await t.tap(find.text('Reminders'));
+      await t.tap(find.text('Things'));
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
       await t.pumpWidget(const SizedBox());

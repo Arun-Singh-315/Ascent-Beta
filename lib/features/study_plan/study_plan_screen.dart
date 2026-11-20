@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -324,7 +325,7 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> {
         IconButton(
           icon: const Icon(Icons.auto_awesome_rounded, size: 20),
           tooltip: 'Ask Riya to build a plan',
-          onPressed: () => context.push(AscentRoutes.aiAssistant),
+          onPressed: () => context.open(AscentRoutes.aiAssistant),
         ),
       ],
       body: plansAsync.when(
@@ -374,7 +375,7 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> {
                     ),
                     const SizedBox(height: 24),
                     FilledButton.icon(
-                      onPressed: () => context.push(AscentRoutes.aiAssistant),
+                      onPressed: () => context.open(AscentRoutes.aiAssistant),
                       icon: const Icon(Icons.auto_awesome_rounded, size: 16),
                       label: const Text('Create Study Plan with Riya'),
                       style: FilledButton.styleFrom(

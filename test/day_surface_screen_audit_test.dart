@@ -15,7 +15,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/money/money_screen.dart';
-import 'package:ascent/features/more/more_screen.dart';
+import 'package:ascent/features/you/you_screen.dart';
 import 'package:ascent/features/analytics/analytics_screen.dart';
 import 'package:ascent/features/consistency/consistency_screen.dart';
 import 'package:ascent/features/dsa/dsa_screen.dart';
@@ -42,7 +42,7 @@ void main() {
     'HomeScreen': const HomeScreen(),
     'RemindersScreen': const RemindersScreen(),
     'MoneyScreen': const MoneyScreen(),
-    'MoreScreen': const MoreScreen(),
+    'YouScreen': const YouScreen(),
     'AnalyticsScreen': const AnalyticsScreen(),
     'ConsistencyScreen': const ConsistencyScreen(),
     'DsaScreen': const DsaScreen(),

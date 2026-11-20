@@ -37,6 +37,10 @@ class AscentScaffold extends StatelessWidget {
   final bool safeAreaTop;
   final bool safeAreaBottom;
 
+  /// Shows [title] as an iOS large title above the body that collapses into
+  /// the nav bar as the body scrolls (root tabs, CLAUDE.md §4).
+  final bool largeTitle;
+
   const AscentScaffold({
     super.key,
     this.title,
@@ -57,11 +61,25 @@ class AscentScaffold extends StatelessWidget {
     this.showFeatureHelp = true,
     this.safeAreaTop = true,
     this.safeAreaBottom = true,
+    this.largeTitle = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (largeTitle && title != null && titleWidget == null) {
+      return _LargeTitleScaffold(scaffold: this);
+    }
+    return _buildScaffold(context);
+  }
+
+  Widget _buildScaffold(
+    BuildContext context, {
+    Widget? collapsedTitle,
+    Widget? bodyOverride,
+  }) {
     final g = context.glass;
+    final titleWidget = collapsedTitle ?? this.titleWidget;
+    final body = bodyOverride ?? this.body;
 
     return Scaffold(
       backgroundColor: backgroundColor ?? g.bg,
@@ -113,6 +131,107 @@ class AscentScaffold extends StatelessWidget {
                 glow2: glow2,
                 child: FeatureGuideHost(feature: title, child: body),
               ),
+      ),
+    );
+  }
+}
+
+class _LargeTitleScaffold extends StatefulWidget {
+  const _LargeTitleScaffold({required this.scaffold});
+
+  final AscentScaffold scaffold;
+
+  @override
+  State<_LargeTitleScaffold> createState() => _LargeTitleScaffoldState();
+}
+
+class _LargeTitleScaffoldState extends State<_LargeTitleScaffold> {
+  /// 0 = large title fully shown, 1 = collapsed into the nav bar.
+  final _collapse = ValueNotifier<double>(0);
+
+  @override
+  void dispose() {
+    _collapse.dispose();
+    super.dispose();
+  }
+
+  bool _onScroll(ScrollNotification n) {
+    if (n.depth == 0 && n.metrics.axis == Axis.vertical) {
+      _collapse.value = (n.metrics.pixels / _collapseDistance).clamp(0.0, 1.0);
+    }
+    return false;
+  }
+
+  static const _collapseDistance = 52.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.scaffold;
+    final g = context.glass;
+    final title = s.title!;
+    final collapsedTitle = ValueListenableBuilder<double>(
+      valueListenable: _collapse,
+      builder: (context, value, _) => Opacity(
+        opacity: value,
+        child: ExcludeSemantics(
+          excluding: value < .5,
+          child: Text(
+            title,
+            style: AscentTextStyles.listRowTitle.copyWith(color: g.ink),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+    final header = ValueListenableBuilder<double>(
+      valueListenable: _collapse,
+      builder: (context, value, child) => ClipRect(
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          heightFactor: 1 - value,
+          child: Opacity(opacity: 1 - value, child: child),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s16,
+          AppSpace.s0,
+          AppSpace.s16,
+          AppSpace.s8,
+        ),
+        child: Semantics(
+          header: true,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                key: const ValueKey('large_title'),
+                style: AscentTextStyles.largeTitle.copyWith(color: g.ink),
+                maxLines: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return s._buildScaffold(
+      context,
+      collapsedTitle: collapsedTitle,
+      bodyOverride: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          header,
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _onScroll,
+              child: s.body,
+            ),
+          ),
+        ],
       ),
     );
   }

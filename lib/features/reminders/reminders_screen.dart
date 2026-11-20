@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../calendar/calendar_event_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
@@ -445,7 +446,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             key: const ValueKey('calendar_dayboard_button'),
             tooltip: 'Dayboard & Activities',
             icon: const Icon(Icons.dashboard_customize_outlined),
-            onPressed: () => context.push('/things'),
+            onPressed: () => context.open('/things'),
           ),
           IconButton(
             tooltip: 'Routines & Plans',
@@ -2020,7 +2021,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         borderRadius: BorderRadius.circular(16),
         onTap: () {
           HapticFeedback.lightImpact();
-          context.push('/things');
+          context.open('/things');
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

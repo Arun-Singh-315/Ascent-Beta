@@ -704,6 +704,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
 
     return AscentScaffold(
       title: 'Things',
+      largeTitle: true,
+      showBackButton: false,
       backgroundColor: Theme.of(context).colorScheme.surface,
       actions: [
         AscentButton.icon(
@@ -718,6 +720,13 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
           tooltip: 'Things calendar',
           semanticLabel: 'Things calendar',
           onPressed: () => context.push('/calendar?scope=things'),
+        ),
+        AscentButton.icon(
+          key: const ValueKey('things_reminders_button'),
+          icon: Icons.notifications_none_rounded,
+          tooltip: 'Reminders',
+          semanticLabel: 'Reminders',
+          onPressed: () => context.push('/reminders'),
         ),
         AscentButton.icon(
           icon: Icons.history_rounded,

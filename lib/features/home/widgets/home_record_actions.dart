@@ -1,3 +1,4 @@
+import 'package:ascent/app/app_navigation.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../plans/widgets/plan_protection_dialog.dart';
@@ -38,7 +39,7 @@ Future<void> showHomeThoughtActions(
   );
   if (!context.mounted) return;
   if (action == 'view') {
-    context.push('/thought-wall?thought=${thought.id}');
+    context.open('/thought-wall?thought=${thought.id}');
   } else if (action == 'edit') {
     final confirmed = await AscentDialog.confirm(
       context: context,
