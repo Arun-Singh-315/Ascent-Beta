@@ -1,4 +1,3 @@
-import '../home/widgets/activity_starter_actions.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,20 +6,28 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
+import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
+import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../../shared/widgets/ascent_action_menu.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
-import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/undo_snackbar.dart';
 import '../home/widgets/activity_composer.dart';
-import '../plans/widgets/home_plans_preview.dart';
-import 'screens/add_activity_screen.dart';
 import '../home/widgets/activity_row_item.dart';
+import '../plans/widgets/home_plans_preview.dart';
+import 'add_activity_sheet.dart';
+import 'models/things_sections.dart';
+import 'screens/add_activity_screen.dart';
+import 'things_providers.dart';
 
+/// The planning hero (CLAUDE.md §5.2): Today · Upcoming · Anytime · Routines.
 class ThingsHubScreen extends ConsumerStatefulWidget {
   const ThingsHubScreen({
     super.key,
@@ -29,6 +36,8 @@ class ThingsHubScreen extends ConsumerStatefulWidget {
     this.initialMode,
   });
 
+  /// `today` (or legacy `now` / `done`), `upcoming`, `anytime`, `routines`
+  /// (or legacy `plans`).
   final String? initialTab;
   final String? initialFocusId;
   final String? initialMode;
@@ -37,42 +46,30 @@ class ThingsHubScreen extends ConsumerStatefulWidget {
   ConsumerState<ThingsHubScreen> createState() => _ThingsHubScreenState();
 }
 
-class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
-    with SingleTickerProviderStateMixin {
+class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
+  late ThingsSegment _segment = thingsSegmentForTab(widget.initialTab);
+  late bool _showCompleted = widget.initialTab == 'done';
+  late bool _wrapupMode = widget.initialMode == 'wrapup';
   String _query = '';
-  String _section = 'all';
-  String _tab = 'now';
-  bool _expanded = true;
-  bool _wrapupMode = false;
   bool _showSearch = false;
+  bool _moving = false;
   final FocusNode _composerFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
-  late final AnimationController _reveal;
 
-  static const _sections = {
-    'overdue': 'Overdue',
-    'scheduled': 'Scheduled',
-    'anytime': 'Anytime',
-  };
+  static const _starters = [
+    'Drink a glass of water',
+    'Read for 20 minutes',
+    'Plan tomorrow',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _reveal = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 180),
-      value: 1,
-    );
-    if ({'now', 'done', 'plans'}.contains(widget.initialTab)) {
-      _tab = widget.initialTab!;
-    }
-    _wrapupMode = widget.initialMode == 'wrapup';
     _checkInitialFocus();
   }
 
   @override
   void dispose() {
-    _reveal.dispose();
     _searchController.dispose();
     _composerFocusNode.dispose();
     super.dispose();
@@ -88,474 +85,574 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
       if (!activities.any(
         (a) => a.id == focusId || a.linkedTaskId.toString() == focusId,
       )) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'This activity is no longer pending. Here are your Things.',
-            ),
-          ),
+        AscentSnackBar.show(
+          context,
+          message: 'This activity is no longer pending. Here are your Things.',
         );
       }
     });
   }
 
-  String _sectionFor(TodayActivityItem item) => item.isOverdue
-      ? 'overdue'
-      : item.scheduledTime != null
-      ? 'scheduled'
-      : 'anytime';
+  Color get _dueColor => context.glass.isDark
+      ? SharedControlColors.dueRedDark
+      : SharedControlColors.dueRed;
 
-  Color _sectionColor(BuildContext context, String section) =>
-      switch (section) {
-        'overdue' => SharedControlColors.dueRed,
-        'scheduled' =>
-          context.glass.isDark
-              ? SharedControlColors.actionBlueDark
-              : SharedControlColors.actionBlue,
-        _ => context.glass.inkMuted,
-      };
+  // ---------------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------------
 
-  void _selectSection(String section) {
-    HapticFeedback.selectionClick();
-    setState(() {
-      _expanded = _section == section ? !_expanded : true;
-      _section = section;
-    });
-    if (MediaQuery.disableAnimationsOf(context) || !_expanded) {
-      _reveal.value = 1;
+  void _selectSegment(ThingsSegment segment) {
+    setState(() => _segment = segment);
+  }
+
+  void _toggleSearch() => setState(() {
+    _showSearch = !_showSearch;
+    if (!_showSearch) {
+      _query = '';
+      _searchController.clear();
+    }
+  });
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() => _query = '');
+  }
+
+  /// Moves dated tasks to [day] and offers Undo. Reminders move with them.
+  Future<void> _moveTasks(
+    Iterable<int> taskIds,
+    DateTime day, {
+    required String Function(int count) message,
+  }) async {
+    if (_moving) return;
+    setState(() => _moving = true);
+    HapticFeedback.lightImpact();
+    final dao = ref.read(taskDaoProvider);
+    try {
+      final moved = await dao.moveManyToDay(taskIds, day);
+      if (!mounted) return;
+      if (moved.isEmpty) {
+        AscentSnackBar.show(context, message: 'Nothing could be moved.');
+        return;
+      }
+      showUndoSnackbar(
+        context,
+        message: message(moved.length),
+        onUndo: () => dao.restorePlannedDays(moved),
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not move your things. Nothing changed.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _moving = false);
+    }
+  }
+
+  DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  Future<void> _moveOverdueToToday(ThingsTodayView view) => _moveTasks(
+    view.movableOverdueTaskIds,
+    _today,
+    message: (n) => 'Moved $n ${n == 1 ? 'thing' : 'things'} to today',
+  );
+
+  Future<void> _carryOverToTomorrow(ThingsTodayView view) async {
+    final ids = [
+      for (final a in [...view.overdue, ...view.today])
+        if (a.linkedTaskId != null && !a.isDailyStanding) a.linkedTaskId!,
+    ];
+    await _moveTasks(
+      ids,
+      _today.add(const Duration(days: 1)),
+      message: (n) => 'Moved $n ${n == 1 ? 'thing' : 'things'} to tomorrow',
+    );
+    if (mounted) setState(() => _wrapupMode = false);
+  }
+
+  /// Empty-state starter: creates a real to-do for today, with Undo.
+  Future<void> _addStarter(String title) async {
+    final dao = ref.read(taskDaoProvider);
+    final id = await dao.insertTask(
+      TaskTableCompanion.insert(title: title, plannedDate: Value(_today)),
+    );
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    showUndoSnackbar(
+      context,
+      message: 'Added “$title” to today',
+      onUndo: () => dao.deleteTask(id),
+    );
+  }
+
+  void _focusComposer() {
+    if (_usesScrollingControls(context)) {
+      _openAddScreen();
     } else {
-      _reveal.forward(from: 0);
+      _composerFocusNode.requestFocus();
     }
   }
 
-  Future<void> _showViews() async {
-    final view = await showAscentActionMenu<String>(
-      context: context,
-      title: 'Your things',
-      actions: const [
-        AscentAction('now', 'Today', Icons.today_outlined),
-        AscentAction('done', 'Completed', Icons.check_circle_outline_rounded),
-        AscentAction('plans', 'Plans', Icons.event_note_outlined),
-        AscentAction('history', 'All history', Icons.history_rounded),
-      ],
-    );
-    if (!mounted || view == null) return;
-    if (view == 'history') {
-      context.push('/history');
-      return;
-    }
-    setState(() {
-      _tab = view;
-      _section = 'all';
-      _expanded = true;
-    });
-  }
+  void _openAddScreen() => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const AddActivityScreen()));
 
-  int _compareSchedule(TodayActivityItem a, TodayActivityItem b) {
-    final first = a.scheduledTime ?? a.plannedDate;
-    final second = b.scheduledTime ?? b.plannedDate;
-    if (first == null) return second == null ? 0 : 1;
-    return second == null ? -1 : first.compareTo(second);
-  }
+  bool _usesScrollingControls(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(1) >= 1.45 ||
+      MediaQuery.sizeOf(context).height < 600;
 
-  Widget _buildBoardHeader(BuildContext context, List<TodayActivityItem> rows) {
+  // ---------------------------------------------------------------------------
+  // Building blocks
+  // ---------------------------------------------------------------------------
+
+  Widget _row(TodayActivityItem item) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: ActivityRowItem(
+      key: ValueKey('things_row_${item.id}'),
+      activity: item,
+      compact: true,
+      ground: true,
+      hubStyle: true,
+    ),
+  );
+
+  Widget _sectionHeader(
+    String title, {
+    Color? color,
+    int? count,
+    Widget? trailing,
+    Key? key,
+  }) {
     final g = context.glass;
-    final disabledMotion = MediaQuery.disableAnimationsOf(context);
-    final allOpen = _section == 'all' && _expanded;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        InkWell(
-          key: const ValueKey('things_show_all'),
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _selectSection('all'),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
-              color: _section == 'all' && _expanded
-                  ? g.line.withValues(alpha: g.isDark ? 0.12 : 0.06)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _section == 'all' && _expanded
-                    ? g.line.withValues(alpha: g.isDark ? 0.30 : 0.18)
-                    : Colors.transparent,
-                width: 1,
+    return Padding(
+      key: key,
+      padding: const EdgeInsets.fromLTRB(20, 20, 12, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                count == null ? title : '$title · $count',
+                style: AscentTextStyles.sectionHeading.copyWith(
+                  color: color ?? g.ink,
+                ),
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_tab == 'done' ? 'Completed today' : 'All things'} · ${rows.length.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      color: g.ink,
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                AnimatedRotation(
-                  turns: allOpen ? .5 : 0,
-                  duration: disabledMotion
-                      ? Duration.zero
-                      : const Duration(milliseconds: 180),
-                  child: Icon(
-                    Icons.expand_more_rounded,
-                    color: g.inkMuted,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
           ),
-        ),
-        if (_tab == 'now')
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final large = MediaQuery.textScalerOf(context).scale(1) >= 1.45;
-                final headings = [
-                  for (final entry in _sections.entries)
-                    _buildSectionHeading(
-                      context,
-                      entry.key,
-                      entry.value,
-                      rows.where((a) => _sectionFor(a) == entry.key).length,
-                      large,
-                    ),
-                ];
-                // Keep the full labels readable at accessibility text sizes.
-                return large
-                    ? Column(children: headings)
-                    : Row(
-                        children: [
-                          for (final heading in headings)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 2.5,
-                                ),
-                                child: heading,
-                              ),
-                            ),
-                        ],
-                      );
-              },
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Divider(
-            height: 1,
-            thickness: 0.6,
-            color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.20),
-          ),
-        ),
-      ],
+          ?trailing,
+        ],
+      ),
     );
   }
 
-  Widget _buildSectionHeading(
-    BuildContext context,
-    String section,
-    String label,
-    int count,
-    bool large,
-  ) {
+  /// A grouped, rounded list of rows (CLAUDE.md §3.3).
+  Widget _group(List<TodayActivityItem> items, {Key? key}) {
     final g = context.glass;
-    final color = _sectionColor(context, section);
-    final active = _section == section && _expanded;
-    final duration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : const Duration(milliseconds: 180);
-    return Semantics(
-      button: true,
-      excludeSemantics: true,
-      expanded: _expanded && (_section == section || _section == 'all'),
-      label: '$label, $count ${count == 1 ? 'thing' : 'things'}',
-      child: InkWell(
-        key: ValueKey('things_heading_$section'),
-        borderRadius: BorderRadius.circular(10),
-        onTap: () => _selectSection(section),
-        child: AnimatedContainer(
-          duration: duration,
-          decoration: BoxDecoration(
-            color: active
-                ? color.withValues(alpha: g.isDark ? .14 : .08)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: active
-                  ? color.withValues(alpha: g.isDark ? 0.35 : 0.22)
-                  : Colors.transparent,
-              width: 0.8,
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: DecoratedSliver(
+        key: key,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: g.line.withValues(alpha: g.isDark ? .30 : .20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: g.shadow.withValues(alpha: g.isDark ? 0 : .05),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
             ),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: large ? 16 : 4,
-            vertical: 8,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                '$label - ${count.toString().padLeft(2, '0')}',
-                textAlign: large ? TextAlign.start : TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 13,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                  letterSpacing: -0.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              AnimatedOpacity(
-                opacity: active ? 1 : 0,
-                duration: duration,
-                child: Center(
-                  child: Container(
-                    width: 14,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          ],
+        ),
+        sliver: SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          sliver: SliverList.separated(
+            itemCount: items.length,
+            itemBuilder: (_, i) => _row(items[i]),
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              thickness: .5,
+              indent: 46,
+              color: g.line.withValues(alpha: .6),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActivities(BuildContext context, List<TodayActivityItem> items) {
-    final g = context.glass;
-    final rows = items
-        .where(
-          (a) =>
-              (a.status == TodayActivityStatus.done) == (_tab == 'done') &&
-              (_query.isEmpty ||
-                  '${a.title} ${a.notes ?? ''}'.toLowerCase().contains(_query)),
-        )
-        .toList();
-    final groups = <String, List<TodayActivityItem>>{};
-    for (final item in rows) {
-      final section = _sectionFor(item);
-      if (_section != 'all' && _section != section) continue;
-      groups.putIfAbsent(section, () => []).add(item);
-    }
-    final originalOrder = {
-      for (final (index, item) in rows.indexed) item.id: index,
-    };
-    for (final entry in groups.entries) {
-      entry.value.sort((a, b) {
-        final order = entry.key == 'anytime' ? 0 : _compareSchedule(a, b);
-        return order != 0
-            ? order
-            : originalOrder[a.id]!.compareTo(originalOrder[b.id]!);
-      });
-    }
-    final entries = <Widget Function()>[];
-    if (_expanded) {
-      if (groups.isEmpty) entries.add(() => _buildEmpty(context, items));
-      for (final section in _sections.keys) {
-        final group = groups[section];
-        if (group == null) continue;
-        if (_section == 'all' && _tab == 'now') {
-          entries.add(
-            () => Padding(
-              padding: const EdgeInsets.fromLTRB(4, 24, 4, 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: _sectionColor(context, section),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      section == 'scheduled'
-                          ? 'Scheduled today'
-                          : _sections[section]!,
-                      style: TextStyle(
-                        color: _sectionColor(context, section),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        for (final (index, item) in group.indexed) {
-          if (index > 0) {
-            entries.add(
-              () => Divider(
-                height: 1,
-                thickness: .5,
-                indent: 46,
-                color: g.line.withValues(alpha: .6),
-              ),
-            );
-          }
-          entries.add(
-            () => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: ActivityRowItem(
-                key: ValueKey('things_row_${item.id}'),
-                activity: item,
-                compact: true,
-                ground: true,
-                hubStyle: true,
-              ),
-            ),
-          );
-        }
-      }
-      entries.add(() => const SizedBox(height: 14));
-    }
-    return CustomScrollView(
-      key: ValueKey('things_list_$_tab'),
-      slivers: [
-        if (_showSearch)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: _buildSearch(),
-            ),
-          ),
-        SliverToBoxAdapter(child: _buildSummary(context, items)),
-        if (_wrapupMode && _tab == 'now')
-          SliverToBoxAdapter(child: _buildWrapup(context)),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-          sliver: DecoratedSliver(
-            key: const ValueKey('things_connected_card'),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: g.line.withValues(alpha: g.isDark ? .30 : .20),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: g.shadow.withValues(alpha: g.isDark ? .14 : .05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            sliver: SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              sliver: SliverMainAxisGroup(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: _buildBoardHeader(context, rows),
-                    ),
-                  ),
-                  SliverFadeTransition(
-                    opacity: _reveal.drive(
-                      CurveTween(curve: Curves.easeOutCubic),
-                    ),
-                    sliver: SliverList.builder(
-                      itemCount: entries.length,
-                      itemBuilder: (context, index) => entries[index](),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  List<Widget> _section(
+    String title,
+    List<TodayActivityItem> items, {
+    required String id,
+    Color? color,
+    Widget? trailing,
+  }) {
+    if (items.isEmpty) return const [];
+    return [
+      SliverToBoxAdapter(
+        child: _sectionHeader(
+          title,
+          color: color,
+          count: items.length,
+          trailing: trailing,
+          key: ValueKey('things_section_$id'),
         ),
-        if (_tab == 'done')
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: AscentButton.outlined(
-                label: 'Browse all history',
-                icon: Icons.history_rounded,
-                onPressed: () => context.push('/history'),
-              ),
-            ),
-          ),
-      ],
-    );
+      ),
+      _group(items, key: ValueKey('things_group_$id')),
+    ];
   }
 
-  Widget _buildSummary(BuildContext context, List<TodayActivityItem> items) {
+  Widget _box(Widget child) => SliverToBoxAdapter(
+    child: Padding(padding: const EdgeInsets.all(16), child: child),
+  );
+
+  Widget _fill(Widget child) =>
+      SliverFillRemaining(hasScrollBody: false, child: child);
+
+  Widget _noMatches() => _box(
+    EmptyState.inline(
+      icon: Icons.search_off_rounded,
+      title: 'No things match “$_query”',
+      actionLabel: 'Clear search',
+      onAction: _clearSearch,
+    ),
+  );
+
+  Widget _summary(List<TodayActivityItem> items) {
     final g = context.glass;
-    final done = items
-        .where((a) => a.status == TodayActivityStatus.done)
-        .length;
+    final done = items.where((a) => a.status == TodayActivityStatus.done);
     final total = items.length;
-    final progress = total > 0 ? (done / total).clamp(0.0, 1.0) : 0.0;
+    if (total == 0) return const SizedBox.shrink();
+    final progress = (done.length / total).clamp(0.0, 1.0);
+    final left = total - done.length;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _tab == 'done' ? 'Completed' : 'Today',
-            style: TextStyle(
-              color: g.ink,
-              fontSize: 30,
-              height: 1.15,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -.8,
+            left == 0
+                ? 'All done · ${done.length} completed'
+                : '$left left · ${done.length} done',
+            style: AscentTextStyles.supportingText.copyWith(color: g.inkMuted),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 4,
+              backgroundColor: g.line.withValues(alpha: g.isDark ? .35 : .20),
+              color: progress == 1 ? context.doneInk : g.actionInk,
             ),
           ),
-          const SizedBox(height: 7),
-          Text(
-            '${items.length - done} remaining · $done completed',
-            style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.4),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Segments
+  // ---------------------------------------------------------------------------
+
+  List<Widget> _todaySlivers(List<TodayActivityItem> items) {
+    final all = groupToday(items);
+    final view = ThingsTodayView(
+      overdue: all.overdue.where((a) => matchesThingsQuery(a, _query)).toList(),
+      today: all.today.where((a) => matchesThingsQuery(a, _query)).toList(),
+      completed: all.completed
+          .where((a) => matchesThingsQuery(a, _query))
+          .toList(),
+    );
+    final hasPending = all.overdue.isNotEmpty || all.today.isNotEmpty;
+
+    if (all.isEmpty && !items.any(isAnytimeThing)) {
+      return [
+        _fill(
+          EmptyState(
+            icon: Icons.check_circle_outline_rounded,
+            title: 'Your day is wide open',
+            subtitle:
+                'Add one thing you want to get done today. You can add a time or reminder whenever you like.',
+            actionLabel: 'Add your first thing',
+            onAction: _focusComposer,
+            starters: [
+              for (final title in _starters)
+                EmptyStarter(label: title, onTap: () => _addStarter(title)),
+            ],
           ),
-          if (total > 0 && _tab == 'now') ...[
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: Container(
-                height: 3.5,
-                decoration: BoxDecoration(
-                  color: g.line.withValues(alpha: g.isDark ? 0.35 : 0.20),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: progress,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: progress == 1.0
-                          ? context.doneInk
-                          : (g.isDark
-                                ? SharedControlColors.actionBlueDark
-                                : SharedControlColors.actionBlue),
-                      borderRadius: BorderRadius.circular(3),
+        ),
+      ];
+    }
+    if (_query.isNotEmpty && view.isEmpty) return [_noMatches()];
+
+    return [
+      if (_query.isEmpty) SliverToBoxAdapter(child: _summary(items)),
+      if (_wrapupMode && hasPending)
+        SliverToBoxAdapter(child: _buildWrapup(all)),
+      ..._section(
+        'Overdue',
+        view.overdue,
+        id: 'overdue',
+        color: _dueColor,
+        trailing: view.movableOverdueTaskIds.isEmpty
+            ? null
+            : AscentButton.ghost(
+                key: const ValueKey('things_move_overdue'),
+                label: 'Move all to today',
+                compact: true,
+                loading: _moving,
+                onPressed: () => _moveOverdueToToday(view),
+              ),
+      ),
+      if (view.today.isNotEmpty)
+        ..._section('Today', view.today, id: 'today')
+      else if (_query.isEmpty && view.overdue.isEmpty)
+        _box(
+          EmptyState.inline(
+            icon: Icons.done_all_rounded,
+            title: all.completed.isEmpty
+                ? 'Nothing planned for today yet'
+                : 'All done for today',
+            actionLabel: 'Add a thing',
+            onAction: _focusComposer,
+          ),
+        ),
+      if (view.completed.isNotEmpty) ...[
+        SliverToBoxAdapter(child: _completedHeader(view.completed.length)),
+        if (_showCompleted || _query.isNotEmpty) ...[
+          _group(view.completed, key: const ValueKey('things_group_completed')),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: AscentButton.ghost(
+                label: 'Browse all history',
+                icon: Icons.history_rounded,
+                compact: true,
+                onPressed: () => context.push('/history'),
+              ),
+            ),
+          ),
+        ],
+      ],
+    ];
+  }
+
+  Widget _completedHeader(int count) {
+    final g = context.glass;
+    final open = _showCompleted || _query.isNotEmpty;
+    return Semantics(
+      button: true,
+      expanded: open,
+      excludeSemantics: true,
+      label: 'Completed, $count ${count == 1 ? 'thing' : 'things'}',
+      child: InkWell(
+        key: const ValueKey('things_completed_toggle'),
+        onTap: _query.isNotEmpty
+            ? null
+            : () {
+                HapticFeedback.selectionClick();
+                setState(() => _showCompleted = !_showCompleted);
+              },
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Completed ($count)',
+                    style: AscentTextStyles.sectionHeading.copyWith(
+                      color: g.inkMuted,
                     ),
                   ),
                 ),
+                AnimatedRotation(
+                  turns: open ? .5 : 0,
+                  duration: MediaQuery.disableAnimationsOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.expand_more_rounded,
+                    color: g.inkMuted,
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _upcomingSlivers() {
+    final async = ref.watch(upcomingThingsProvider);
+    final items = async.value;
+    if (items == null) return [_loadingSliver()];
+    final now = DateTime.now();
+    final days = groupUpcoming(
+      items.where((a) => matchesThingsQuery(a, _query)),
+      now,
+    );
+    if (days.isEmpty) {
+      if (_query.isNotEmpty) return [_noMatches()];
+      return [
+        _fill(
+          EmptyState(
+            icon: Icons.event_outlined,
+            title: 'Nothing coming up',
+            subtitle:
+                'Things you plan for later days show up here, grouped by day.',
+            actionLabel: 'Plan something',
+            onAction: () => AddActivitySheet.show(
+              context,
+              initialDate: _today.add(const Duration(days: 1)),
+            ),
+          ),
+        ),
+      ];
+    }
+    return [
+      for (final day in days)
+        ..._section(
+          upcomingDayLabel(day.day, now),
+          day.items,
+          id: 'day_${day.day.toIso8601String().substring(0, 10)}',
+        ),
+    ];
+  }
+
+  List<Widget> _anytimeSlivers(List<TodayActivityItem> items) {
+    final anytime = anytimeThings(
+      items,
+    ).where((a) => matchesThingsQuery(a, _query)).toList();
+    if (anytime.isEmpty) {
+      if (_query.isNotEmpty) return [_noMatches()];
+      return [
+        _fill(
+          EmptyState(
+            icon: Icons.inbox_outlined,
+            title: 'Nothing waiting for anytime',
+            subtitle:
+                'Keep things without a date here and pick them up when you have a moment.',
+            actionLabel: 'Add an anytime thing',
+            onAction: () => AddActivitySheet.show(context),
+          ),
+        ),
+      ];
+    }
+    return _section('No date', anytime, id: 'anytime');
+  }
+
+  List<Widget> _routineSlivers(List<TodayActivityItem> items) {
+    final daily = dailyRoutines(
+      items,
+    ).where((a) => matchesThingsQuery(a, _query)).toList();
+    return [
+      ..._section('Every day', daily, id: 'daily'),
+      SliverToBoxAdapter(child: _sectionHeader('Plans and routines')),
+      const SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverToBoxAdapter(child: HomePlansPreview()),
+      ),
+    ];
+  }
+
+  Widget _loadingSliver() => SliverPadding(
+    padding: const EdgeInsets.all(16),
+    sliver: SliverList.list(
+      children: [
+        SkeletonShimmer(height: 160),
+        const SizedBox(height: 12),
+        SkeletonShimmer(height: 120),
+      ],
+    ),
+  );
+
+  Widget _errorSliver() => _fill(
+    Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Unable to load your things. Your tasks and history are preserved.',
+              textAlign: TextAlign.center,
+              style: AscentTextStyles.supportingText.copyWith(
+                color: context.glass.inkMuted,
               ),
             ),
+            const SizedBox(height: 12),
+            AscentButton.tonal(
+              label: 'Retry',
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(todayActivitiesProvider),
+            ),
           ],
-        ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildWrapup(ThingsTodayView view) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: GlassSurface(
+        borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.nightlight_round, size: 16, color: g.actionInk),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Evening wrap-up',
+                    style: AscentTextStyles.listRowTitle.copyWith(color: g.ink),
+                  ),
+                ),
+                AscentButton.icon(
+                  icon: Icons.close_rounded,
+                  tooltip: 'Dismiss wrap-up',
+                  semanticLabel: 'Dismiss wrap-up',
+                  onPressed: () => setState(() => _wrapupMode = false),
+                ),
+              ],
+            ),
+            Text(
+              'Ready to close out today? Move what’s left to tomorrow in one tap.',
+              style: AscentTextStyles.supportingText.copyWith(
+                color: g.inkMuted,
+              ),
+            ),
+            const SizedBox(height: 10),
+            AscentButton.primary(
+              key: const ValueKey('things_carry_over'),
+              compact: true,
+              expanded: true,
+              label: 'Move to tomorrow',
+              icon: Icons.next_plan_outlined,
+              loading: _moving,
+              onPressed: () => _carryOverToTomorrow(view),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -566,206 +663,15 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
     hintText: 'Search your things',
     prefixIcon: const Icon(Icons.search_rounded, size: 20),
     suffixIcon: _query.isNotEmpty
-        ? IconButton(
-            icon: const Icon(Icons.clear_rounded, size: 18),
+        ? AscentButton.icon(
+            icon: Icons.clear_rounded,
             tooltip: 'Clear search',
-            onPressed: () {
-              _searchController.clear();
-              setState(() => _query = '');
-            },
+            semanticLabel: 'Clear search',
+            onPressed: _clearSearch,
           )
         : null,
     onChanged: (value) => setState(() => _query = value.trim().toLowerCase()),
   );
-
-  Widget _buildEmpty(BuildContext context, List<TodayActivityItem> items) {
-    final g = context.glass;
-    final filtered = _query.isNotEmpty || _section != 'all';
-    final IconData emptyIcon = _query.isNotEmpty
-        ? Icons.search_off_rounded
-        : _tab == 'done'
-        ? Icons.check_circle_outline_rounded
-        : _section == 'overdue'
-        ? Icons.alarm_off_rounded
-        : _section == 'scheduled'
-        ? Icons.schedule_rounded
-        : _section == 'anytime'
-        ? Icons.spa_outlined
-        : items.isEmpty
-        ? Icons.lightbulb_outline_rounded
-        : Icons.done_all_rounded;
-
-    final Color iconColor = _section == 'overdue' && _query.isEmpty
-        ? SharedControlColors.dueRed
-        : (_tab == 'done' || (!filtered && items.isNotEmpty)
-              ? context.doneInk
-              : g.inkMuted);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: iconColor.withValues(alpha: g.isDark ? 0.12 : 0.08),
-              ),
-              child: Icon(emptyIcon, size: 22, color: iconColor),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _query.isNotEmpty
-                  ? 'No matching things'
-                  : _tab == 'done'
-                  ? 'Nothing completed yet'
-                  : _section == 'overdue'
-                  ? 'Nothing overdue'
-                  : _section == 'scheduled'
-                  ? 'Nothing scheduled'
-                  : _section == 'anytime'
-                  ? 'No anytime things'
-                  : items.isEmpty
-                  ? 'What’s one thing for today?'
-                  : 'You’re all caught up',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: g.ink,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _query.isNotEmpty
-                  ? 'Try another search.'
-                  : _section == 'overdue'
-                  ? 'Your deadlines are up to date.'
-                  : _section == 'scheduled'
-                  ? 'Things with a time will appear here.'
-                  : _tab == 'done'
-                  ? 'Things you finish today will appear here.'
-                  : items.isEmpty
-                  ? 'Add a task or timed focus block to get your day started.'
-                  : 'Add a thing whenever you’re ready.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.4),
-            ),
-            if (filtered) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    _query = '';
-                    _section = 'all';
-                    _expanded = true;
-                  });
-                },
-                child: const Text('Show all things'),
-              ),
-            ] else if (_tab == 'now' && items.isEmpty) ...[
-              const SizedBox(height: 16),
-              const Center(child: ActivityStarterActions()),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _usesScrollingControls(BuildContext context) =>
-      MediaQuery.textScalerOf(context).scale(1) >= 1.45 ||
-      MediaQuery.sizeOf(context).height < 600;
-
-  Widget _buildWrapup(BuildContext context) {
-    final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: GlassSurface(
-        borderRadius: BorderRadius.circular(16),
-        padding: const EdgeInsets.all(12),
-        customBorder: Border.all(
-          color: SharedControlColors.actionBlue.withValues(alpha: 0.35),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.nightlight_round,
-                  size: 16,
-                  color: SharedControlColors.actionBlue,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Evening Wrap-up',
-                    style: TextStyle(
-                      color: g.ink,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 16),
-                  tooltip: 'Dismiss wrap-up',
-                  onPressed: () => setState(() => _wrapupMode = false),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Ready to close out today? Carry unfinished items over to tomorrow with one tap.',
-              style: TextStyle(color: g.inkMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            AscentButton.primary(
-              compact: true,
-              expanded: true,
-              label: 'Carry over to tomorrow',
-              icon: Icons.next_plan_outlined,
-              onPressed: () async {
-                HapticFeedback.lightImpact();
-                final messenger = ScaffoldMessenger.of(context);
-                final db = ref.read(databaseProvider);
-                final tomorrow = DateTime.now().add(const Duration(days: 1));
-                final items = await ref.read(todayActivitiesProvider.future);
-                final pendingTasks = items.where(
-                  (a) =>
-                      a.status != TodayActivityStatus.done &&
-                      a.linkedTaskId != null,
-                );
-                for (final a in pendingTasks) {
-                  await db.taskDao.updateTask(
-                    TaskTableCompanion(
-                      id: Value(a.linkedTaskId!),
-                      plannedDate: Value(tomorrow),
-                    ),
-                  );
-                }
-                if (mounted) {
-                  setState(() => _wrapupMode = false);
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Unfinished items moved to tomorrow.'),
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildComposer(BuildContext context) {
     if (!_usesScrollingControls(context)) {
@@ -774,119 +680,111 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
     return AscentButton.primary(
       label: 'Add a thing',
       icon: Icons.add_rounded,
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => const AddActivityScreen(),
-        ),
-      ),
+      onPressed: _openAddScreen,
     );
   }
 
   @override
-  Widget build(BuildContext context) => AscentScaffold(
-    title: 'Things',
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    actions: [
-      IconButton(
-        tooltip: _showSearch ? 'Close search' : 'Search things',
-        icon: Icon(
-          _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+  Widget build(BuildContext context) {
+    final activities = ref.watch(todayActivitiesProvider);
+    final items = activities.value;
+    final List<Widget> content;
+    if (_segment == ThingsSegment.upcoming) {
+      content = _upcomingSlivers();
+    } else if (items == null) {
+      content = [activities.hasError ? _errorSliver() : _loadingSliver()];
+    } else {
+      content = switch (_segment) {
+        ThingsSegment.today => _todaySlivers(items),
+        ThingsSegment.anytime => _anytimeSlivers(items),
+        ThingsSegment.routines => _routineSlivers(items),
+        ThingsSegment.upcoming => const [],
+      };
+    }
+
+    return AscentScaffold(
+      title: 'Things',
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      actions: [
+        AscentButton.icon(
+          icon: _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+          tooltip: _showSearch ? 'Close search' : 'Search things',
+          semanticLabel: _showSearch ? 'Close search' : 'Search things',
+          onPressed: _toggleSearch,
         ),
-        onPressed: () => setState(() {
-          _showSearch = !_showSearch;
-          if (!_showSearch) {
-            _query = '';
-            _searchController.clear();
-          }
-        }),
-      ),
-      IconButton(
-        key: const ValueKey('things_calendar_button'),
-        tooltip: 'Things calendar',
-        icon: const Icon(Icons.calendar_month_rounded),
-        onPressed: () => context.push('/calendar?scope=things'),
-      ),
-      IconButton(
-        tooltip: 'Things views',
-        icon: const Icon(Icons.more_horiz_rounded),
-        onPressed: _showViews,
-      ),
-    ],
-    body: Column(
-      children: [
-        Expanded(
-          child: _tab == 'plans'
-              ? const SingleChildScrollView(
-                  padding: EdgeInsets.all(16),
-                  child: HomePlansPreview(),
-                )
-              : ref
-                    .watch(todayActivitiesProvider)
-                    .when(
-                      skipLoadingOnReload: true,
-                      skipError: true,
-                      loading: () => ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          SkeletonShimmer(height: 160),
-                          const SizedBox(height: 12),
-                          SkeletonShimmer(height: 120),
-                        ],
-                      ),
-                      error: (_, _) => Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Unable to load your things. Your tasks and history are preserved.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(color: context.glass.inkMuted),
-                              ),
-                              const SizedBox(height: 12),
-                              AscentButton.tonal(
-                                label: 'Retry',
-                                icon: Icons.refresh_rounded,
-                                onPressed: () =>
-                                    ref.invalidate(todayActivitiesProvider),
-                              ),
-                            ],
+        AscentButton.icon(
+          key: const ValueKey('things_calendar_button'),
+          icon: Icons.calendar_month_rounded,
+          tooltip: 'Things calendar',
+          semanticLabel: 'Things calendar',
+          onPressed: () => context.push('/calendar?scope=things'),
+        ),
+        AscentButton.icon(
+          icon: Icons.history_rounded,
+          tooltip: 'All history',
+          semanticLabel: 'All history',
+          onPressed: () => context.push('/history'),
+        ),
+      ],
+      body: Column(
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              key: ValueKey('things_list_${_segment.name}'),
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: AscentSegmentedControl<ThingsSegment>(
+                      key: const ValueKey('things_segments'),
+                      segments: [
+                        for (final s in ThingsSegment.values)
+                          AscentSegment(
+                            key: ValueKey('things_segment_${s.name}'),
+                            value: s,
+                            label: s.label,
                           ),
-                        ),
-                      ),
-                      data: (items) => _buildActivities(context, items),
+                      ],
+                      selected: _segment,
+                      onChanged: _selectSegment,
                     ),
-        ),
-        if (_tab == 'now')
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: context.glass.line.withValues(
-                      alpha: context.glass.isDark ? 0.25 : 0.15,
-                    ),
-                    width: 0.8,
                   ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: context.glass.shadow.withValues(
-                      alpha: context.glass.isDark ? 0.12 : 0.04,
+                if (_showSearch)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: _buildSearch(),
                     ),
-                    blurRadius: 10,
-                    offset: const Offset(0, -3),
                   ),
-                ],
-              ),
-              child: _buildComposer(context),
+                ...content,
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ],
             ),
           ),
-      ],
-    ),
-  );
+          if (_segment == ThingsSegment.today)
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: Border(
+                    top: BorderSide(
+                      color: context.glass.line.withValues(
+                        alpha: context.glass.isDark ? 0.25 : 0.15,
+                      ),
+                    ),
+                  ),
+                ),
+                child: _buildComposer(context),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

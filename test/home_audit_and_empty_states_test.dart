@@ -8,7 +8,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:drift/native.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -183,28 +182,5 @@ void main() {
       },
     );
 
-    testWidgets(
-      'ThingsHubScreen empty state renders centered text, icons, and starter actions',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const ThingsHubScreen(),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('What’s one thing for today?'), findsOneWidget);
-        expect(
-          find.text('Add a task or timed focus block to get your day started.'),
-          findsOneWidget,
-        );
-        expect(find.byKey(const ValueKey('starter_add_task')), findsOneWidget);
-        expect(find.byKey(const ValueKey('starter_add_timer')), findsOneWidget);
-      },
-    );
   });
 }

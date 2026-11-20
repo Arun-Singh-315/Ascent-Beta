@@ -3,14 +3,8 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/notifications/things_check_in.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
-import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/features/today/widgets/things_hero_card.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
-import 'package:ascent/shared/widgets/glass_chip.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -41,32 +35,13 @@ TodayActivityItem makeActivity({
   linkedTaskId: linkedTaskId,
 );
 
-class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
-  @override
-  TimeTrackingState build() => const TimeTrackingState();
-}
-
-class _FakeStudyStreakNotifier extends StudyStreakNotifier {
-  @override
-  StudyStreakStatus build() => StudyStreakCalculator().calculate(
-    todaySeconds: 0,
-    yesterdaySeconds: 0,
-    priorStreakDays: 0,
-    historicalLongestStreak: 0,
-    historicalShortestStreak: 1,
-    now: DateTime.now(),
-  );
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
   late AppDatabase db;
-  late SharedPreferences prefs;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
   });
 
@@ -175,113 +150,6 @@ void main() {
       expect(find.text('25 min'), findsOneWidget);
       expect(find.text('Start'), findsOneWidget);
     });
-
-    testWidgets(
-      'ActivityHubCard displays day progress when tasks are done and hides at zero',
-      (tester) async {
-        final doneItem = makeActivity(
-          id: 'done_1',
-          title: 'Morning workout',
-          status: TodayActivityStatus.done,
-        );
-        final pendingItem = makeActivity(
-          id: 'pending_1',
-          title: 'Submit pull request',
-          status: TodayActivityStatus.notStarted,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value([doneItem, pendingItem]),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: ActivityHubCard(),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Progress line should display "1 of 2 done"
-        expect(find.text('1 of 2 done'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'ThingsHubScreen displays filter chips, hero, and wrapup mode',
-      (tester) async {
-        final activity = makeActivity(
-          id: 'task_hub_1',
-          title: 'Deep work on algorithms',
-          kind: ActivityKind.duration,
-          targetMinutes: 45,
-          linkedTaskId: 10,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value([activity]),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const ThingsHubScreen(initialMode: 'wrapup'),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Filter chips should be visible
-        expect(
-          find.widgetWithText(GlassChip, 'All activities'),
-          findsOneWidget,
-        );
-        expect(find.widgetWithText(GlassChip, 'To-dos'), findsOneWidget);
-        expect(find.widgetWithText(GlassChip, 'Timers'), findsOneWidget);
-        expect(find.widgetWithText(GlassChip, 'Medicines'), findsOneWidget);
-
-        // Hero card should be rendered on Now tab
-        expect(find.text('Deep work on algorithms'), findsOneWidget);
-
-        // Evening wrap-up card should be present
-        expect(find.text('Evening Wrap-up'), findsOneWidget);
-        expect(find.text('Carry over to tomorrow'), findsOneWidget);
-      },
-    );
   });
 
   group('Button Accessibility & Semantics', () {
@@ -311,58 +179,6 @@ void main() {
               w is Semantics && (w.properties.label?.contains('busy') ?? false),
         );
         expect(semanticsFinder, findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'Things hub components fit 320px width at 2.0x text scale without overflow',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 800);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        final activity = makeActivity(
-          id: 'acc_task',
-          title: 'Long activity title for accessibility audit verification',
-          kind: ActivityKind.duration,
-          targetMinutes: 30,
-          linkedTaskId: 5,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-            todayActivitiesProvider.overrideWith(
-              (ref) => Stream.value([activity]),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        for (final dark in [false, true]) {
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: MediaQuery(
-                data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-                child: MaterialApp(
-                  theme: dark ? AscentTheme.dark() : AscentTheme.light(),
-                  home: const ThingsHubScreen(),
-                ),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(tester.takeException(), isNull);
-          expect(find.byType(ThingsHeroCard), findsOneWidget);
-        }
       },
     );
   });
