@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/services/plan_collection_service.dart';
+import 'plan_collection_service.dart';
 
 /// One dated thing in a generated plan, before it is saved.
 @immutable

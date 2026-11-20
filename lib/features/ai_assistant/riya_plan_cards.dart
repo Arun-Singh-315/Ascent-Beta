@@ -1,3 +1,6 @@
+import '../../app/theme/surface_tokens.dart';
+import '../../shared/widgets/ascent_button.dart';
+import '../plans/widgets/plan_generator_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,7 +80,8 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
     final subject = widget.planData['subject']?.toString() ?? 'Curriculum';
     final durationDays = widget.planData['durationDays'] ?? 7;
     final dailyMinutes = widget.planData['dailyMinutes'] ?? 60;
-    final items = (widget.planData['items'] as List? ?? []).cast<Map<String, dynamic>>();
+    final items = (widget.planData['items'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
 
     final previewItems = _isExpanded ? items : items.take(3).toList();
 
@@ -85,9 +89,14 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? g.surface.withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.96),
+        color: isDark
+            ? g.surface.withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: g.line.withValues(alpha: isDark ? 0.35 : 0.20), width: 1),
+        border: Border.all(
+          color: g.line.withValues(alpha: isDark ? 0.35 : 0.20),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
@@ -109,7 +118,10 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: accent.withValues(alpha: 0.30), width: 1),
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.30),
+                    width: 1,
+                  ),
                 ),
                 child: Center(
                   child: Icon(Icons.school_rounded, color: accent, size: 18),
@@ -146,11 +158,17 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
               ),
               if (_isSaved)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: g.sage.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: g.sage.withValues(alpha: 0.30), width: 0.8),
+                    border: Border.all(
+                      color: g.sage.withValues(alpha: 0.30),
+                      width: 0.8,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -172,7 +190,11 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
           ),
 
           const SizedBox(height: 12),
-          Divider(height: 1, thickness: 0.7, color: g.line.withValues(alpha: 0.2)),
+          Divider(
+            height: 1,
+            thickness: 0.7,
+            color: g.line.withValues(alpha: 0.2),
+          ),
           const SizedBox(height: 10),
 
           // Items preview list
@@ -204,7 +226,8 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                             color: g.ink,
                           ),
                         ),
-                        if (item['notes'] != null && item['notes'].toString().isNotEmpty) ...[
+                        if (item['notes'] != null &&
+                            item['notes'].toString().isNotEmpty) ...[
                           const SizedBox(height: 1),
                           Text(
                             item['notes'].toString(),
@@ -241,7 +264,9 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                 setState(() => _isExpanded = !_isExpanded);
               },
               child: Text(
-                _isExpanded ? 'Show less' : 'View all ${items.length} milestones',
+                _isExpanded
+                    ? 'Show less'
+                    : 'View all ${items.length} milestones',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -255,67 +280,32 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
 
           // Action Buttons
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
             children: [
               if (!_isSaved)
-                ElevatedButton.icon(
+                AscentButton.primary(
+                  key: const ValueKey('riya_study_save'),
+                  label: 'Save plan',
+                  compact: true,
+                  loading: _isSaving,
                   onPressed: _isSaving ? null : _activatePlan,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.flash_on_rounded, size: 14),
-                  label: Text(
-                    _isSaving ? 'Activating...' : 'Save & Schedule Plan',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 )
               else
-                OutlinedButton.icon(
+                AscentButton.tonal(
+                  label: 'Open Study Hub',
+                  compact: true,
                   onPressed: () => context.push(AscentRoutes.studyPlan),
-                  icon: const Icon(Icons.school_rounded, size: 14),
-                  label: Text(
-                    'Open Study Hub',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: g.ink,
-                    side: BorderSide(color: g.line, width: 1),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 ),
-              OutlinedButton.icon(
-                onPressed: () => context.push(AscentRoutes.studyPlan),
-                icon: const Icon(Icons.visibility_outlined, size: 14),
-                label: Text(
-                  'Study Hub',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: g.inkSecondary,
-                  side: BorderSide(color: g.line.withValues(alpha: 0.35), width: 1),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              AscentButton.secondary(
+                key: const ValueKey('riya_study_customize'),
+                label: 'Customize',
+                icon: Icons.tune_rounded,
+                onPressed: () => showPlanGeneratorSheet(
+                  context,
+                  PlanKind.study,
+                  subject: widget.planData['subject']?.toString(),
+                  days: (widget.planData['durationDays'] as num?)?.toInt(),
                 ),
               ),
             ],
@@ -328,11 +318,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
 
 /// Interactive Meal Plan Preview & Activation Card
 class RiyaMealPlanCard extends ConsumerStatefulWidget {
-  const RiyaMealPlanCard({
-    super.key,
-    required this.planData,
-    this.accentColor,
-  });
+  const RiyaMealPlanCard({super.key, required this.planData, this.accentColor});
 
   final Map<String, dynamic> planData;
   final Color? accentColor;
@@ -389,15 +375,21 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
     final title = widget.planData['title']?.toString() ?? 'Meal Plan';
     final dietType = widget.planData['dietType']?.toString() ?? 'Balanced';
     final targetWater = widget.planData['targetWaterMl'] ?? 2500;
-    final items = (widget.planData['items'] as List? ?? []).cast<Map<String, dynamic>>();
+    final items = (widget.planData['items'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? g.surface.withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.96),
+        color: isDark
+            ? g.surface.withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: g.line.withValues(alpha: isDark ? 0.35 : 0.20), width: 1),
+        border: Border.all(
+          color: g.line.withValues(alpha: isDark ? 0.35 : 0.20),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.05),
@@ -419,10 +411,17 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: accent.withValues(alpha: 0.30), width: 1),
+                  border: Border.all(
+                    color: accent.withValues(alpha: 0.30),
+                    width: 1,
+                  ),
                 ),
                 child: Center(
-                  child: Icon(Icons.restaurant_rounded, color: accent, size: 18),
+                  child: Icon(
+                    Icons.restaurant_rounded,
+                    color: accent,
+                    size: 18,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -456,11 +455,17 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
               ),
               if (_isSaved)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: g.sage.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: g.sage.withValues(alpha: 0.30), width: 0.8),
+                    border: Border.all(
+                      color: g.sage.withValues(alpha: 0.30),
+                      width: 0.8,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -482,7 +487,11 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
           ),
 
           const SizedBox(height: 12),
-          Divider(height: 1, thickness: 0.7, color: g.line.withValues(alpha: 0.2)),
+          Divider(
+            height: 1,
+            thickness: 0.7,
+            color: g.line.withValues(alpha: 0.2),
+          ),
           const SizedBox(height: 10),
 
           // 4 Meals breakdown
@@ -494,7 +503,10 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                 children: [
                   Container(
                     margin: const EdgeInsets.only(top: 3),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(6),
@@ -521,7 +533,8 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                             color: g.ink,
                           ),
                         ),
-                        if (item['notes'] != null && item['notes'].toString().isNotEmpty) ...[
+                        if (item['notes'] != null &&
+                            item['notes'].toString().isNotEmpty) ...[
                           const SizedBox(height: 1),
                           Text(
                             item['notes'].toString(),
@@ -556,67 +569,31 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
 
           // Action Buttons
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
             children: [
               if (!_isSaved)
-                ElevatedButton.icon(
+                AscentButton.primary(
+                  key: const ValueKey('riya_meal_save'),
+                  label: 'Save meals',
+                  compact: true,
+                  loading: _isSaving,
                   onPressed: _isSaving ? null : _activatePlan,
-                  icon: _isSaving
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.flash_on_rounded, size: 14),
-                  label: Text(
-                    _isSaving ? 'Activating...' : 'Save & Schedule Meals',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: accent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 )
               else
-                OutlinedButton.icon(
+                AscentButton.tonal(
+                  label: 'Open Plans',
+                  compact: true,
                   onPressed: () => context.push(AscentRoutes.plans),
-                  icon: const Icon(Icons.restaurant_rounded, size: 14),
-                  label: Text(
-                    'Open Plans',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: g.ink,
-                    side: BorderSide(color: g.line, width: 1),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
                 ),
-              OutlinedButton.icon(
-                onPressed: () => context.push(AscentRoutes.plans),
-                icon: const Icon(Icons.checklist_rounded, size: 14),
-                label: Text(
-                  'Manage Plans',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: g.inkSecondary,
-                  side: BorderSide(color: g.line.withValues(alpha: 0.35), width: 1),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              AscentButton.secondary(
+                key: const ValueKey('riya_meal_customize'),
+                label: 'Customize',
+                icon: Icons.tune_rounded,
+                onPressed: () => showPlanGeneratorSheet(
+                  context,
+                  PlanKind.meals,
+                  goal: mealGoalFrom(widget.planData['dietType']?.toString()),
                 ),
               ),
             ],

@@ -106,7 +106,7 @@ Rules for the sheet: a time already passed today starts tomorrow; weekday steps 
 | Piece | File |
 |---|---|
 | Templates, drafts, plan from a sentence | `lib/features/plans/plan_templates.dart` |
-| Study and meal generators | `lib/features/plans/plan_generator.dart`, `widgets/plan_generator_sheet.dart` |
+| Study and meal generators | `lib/core/services/plan_generator.dart`, `widgets/plan_generator_sheet.dart` |
 | Progress and catch up | `lib/features/plans/plan_progress.dart`, `widgets/plan_progress_card.dart` |
 | Lighter and extend | `lib/features/plans/plan_adjust.dart` |
 | Template sheet | `lib/features/plans/widgets/plan_template_sheet.dart` |
