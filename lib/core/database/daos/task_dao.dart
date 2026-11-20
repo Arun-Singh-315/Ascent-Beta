@@ -667,6 +667,35 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return true;
   });
 
+  /// Moves several dated activities to [day] in one transaction, keeping each
+  /// one's time of day and shifting its reminders (see [moveToDay]).
+  ///
+  /// Undated (anytime), daily-standing, completed and plan-protected tasks are
+  /// skipped. Returns the original planned date of every task that moved, so
+  /// the caller can offer Undo with [restorePlannedDays].
+  Future<Map<int, DateTime>> moveManyToDay(Iterable<int> ids, DateTime day) =>
+      db.transaction(() async {
+        final moved = <int, DateTime>{};
+        for (final id in ids.toSet()) {
+          final task = await getTaskById(id);
+          final original = task?.plannedDate;
+          if (task == null || original == null || task.isDailyStanding) {
+            continue;
+          }
+          if (await moveToDay(id, day)) moved[id] = original;
+        }
+        return moved;
+      });
+
+  /// Undo for [moveManyToDay]: puts each task (and its reminders) back on its
+  /// original day and time.
+  Future<void> restorePlannedDays(Map<int, DateTime> original) =>
+      db.transaction(() async {
+        for (final entry in original.entries) {
+          await moveToDay(entry.key, entry.value);
+        }
+      });
+
   /// Completed tasks stay sealed; use the explicit medicine-dose sync method
   /// for the linked medical task lifecycle.
   Future<bool> markIncomplete(int id) async {
