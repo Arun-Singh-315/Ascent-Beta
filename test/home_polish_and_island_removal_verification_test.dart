@@ -330,7 +330,7 @@ void main() {
   });
 
   group('Input Hint Verification', () {
-    testWidgets('Things ActivityComposer displays "Add a task or timer…"', (
+    testWidgets('Things ActivityComposer shows an example hint', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -344,7 +344,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Add a task or timer…'), findsOneWidget);
+      expect(find.text('e.g. Gym 7am tomorrow 45m'), findsOneWidget);
     });
   });
 

@@ -157,7 +157,8 @@ void main() {
         await tester.tap(find.text('Timer'));
         await tester.pumpAndSettle();
         expect(find.text('Duration'), findsOneWidget);
-        expect(find.text('30 min'), findsOneWidget);
+        // The timer also shows as a chip above the field, so look in the row.
+        expect(find.widgetWithText(ListTile, '30 min'), findsOneWidget);
       },
     );
 
