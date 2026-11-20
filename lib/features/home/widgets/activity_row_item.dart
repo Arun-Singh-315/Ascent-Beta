@@ -2002,7 +2002,8 @@ bool _selectLecture(WidgetRef ref, TodayActivityItem activity) {
   return true;
 }
 
-Future<void> _completeActivityWithUndo(
+/// Completes a Home activity with an Undo snackbar. Shared with the Now card.
+Future<void> completeActivityWithUndo(
   BuildContext context,
   WidgetRef ref,
   TodayActivityItem activity,
@@ -2121,7 +2122,7 @@ Future<void> showActivityActions(
     return;
   }
   if (action == 'done') {
-    await _completeActivityWithUndo(context, ref, activity);
+    await completeActivityWithUndo(context, ref, activity);
     return;
   }
   if (action == 'star') {
@@ -2717,7 +2718,7 @@ void _showActivityDetailDialog(
                             return;
                           }
                           if (activity.linkedTaskId != null) {
-                            await _completeActivityWithUndo(
+                            await completeActivityWithUndo(
                               context,
                               ref,
                               activity,

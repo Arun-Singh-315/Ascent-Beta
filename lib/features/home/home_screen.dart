@@ -30,6 +30,7 @@ import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_assistant_hero_card.dart';
+import 'widgets/home_now_card.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
@@ -281,7 +282,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                       child: ListView(
                         key: const ValueKey('home_scroll'),
                         controller: _homeScroll,
-                        physics: const AlwaysScrollableScrollPhysics(),
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
                         padding: EdgeInsets.zero,
                         children: [
                           // 1. HomeHeader (keeps header spacious by setting includeAssistant: false)
@@ -292,51 +295,61 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           ),
                           const SizedBox(height: 12),
 
-                          // 2. Gemini-illuminated AI Gateway (Ask Riya Hero Card)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: HomeAssistantHeroCard(),
-                          ),
-                          const SizedBox(height: 14),
+                          // 2. Now card: the single "what should I do now?"
+                          // answer (CLAUDE.md §5.1).
+                          const HomeNowCard(),
 
-                          // 3. Your space shortcuts row
+                          // 3. Quick tools row
                           HomeShortcutPanel(
                             shortcuts: layout.shortcuts,
                             showReminders: layout.visible.contains('reminders'),
                           ),
 
-                          // 3. Thought Wall SectionCard — The heart of Home screen
+                          // 4. Today timeline (Things), capped at 4 rows
+                          if (layout.visible.contains('today'))
+                            ActivityHubCard(
+                              previewLimit: layout.compact.contains('today')
+                                  ? 3
+                                  : 4,
+                            ),
+
+                          // 5. Mind preview with inline capture
                           if (layout.visible.contains('mind'))
                             const ThoughtWallHomePreview(
-                              previewLimit: 1,
+                              previewLimit: 2,
                               compact: true,
                             ),
 
-                          // 4. Things SectionCard — Activity Hub
-                          if (layout.visible.contains('today'))
-                            ActivityHubCard(
-                              previewLimit: layout.compact.contains('today') ? 3 : 6,
-                            ),
-
-                          // 5. Daily rhythm SectionCard
-                          if (layout.visible.contains('life') && layout.tools.isNotEmpty)
+                          // 6. Life shelf
+                          if (layout.visible.contains('life') &&
+                              layout.tools.isNotEmpty)
                             const HomeLifeShelf(),
 
-                          // 6. Plans & Routines SectionCard. Things already has a
-                          // Plans tab, so this standalone card only appears
-                          // when Things is hidden from Home.
+                          // Plans only get their own card when Things is
+                          // hidden, because Things already has a Plans tab.
                           if (!layout.visible.contains('today'))
                             const HomePlansPreview(
                               key: ValueKey('home_plans_big_card'),
                             ),
 
+                          // 7. Assistant card
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
+                            child: HomeAssistantHeroCard(),
+                          ),
+
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
                           ),
 
-                          for (final module in _buildContextualModules(context, layout))
+                          for (final module in _buildContextualModules(
+                            context,
+                            layout,
+                          ))
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: module,
                             ),
 

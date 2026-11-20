@@ -42,11 +42,14 @@ class HomeHeaderScene extends StatelessWidget {
     final night = period == 'night';
     final sky = night ? const Color(0xFF243D70) : day.sky;
     final light = night ? const Color(0xFF60669D) : day.light;
+    // No period key on the AnimatedContainer itself: a changing key would
+    // rebuild it and skip the tween. The scene cross-fades over 2 s when the
+    // period changes (CLAUDE.md §5.1); the key lives on the inner subtree.
     return AnimatedContainer(
-      key: ValueKey('home_header_scene_$period'),
       duration: Duration(
-        milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 800,
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 2000,
       ),
+      curve: Curves.easeInOutCubic,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -55,25 +58,30 @@ class HomeHeaderScene extends StatelessWidget {
           stops: const [0, .55, 1],
         ),
       ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(.85, -.1),
-                  radius: .95,
-                  colors: [
-                    (night ? const Color(0xFFB9C9FF) : const Color(0xFFFFEDC8))
-                        .withValues(alpha: dark || night ? .13 : .48),
-                    Colors.transparent,
-                  ],
+      child: KeyedSubtree(
+        key: ValueKey('home_header_scene_$period'),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(.85, -.1),
+                    radius: .95,
+                    colors: [
+                      (night
+                              ? const Color(0xFFB9C9FF)
+                              : const Color(0xFFFFEDC8))
+                          .withValues(alpha: dark || night ? .13 : .48),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          child,
-        ],
+            child,
+          ],
+        ),
       ),
     );
   }
