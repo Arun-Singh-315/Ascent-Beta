@@ -802,7 +802,6 @@ class _ReminderPreview extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.access_time_rounded,
@@ -810,12 +809,16 @@ class _ReminderPreview extends ConsumerWidget {
                             color: overdue ? accentColor : Colors.white60,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
-                            style: AscentTextStyles.interfaceLabel.copyWith(
-                              color: overdue ? accentColor : Colors.white60,
-                              fontSize: 12,
-                              height: 1.2,
+                          Expanded(
+                            child: Text(
+                              '${overdue ? 'Overdue · ' : ''}$day · ${DateFormat('h:mm a').format(time)}',
+                              style: AscentTextStyles.interfaceLabel.copyWith(
+                                color: overdue ? accentColor : Colors.white60,
+                                fontSize: 12,
+                                height: 1.2,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],

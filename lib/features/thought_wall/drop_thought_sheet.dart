@@ -62,16 +62,9 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
       return Future.value(null);
     }
 
-    return showModalBottomSheet<bool>(
+    return showAscentCenteredForm<bool>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: 600,
-        maxHeight: MediaQuery.sizeOf(context).height * 0.90,
-      ),
-      backgroundColor: AppPalette.transparent,
+      maxWidth: 520,
       builder: (_) => DropThoughtSheet(
         initialPrompt: initialPrompt,
         initialMood: initialMood,
@@ -314,45 +307,23 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     final g = context.glass;
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr28),
+      borderRadius: BorderRadius.circular(24),
       child: Material(
         color: g.elevated,
         child: AppCard(
           nightDecoration: BoxDecoration(
             color: g.elevated,
-            borderRadius: const BorderRadius.vertical(
-              top: AppGeometry.radiusr28,
-            ),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: g.edge.withValues(alpha: 0.4),
               width: AppBorderScale.w1point0,
             ),
           ),
-          padding: EdgeInsets.only(
-            top: AppSpace.s20,
-            left: AppSpace.s20,
-            right: AppSpace.s20,
-            bottom: MediaQuery.of(context).viewInsets.bottom +
-                MediaQuery.paddingOf(context).bottom +
-                AppSpace.s24,
-          ),
+          padding: const EdgeInsets.all(AppSpace.s20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.divider,
-                    borderRadius: AppGeometry.roundedr2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
               // Header
               Row(
                 children: [

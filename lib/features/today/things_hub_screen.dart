@@ -13,12 +13,12 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_action_menu.dart';
-import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../home/widgets/activity_composer.dart';
 import '../plans/widgets/home_plans_preview.dart';
+import 'screens/add_activity_screen.dart';
 import '../home/widgets/activity_row_item.dart';
 
 class ThingsHubScreen extends ConsumerStatefulWidget {
@@ -774,11 +774,9 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen>
     return AscentButton.primary(
       label: 'Add a thing',
       icon: Icons.add_rounded,
-      onPressed: () => showAscentSheet<void>(
-        context: context,
-        builder: (context) => SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: ActivityComposer(focusNode: _composerFocusNode),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const AddActivityScreen(),
         ),
       ),
     );

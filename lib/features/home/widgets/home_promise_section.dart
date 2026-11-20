@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
-import '../../../shared/widgets/ascent_button.dart';
-import '../../../shared/widgets/locked_commitment_tile.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../promises/widgets/promise_action_button.dart';
@@ -15,708 +12,678 @@ import '../../promises/widgets/promise_actions.dart';
 import '../../promises/widgets/promise_chat_composer.dart';
 import '../../promises/widgets/promise_detail_sheet.dart';
 import '../../vault/providers/vault_providers.dart';
-import 'home_outline_surface.dart';
-import 'home_section_heading.dart';
 
-/// Compact, highly focused Promise section on the Ascent Home screen.
-/// Answers three questions immediately:
-/// 1. What commitment matters now?
-/// 2. What is the next useful action?
-/// 3. Am I making progress?
+/// An intelligent, multi-item iOS-style Commitment screen on the Ascent Home screen.
+/// Renders an enclosed glass card utilizing space efficiently through structured rows,
+/// glanceable status badges, 1-tap direct actions, and privacy guards.
 class HomePromiseSection extends ConsumerWidget {
   const HomePromiseSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
+    final c = context.c;
     final priorityPromise = ref.watch(priorityPromiseProvider);
     final allActive = ref.watch(activePromisesStreamProvider).value ?? [];
     final completedPromises =
         ref.watch(completedPromisesStreamProvider).value ?? [];
 
     if (priorityPromise == null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          HomeSectionHeading(
-            title: 'Commitments',
-            centered: false,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  key: const ValueKey('home_promise_add'),
-                  tooltip: 'New commitment',
-                  icon: Icon(Icons.add_rounded, color: g.ink),
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    PromiseChatComposer.show(context);
-                  },
-                ),
-                HomeSectionArrowButton(
-                  tooltip: 'Open commitments',
-                  color: const Color(0xFFC67D32),
-                  onTap: () => context.push('/promises'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (completedPromises.isNotEmpty)
-            _buildCompletedState(context, completedPromises.first, g)
-          else
-            _buildEmptyState(context, g),
-        ],
-      );
+      if (completedPromises.isNotEmpty) {
+        return _buildCompletedCard(context, ref, completedPromises.first, allActive, c);
+      }
+      return _buildEmptyCard(context, c);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _buildActiveCard(context, ref, priorityPromise, allActive, c);
+  }
+
+  Widget _buildCardHeader(
+    BuildContext context,
+    AppColors c, {
+    required VoidCallback onAdd,
+    required VoidCallback onViewAll,
+  }) {
+    return Row(
       children: [
-        // Section Header adhering strictly to Rule 18 & Rule 13
-        HomeSectionHeading(
-          title: 'Commitments',
-          centered: false,
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                key: const ValueKey('home_promise_add'),
-                tooltip: 'New commitment',
-                icon: Icon(Icons.add_rounded, color: g.ink),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  PromiseChatComposer.show(context);
-                },
-              ),
-              HomeSectionArrowButton(
-                tooltip: 'Open commitments',
-                color: const Color(0xFFC67D32),
-                onTap: () => context.push('/promises'),
-              ),
-            ],
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: c.accentTint,
+            borderRadius: BorderRadius.circular(AppRadius.iconChip),
+          ),
+          child: Icon(
+            Icons.verified_rounded,
+            size: 16,
+            color: c.accent,
           ),
         ),
-        const SizedBox(height: 12),
-
-        // Priority commitment card
-        _buildPriorityCard(context, ref, priorityPromise, g),
-
-        // Actionable footer: unblocked "+ New commitment" alongside view more
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              TextButton.icon(
-                key: const ValueKey('home_promise_add_inline'),
-                onPressed: () {
-                  HapticFeedback.selectionClick();
-                  PromiseChatComposer.show(context);
-                },
-                icon: Icon(Icons.add_rounded, size: 16, color: g.clay),
-                label: Text(
-                  'New commitment',
-                  style: TextStyle(
-                    color: g.clay,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Commitments',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: c.textPrimary,
                 ),
-              ),
-              if (allActive.length > 1)
-                TextButton.icon(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/promises');
-                  },
-                  icon: Icon(Icons.commit_rounded, size: 15, color: g.clay),
-                  label: Text(
-                    '+${allActive.length - 1} more commitments',
-                    style: TextStyle(
-                      color: g.clay,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                )
-              else
-                TextButton.icon(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/promises');
-                  },
-                  icon: Icon(Icons.arrow_forward_rounded, size: 14, color: g.clay),
-                  label: Text(
-                    'View all',
-                    style: TextStyle(
-                      color: g.clay,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
+          ),
+        ),
+        IconButton(
+          key: const ValueKey('home_promise_add'),
+          tooltip: 'New commitment',
+          icon: Icon(Icons.add_rounded, size: 20, color: c.textPrimary),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          onPressed: onAdd,
+        ),
+        const SizedBox(width: 4),
+        InkResponse(
+          onTap: onViewAll,
+          radius: 18,
+          child: Padding(
+            padding: const EdgeInsets.all(2),
+            child: Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: c.textSecondary,
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, AscentGlass g) {
-    return InkWell(
-      key: const ValueKey('home_promise_empty_card'),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        PromiseChatComposer.show(context);
-      },
-      borderRadius: BorderRadius.circular(24),
-      child: HomeOutlineSurface(
-        padding: const EdgeInsets.all(18),
-        child: Row(
+  Widget _buildCardFooter(
+    BuildContext context,
+    AppColors c,
+    List<PromiseModel> allActive,
+  ) {
+    final bool hasMore = allActive.length > 1;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 10),
+        Divider(height: 1, color: c.border.withValues(alpha: 0.5)),
+        const SizedBox(height: 6),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: g.ink.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.handshake_outlined,
-                color: g.clay,
-                size: 24,
+            TextButton.icon(
+              key: const ValueKey('home_promise_add_inline'),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                PromiseChatComposer.show(context);
+              },
+              icon: Icon(Icons.add_rounded, size: 15, color: c.accent),
+              label: Text(
+                'New commitment',
+                style: TextStyle(
+                  color: c.accent,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
+            if (hasMore)
+              TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  context.push('/promises');
+                },
+                icon: Text(
+                  '+${allActive.length - 1} more commitments',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                label: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: c.textSecondary,
+                ),
+              )
+            else
+              TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  context.push('/promises');
+                },
+                icon: Text(
+                  'View all',
+                  style: TextStyle(
+                    color: c.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                label: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: c.textSecondary,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveCard(
+    BuildContext context,
+    WidgetRef ref,
+    PromiseModel priorityPromise,
+    List<PromiseModel> allActive,
+    AppColors c,
+  ) {
+    final unlockedIds = ref.watch(unlockedPromiseIdsProvider);
+    final displayedPromises = allActive.isNotEmpty
+        ? allActive.take(2).toList()
+        : [priorityPromise];
+    final textScaler = MediaQuery.textScalerOf(context);
+    final isScaled = textScaler.scale(14) > 20;
+
+    return Container(
+      key: const ValueKey('home_promise_card'),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: c.border.withValues(alpha: 0.7), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: c.warmShadow,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCardHeader(
+            context,
+            c,
+            onAdd: () {
+              HapticFeedback.selectionClick();
+              PromiseChatComposer.show(context);
+            },
+            onViewAll: () => context.push('/promises'),
+          ),
+          const SizedBox(height: 12),
+
+          // ── MULTI-ROW COMMITMENTS SCREEN ──
+          for (var i = 0; i < displayedPromises.length; i++) ...[
+            if (i > 0) ...[
+              const SizedBox(height: 10),
+              Divider(height: 1, color: c.border.withValues(alpha: 0.4)),
+              const SizedBox(height: 10),
+            ],
+            _buildCommitmentRow(
+              context,
+              ref,
+              displayedPromises[i],
+              isLocked: displayedPromises[i].isPrivate &&
+                  !unlockedIds.contains(displayedPromises[i].id),
+              isScaled: isScaled,
+              c: c,
+            ),
+          ],
+
+          _buildCardFooter(context, c, allActive),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommitmentRow(
+    BuildContext context,
+    WidgetRef ref,
+    PromiseModel promise, {
+    required bool isLocked,
+    required bool isScaled,
+    required AppColors c,
+  }) {
+    if (isLocked) {
+      return _buildLockedRow(context, ref, promise, c);
+    }
+
+    final String cadenceLabel = promise.schedule?.repeat == PromiseRepeat.selectedDays
+        ? 'Selected days'
+        : (promise.schedule?.repeat.name.toUpperCase() ?? 'DAILY');
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        PromiseDetailSheet.show(context, promise);
+      },
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: isScaled
+            ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Add commitment',
-                    style: AscentTextStyles.interfaceSection.copyWith(
-                      color: g.ink,
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  _buildTagsRow(ref, promise, cadenceLabel, c),
                   const SizedBox(height: 4),
                   Text(
-                    'Set a next step · Keep your progress in view',
+                    promise.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: g.inkMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      color: c.textPrimary,
                     ),
+                  ),
+                  if (promise.intention.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      promise.intention,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  PromiseActionButton(
+                    promise: promise,
+                    onPressed: () => _executeAction(context, ref, promise),
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTagsRow(ref, promise, cadenceLabel, c),
+                        const SizedBox(height: 3),
+                        Text(
+                          promise.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        _buildProgressSnippet(promise, c),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  PromiseActionButton(
+                    promise: promise,
+                    onPressed: () => _executeAction(context, ref, promise),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTagsRow(
+    WidgetRef ref,
+    PromiseModel promise,
+    String cadenceLabel,
+    AppColors c,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: c.surfaceAlt,
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: c.border.withValues(alpha: 0.5)),
+          ),
+          child: Text(
+            promise.category.toUpperCase(),
+            style: TextStyle(
+              fontSize: 9.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: c.accent,
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '·  $cadenceLabel',
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
+            color: c.textSecondary,
+          ),
+        ),
+        if (promise.isPrivate) ...[
+          const SizedBox(width: 6),
+          InkWell(
+            key: ValueKey('toggle_lock_home_promise_${promise.id}'),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              ref
+                  .read(unlockedPromiseIdsProvider.notifier)
+                  .lock(promise.id);
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'LOCK',
+                    style: TextStyle(
+                      color: c.textSecondary,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.lock_open_rounded,
+                    size: 12,
+                    color: c.textSecondary,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            AscentButton.tonal(
-              compact: true,
-              label: 'Add',
-              icon: Icons.add_rounded,
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                PromiseChatComposer.show(context);
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 
-  Widget _buildCompletedState(
-    BuildContext context,
-    PromiseModel completed,
-    AscentGlass g,
-  ) {
-    return HomeOutlineSurface(
-      key: const ValueKey('home_promise_empty_card'),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF388E3C).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      size: 13,
-                      color: Color(0xFF388E3C),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'COMPLETED TODAY',
-                      style: TextStyle(
-                        color: const Color(0xFF388E3C),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                tooltip: 'All commitments',
-                icon: Icon(Icons.arrow_forward_rounded, color: g.inkMuted, size: 18),
-                onPressed: () => context.push('/promises'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            completed.title,
-            style: AscentTextStyles.interfaceSection.copyWith(
-              color: g.ink,
-              fontSize: 16.5,
-              fontWeight: FontWeight.w600,
-              decoration: TextDecoration.lineThrough,
-              decorationColor: g.inkMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Commitment kept today · Keep your streak alive',
-            style: TextStyle(
-              color: g.inkMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AscentButton.tonal(
-                compact: true,
-                label: 'New commitment',
-                icon: Icons.add_rounded,
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  PromiseChatComposer.show(context);
-                },
-              ),
-              TextButton(
-                onPressed: () => context.push('/promises'),
-                child: Text(
-                  'View all',
-                  style: TextStyle(
-                    color: g.clay,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricsGrid(
-    BuildContext context,
-    PromiseModel promise,
-    AscentGlass g,
-  ) {
-    final cadence = promise.frequencyPerWeek > 0
-        ? '${promise.frequencyPerWeek}× / week'
-        : (promise.schedule != null
-            ? promise.schedule!.repeat.name.toUpperCase()
-            : 'ONE-TIME');
-
-    final progressVal = promise.progressSummary.isNotEmpty
-        ? promise.progressSummary
-        : '${(promise.progressFraction * 100).toInt()}%';
-
-    final timing = promise.reminderTime != null
-        ? promise.reminderTime!
-        : (promise.targetDate != null
-            ? DateFormat('MMM d').format(promise.targetDate!)
-            : 'Anytime');
-
-    final isScaled = MediaQuery.textScalerOf(context).scale(1) >= 1.45 ||
-        MediaQuery.sizeOf(context).width < 340;
-
-    Widget buildTile(String label, String value, IconData icon) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 11, color: g.inkMuted),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                    color: g.inkMuted,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              color: g.ink,
-            ),
-          ),
-        ],
-      );
+  Widget _buildProgressSnippet(PromiseModel promise, AppColors c) {
+    String text;
+    switch (promise.trackingType) {
+      case PromiseTrackingType.duration:
+        text = '${promise.currentValue.toInt()}/${promise.targetValue.toInt()} ${promise.unit.isNotEmpty ? promise.unit : 'mins'}';
+        break;
+      case PromiseTrackingType.frequency:
+        text = '${promise.currentValue.toInt()}/${promise.frequencyPerWeek} this week';
+        break;
+      case PromiseTrackingType.completion:
+        text = promise.isDoneToday ? 'Completed today' : 'Scheduled for today';
+        break;
+      default:
+        text = promise.intention.isNotEmpty ? promise.intention : 'Active commitment';
     }
 
-    if (isScaled) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: g.ink.withValues(alpha: 0.035),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: g.line.withValues(alpha: 0.35)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            buildTile('CADENCE', cadence, Icons.repeat_rounded),
-            const SizedBox(height: 8),
-            buildTile('PROGRESS', progressVal, Icons.trending_up_rounded),
-            const SizedBox(height: 8),
-            buildTile('SCHEDULE', timing, Icons.schedule_rounded),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: g.ink.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: g.line.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: buildTile('CADENCE', cadence, Icons.repeat_rounded)),
-          Container(
-            width: 1,
-            height: 26,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            color: g.line.withValues(alpha: 0.4),
-          ),
-          Expanded(child: buildTile('PROGRESS', progressVal, Icons.trending_up_rounded)),
-          Container(
-            width: 1,
-            height: 26,
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            color: g.line.withValues(alpha: 0.4),
-          ),
-          Expanded(child: buildTile('SCHEDULE', timing, Icons.schedule_rounded)),
-        ],
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 11,
+        color: c.textSecondary,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
 
-  Widget _buildPriorityCard(
+  Widget _buildLockedRow(
     BuildContext context,
     WidgetRef ref,
     PromiseModel promise,
-    AscentGlass g,
+    AppColors c,
   ) {
-    final unlockedIds = ref.watch(unlockedPromiseIdsProvider);
-    final isLocked = promise.isPrivate && !unlockedIds.contains(promise.id);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      key: const ValueKey('home_promise_card'),
-      onLongPress: () =>
-          showPromiseActionMenu(context, promise, locked: isLocked),
-      onTap: () {
-        HapticFeedback.selectionClick();
-        PromiseDetailSheet.show(context, promise);
-      },
-      borderRadius: BorderRadius.circular(22),
-      child: HomeOutlineSurface(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top tag & status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: g.ink.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: g.ink.withValues(alpha: 0.10),
-                          ),
-                        ),
-                        child: Text(
-                          promise.category.toUpperCase(),
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: g.inkSecondary,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
-                      if (promise.isPrivate) ...[
-                        const SizedBox(width: 6),
-                        Tooltip(
-                          message: !isLocked
-                              ? 'Tap to lock commitment'
-                              : 'Private commitment',
-                          child: InkWell(
-                            key: ValueKey('toggle_lock_home_promise_${promise.id}'),
-                            onTap: !isLocked
-                                ? () {
-                                    HapticFeedback.lightImpact();
-                                    ref
-                                        .read(unlockedPromiseIdsProvider.notifier)
-                                        .lock(promise.id);
-                                  }
-                                : null,
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 2,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (!isLocked) ...[
-                                    Text(
-                                      'LOCK',
-                                      style: TextStyle(
-                                        color: g.clay,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 3),
-                                  ],
-                                  Icon(
-                                    isLocked
-                                        ? Icons.lock_outline_rounded
-                                        : Icons.lock_open_rounded,
-                                    size: 14,
-                                    color: isLocked ? g.inkMuted : g.clay,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (promise.isDoneToday) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1B382B)
-                              : const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isDark
-                                ? const Color(0xFF2E6B4A)
-                                : const Color(0xFFA5D6A7),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              size: 12,
-                              color: isDark
-                                  ? const Color(0xFF66BB6A)
-                                  : const Color(0xFF2E7D32),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'DONE TODAY',
-                              style: TextStyle(
-                                color: isDark
-                                    ? const Color(0xFF66BB6A)
-                                    : const Color(0xFF2E7D32),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                    ],
-                    IconButton(
-                      tooltip: 'Commitment actions',
-                      icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted),
-                      onPressed: () =>
-                          showPromiseActionMenu(context, promise, locked: isLocked),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            if (isLocked) ...[
-              LockedCommitmentTile(
-                label: 'Private commitment',
-                onTap: () async {
-                  final security = ref.read(vaultSecurityServiceProvider);
-                  final unlocked = await security.authenticateBiometrics(
-                    reason: 'Unlock private commitment',
-                  );
-                  if (unlocked) {
-                    ref
-                        .read(unlockedPromiseIdsProvider.notifier)
-                        .unlock(promise.id);
-                  }
-                },
-              ),
-            ] else ...[
-              // Title
-              Text(
-                promise.title,
-                style: AscentTextStyles.interfaceSection.copyWith(
-                  color: g.ink,
-                  fontSize: 18.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                  height: 1.25,
-                ),
-              ),
-
-              if (promise.intention.trim().isNotEmpty &&
-                  promise.intention.trim().toLowerCase() !=
-                      promise.title.trim().toLowerCase()) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.only(left: 10, top: 2, bottom: 2),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: g.clay.withValues(alpha: 0.5),
-                        width: 2.5,
-                      ),
-                    ),
-                  ),
-                  child: Text(
-                    promise.intention,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: g.inkSecondary,
-                      fontSize: 13,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-
-              // Structured Info Grid (iOS style)
-              _buildMetricsGrid(context, promise, g),
-            ],
-            const SizedBox(height: 14),
-
-            // Progress Bar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: promise.progressFraction.clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: g.ink.withValues(alpha: 0.08),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isDark ? const Color(0xFF7BA0C6) : const Color(0xFF3B6790),
-                ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: c.surfaceAlt,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: c.border.withValues(alpha: 0.6)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lock_rounded, size: 16, color: c.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Private commitment',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: c.textPrimary,
               ),
             ),
-            const SizedBox(height: 14),
-
-            // Bottom footer: Progress summary & Direct Action Button
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 12,
-              runSpacing: 10,
-              children: [
-                Text(
-                  '${(promise.progressFraction.clamp(0.0, 1.0) * 100).toInt()}% completed · ${promise.progressSummary}',
-                  style: TextStyle(
-                    color: g.inkSecondary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                PromiseActionButton(
-                  promise: promise,
-                  onPressed: () {
-                    _triggerAction(context, ref, promise);
-                  },
-                ),
-              ],
+          ),
+          OutlinedButton(
+            key: ValueKey('toggle_lock_home_promise_${promise.id}'),
+            onPressed: () async {
+              HapticFeedback.mediumImpact();
+              final security = ref.read(vaultSecurityServiceProvider);
+              final unlocked = await security.authenticateBiometrics(
+                reason: 'Unlock private commitment',
+              );
+              if (unlocked) {
+                ref
+                    .read(unlockedPromiseIdsProvider.notifier)
+                    .unlock(promise.id);
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: c.accent, width: 1.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              minimumSize: const Size(0, 28),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ],
-        ),
+            child: Text(
+              'Unlock',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: c.accent,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _triggerAction(
+  Widget _buildEmptyCard(BuildContext context, AppColors c) {
+    return Container(
+      key: const ValueKey('home_promise_empty_card'),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: c.border.withValues(alpha: 0.7), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: c.warmShadow,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCardHeader(
+            context,
+            c,
+            onAdd: () {
+              HapticFeedback.selectionClick();
+              PromiseChatComposer.show(context);
+            },
+            onViewAll: () => context.push('/promises'),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: c.accentTint,
+                  ),
+                  child: Icon(
+                    Icons.flag_outlined,
+                    size: 22,
+                    color: c.accent,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'No commitments yet',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Set a personal standard for today',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: c.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  key: const ValueKey('home_promise_add_inline'),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    PromiseChatComposer.show(context);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: c.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text(
+                    'New Commitment',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedCard(
+    BuildContext context,
+    WidgetRef ref,
+    PromiseModel completedPromise,
+    List<PromiseModel> allActive,
+    AppColors c,
+  ) {
+    return Container(
+      key: const ValueKey('home_promise_card'),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(color: c.border.withValues(alpha: 0.7), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: c.warmShadow,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildCardHeader(
+            context,
+            c,
+            onAdd: () {
+              HapticFeedback.selectionClick();
+              PromiseChatComposer.show(context);
+            },
+            onViewAll: () => context.push('/promises'),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c.accentTint,
+                ),
+                child: Icon(
+                  Icons.check_circle_rounded,
+                  size: 20,
+                  color: c.accent,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'All commitments completed!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: c.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Great job keeping your word today.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: c.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          _buildCardFooter(context, c, allActive),
+        ],
+      ),
+    );
+  }
+
+  void _executeAction(
     BuildContext context,
     WidgetRef ref,
     PromiseModel promise,

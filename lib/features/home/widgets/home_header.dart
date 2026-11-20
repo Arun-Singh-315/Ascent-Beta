@@ -213,9 +213,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       weatherIcon = Icons.wb_sunny_outlined;
     }
 
-    final pillBg = c.surfaceAlt.withValues(alpha: dark ? 0.45 : 0.65);
+    final pillBg = dark
+        ? const Color(0xFF141824).withValues(alpha: 0.75)
+        : c.surfaceAlt.withValues(alpha: 0.65);
     final pillBorder = Border.all(
-      color: c.border.withValues(alpha: dark ? 0.75 : 0.85),
+      color: dark
+          ? const Color(0xFF263044)
+          : c.border.withValues(alpha: 0.85),
       width: 1,
     );
 
@@ -434,11 +438,33 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     return Container(
       key: const ValueKey('home_day_header'),
       decoration: BoxDecoration(
-        color: c.surface,
+        color: dark ? null : c.surface,
+        gradient: dark
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF0C0F17),
+                  Color(0xFF121622),
+                  Color(0xFF0E111A),
+                ],
+              )
+            : null,
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.header),
         ),
-        border: AppBorder.bottom(c.border),
+        border: AppBorder.bottom(
+          dark ? const Color(0xFF1E2536) : c.border,
+        ),
+        boxShadow: dark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 18,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(
@@ -599,13 +625,60 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
 
                   // Row 2: Greeting & Name (Clean, minimal, personal profile feel)
                   const SizedBox(height: 16),
-                  Text(
-                    greeting,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      color: c.textSecondary,
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        greeting,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500,
+                          color: c.textSecondary,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: dark
+                              ? const Color(0xFF161F30).withValues(alpha: 0.75)
+                              : c.surfaceAlt,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: dark
+                                ? const Color(0xFF253755)
+                                : c.border,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              periodIcon,
+                              size: 12,
+                              color: dark
+                                  ? const Color(0xFF7DD3FC)
+                                  : c.accent,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              periodSubtitle,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: dark
+                                    ? const Color(0xFFBAE6FD)
+                                    : c.textSecondary,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -744,7 +817,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     } else if (isSnow) {
       _paintSnow(canvas, size);
     } else if (isNight) {
-      _paintNightStars(canvas, size);
+      _paintNightAura(canvas, size);
     } else if (isMorning) {
       _paintMorningGlow(canvas, size);
     } else if (isEvening) {
@@ -799,22 +872,79 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     }
   }
 
-  void _paintNightStars(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    const starCount = 18;
+  void _paintNightAura(Canvas canvas, Size size) {
+    // 1. Celestial Deep Lunar Aura (Rich midnight-indigo glow from top right)
+    final breath = (math.sin(progress * 2 * math.pi) + 1.0) / 2.0;
+    final auraCenter = Offset(size.width * 0.82, 35);
+    final auraRadius = math.max(160.0, size.width * 0.45);
 
-    for (var i = 0; i < starCount; i++) {
-      final x = (((i * 59) % 100) / 100.0) * size.width;
-      final y = (((i * 83) % 65) / 100.0) * size.height;
-      final pulse =
-          (math.sin((progress * 2 * math.pi) + (i * 1.5)) + 1.0) / 2.0;
-      final alpha = (0.2 + 0.5 * pulse).clamp(0.0, 1.0);
+    final celestialPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          (dark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6))
+              .withValues(alpha: dark ? (0.24 + 0.06 * breath) : 0.12),
+          (dark ? const Color(0xFF312E81) : const Color(0xFF6366F1))
+              .withValues(alpha: dark ? 0.12 : 0.06),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(
+        center: auraCenter,
+        radius: auraRadius,
+      ));
 
-      paint.color =
-          Colors.white.withValues(alpha: dark ? alpha : alpha * 0.5);
-      final radius = 0.9 + (i % 3) * 0.6;
-      canvas.drawCircle(Offset(x, y), radius, paint);
-    }
+    canvas.drawCircle(auraCenter, auraRadius, celestialPaint);
+
+    // 2. Secondary soft twilight depth on lower left
+    final twilightCenter = Offset(size.width * 0.15, size.height * 0.75);
+    final twilightPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          (dark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0))
+              .withValues(alpha: dark ? 0.30 : 0.12),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromCircle(
+        center: twilightCenter,
+        radius: 140,
+      ));
+    canvas.drawCircle(twilightCenter, 140, twilightPaint);
+
+    // 3. Ethereal Silky Horizon Ribbon (Living Midnight Aurora)
+    final waveY1 =
+        size.height * (0.42 + 0.04 * math.sin(progress * 2 * math.pi));
+    final waveY2 =
+        size.height * (0.58 - 0.04 * math.cos(progress * 2 * math.pi));
+
+    final wavePath = Path()
+      ..moveTo(0, size.height * 0.48)
+      ..cubicTo(
+        size.width * 0.35,
+        waveY1,
+        size.width * 0.68,
+        waveY2,
+        size.width,
+        size.height * 0.42,
+      )
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final ribbonPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          (dark ? const Color(0xFF38BDF8) : const Color(0xFF60A5FA))
+              .withValues(alpha: dark ? 0.08 : 0.04),
+          (dark ? const Color(0xFF818CF8) : const Color(0xFFA5B4FC))
+              .withValues(alpha: dark ? 0.04 : 0.02),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(
+          0, size.height * 0.35, size.width, size.height * 0.65));
+
+    canvas.drawPath(wavePath, ribbonPaint);
   }
 
   void _paintMorningGlow(Canvas canvas, Size size) {

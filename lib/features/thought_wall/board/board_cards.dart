@@ -229,8 +229,8 @@ class _BoardCardState extends State<BoardCard>
     final fill = (!filled || minimal)
         ? (dark
             ? Colors.transparent
-            : Colors.white.withValues(alpha: .75))
-        : (dark ? const Color(0xFF16181F) : Colors.white);
+            : const Color(0xFFF7F5F0).withValues(alpha: .75))
+        : (dark ? const Color(0xFF16181F) : const Color(0xFFF7F5F0));
     final borderColor = isSelected
         ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
         : thought.isCompleted

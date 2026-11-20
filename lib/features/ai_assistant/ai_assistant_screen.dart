@@ -779,10 +779,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         resizeToAvoidBottomInset: !widget.compact,
         extendBodyBehindAppBar: true,
         backgroundColor: isDark
-            ? context.bgBase
-            : const Color(0xFFF8FAFC),
+            ? const Color(0xFF0A0C10)
+            : const Color(0xFFEFECE6),
         appBar: AppBar(
-          backgroundColor: isDark ? const Color(0xFF0F1115) : const Color(0xFFF8FAFC),
+          backgroundColor: isDark ? const Color(0xFF0A0C10) : const Color(0xFFEFECE6),
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
@@ -1294,7 +1294,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           decoration: BoxDecoration(
             color: selected
                 ? accent.withValues(alpha: isDark ? 0.16 : 0.08)
-                : (isDark ? const Color(0xFF1C1E26) : Colors.white),
+                : (isDark ? const Color(0xFF1C1E26) : const Color(0xFFF7F5F0)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: selected
@@ -1476,7 +1476,7 @@ class _ConversationMessageBubbleState
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ── iOS Glass Message Bubbles (Sand & Ember / Charcoal Black) ──
+    // ── iOS Glass Message Bubbles (Option A: Soothing Slate Blue & Gentle Linen Glass) ──
     final Color bubbleFill;
     final Color bubbleBorder;
     final Color messageTextColor;
@@ -1485,11 +1485,11 @@ class _ConversationMessageBubbleState
 
     if (isUser) {
       bubbleFill = isDark
-          ? const Color(0xFF1D4ED8)
-          : const Color(0xFF006FE6);
+          ? const Color(0xFF1E2E4E)
+          : const Color(0xFF2554B8);
       bubbleBorder = isDark
-          ? const Color(0xFF3B82F6).withValues(alpha: 0.40)
-          : const Color(0xFF005AC8);
+          ? const Color(0xFF3A5688).withValues(alpha: 0.40)
+          : const Color(0xFF2554B8).withValues(alpha: 0.40);
       messageTextColor = Colors.white;
       timestampColor = const Color(0xD0FFFFFF);
       borderRadius = const BorderRadius.only(
@@ -1500,13 +1500,13 @@ class _ConversationMessageBubbleState
       );
     } else {
       bubbleFill = isDark
-          ? const Color(0xFF16181F)
-          : Colors.white;
+          ? const Color(0xFF151821)
+          : const Color(0xFFF6F4EF);
       bubbleBorder = isDark
-          ? const Color(0xFF262933)
-          : const Color(0xFFE2E8F0);
-      messageTextColor = isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A);
-      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+          ? const Color(0xFF222634)
+          : const Color(0xFFE2DDD5);
+      messageTextColor = isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1C1917);
+      timestampColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF78716C);
       borderRadius = const BorderRadius.only(
         topLeft: Radius.circular(18),
         topRight: Radius.circular(18),
@@ -2044,12 +2044,12 @@ class _ConversationMessageBubbleState
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E2430) : Colors.white,
+                    color: isDark ? const Color(0xFF1E2430) : const Color(0xFFF7F5F0),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isDark
                           ? const Color(0xFF2D3548)
-                          : const Color(0xFFE8ECF4),
+                          : const Color(0xFFE2DDD5),
                     ),
                   ),
                   child: Column(
@@ -2518,34 +2518,57 @@ class _AtmosphericChatBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Theme-aware background palette: Deep smoky charcoal black in Dark, soft warm paper in Light
+    // Theme-aware background palette:
+    // Option A: Soothing Slate Blue & Gentle Linen Glass
     final List<Color> gradientColors;
 
     if (isDark) {
-      // Pure refined smoky charcoal black (Zero violet/plum)
       gradientColors = const [
-        Color(0xFF0E0F12), // deep smoky charcoal black
-        Color(0xFF141519), // charcoal elevation
-        Color(0xFF0F1013), // deep charcoal base
+        Color(0xFF0A0C10), // deep night base
+        Color(0xFF10131A), // slate-charcoal elevation
+        Color(0xFF0A0C10), // deep night base
       ];
     } else {
-      // Warm Sand base in Light mode
       gradientColors = const [
-        Color(0xFFFAF6F0), // warm paper Sand base
-        Color(0xFFF3ECE2), // soft warm grouped wash
-        Color(0xFFFAF6F0),
+        Color(0xFFEFECE6), // soothing muted linen tone
+        Color(0xFFE8E5DF), // soft linen wash
+        Color(0xFFEFECE6), // soothing muted linen tone
       ];
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: gradientColors,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: gradientColors,
+            ),
+          ),
+          child: const SizedBox.expand(),
         ),
-      ),
-      child: const SizedBox.expand(),
+        // Subtle ambient soothing glass aura
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.4),
+              radius: 1.2,
+              colors: isDark
+                  ? [
+                      const Color(0xFF1E2E4E).withValues(alpha: 0.12),
+                      Colors.transparent,
+                    ]
+                  : [
+                      const Color(0xFF2554B8).withValues(alpha: 0.05),
+                      Colors.transparent,
+                    ],
+            ),
+          ),
+          child: const SizedBox.expand(),
+        ),
+      ],
     );
   }
 }
