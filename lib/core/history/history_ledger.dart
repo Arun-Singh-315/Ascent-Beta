@@ -218,9 +218,9 @@ class HistoryLedger {
       'thoughts',
       '@.content',
       "'Space: '||@.category",
-      ['content', 'category', 'is_archived', 'is_completed'],
+      ['content', 'category', 'is_archived', 'is_completed', 'carried_on'],
       action:
-          "CASE WHEN NEW.is_archived!=OLD.is_archived THEN CASE WHEN NEW.is_archived=1 THEN 'archived' ELSE 'restored' END WHEN NEW.is_completed!=OLD.is_completed THEN CASE WHEN NEW.is_completed=1 THEN 'completed' ELSE 'corrected' END ELSE 'edited' END",
+          "CASE WHEN NEW.is_archived!=OLD.is_archived THEN CASE WHEN NEW.is_archived=1 THEN 'archived' ELSE 'restored' END WHEN NEW.is_completed!=OLD.is_completed THEN CASE WHEN NEW.is_completed=1 THEN 'completed' ELSE 'corrected' END WHEN NEW.carried_on IS NOT OLD.carried_on THEN 'carried' ELSE 'edited' END",
       privacy: '@.id',
     ),
     _Spec(

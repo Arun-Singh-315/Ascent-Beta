@@ -282,21 +282,228 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     if (thought != null) await setCompleted(id, !thought.isCompleted);
   });
 
-  Future<void> setCompleted(int id, bool completed) async {
+  /// Ticks or unticks a thought and keeps [Thought.completedAt] in step.
+  /// [now] exists so tests can move the clock.
+  Future<void> setCompleted(int id, bool completed, {DateTime? now}) async {
     await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
-      ThoughtTableCompanion(isCompleted: Value(completed)),
+      ThoughtTableCompanion(
+        isCompleted: Value(completed),
+        completedAt: Value(completed ? (now ?? DateTime.now()) : null),
+      ),
     );
   }
 
-  Future<void> archiveThought(int id) async {
+  Future<void> archiveThought(int id, {DateTime? now}) async {
     await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
-      const ThoughtTableCompanion(isArchived: Value(true)),
+      ThoughtTableCompanion(
+        isArchived: const Value(true),
+        archivedAt: Value(now ?? DateTime.now()),
+      ),
     );
   }
 
   Future<void> unarchiveThought(int id) async {
     await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
-      const ThoughtTableCompanion(isArchived: Value(false)),
+      const ThoughtTableCompanion(
+        isArchived: Value(false),
+        archivedAt: Value(null),
+      ),
+    );
+  }
+
+  // Lifecycle views --------------------------------------------------------
+  //
+  // One record, one state. Today, Earlier, Done, Archive and History are
+  // queries over createdAt / carriedOn / completedAt / archivedAt: nothing is
+  // ever copied. Promise thoughts stay in, exactly as on the old wall.
+
+  static DateTime _dayStart(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  Expression<bool> _inDay(
+    GeneratedColumn<DateTime> column,
+    DateTime start,
+    DateTime end,
+  ) => column.isBiggerOrEqualValue(start) & column.isSmallerThanValue(end);
+
+  Expression<bool> _matches(
+    $ThoughtTableTable t, {
+    String? category,
+    String? query,
+  }) {
+    Expression<bool> out = const Constant(true);
+    if (category != null) out = out & t.category.equals(category);
+    final text = query?.trim() ?? '';
+    if (text.isNotEmpty) out = out & t.content.like('%$text%');
+    return out;
+  }
+
+  /// Today: open thoughts written or carried today, thoughts finished today,
+  /// and thoughts archived today (shown with an "Archived" tag until midnight).
+  Stream<List<Thought>> watchToday({
+    DateTime? now,
+    String? category,
+    String? query,
+  }) {
+    final n = now ?? DateTime.now();
+    final start = _dayStart(n);
+    final end = DateTime(n.year, n.month, n.day + 1);
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                _matches(t, category: category, query: query) &
+                ((t.isArchived.equals(false) &
+                        (_inDay(t.createdAt, start, end) |
+                            _inDay(t.carriedOn, start, end) |
+                            (t.isCompleted.equals(true) &
+                                _inDay(t.completedAt, start, end)))) |
+                    (t.isArchived.equals(true) &
+                        _inDay(t.archivedAt, start, end))),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.isCompleted),
+            (t) => OrderingTerm.desc(t.isPinned),
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+        .watch();
+  }
+
+  Expression<bool> _earlier($ThoughtTableTable t, DateTime start) =>
+      t.isArchived.equals(false) &
+      t.isCompleted.equals(false) &
+      t.createdAt.isSmallerThanValue(start) &
+      (t.carriedOn.isNull() | t.carriedOn.isSmallerThanValue(start));
+
+  /// Open thoughts from before today that were not brought to Today.
+  Stream<List<Thought>> watchEarlier({
+    DateTime? now,
+    String? category,
+    String? query,
+  }) {
+    final start = _dayStart(now ?? DateTime.now());
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                _matches(t, category: category, query: query) &
+                _earlier(t, start),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+        .watch();
+  }
+
+  /// Ticked thoughts that are not archived, newest completion first. Grows by
+  /// raising [limit]; the stream keeps updating.
+  Stream<List<Thought>> watchDone({
+    required int limit,
+    String? category,
+    String? query,
+  }) {
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                _matches(t, category: category, query: query) &
+                t.isCompleted.equals(true) &
+                t.isArchived.equals(false),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.completedAt),
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
+          ..limit(limit))
+        .watch();
+  }
+
+  /// Every archived thought, newest archive first.
+  Stream<List<Thought>> watchArchive({
+    required int limit,
+    String? category,
+    String? query,
+  }) {
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                _matches(t, category: category, query: query) &
+                t.isArchived.equals(true),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.archivedAt),
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
+          ..limit(limit))
+        .watch();
+  }
+
+  /// Thoughts with any lifecycle event on [day]: written, finished, archived
+  /// or carried in.
+  Stream<List<Thought>> watchHistoryForDay(DateTime day) {
+    final start = _dayStart(day);
+    final end = DateTime(day.year, day.month, day.day + 1);
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                (_inDay(t.createdAt, start, end) |
+                    _inDay(t.completedAt, start, end) |
+                    _inDay(t.archivedAt, start, end) |
+                    _inDay(t.carriedOn, start, end)),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+        .watch();
+  }
+
+  /// Thoughts with any lifecycle event on or after [since]; used for the
+  /// History day strip dots.
+  Stream<List<Thought>> watchActivitySince(DateTime since) {
+    final start = _dayStart(since);
+    return (select(thoughtTable)
+          ..where(
+            (t) =>
+                (t.createdAt.isBiggerOrEqualValue(start) |
+                    t.completedAt.isBiggerOrEqualValue(start) |
+                    t.archivedAt.isBiggerOrEqualValue(start) |
+                    t.carriedOn.isBiggerOrEqualValue(start)),
+          )
+          ..limit(5000))
+        .watch();
+  }
+
+  /// Brings open thoughts to Today. Only [Thought.carriedOn] changes, so the
+  /// original date stays and no second record exists. Returns how many moved.
+  Future<int> carryToToday(Iterable<int> ids, {DateTime? now}) async {
+    final selected = ids.toSet();
+    if (selected.isEmpty) return 0;
+    final at = now ?? DateTime.now();
+    return (update(thoughtTable)..where(
+          (t) =>
+              t.id.isIn(selected) &
+              t.isArchived.equals(false) &
+              t.isCompleted.equals(false),
+        ))
+        .write(ThoughtTableCompanion(carriedOn: Value(at)));
+  }
+
+  /// Brings every Earlier thought to Today. Returns how many moved.
+  Future<int> carryAllEarlierToToday({DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final start = _dayStart(at);
+    return (update(thoughtTable)..where((t) => _earlier(t, start)))
+        .write(ThoughtTableCompanion(carriedOn: Value(at)));
+  }
+
+  /// 'todo', 'bullet' or null (follow the user's default).
+  Future<void> setBulletStyle(int id, String? style) async {
+    if (style != null && style != 'todo' && style != 'bullet') {
+      throw ArgumentError.value(style, 'style');
+    }
+    await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+      ThoughtTableCompanion(bulletStyle: Value(style)),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import 'board/thought_lines.dart';
 import 'thought_wall_preferences.dart';
 
 class ThoughtWallAppearanceSheet extends ConsumerStatefulWidget {
@@ -182,6 +183,47 @@ class _ThoughtWallAppearanceSheetState
                           ? null
                           : (_) => _save(appearance.copyWith(bubbleFilled: false)),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'BULLETS LOOK LIKE',
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: g.inkMuted,
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (label, icon, style) in [
+                      ('Todo circles', Icons.radio_button_unchecked_rounded, BulletStyle.todo),
+                      ('Plain bullets', Icons.circle, BulletStyle.bullet),
+                    ])
+                      ChoiceChip(
+                        key: ValueKey('default_bullets_${style.name}'),
+                        avatar: Icon(
+                          icon,
+                          size: style == BulletStyle.bullet ? 8 : 18,
+                          color: appearance.defaultBullets == style ? g.clay : g.ink,
+                        ),
+                        label: Text(
+                          label,
+                          style: TextStyle(
+                            color: appearance.defaultBullets == style ? g.clay : g.ink,
+                            fontWeight: appearance.defaultBullets == style
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                        selected: appearance.defaultBullets == style,
+                        onSelected: _saving
+                            ? null
+                            : (_) => _save(appearance.copyWith(defaultBullets: style)),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16),

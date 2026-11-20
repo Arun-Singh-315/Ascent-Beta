@@ -328,11 +328,19 @@ Future<void> archiveThoughtsWithUndo(
   HapticFeedback.lightImpact();
   final dao = ref.read(thoughtDaoProvider);
   final archive = thoughts.any((t) => !t.isArchived);
+  // Only thoughts that actually change state are touched, so an already
+  // archived thought keeps its original archive date.
+  final targets = [
+    for (final t in thoughts)
+      if (t.isArchived != archive) t,
+  ];
+  final skipped = thoughts.length - targets.length;
+  String tail(String m) => skipped == 0 ? m : '$m, $skipped skipped';
   try {
     final db = ref.read(databaseProvider);
     final revision = db.workspaceRevision;
     await db.transaction(() async {
-      for (final thought in thoughts) {
+      for (final thought in targets) {
         if (archive) {
           await dao.archiveThought(thought.id);
         } else {
@@ -343,21 +351,23 @@ Future<void> archiveThoughtsWithUndo(
     if (!context.mounted) return;
     AscentSnackBar.show(
       context,
-      message: archive
-          ? (thoughts.length == 1
-                ? 'Thought archived'
-                : '${thoughts.length} thoughts archived')
-          : (thoughts.length == 1
-                ? 'Thought restored'
-                : '${thoughts.length} thoughts restored'),
+      message: tail(
+        archive
+            ? (targets.length == 1
+                  ? 'Thought archived'
+                  : '${targets.length} thoughts archived')
+            : (targets.length == 1
+                  ? 'Thought restored'
+                  : '${targets.length} thoughts restored'),
+      ),
       icon: archive ? Icons.archive_outlined : Icons.unarchive_outlined,
       actionLabel: 'Undo',
       onAction: () async {
         if (db.workspaceRevision != revision) return;
         await db.transaction(() async {
-          for (final thought in thoughts) {
+          for (final thought in targets) {
             final current = await dao.getThoughtById(thought.id);
-            if (current == thought.copyWith(isArchived: archive)) {
+            if (current != null && current.isArchived == archive) {
               if (thought.isArchived) {
                 await dao.archiveThought(thought.id);
               } else {

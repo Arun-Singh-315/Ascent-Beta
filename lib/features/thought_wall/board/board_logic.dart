@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
+import 'thought_lines.dart';
 
 /// The category key every plain wall thought lives in. Every other category is
 /// a "space" (Movies, Books, Bugs …) with its own page.
@@ -25,9 +26,6 @@ enum BoardCardKind {
   long,
 }
 
-final _bulletLine = RegExp(
-  r'^\s*(?:-->|→|[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+(.+)$',
-);
 final _bulletPrefix = RegExp(r'^\s*(?:-->|→|[-*•]|\d{1,3}[.)]|\[[ xX]?\])\s+');
 final _lineBreak = RegExp(r'\r?\n');
 
@@ -62,12 +60,9 @@ List<String> _nonEmptyLines(String text) =>
 
 /// Bullet items of a list-like thought (marker removed), or an empty list when
 /// the text is not list-like.
-List<String> bulletItems(String content) {
-  final lines = _nonEmptyLines(displayContent(content));
-  final bullets = lines.where(_bulletLine.hasMatch).toList();
-  if (bullets.length < 2 || bullets.length * 2 < lines.length) return const [];
-  return [for (final line in bullets) _bulletLine.firstMatch(line)!.group(1)!];
-}
+List<String> bulletItems(String content) => [
+  for (final line in listItems(displayContent(content))) line.text,
+];
 
 /// Picks the visual treatment for a thought from its text.
 BoardCardKind boardCardKind(String content) {
