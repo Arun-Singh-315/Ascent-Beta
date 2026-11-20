@@ -19,6 +19,10 @@ import '../../../core/services/activity_entry_service.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../today/models/things_intelligence.dart';
+import '../../../core/services/quick_add_parser.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/glass_chip.dart';
+import '../../../shared/widgets/undo_snackbar.dart';
 
 /// Type first. Optional controls keep the normal path to a single send.
 class ActivityComposer extends ConsumerStatefulWidget {
@@ -44,6 +48,12 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   bool _isDailyStanding = false;
   String? _error;
 
+  /// Time set by tapping the time chip; wins over the typed time.
+  TimeOfDay? _time;
+
+  /// Parsed details the user removed; their words stay in the title.
+  final Set<QuickAddField> _ignored = {};
+
   @override
   void initState() {
     super.initState();
@@ -60,7 +70,182 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   }
 
   void _changed() {
+    if (_text.text.trim().isEmpty) _ignored.clear();
     if (mounted) setState(() {});
+  }
+
+  /// Natural-language details for a single line. Lists ("- a\n- b") are
+  /// saved as separate plain to-dos, as before.
+  QuickAddResult? _parse() {
+    final entries = PlanItemDraft.parseList(_text.text);
+    if (entries.length != 1) return null;
+    return parseQuickAdd(entries.single, DateTime.now(), ignore: _ignored);
+  }
+
+  /// Day: chosen in options, else typed, else today.
+  DateTime _effectiveDay(QuickAddResult? parsed) {
+    final d = _date ?? parsed?.day ?? DateTime.now();
+    return DateTime(d.year, d.month, d.day);
+  }
+
+  TimeOfDay? _effectiveTime(QuickAddResult? parsed) =>
+      _time ??
+      (parsed?.hour == null
+          ? null
+          : TimeOfDay(hour: parsed!.hour!, minute: parsed.minute ?? 0));
+
+  int? _effectiveMinutes(QuickAddResult? parsed) => _kind == ActivityKind.todo
+      ? parsed?.durationMinutes
+      : _kind == ActivityKind.duration
+      ? _minutes
+      : null;
+
+  bool _effectiveStar(QuickAddResult? parsed) =>
+      _starred || (parsed?.starred ?? false);
+
+  /// "Remind me" with no time: the next half hour today, 9 am on other days.
+  DateTime? _effectiveReminder(QuickAddResult? parsed) {
+    final day = _effectiveDay(parsed);
+    if (_reminder != null) {
+      return DateTime(
+        day.year,
+        day.month,
+        day.day,
+        _reminder!.hour,
+        _reminder!.minute,
+      );
+    }
+    if (!(parsed?.remind ?? false)) return null;
+    final time = _effectiveTime(parsed);
+    if (time != null) {
+      return DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (day.isAfter(today)) return DateTime(day.year, day.month, day.day, 9);
+    final next = now.add(Duration(minutes: 30 - now.minute % 30));
+    return DateTime(next.year, next.month, next.day, next.hour, next.minute);
+  }
+
+  static String _dayLabel(DateTime day) {
+    final now = DateTime.now();
+    final diff = DateTime.utc(
+      day.year,
+      day.month,
+      day.day,
+    ).difference(DateTime.utc(now.year, now.month, now.day)).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    if (diff > 1 && diff < 7) return DateFormat('EEEE').format(day);
+    return DateFormat('EEE, d MMM').format(day);
+  }
+
+  static String _minutesLabel(int minutes) {
+    if (minutes < 60) return '$minutes min';
+    final h = minutes ~/ 60, m = minutes % 60;
+    return m == 0 ? '$h h' : '$h h $m min';
+  }
+
+  /// Tap a chip to change it or remove it.
+  Future<void> _editChip(QuickAddField field) async {
+    final canChange =
+        field == QuickAddField.day ||
+        field == QuickAddField.time ||
+        field == QuickAddField.duration;
+    final action = await showAscentActionMenu<String>(
+      context: context,
+      title: switch (field) {
+        QuickAddField.day => 'Day',
+        QuickAddField.time => 'Time',
+        QuickAddField.duration => 'Timer',
+        QuickAddField.reminder => 'Reminder',
+        QuickAddField.star => 'Star',
+      },
+      actions: [
+        if (canChange)
+          const AscentAction('change', 'Change', Icons.edit_outlined),
+        const AscentAction(
+          'remove',
+          'Remove',
+          Icons.close_rounded,
+          destructive: true,
+        ),
+      ],
+    );
+    if (!mounted || action == null) return;
+    if (action == 'remove') {
+      HapticFeedback.selectionClick();
+      setState(() {
+        _ignored.add(field);
+        switch (field) {
+          case QuickAddField.day:
+            _date = null;
+          case QuickAddField.time:
+            _time = null;
+          case QuickAddField.duration:
+            _kind = ActivityKind.todo;
+          case QuickAddField.reminder:
+            _reminder = null;
+          case QuickAddField.star:
+            _starred = false;
+        }
+      });
+      return;
+    }
+    switch (field) {
+      case QuickAddField.day:
+        await _pickDate('date');
+      case QuickAddField.time:
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: _effectiveTime(_parse()) ?? TimeOfDay.now(),
+        );
+        if (picked != null && mounted) setState(() => _time = picked);
+      case QuickAddField.duration:
+        final typed = _parse()?.durationMinutes;
+        if (_kind == ActivityKind.todo && typed != null) _minutes = typed;
+        await _duration();
+        if (mounted) setState(() => _kind = ActivityKind.duration);
+      case QuickAddField.reminder:
+      case QuickAddField.star:
+        break;
+    }
+  }
+
+  List<Widget> _detailChips(QuickAddResult? parsed) {
+    final fields = parsed?.fields ?? const <QuickAddField>{};
+    final day = _effectiveDay(parsed);
+    final time = _effectiveTime(parsed);
+    final minutes = _effectiveMinutes(parsed);
+    final reminder = _effectiveReminder(parsed);
+    Widget chip(QuickAddField field, String label, IconData icon) => GlassChip(
+      key: ValueKey('quick_add_chip_${field.name}'),
+      label: label,
+      icon: icon,
+      selected: true,
+      tooltip: 'Change or remove $label',
+      onTap: _saving ? null : () => _editChip(field),
+    );
+    return [
+      if (_date != null || fields.contains(QuickAddField.day))
+        chip(QuickAddField.day, _dayLabel(day), Icons.calendar_today_outlined),
+      if (time != null)
+        chip(QuickAddField.time, time.format(context), Icons.schedule_rounded),
+      if (minutes != null)
+        chip(
+          QuickAddField.duration,
+          _minutesLabel(minutes),
+          Icons.timer_outlined,
+        ),
+      if (reminder != null)
+        chip(
+          QuickAddField.reminder,
+          'Remind ${TimeOfDay.fromDateTime(reminder).format(context)}',
+          Icons.notifications_none_rounded,
+        ),
+      if (_effectiveStar(parsed))
+        chip(QuickAddField.star, 'Starred', Icons.star_rounded),
+    ];
   }
 
   @override
@@ -185,28 +370,22 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       _error = null;
     });
     final db = ref.read(databaseProvider);
+    final parsed = _parse();
+    final day = _effectiveDay(parsed);
+    final time = _effectiveTime(parsed);
+    final minutes = _effectiveMinutes(parsed);
+    final reminderAt = _effectiveReminder(parsed);
+    final titles = parsed == null ? entries : [parsed.title];
     try {
-      final date = _day;
-      final entries = PlanItemDraft.parseList(_text.text);
       final results = await ActivityEntryService(db).saveMany(
-        titles: entries,
-        date: date,
-        priority: _starred ? 'high' : 'low',
+        titles: titles,
+        date: time == null
+            ? day
+            : DateTime(day.year, day.month, day.day, time.hour, time.minute),
+        priority: _effectiveStar(parsed) ? 'high' : 'low',
         isDailyStanding: _isDailyStanding,
-        estimatedMinutes: _kind == ActivityKind.duration
-            ? _minutes
-            : _kind == ActivityKind.flexible
-            ? -1
-            : null,
-        reminderAt: _reminder == null
-            ? null
-            : DateTime(
-                date.year,
-                date.month,
-                date.day,
-                _reminder!.hour,
-                _reminder!.minute,
-              ),
+        estimatedMinutes: _kind == ActivityKind.flexible ? -1 : minutes,
+        reminderAt: reminderAt,
       );
       final reminderIds = results.expand((r) => r.reminderIds).toList();
       // Persistence succeeded. Never repeat creation because device alerts fail.
@@ -217,13 +396,25 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       setState(() {
         _kind = ActivityKind.todo;
         _date = null;
+        _time = null;
         _reminder = null;
         _minutes = 30;
         _starred = false;
         _isDailyStanding = false;
+        _ignored.clear();
       });
+      final when = [
+        if (day !=
+            DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            ))
+          _dayLabel(day),
+        if (time != null) time.format(context),
+      ].join(' ');
       var message = results.length == 1
-          ? 'Activity added'
+          ? 'Added “${titles.single}”${when.isEmpty ? '' : ' for $when'}'
           : '${results.length} to-dos added';
       if (reminderIds.isNotEmpty) {
         try {
@@ -232,16 +423,23 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           ).sync(ids: reminderIds, onlyPending: true);
           if (!sync.complete) {
             message =
-                'Activity saved. Reminder alert pending—check notification permissions.';
+                'Saved. Reminder alert pending—check notification permissions.';
           }
         } catch (_) {
-          message = 'Activity saved. Reminder alert pending.';
+          message = 'Saved. Reminder alert pending.';
         }
       }
       if (mounted) {
-        ScaffoldMessenger.of(
+        final ids = [for (final r in results) r.taskId];
+        showUndoSnackbar(
           context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+          message: message,
+          onUndo: () async {
+            for (final id in ids) {
+              await db.taskDao.deleteTask(id);
+            }
+          },
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -281,114 +479,117 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
               child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Activity options',
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Activity options',
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(sheetContext),
-                      child: const Text('Done'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                AscentSegmentedControl<ActivityKind>(
-                  segments: const [
-                    AscentSegment(value: ActivityKind.todo, label: 'To-do'),
-                    AscentSegment(value: ActivityKind.duration, label: 'Timer'),
-                    AscentSegment(
-                      value: ActivityKind.flexible,
-                      label: 'Flexible',
-                    ),
-                  ],
-                  selected: _kind,
-                  onChanged: (value) {
-                    setState(() => _kind = value);
-                    refresh(() {});
-                  },
-                ),
-                if (_kind == ActivityKind.duration)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Duration'),
-                    trailing: Text('$_minutes min'),
-                    onTap: () => edit(_duration),
+                      TextButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: const Text('Done'),
+                      ),
+                    ],
                   ),
-                PopupMenuButton<String>(
-                  tooltip: 'Activity date',
-                  onSelected: (value) => edit(() => _pickDate(value)),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'today', child: Text('Today')),
-                    PopupMenuItem(value: 'tomorrow', child: Text('Tomorrow')),
-                    PopupMenuItem(value: 'date', child: Text('Choose date')),
-                  ],
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 20,
-                    ),
-                    title: const Text('Schedule'),
-                    trailing: Text(
-                      _date == null
-                          ? 'Today'
-                          : DateFormat('d MMM').format(_day),
-                    ),
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  tooltip: 'Activity reminder',
-                  onSelected: (value) => edit(() => _pickReminder(value)),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'off', child: Text('Off')),
-                    PopupMenuItem(value: 'time', child: Text('Choose time')),
-                  ],
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 20,
-                    ),
-                    title: const Text('Reminder'),
-                    trailing: Text(_reminder?.format(context) ?? 'Off'),
-                  ),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Star this activity'),
-                  trailing: AscentStarButton(
-                    selected: _starred,
+                  const SizedBox(height: 16),
+                  AscentSegmentedControl<ActivityKind>(
+                    segments: const [
+                      AscentSegment(value: ActivityKind.todo, label: 'To-do'),
+                      AscentSegment(
+                        value: ActivityKind.duration,
+                        label: 'Timer',
+                      ),
+                      AscentSegment(
+                        value: ActivityKind.flexible,
+                        label: 'Flexible',
+                      ),
+                    ],
+                    selected: _kind,
                     onChanged: (value) {
-                      setState(() => _starred = value);
+                      setState(() => _kind = value);
                       refresh(() {});
                     },
                   ),
-                ),
-                AscentSwitchRow(
-                  title: 'Keep on until I turn it off',
-                  helper: _isDailyStanding
-                      ? 'Repeats every day automatically until toggled off'
-                      : 'One-time to-do for today',
-                  value: _isDailyStanding,
-                  onChanged: (val) {
-                    setState(() => _isDailyStanding = val);
-                    refresh(() {});
-                  },
-                ),
-              ],
+                  if (_kind == ActivityKind.duration)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Duration'),
+                      trailing: Text('$_minutes min'),
+                      onTap: () => edit(_duration),
+                    ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Activity date',
+                    onSelected: (value) => edit(() => _pickDate(value)),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'today', child: Text('Today')),
+                      PopupMenuItem(value: 'tomorrow', child: Text('Tomorrow')),
+                      PopupMenuItem(value: 'date', child: Text('Choose date')),
+                    ],
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 20,
+                      ),
+                      title: const Text('Schedule'),
+                      trailing: Text(
+                        _date == null
+                            ? 'Today'
+                            : DateFormat('d MMM').format(_day),
+                      ),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    tooltip: 'Activity reminder',
+                    onSelected: (value) => edit(() => _pickReminder(value)),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'off', child: Text('Off')),
+                      PopupMenuItem(value: 'time', child: Text('Choose time')),
+                    ],
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(
+                        Icons.notifications_none_rounded,
+                        size: 20,
+                      ),
+                      title: const Text('Reminder'),
+                      trailing: Text(_reminder?.format(context) ?? 'Off'),
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Star this activity'),
+                    trailing: AscentStarButton(
+                      selected: _starred,
+                      onChanged: (value) {
+                        setState(() => _starred = value);
+                        refresh(() {});
+                      },
+                    ),
+                  ),
+                  AscentSwitchRow(
+                    title: 'Keep on until I turn it off',
+                    helper: _isDailyStanding
+                        ? 'Repeats every day automatically until toggled off'
+                        : 'One-time to-do for today',
+                    value: _isDailyStanding,
+                    onChanged: (val) {
+                      setState(() => _isDailyStanding = val);
+                      refresh(() {});
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
           );
         },
       ),
@@ -399,19 +600,17 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final hasText = PlanItemDraft.parseList(_text.text).isNotEmpty;
+    final parsed = hasText ? _parse() : null;
     final customized =
         _kind != ActivityKind.todo ||
         _date != null ||
         _reminder != null ||
         _starred ||
         _isDailyStanding;
+    // Day, time, timer, reminder and star show as chips above the field.
     final summary = [
-      if (_kind == ActivityKind.duration) 'Timer · $_minutes min',
       if (_kind == ActivityKind.flexible) 'Flexible timer',
-      if (_date != null) DateFormat('d MMM').format(_day),
-      if (_reminder != null) _reminder!.format(context),
-      if (_isDailyStanding) 'Daily standing',
-      if (_starred) 'Starred',
+      if (_isDailyStanding) 'Every day',
     ].join(' · ');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,6 +631,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   runSpacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
+                    ..._detailChips(parsed),
                     // 3D Matte Squircle Category Tile & Label
                     Container(
                       padding: const EdgeInsets.fromLTRB(4, 2.5, 8, 2.5),
@@ -542,7 +742,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           submitTooltip: 'Add activity',
           controller: _text,
           focusNode: _effectiveFocus,
-          hint: 'Add a task or timer…',
+          hint: 'e.g. Gym 7am tomorrow 45m',
           leadingIcon: Icons.add,
           onLeadingTap: () {
             HapticFeedback.lightImpact();
@@ -562,9 +762,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     ? null
                     : () {
                         HapticFeedback.selectionClick();
-                        setState(
-                          () => _isDailyStanding = !_isDailyStanding,
-                        );
+                        setState(() => _isDailyStanding = !_isDailyStanding);
                       },
                 child: Padding(
                   padding: const EdgeInsets.all(8),
