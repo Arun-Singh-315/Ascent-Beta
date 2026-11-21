@@ -422,7 +422,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 );
                                 return;
                               }
-                              if (activity.isScheduledInFuture) {
+                              if (activity.isLockedUntilScheduled) {
                                 HapticFeedback.lightImpact();
                                 final timeStr = activity.scheduledTime != null
                                     ? DateFormat(
@@ -493,7 +493,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                       ? g.sage.withValues(alpha: .12)
                                       : (isRunning
                                             ? g.clay.withValues(alpha: .12)
-                                            : (activity.isScheduledInFuture
+                                            : (activity.isLockedUntilScheduled
                                                   ? g.ink.withValues(alpha: .04)
                                                   : AppPalette.transparent)),
                                   border: Border.all(
@@ -504,7 +504,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                               : (isRunning
                                                     ? g.clay
                                                     : (activity
-                                                              .isScheduledInFuture
+                                                              .isLockedUntilScheduled
                                                           ? g.inkMuted
                                                           : g.inkMuted))),
                                     width: 1.75,
@@ -524,7 +524,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                               ),
                                         ),
                                       )
-                                    : activity.isScheduledInFuture
+                                    : activity.isLockedUntilScheduled
                                     ? Center(
                                         child: Icon(
                                           Icons.schedule_rounded,
@@ -881,7 +881,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     Future<void> completeTask() async {
       final target = activity;
       if (done || _completing) return;
-      if (target.isScheduledInFuture) {
+      if (target.isLockedUntilScheduled) {
         HapticFeedback.lightImpact();
         final timeStr = target.scheduledTime != null
             ? DateFormat('h:mm a').format(target.scheduledTime!)
@@ -973,7 +973,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               ? SharedControlColors.actionBlue
               : (paused ? g.clay : g.inkMuted),
         );
-      } else if (activity.isScheduledInFuture) {
+      } else if (activity.isLockedUntilScheduled) {
         content = Icon(Icons.schedule_rounded, size: 20, color: g.inkMuted);
       } else {
         content = Semantics(
@@ -1074,10 +1074,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         !running &&
         !paused &&
         activity.elapsedSecondsToday == 0 &&
-        !activity.isScheduledInFuture;
+        !activity.isLockedUntilScheduled;
 
     final Widget? timedAction = (timed && !done)
-        ? (activity.isScheduledInFuture
+        ? (activity.isLockedUntilScheduled
               ? Semantics(
                   button: true,
                   label:
@@ -1189,7 +1189,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 ))
         : null;
 
-    final Widget? scheduledBadge = (!timed && activity.isScheduledInFuture)
+    final Widget? scheduledBadge = (!timed && activity.isLockedUntilScheduled)
         ? Semantics(
             button: true,
             label:
@@ -1451,7 +1451,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 if (widget.featured &&
                     !timed &&
                     !done &&
-                    !activity.isScheduledInFuture) ...[
+                    !activity.isLockedUntilScheduled) ...[
                   const SizedBox(height: 16),
                   AscentButton.primary(
                     label: 'Mark complete',
@@ -1469,7 +1469,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     !paused &&
                     activity.elapsedSecondsToday == 0)
                   if (timedAction != null &&
-                      !activity.isScheduledInFuture &&
+                      !activity.isLockedUntilScheduled &&
                       !hubInlinePlay)
                     Padding(
                       padding: const EdgeInsets.only(left: 42, top: 4),

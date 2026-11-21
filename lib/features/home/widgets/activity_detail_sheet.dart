@@ -298,7 +298,7 @@ void showActivityDetailDialog(
                 child: const Text('Cancel'),
               ),
               if (!isDone)
-                activity.isScheduledInFuture
+                activity.isLockedUntilScheduled
                     ? FilledButton.icon(
                         onPressed: () {
                           HapticFeedback.lightImpact();

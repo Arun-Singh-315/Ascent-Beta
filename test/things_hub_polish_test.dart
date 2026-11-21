@@ -191,4 +191,58 @@ void main() {
     expect(DateTime(planned.year, planned.month, planned.day), _day(1));
     await unmount(tester);
   });
+
+  group('early completion', () {
+    TodayActivityItem later({
+      String source = 'task',
+      ActivityKind kind = ActivityKind.todo,
+    }) => TodayActivityItem(
+      id: 'task_9',
+      title: 'Call mom',
+      sourceType: source,
+      status: TodayActivityStatus.notStarted,
+      elapsedSecondsToday: 0,
+      categoryTag: 'Task',
+      linkedTaskId: 9,
+      kind: kind,
+      plannedDate: _day(0),
+      scheduledTime: DateTime.now().add(const Duration(hours: 3)),
+    );
+
+    test('a later to-do is not locked; doses and timers still wait', () {
+      expect(later().isScheduledInFuture, isTrue);
+      expect(later().isLockedUntilScheduled, isFalse);
+      expect(later(source: 'medicine').isLockedUntilScheduled, isTrue);
+      expect(later(kind: ActivityKind.duration).isLockedUntilScheduled, isTrue);
+    });
+
+    testWidgets('a later to-do shows a checkbox and can be ticked off', (
+      tester,
+    ) async {
+      final id = await tester.runAsync(
+        () =>
+            db.taskDao.insertTask(TaskTableCompanion.insert(title: 'Call mom')),
+      );
+      final row = TodayActivityItem(
+        id: 'task_$id',
+        title: 'Call mom',
+        sourceType: 'task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        categoryTag: 'Task',
+        linkedTaskId: id,
+        plannedDate: _day(0),
+        scheduledTime: DateTime.now().add(const Duration(hours: 3)),
+      );
+      await pump(tester, [row]);
+      final box = find.byKey(ValueKey('activity_action_task_$id'));
+      expect(box, findsOneWidget);
+      await tester.tap(box);
+      await settle(tester);
+      final task = await tester.runAsync(() => db.taskDao.getTaskById(id!));
+      expect(task!.actualCompletedDate, isNotNull);
+      expect(find.textContaining('once that time arrives'), findsNothing);
+      await unmount(tester);
+    });
+  });
 }

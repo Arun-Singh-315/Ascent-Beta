@@ -243,16 +243,17 @@ void main() {
     );
 
     testWidgets(
-      'Standard ActivityRowItem circular check target blocks premature completion on future scheduled task',
+      // To-dos can be completed early; a medicine dose still waits.
+      'Standard ActivityRowItem check target blocks an early medicine dose',
       (tester) async {
         final futureTime = DateTime.now().add(const Duration(hours: 2));
         final futureActivity = TodayActivityItem(
           id: 'task_future_std',
-          title: 'Doctor Appointment',
-          sourceType: 'task',
+          title: 'Evening dose',
+          sourceType: 'medicine',
           status: TodayActivityStatus.notStarted,
           elapsedSecondsToday: 0,
-          categoryTag: 'Task',
+          categoryTag: 'Medicine',
           scheduledTime: futureTime,
         );
 

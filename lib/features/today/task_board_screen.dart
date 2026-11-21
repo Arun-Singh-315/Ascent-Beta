@@ -515,10 +515,12 @@ class _TaskItemTile extends ConsumerWidget {
         (task.plannedDate!.hour != 0 || task.plannedDate!.minute != 0)) {
       scheduledTime = task.plannedDate;
     }
+    // Only medicine doses wait for their time; to-dos can be done early.
     final isScheduledInFuture =
         !isDone &&
         scheduledTime != null &&
-        DateTime.now().isBefore(scheduledTime);
+        DateTime.now().isBefore(scheduledTime) &&
+        task.title.contains(' (medicine) ');
 
     final completedSubTasks = subTasks
         .where((s) => s.actualCompletedDate != null)
