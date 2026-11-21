@@ -11,6 +11,7 @@ import '../features/today/task_board_screen.dart';
 import '../features/you/you_screen.dart';
 import 'app_navigation.dart';
 import '../features/settings/settings_screen.dart';
+import '../features/settings/backup_screen.dart';
 import '../features/focus/focus_screen.dart';
 import '../features/reminders/reminders_screen.dart';
 import '../features/money/money_screen.dart';
@@ -48,6 +49,7 @@ class AscentRoutes {
   static const more = '/more';
   static const you = AscentTabs.you;
   static const settings = '/settings';
+  static const backup = '/backup';
   static const focus = '/focus';
   static const reminders = '/reminders';
   static const calendar = '/calendar';
@@ -262,6 +264,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.settings,
       builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.backup,
+      builder: (context, state) => const BackupScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
