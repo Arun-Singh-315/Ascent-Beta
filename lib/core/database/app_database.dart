@@ -155,7 +155,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -350,6 +350,11 @@ class AppDatabase extends _$AppDatabase {
           );
         }
         await HistoryLedger.install(this);
+      }
+      if (from < 26) {
+        // Refill tracking: how much is left and how much one dose uses.
+        await addColumnSafely(medicineTable, medicineTable.stockCount);
+        await addColumnSafely(medicineTable, medicineTable.unitsPerDose);
       }
     },
   );

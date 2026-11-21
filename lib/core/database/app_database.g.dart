@@ -21895,6 +21895,29 @@ class $MedicineTableTable extends MedicineTable
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _stockCountMeta = const VerificationMeta(
+    'stockCount',
+  );
+  @override
+  late final GeneratedColumn<int> stockCount = GeneratedColumn<int>(
+    'stock_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unitsPerDoseMeta = const VerificationMeta(
+    'unitsPerDose',
+  );
+  @override
+  late final GeneratedColumn<int> unitsPerDose = GeneratedColumn<int>(
+    'units_per_dose',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -21920,6 +21943,8 @@ class $MedicineTableTable extends MedicineTable
     instructions,
     type,
     isActive,
+    stockCount,
+    unitsPerDose,
     createdAt,
   ];
   @override
@@ -22017,6 +22042,21 @@ class $MedicineTableTable extends MedicineTable
         isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
       );
     }
+    if (data.containsKey('stock_count')) {
+      context.handle(
+        _stockCountMeta,
+        stockCount.isAcceptableOrUnknown(data['stock_count']!, _stockCountMeta),
+      );
+    }
+    if (data.containsKey('units_per_dose')) {
+      context.handle(
+        _unitsPerDoseMeta,
+        unitsPerDose.isAcceptableOrUnknown(
+          data['units_per_dose']!,
+          _unitsPerDoseMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -22076,6 +22116,14 @@ class $MedicineTableTable extends MedicineTable
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
       )!,
+      stockCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}stock_count'],
+      ),
+      unitsPerDose: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}units_per_dose'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -22119,6 +22167,13 @@ class Medicine extends DataClass implements Insertable<Medicine> {
 
   /// Whether this medication schedule is currently active
   final bool isActive;
+
+  /// Doses (tablets, capsules, ml…) left on hand, or null when not tracked.
+  /// Taking a dose counts it down; restocking adds to it.
+  final int? stockCount;
+
+  /// How many units one dose uses (e.g. 2 tablets), for the count-down.
+  final int unitsPerDose;
   final DateTime createdAt;
   const Medicine({
     required this.id,
@@ -22132,6 +22187,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     required this.instructions,
     required this.type,
     required this.isActive,
+    this.stockCount,
+    required this.unitsPerDose,
     required this.createdAt,
   });
   @override
@@ -22150,6 +22207,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     map['instructions'] = Variable<String>(instructions);
     map['type'] = Variable<String>(type);
     map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || stockCount != null) {
+      map['stock_count'] = Variable<int>(stockCount);
+    }
+    map['units_per_dose'] = Variable<int>(unitsPerDose);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -22169,6 +22230,10 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       instructions: Value(instructions),
       type: Value(type),
       isActive: Value(isActive),
+      stockCount: stockCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stockCount),
+      unitsPerDose: Value(unitsPerDose),
       createdAt: Value(createdAt),
     );
   }
@@ -22190,6 +22255,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       instructions: serializer.fromJson<String>(json['instructions']),
       type: serializer.fromJson<String>(json['type']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      stockCount: serializer.fromJson<int?>(json['stockCount']),
+      unitsPerDose: serializer.fromJson<int>(json['unitsPerDose']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -22208,6 +22275,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       'instructions': serializer.toJson<String>(instructions),
       'type': serializer.toJson<String>(type),
       'isActive': serializer.toJson<bool>(isActive),
+      'stockCount': serializer.toJson<int?>(stockCount),
+      'unitsPerDose': serializer.toJson<int>(unitsPerDose),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -22224,6 +22293,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     String? instructions,
     String? type,
     bool? isActive,
+    Value<int?> stockCount = const Value.absent(),
+    int? unitsPerDose,
     DateTime? createdAt,
   }) => Medicine(
     id: id ?? this.id,
@@ -22237,6 +22308,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     instructions: instructions ?? this.instructions,
     type: type ?? this.type,
     isActive: isActive ?? this.isActive,
+    stockCount: stockCount.present ? stockCount.value : this.stockCount,
+    unitsPerDose: unitsPerDose ?? this.unitsPerDose,
     createdAt: createdAt ?? this.createdAt,
   );
   Medicine copyWithCompanion(MedicineTableCompanion data) {
@@ -22260,6 +22333,12 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           : this.instructions,
       type: data.type.present ? data.type.value : this.type,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      stockCount: data.stockCount.present
+          ? data.stockCount.value
+          : this.stockCount,
+      unitsPerDose: data.unitsPerDose.present
+          ? data.unitsPerDose.value
+          : this.unitsPerDose,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -22278,6 +22357,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           ..write('instructions: $instructions, ')
           ..write('type: $type, ')
           ..write('isActive: $isActive, ')
+          ..write('stockCount: $stockCount, ')
+          ..write('unitsPerDose: $unitsPerDose, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -22296,6 +22377,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     instructions,
     type,
     isActive,
+    stockCount,
+    unitsPerDose,
     createdAt,
   );
   @override
@@ -22313,6 +22396,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           other.instructions == this.instructions &&
           other.type == this.type &&
           other.isActive == this.isActive &&
+          other.stockCount == this.stockCount &&
+          other.unitsPerDose == this.unitsPerDose &&
           other.createdAt == this.createdAt);
 }
 
@@ -22328,6 +22413,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   final Value<String> instructions;
   final Value<String> type;
   final Value<bool> isActive;
+  final Value<int?> stockCount;
+  final Value<int> unitsPerDose;
   final Value<DateTime> createdAt;
   const MedicineTableCompanion({
     this.id = const Value.absent(),
@@ -22341,6 +22428,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     this.instructions = const Value.absent(),
     this.type = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.stockCount = const Value.absent(),
+    this.unitsPerDose = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   MedicineTableCompanion.insert({
@@ -22355,6 +22444,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     this.instructions = const Value.absent(),
     this.type = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.stockCount = const Value.absent(),
+    this.unitsPerDose = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name),
        dosage = Value(dosage),
@@ -22372,6 +22463,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     Expression<String>? instructions,
     Expression<String>? type,
     Expression<bool>? isActive,
+    Expression<int>? stockCount,
+    Expression<int>? unitsPerDose,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -22386,6 +22479,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
       if (instructions != null) 'instructions': instructions,
       if (type != null) 'type': type,
       if (isActive != null) 'is_active': isActive,
+      if (stockCount != null) 'stock_count': stockCount,
+      if (unitsPerDose != null) 'units_per_dose': unitsPerDose,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -22402,6 +22497,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     Value<String>? instructions,
     Value<String>? type,
     Value<bool>? isActive,
+    Value<int?>? stockCount,
+    Value<int>? unitsPerDose,
     Value<DateTime>? createdAt,
   }) {
     return MedicineTableCompanion(
@@ -22416,6 +22513,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
       instructions: instructions ?? this.instructions,
       type: type ?? this.type,
       isActive: isActive ?? this.isActive,
+      stockCount: stockCount ?? this.stockCount,
+      unitsPerDose: unitsPerDose ?? this.unitsPerDose,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -22456,6 +22555,12 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (stockCount.present) {
+      map['stock_count'] = Variable<int>(stockCount.value);
+    }
+    if (unitsPerDose.present) {
+      map['units_per_dose'] = Variable<int>(unitsPerDose.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -22476,6 +22581,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
           ..write('instructions: $instructions, ')
           ..write('type: $type, ')
           ..write('isActive: $isActive, ')
+          ..write('stockCount: $stockCount, ')
+          ..write('unitsPerDose: $unitsPerDose, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -43347,6 +43454,8 @@ typedef $$MedicineTableTableCreateCompanionBuilder =
       Value<String> instructions,
       Value<String> type,
       Value<bool> isActive,
+      Value<int?> stockCount,
+      Value<int> unitsPerDose,
       Value<DateTime> createdAt,
     });
 typedef $$MedicineTableTableUpdateCompanionBuilder =
@@ -43362,6 +43471,8 @@ typedef $$MedicineTableTableUpdateCompanionBuilder =
       Value<String> instructions,
       Value<String> type,
       Value<bool> isActive,
+      Value<int?> stockCount,
+      Value<int> unitsPerDose,
       Value<DateTime> createdAt,
     });
 
@@ -43467,6 +43578,16 @@ class $$MedicineTableTableFilterComposer
 
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get stockCount => $composableBuilder(
+    column: $table.stockCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get unitsPerDose => $composableBuilder(
+    column: $table.unitsPerDose,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -43583,6 +43704,16 @@ class $$MedicineTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get stockCount => $composableBuilder(
+    column: $table.stockCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get unitsPerDose => $composableBuilder(
+    column: $table.unitsPerDose,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -43656,6 +43787,16 @@ class $$MedicineTableTableAnnotationComposer
 
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<int> get stockCount => $composableBuilder(
+    column: $table.stockCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get unitsPerDose => $composableBuilder(
+    column: $table.unitsPerDose,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -43748,6 +43889,8 @@ class $$MedicineTableTableTableManager
                 Value<String> instructions = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int?> stockCount = const Value.absent(),
+                Value<int> unitsPerDose = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => MedicineTableCompanion(
                 id: id,
@@ -43761,6 +43904,8 @@ class $$MedicineTableTableTableManager
                 instructions: instructions,
                 type: type,
                 isActive: isActive,
+                stockCount: stockCount,
+                unitsPerDose: unitsPerDose,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -43776,6 +43921,8 @@ class $$MedicineTableTableTableManager
                 Value<String> instructions = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
+                Value<int?> stockCount = const Value.absent(),
+                Value<int> unitsPerDose = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => MedicineTableCompanion.insert(
                 id: id,
@@ -43789,6 +43936,8 @@ class $$MedicineTableTableTableManager
                 instructions: instructions,
                 type: type,
                 isActive: isActive,
+                stockCount: stockCount,
+                unitsPerDose: unitsPerDose,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

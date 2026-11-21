@@ -153,6 +153,9 @@ void main() {
         try {
           await t.tap(find.byTooltip('Add Medicine'));
           await t.pumpAndSettle();
+          // Exact custom times live in the full form.
+          await t.tap(find.byKey(const ValueKey('medicine_full_editor')));
+          await t.pumpAndSettle();
           await t.enterText(
             find.byKey(const ValueKey('medicine_name')),
             'My prescribed medicine',
@@ -333,6 +336,9 @@ void main() {
         await capture(t, '${dark ? 'night' : 'day'}-large-page');
         try {
           await t.tap(find.byTooltip('Add Medicine'));
+          await t.pumpAndSettle();
+          // Exact custom times live in the full form.
+          await t.tap(find.byKey(const ValueKey('medicine_full_editor')));
           await t.pumpAndSettle();
           t.view.viewInsets = const FakeViewPadding(bottom: 270);
           await t.pumpAndSettle();

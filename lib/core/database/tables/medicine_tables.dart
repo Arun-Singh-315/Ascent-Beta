@@ -40,6 +40,13 @@ class MedicineTable extends Table {
   /// Whether this medication schedule is currently active
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
+  /// Doses (tablets, capsules, ml…) left on hand, or null when not tracked.
+  /// Taking a dose counts it down; restocking adds to it.
+  IntColumn get stockCount => integer().nullable()();
+
+  /// How many units one dose uses (e.g. 2 tablets), for the count-down.
+  IntColumn get unitsPerDose => integer().withDefault(const Constant(1))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

@@ -122,6 +122,7 @@ class _SmartCatchUpBannerState extends ConsumerState<SmartCatchUpBanner> {
             instructions: 'After food',
             type: 'tablet',
             isActive: true,
+            unitsPerDose: 1,
             createdAt: now,
           ),
         );
