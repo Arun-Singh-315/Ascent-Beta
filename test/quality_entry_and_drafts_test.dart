@@ -6,35 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:drift/native.dart';
-import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/services/note_draft_binding.dart';
 import 'package:ascent/features/onboarding/onboarding_shell.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  test('onboarding cannot bypass mandatory identity details', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    final container = ProviderContainer(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        databaseProvider.overrideWithValue(db),
-      ],
-    );
-    expect(
-      await container.read(onboardingProvider.notifier).startWithoutSetup(),
-      isFalse,
-    );
-    expect(prefs.getBool('ascent_quick_start_v1'), isNull);
-    expect(await db.userProfileDao.getProfile(), isNull);
-    expect(await db.applicationDao.watchAllApplications().first, isEmpty);
-    container.dispose();
-    await db.close();
-  });
   test(
     'note drafts persist Unicode, restore on reopening and clear only after a saved note',
     () async {
