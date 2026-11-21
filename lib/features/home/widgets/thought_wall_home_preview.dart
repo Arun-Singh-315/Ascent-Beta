@@ -15,7 +15,6 @@ import 'home_outline_surface.dart';
 import 'home_section_heading.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
 import '../../thought_wall/utils/thought_checklist_helper.dart';
-import '../../../app/theme/thought_theme.dart';
 import '../../plans/widgets/plan_collection_editor.dart';
 import '../../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -28,8 +27,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/shared_control_tokens.dart';
-import '../../../app/theme/frozen_palette.dart';
-import '../../../app/theme/merlot_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -290,12 +287,8 @@ class _ThoughtWallHomePreviewState
   }
 
   @override
-  Widget build(BuildContext context) => widget.compact
-      ? _compactHome(context)
-      : Theme(
-          data: ThoughtTheme.from(Theme.of(context)),
-          child: Builder(builder: _buildThoughtSpace),
-        );
+  Widget build(BuildContext context) =>
+      widget.compact ? _compactHome(context) : _buildThoughtSpace(context);
 
   Widget _buildThoughtSpace(BuildContext context) {
     if (widget.compact) return _compactHome(context);
@@ -318,11 +311,7 @@ class _ThoughtWallHomePreviewState
         decoration: BoxDecoration(
           color: context.isDark
               ? g.fill.withValues(alpha: 0.35)
-              : (g.merlot
-                    ? MerlotPalette.surface
-                    : (g.frozen
-                          ? MindspacePalette.previewFillCool
-                          : MindspacePalette.previewFillWarm)),
+              : ((MindspacePalette.previewFillWarm)),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _focusNode.hasFocus ? g.clay : g.line,
@@ -556,20 +545,12 @@ class _ThoughtWallHomePreviewState
 
             final cardFill = isDark
                 ? null
-                : (g.merlot
-                      ? MerlotPalette.surface
-                      : (g.frozen
-                            ? MindspacePalette.previewCardCool
-                            : MindspacePalette.previewFillWarm));
+                : ((MindspacePalette.previewFillWarm));
 
             final cardBorder = isDark
                 ? null
                 : Border.all(
-                    color: g.merlot
-                        ? MerlotPalette.line
-                        : (g.frozen
-                              ? FrozenPalette.line
-                              : g.edge.withValues(alpha: 0.45)),
+                    color: (g.edge.withValues(alpha: 0.45)),
                     width: 1.0,
                   );
 
@@ -625,9 +606,7 @@ class _ThoughtWallHomePreviewState
                   final isNew =
                       _listSeen && !_seenThoughtIds.contains(thought.id);
 
-                  final moodAccent = g.frozen
-                      ? (thought.mood == 'win' ? g.sage : g.slate)
-                      : getThoughtMoodColor(thought.mood);
+                  final moodAccent = getThoughtMoodColor(thought.mood);
 
                   final cardStyle = appearance.style;
                   final homeCardRadius = switch (cardStyle) {
@@ -745,27 +724,25 @@ class _ThoughtWallHomePreviewState
                                   thought.promptQuestion!
                                           .trim()
                                           .toLowerCase() !=
-                                      thought.content
-                                          .trim()
-                                          .toLowerCase()) ...[
-                                  Text(
-                                    thought.promptQuestion!,
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: thoughtTextMutedColor,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                ],
-                                ThoughtExcerpt(
-                                  content: thought.content,
-                                  maxLines: 5,
-                                  arrowColor: thoughtTextColor,
-                                  style: AppTypography.thoughtContent(
-                                    color: thoughtTextColor,
+                                      thought.content.trim().toLowerCase()) ...[
+                                Text(
+                                  thought.promptQuestion!,
+                                  style: AscentTextStyles.bodySmall.copyWith(
+                                    color: thoughtTextMutedColor,
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
-                                if (isDraftSource) ...[
+                                const SizedBox(height: 6),
+                              ],
+                              ThoughtExcerpt(
+                                content: thought.content,
+                                maxLines: 5,
+                                arrowColor: thoughtTextColor,
+                                style: AppTypography.thoughtContent(
+                                  color: thoughtTextColor,
+                                ),
+                              ),
+                              if (isDraftSource) ...[
                                 const SizedBox(height: 8),
                                 Divider(color: g.line),
                                 const SizedBox(height: 6),

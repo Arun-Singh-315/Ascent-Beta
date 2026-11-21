@@ -13,7 +13,6 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
-import '../../../app/theme/thought_theme.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/local_day_provider.dart';
@@ -1471,10 +1470,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   // Build -------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: ThoughtTheme.from(Theme.of(context)),
-    child: Builder(builder: _buildBoard),
-  );
+  Widget build(BuildContext context) => _buildBoard(context);
 
   Widget _buildBoard(BuildContext context) {
     final g = context.glass;

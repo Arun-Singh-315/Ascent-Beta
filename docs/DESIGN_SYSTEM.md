@@ -6,7 +6,7 @@ Reviewed 20 November 2026. **The rules themselves live in [CLAUDE.md](../CLAUDE.
 
 | Rule (CLAUDE.md) | Code |
 |---|---|
-| §3.1 Color roles | `lib/app/theme/color_tokens.dart` (`AscentColors`, `context.*` getters), `lib/core/theme/app_colors.dart` (`AppColors` ThemeExtension), presets in `glass_theme.dart`, `frozen_palette.dart`, `merlot_palette.dart`, `day_palette.dart` |
+| §3.1 Color roles | `lib/app/theme/color_tokens.dart` (`AscentColors`, `context.*` getters), `lib/core/theme/app_colors.dart` (`AppColors` ThemeExtension), the one palette in `calm_blue_palette.dart`, applied by `glass_theme.dart` |
 | §3.1 Shared control colors | `lib/app/theme/shared_control_tokens.dart` |
 | §3.2 Typography | `lib/app/theme/text_styles.dart` (`AscentTextStyles`, `AppTypeRoles`) |
 | §3.3 Shape and space | `lib/app/theme/dimension_tokens.dart`, `surface_tokens.dart` (`AppSpace`, `AppGeometry`, `AppBorderScale`) |

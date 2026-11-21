@@ -350,17 +350,10 @@ class _LookPage extends ConsumerWidget {
   const _LookPage({required this.active});
   final bool active;
 
-  static const _presets = [
-    (DayThemePreset.merlotLinen, 'Merlot linen', BrandPalette.merlotSwatch),
-    (DayThemePreset.classicClay, 'Classic clay', BrandPalette.claySwatch),
-    (DayThemePreset.nordicSky, 'Nordic sky', BrandPalette.skySwatch),
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final mode = ref.watch(themeModeProvider);
-    final preset = ref.watch(dayThemePresetProvider);
     return _PageBody(
       children: [
         _Reveal(
@@ -401,27 +394,6 @@ class _LookPage extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: AppSpace.s16),
-        for (var i = 0; i < _presets.length; i++)
-          _Reveal(
-            active: active,
-            index: 3 + i,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s12),
-              child: _PresetCard(
-                key: ValueKey('onboarding_preset_${_presets[i].$1.name}'),
-                label: _presets[i].$2,
-                colors: _presets[i].$3,
-                selected: preset == _presets[i].$1,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  ref
-                      .read(dayThemePresetProvider.notifier)
-                      .setPreset(_presets[i].$1);
-                },
-              ),
-            ),
-          ),
       ],
     );
   }
@@ -575,69 +547,6 @@ class _PillarRow extends StatelessWidget {
   }
 }
 
-class _PresetCard extends StatelessWidget {
-  const _PresetCard({
-    super.key,
-    required this.label,
-    required this.colors,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final List<Color> colors;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: '$label theme',
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(AppSpace.s12),
-          decoration: BoxDecoration(
-            color: g.surface.withValues(alpha: .85),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? g.actionInk : g.line,
-              width: selected ? 2 : 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  gradient: LinearGradient(colors: colors),
-                ),
-              ),
-              const SizedBox(width: AppSpace.s12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: AscentTextStyles.body.copyWith(color: g.ink),
-                ),
-              ),
-              AnimatedOpacity(
-                opacity: selected ? 1 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: Icon(Icons.check_circle_rounded, color: g.actionInk),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GlassCard extends StatelessWidget {
   const _GlassCard({required this.child});
   final Widget child;
@@ -708,8 +617,9 @@ class _AuroraBackgroundState extends State<_AuroraBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final inTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final inTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (MediaQuery.disableAnimationsOf(context) || inTest) {
       _c.stop();
     } else if (!_c.isAnimating) {

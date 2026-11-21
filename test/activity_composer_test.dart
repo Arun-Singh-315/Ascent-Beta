@@ -1,7 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:drift/native.dart';
@@ -33,9 +32,7 @@ void main() {
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(db)],
         child: MaterialApp(
-          theme: HomeTheme.from(
-            AscentTheme.light(preset: DayThemePreset.nordicSky),
-          ),
+          theme: HomeTheme.from(AscentTheme.light()),
           // Keep the real screen size; only the text scale changes.
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(

@@ -74,9 +74,7 @@ void main() {
           key: const ValueKey('medicine_qa'),
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            theme: dark
-                ? AscentTheme.dark(preset: DayThemePreset.merlotLinen)
-                : AscentTheme.light(),
+            theme: dark ? AscentTheme.dark() : AscentTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(
                 context,

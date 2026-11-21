@@ -148,9 +148,7 @@ class InAppReminderDialog extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpace.s16),
                 decoration: BoxDecoration(
-                  color: (isDark || g.frozen)
-                      ? g.fill
-                      : context.bgSurfaceElevated,
+                  color: isDark ? g.fill : context.bgSurfaceElevated,
                   borderRadius: AppGeometry.roundedr14,
                   border: Border.all(color: g.edge),
                 ),
@@ -180,7 +178,7 @@ class InAppReminderDialog extends ConsumerWidget {
                           _snooze(context, ref, const Duration(minutes: 10)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: (isDark || g.frozen)
+                        backgroundColor: isDark
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),
@@ -205,7 +203,7 @@ class InAppReminderDialog extends ConsumerWidget {
                           _snooze(context, ref, const Duration(hours: 1)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: (isDark || g.frozen)
+                        backgroundColor: isDark
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),
@@ -229,7 +227,7 @@ class InAppReminderDialog extends ConsumerWidget {
                       onPressed: () => _snoozeTomorrow(context, ref),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: (isDark || g.frozen)
+                        backgroundColor: isDark
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),

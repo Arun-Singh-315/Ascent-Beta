@@ -2,19 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'color_tokens.dart';
 import 'monochrome_surfaces.dart';
-import 'frozen_palette.dart';
-import 'merlot_palette.dart';
+import 'calm_blue_palette.dart';
 import 'shared_control_tokens.dart';
 
-/// Glass theme tokens for the Ascent design system.
-/// Defined according to the Ascent Liquid Glass specification:
-/// - Default light base: #EFF2F6, Clay: #A4523A
-/// - Default dark base: #16110D, Clay: #E6A088
-/// - Frost (nordicSky) and Merlot variants use their own palettes.
-/// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
+/// Glass theme tokens for the Ascent design system. All values come from
+/// [CalmBluePalette], the app's one palette, mirrored for light and dark.
 class AscentGlass extends ThemeExtension<AscentGlass> {
-  final bool frozen;
-  final bool merlot;
   final MonochromeSurfaces? monochrome;
   final Color bg;
   final Color fill;
@@ -47,8 +40,6 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   final Color inkMuted;
 
   const AscentGlass({
-    this.frozen = false,
-    this.merlot = false,
     this.monochrome,
     required this.bg,
     required this.fill,
@@ -75,96 +66,56 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     required this.inkMuted,
   });
 
-  // ── Semantic Roles from Section 3 ─────────────────────────────────────────
+  // ── Semantic roles (CLAUDE.md §3.1) ──────────────────────────────────────
 
   bool get isDark => bg.computeLuminance() < 0.2;
 
   /// Content/card surface
   Color get surface =>
       monochrome?.surface ??
-      (frozen
-          ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-          : merlot
-          ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
-          : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface));
+      (isDark ? CalmBluePalette.darkSurface : CalmBluePalette.surface);
 
   /// Elevated surface (sheet/dialog/menu)
   Color get elevated =>
       monochrome?.elevated ??
-      (frozen
-          ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-          : merlot
-          ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.surface)
-          : (isDark
-                ? AscentColors.bgSurfaceElevatedDark
-                : AscentColors.bgSurfaceElevated));
+      (isDark ? CalmBluePalette.darkElevated : CalmBluePalette.elevated);
 
   /// Recessed surface (inputs/segment track)
   Color get recessed =>
       monochrome?.groupedFill ??
-      (frozen
-          ? (isDark ? FrozenPalette.darkRecessed : FrozenPalette.recessed)
-          : merlot
-          ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.recessedWell)
-          : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase));
+      (isDark ? CalmBluePalette.darkRecessed : CalmBluePalette.recessed);
 
   /// Required control outline
   Color get controlOutline =>
       monochrome?.controlOutline ??
-      (frozen
-          ? (isDark
-                ? FrozenPalette.darkControlOutline
-                : FrozenPalette.controlOutline)
-          : merlot
-          ? (isDark ? const Color(0xFF8D939F) : MerlotPalette.line)
-          : (isDark ? const Color(0xFF8D939F) : AscentColors.outlineDay));
+      (isDark ? CalmBluePalette.darkSeparator : CalmBluePalette.separator);
 
   /// Action ink (links/active icons/focus)
-  Color get actionInk => monochrome != null
-      ? (isDark
-            ? SharedControlColors.actionBlueDark
-            : SharedControlColors.actionBlue)
-      : frozen
-      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-      : merlot
-      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+  Color get actionInk =>
+      isDark ? CalmBluePalette.darkAction : CalmBluePalette.action;
 
   /// Filled primary button background
-  Color get primaryButtonBg => SharedControlColors.actionBlue;
-  Color get primaryButtonFg => Colors.white;
-  Color get primaryButtonPressed => const Color(0xFF005AC8);
+  Color get primaryButtonBg =>
+      isDark ? CalmBluePalette.darkActionFill : CalmBluePalette.action;
+  Color get primaryButtonFg => CalmBluePalette.onAction;
+  Color get primaryButtonPressed => isDark
+      ? CalmBluePalette.darkActionPressed
+      : CalmBluePalette.actionPressed;
 
   /// Tonal/selection background
   Color get tonalBg =>
       monochrome?.groupedFill ??
-      (frozen
-          ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-          : merlot
-          ? (isDark ? MerlotPalette.darkTint : MerlotPalette.tint)
-          : (isDark
-                ? AscentColors.accentPrimaryDimDark
-                : AscentColors.accentPrimaryDim));
+      (isDark ? CalmBluePalette.darkActionTint : CalmBluePalette.actionTint);
 
   /// Tonal/selection foreground
   Color get tonalFg =>
       monochrome?.primaryText ??
-      (frozen
-          ? (isDark
-                ? FrozenPalette.darkTintForeground
-                : FrozenPalette.tintForeground)
-          : merlot
-          ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-          : (isDark
-                ? AscentColors.accentPrimaryDark
-                : AscentColors.accentPrimary));
+      (isDark
+          ? CalmBluePalette.darkActionTintInk
+          : CalmBluePalette.actionTintInk);
 
   /// Focus ring
-  Color get focusRing => frozen
-      ? (isDark ? FrozenPalette.darkFocusRing : FrozenPalette.focusRing)
-      : merlot
-      ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-      : (isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary);
+  Color get focusRing => actionInk;
 
   // ── Shared Control Colors (Section 3.2) ───────────────────────────────────
 
@@ -202,169 +153,59 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
       : SharedControlColors.warningSoftBgLight;
 
   static const light = AscentGlass(
-    bg: Color(0xFFF8FAFC),
-    fill: Color(0xFFFFFFFF),
-    edge: Color(0xFFE2E8F0),
-    highlight: Color.fromRGBO(255, 255, 255, 0.96),
-    line: Color(0xFFE2E8F0),
+    bg: CalmBluePalette.canvas,
+    fill: CalmBluePalette.surface,
+    edge: CalmBluePalette.separator,
+    highlight: Color.fromRGBO(255, 255, 255, 0.92),
+    line: CalmBluePalette.separator,
     glow1: Colors.transparent,
     glow2: Colors.transparent,
-    track: Color.fromRGBO(15, 23, 42, 0.08),
-    nav: Color(0xF5FFFFFF),
-    shadow: Color.fromRGBO(15, 23, 42, 0.05),
-    clay: Color(0xFF006FE6),
-    claySoft: Color(0xFFEBF4FF),
-    slate: Color(0xFF006FE6),
-    slateSoft: Color(0xFFEBF4FF),
-    sage: Color(0xFF16A34A),
-    sageSoft: Color(0xFFDCFCE7),
-    amber: Color(0xFFD97706),
-    amberSoft: Color(0xFFFEF3C7),
-    coral: Color(0xFFDC2626),
-    coralSoft: Color(0xFFFEE2E2),
-    ink: Color(0xFF0F172A),
-    inkSecondary: Color(0xFF475569),
-    inkMuted: Color(0xFF94A3B8),
-  );
-
-  static const nordicSky = AscentGlass(
-    frozen: true,
-    bg: FrozenPalette.canvas,
-    fill: FrozenPalette.surface,
-    edge: FrozenPalette.line,
-    highlight: Color.fromRGBO(255, 255, 255, 0.96),
-    line: FrozenPalette.line,
-    glow1: Color.fromRGBO(147, 197, 253, 0.28),
-    glow2: Color.fromRGBO(199, 210, 254, 0.20),
-    track: Color.fromRGBO(29, 100, 180, 0.12),
-    nav: FrozenPalette.surface,
-    shadow: FrozenPalette.shadowAmbient,
-    clay: FrozenPalette.action,
-    claySoft: FrozenPalette.pillSoft,
-    slate: FrozenPalette.action,
-    slateSoft: FrozenPalette.pillSoft,
-    sage: FrozenPalette.success,
-    sageSoft: Color.fromRGBO(22, 101, 52, 0.12),
-    amber: FrozenPalette.spark,
-    amberSoft: FrozenPalette.sparkTint,
-    coral: FrozenPalette.danger,
-    coralSoft: Color.fromRGBO(180, 35, 24, 0.12),
-    ink: FrozenPalette.ink,
-    inkSecondary: FrozenPalette.secondaryInk,
-    inkMuted: FrozenPalette.mutedInk,
-  );
-
-  static const nordicSkyDark = AscentGlass(
-    frozen: true,
-    bg: FrozenPalette.darkCanvas,
-    fill: FrozenPalette.darkSurface,
-    edge: FrozenPalette.darkLine,
-    highlight: Color.fromRGBO(120, 180, 255, 0.14),
-    line: FrozenPalette.darkLine,
-    glow1: Color.fromRGBO(94, 160, 240, 0.32),
-    glow2: Color.fromRGBO(125, 180, 245, 0.26),
-    track: Color.fromRGBO(255, 255, 255, 0.12),
-    nav: FrozenPalette.darkSurface,
-    shadow: Color.fromRGBO(0, 0, 0, 0.55),
-    clay: FrozenPalette.darkAction,
-    claySoft: FrozenPalette.darkTint,
-    slate: FrozenPalette.darkAction,
-    slateSoft: FrozenPalette.darkTint,
-    sage: FrozenPalette.darkSuccess,
-    sageSoft: Color.fromRGBO(134, 239, 172, 0.14),
-    amber: FrozenPalette.darkSpark,
-    amberSoft: FrozenPalette.darkSparkTint,
-    coral: FrozenPalette.darkDanger,
-    coralSoft: Color.fromRGBO(255, 180, 171, 0.14),
-    ink: FrozenPalette.darkInk,
-    inkSecondary: FrozenPalette.darkSecondaryInk,
-    inkMuted: FrozenPalette.darkMutedInk,
-  );
-
-  static const merlotLinenLight = AscentGlass(
-    merlot: true,
-    bg: MerlotPalette.canvas,
-    fill: MerlotPalette.surface,
-    edge: MerlotPalette.line,
-    highlight: Color.fromRGBO(255, 255, 255, 0.92),
-    line: MerlotPalette.lineSubtle,
-    glow1: Color.fromRGBO(194, 136, 52, 0.16),
-    glow2: Color.fromRGBO(88, 24, 37, 0.18),
-    track: Color.fromRGBO(88, 24, 37, 0.12),
-    nav: MerlotPalette.surface,
-    shadow: MerlotPalette.shadowAmbient,
-    clay: MerlotPalette.action,
-    claySoft: MerlotPalette.pillSoft,
-    slate: MerlotPalette.antiqueGold,
-    slateSoft: MerlotPalette.sparkTint,
-    sage: MerlotPalette.success,
-    sageSoft: MerlotPalette.successTint,
-    amber: MerlotPalette.antiqueGold,
-    amberSoft: MerlotPalette.sparkTint,
-    coral: MerlotPalette.terracotta,
-    coralSoft: MerlotPalette.terracottaTint,
-    ink: MerlotPalette.ink,
-    inkSecondary: MerlotPalette.secondaryInk,
-    inkMuted: MerlotPalette.mutedInk,
-  );
-
-  static const merlotLinenDark = AscentGlass(
-    merlot: true,
-    bg: MerlotPalette.darkCanvas,
-    fill: MerlotPalette.darkSurface,
-    edge: MerlotPalette.darkLine,
-    highlight: Color.fromRGBO(255, 255, 255, 0.12),
-    line: MerlotPalette.darkLineSubtle,
-    glow1: Color.fromRGBO(255, 255, 255, 0.03),
-    glow2: Colors.transparent,
-    track: Color.fromRGBO(255, 255, 255, 0.12),
-    nav: Color.fromRGBO(18, 18, 20, 0.88),
-    shadow: Color.fromRGBO(0, 0, 0, 0.55),
-    clay: MerlotPalette.darkAction,
-    claySoft: MerlotPalette.darkTint,
-    slate: MerlotPalette.darkSpark,
-    slateSoft: MerlotPalette.darkSparkTint,
-    sage: MerlotPalette.darkSuccess,
-    sageSoft: Color.fromRGBO(74, 222, 128, 0.14),
-    amber: MerlotPalette.darkSpark,
-    amberSoft: MerlotPalette.darkSparkTint,
-    coral: MerlotPalette.darkTerracotta,
-    coralSoft: Color.fromRGBO(224, 122, 95, 0.14),
-    ink: MerlotPalette.darkInk,
-    inkSecondary: MerlotPalette.darkSecondaryInk,
-    inkMuted: MerlotPalette.darkMutedInk,
+    track: CalmBluePalette.track,
+    nav: CalmBluePalette.surface,
+    shadow: CalmBluePalette.shadow,
+    clay: CalmBluePalette.action,
+    claySoft: CalmBluePalette.actionTint,
+    slate: CalmBluePalette.action,
+    slateSoft: CalmBluePalette.actionTint,
+    sage: CalmBluePalette.success,
+    sageSoft: CalmBluePalette.successTint,
+    amber: CalmBluePalette.warning,
+    amberSoft: CalmBluePalette.warningTint,
+    coral: CalmBluePalette.danger,
+    coralSoft: CalmBluePalette.dangerTint,
+    ink: CalmBluePalette.label,
+    inkSecondary: CalmBluePalette.labelSecondary,
+    inkMuted: CalmBluePalette.labelTertiary,
   );
 
   static const dark = AscentGlass(
-    bg: Color(0xFF0F1115),
-    fill: Color(0xFF16181F),
-    edge: Color(0xFF262933),
-    highlight: Color.fromRGBO(255, 255, 255, 0.08),
-    line: Color(0xFF262933),
+    bg: CalmBluePalette.darkCanvas,
+    fill: CalmBluePalette.darkSurface,
+    edge: CalmBluePalette.darkSeparator,
+    highlight: Color.fromRGBO(255, 255, 255, 0.06),
+    line: CalmBluePalette.darkSeparator,
     glow1: Colors.transparent,
     glow2: Colors.transparent,
-    track: Color.fromRGBO(255, 255, 255, 0.12),
-    nav: Color(0xF00F1115),
-    shadow: Color.fromRGBO(0, 0, 0, 0.50),
-    clay: Color(0xFF60A5FA),
-    claySoft: Color(0xFF1E293B),
-    slate: Color(0xFF94A3B8),
-    slateSoft: Color(0xFF1E293B),
-    sage: Color(0xFF34D399),
-    sageSoft: Color.fromRGBO(52, 211, 153, 0.14),
-    amber: Color(0xFFFBBF24),
-    amberSoft: Color.fromRGBO(251, 191, 36, 0.14),
-    coral: Color(0xFFF87171),
-    coralSoft: Color.fromRGBO(248, 113, 113, 0.14),
-    ink: Color(0xFFF8FAFC),
-    inkSecondary: Color(0xFF94A3B8),
-    inkMuted: Color(0xFF64748B),
+    track: CalmBluePalette.darkTrack,
+    nav: CalmBluePalette.darkSurface,
+    shadow: CalmBluePalette.darkShadow,
+    clay: CalmBluePalette.darkAction,
+    claySoft: CalmBluePalette.darkActionTint,
+    slate: CalmBluePalette.darkAction,
+    slateSoft: CalmBluePalette.darkActionTint,
+    sage: CalmBluePalette.darkSuccess,
+    sageSoft: CalmBluePalette.darkSuccessTint,
+    amber: CalmBluePalette.darkWarning,
+    amberSoft: CalmBluePalette.darkWarningTint,
+    coral: CalmBluePalette.darkDanger,
+    coralSoft: CalmBluePalette.darkDangerTint,
+    ink: CalmBluePalette.darkLabel,
+    inkSecondary: CalmBluePalette.darkLabelSecondary,
+    inkMuted: CalmBluePalette.darkLabelTertiary,
   );
 
   @override
   ThemeExtension<AscentGlass> copyWith({
-    bool? frozen,
-    bool? merlot,
     MonochromeSurfaces? monochrome,
     Color? bg,
     Color? fill,
@@ -391,8 +232,6 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     Color? inkMuted,
   }) {
     return AscentGlass(
-      frozen: frozen ?? this.frozen,
-      merlot: merlot ?? this.merlot,
       monochrome: monochrome ?? this.monochrome,
       bg: bg ?? this.bg,
       fill: fill ?? this.fill,
@@ -427,8 +266,6 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   ) {
     if (other is! AscentGlass) return this;
     return AscentGlass(
-      frozen: t < 0.5 ? frozen : other.frozen,
-      merlot: t < 0.5 ? merlot : other.merlot,
       monochrome: monochrome != null && other.monochrome != null
           ? monochrome!.lerp(other.monochrome, t)
           : (t < .5 ? monochrome : other.monochrome),
@@ -468,9 +305,10 @@ extension AscentGlassX on BuildContext {
   /// thought). Single source for the "done" green that was previously
   /// duplicated as literals across Home widgets.
   Color get doneInk =>
-      isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534);
+      isDark ? CalmBluePalette.darkSuccess : CalmBluePalette.success;
 
   /// Positive confirmation tone (e.g. "logged" feedback, check marks) used
   /// identically in every theme.
-  Color get confirmInk => const Color(0xFF10B981);
+  Color get confirmInk =>
+      isDark ? CalmBluePalette.darkSuccess : CalmBluePalette.success;
 }

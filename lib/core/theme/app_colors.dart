@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/calm_blue_palette.dart';
+
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -36,53 +38,53 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color headerTop; // top colour of the header gradient
 
   static const light = AppColors(
-    bg: Color(0xFFF8FAFC), // Clean airy off-white
-    groupedBg: Color(0xFFF1F5F9),
-    surface: Color(0xFFFFFFFF), // 100% solid pure white cards (opaque, high contrast)
-    surfaceAlt: Color(0xFFF1F5F9), // Inputs, chips, elevated wells
-    border: Color(0xFFE2E8F0), // Clean 1px neutral hairline
-    textPrimary: Color(0xFF0F172A), // Deep slate black
-    textSecondary: Color(0xFF475569),
-    textTertiary: Color(0xFF94A3B8), // Slate hint
-    accent: Color(0xFF006FE6), // Active Apple Blue
-    accentTint: Color(0xFFEBF4FF), // Soft blue tint container
-    onAccent: Color(0xFFFFFFFF),
-    accent2: Color(0xFF0284C7),
-    accent2Tint: Color(0xFFE0F2FE),
-    gold: Color(0xFFD97706),
-    goldTint: Color(0xFFFEF3C7),
-    ok: Color(0xFF16A34A), // Success green
-    okTint: Color(0xFFDCFCE7),
-    warn: Color(0xFFD97706),
-    warnTint: Color(0xFFFEF3C7),
-    alert: Color(0xFFDC2626), // Error red
-    alertTint: Color(0xFFFEE2E2),
-    headerTop: Color(0xFFF8FAFC),
+    bg: CalmBluePalette.canvas,
+    groupedBg: CalmBluePalette.canvas,
+    surface: CalmBluePalette.surface,
+    surfaceAlt: CalmBluePalette.recessed,
+    border: CalmBluePalette.separator,
+    textPrimary: CalmBluePalette.label,
+    textSecondary: CalmBluePalette.labelSecondary,
+    textTertiary: CalmBluePalette.labelTertiary,
+    accent: CalmBluePalette.action,
+    accentTint: CalmBluePalette.actionTint,
+    onAccent: CalmBluePalette.onAction,
+    accent2: CalmBluePalette.actionTintInk,
+    accent2Tint: CalmBluePalette.actionTint,
+    gold: CalmBluePalette.warning,
+    goldTint: CalmBluePalette.warningTint,
+    ok: CalmBluePalette.success,
+    okTint: CalmBluePalette.successTint,
+    warn: CalmBluePalette.warning,
+    warnTint: CalmBluePalette.warningTint,
+    alert: CalmBluePalette.danger,
+    alertTint: CalmBluePalette.dangerTint,
+    headerTop: CalmBluePalette.canvas,
   );
 
   static const dark = AppColors(
-    bg: Color(0xFF0F1115), // Deep matte charcoal / obsidian
-    groupedBg: Color(0xFF14171E),
-    surface: Color(0xFF16181F), // Cards (clean neutral obsidian)
-    surfaceAlt: Color(0xFF1E212B), // Inputs, chips, elevated wells
-    border: Color(0xFF262933), // 1px subtle neutral edge
-    textPrimary: Color(0xFFF8FAFC), // Cool crisp white
-    textSecondary: Color(0xFF94A3B8), // Slate secondary
-    textTertiary: Color(0xFF64748B), // Slate tertiary / hint
-    accent: Color(0xFF3B82F6), // Apple Blue in dark mode
-    accentTint: Color(0xFF1E293B), // Slate blue container
-    onAccent: Color(0xFFFFFFFF),
-    accent2: Color(0xFF60A5FA),
-    accent2Tint: Color(0xFF1E293B),
-    gold: Color(0xFFF59E0B),
-    goldTint: Color(0xFF292014),
-    ok: Color(0xFF10B981),
-    okTint: Color(0xFF132A22),
-    warn: Color(0xFFF59E0B),
-    warnTint: Color(0xFF292014),
-    alert: Color(0xFFEF4444),
-    alertTint: Color(0xFF2E1719),
-    headerTop: Color(0xFF0F1115),
+    bg: CalmBluePalette.darkCanvas,
+    groupedBg: CalmBluePalette.darkCanvas,
+    surface: CalmBluePalette.darkSurface,
+    surfaceAlt: CalmBluePalette.darkRecessed,
+    border: CalmBluePalette.darkSeparator,
+    textPrimary: CalmBluePalette.darkLabel,
+    textSecondary: CalmBluePalette.darkLabelSecondary,
+    textTertiary: CalmBluePalette.darkLabelTertiary,
+    accent: CalmBluePalette.darkAction,
+    accentTint: CalmBluePalette.darkActionTint,
+    onAccent: CalmBluePalette.onAction,
+    accent2: CalmBluePalette.darkActionTintInk,
+    accent2Tint: CalmBluePalette.darkActionTint,
+    gold: CalmBluePalette.darkWarning,
+    goldTint: CalmBluePalette.darkWarningTint,
+    ok: CalmBluePalette.darkSuccess,
+    okTint: CalmBluePalette.darkSuccessTint,
+    warn: CalmBluePalette.darkWarning,
+    warnTint: CalmBluePalette.darkWarningTint,
+    alert: CalmBluePalette.darkDanger,
+    alertTint: CalmBluePalette.darkDangerTint,
+    headerTop: CalmBluePalette.darkCanvas,
   );
 
   // Semantic Sand & Ember getters

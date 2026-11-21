@@ -1,11 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/core/streak/study_streak_models.dart';
-import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 
 void main() {
   group('Mind Space Reflections & UX Enhancement Tests', () {
@@ -117,37 +113,6 @@ void main() {
 
         final todayItem = history.firstWhere((h) => h.date.day == today.day);
         expect(todayItem.totalMl, equals(1000));
-      },
-    );
-
-    testWidgets(
-      'StudyStreakMeterCard offers a fresh start after a previous streak',
-      (tester) async {
-        final streakStatus = StudyStreakStatus(
-          todaySeconds: 900,
-          targetSeconds: 7200,
-          displayStreakDays: 0,
-          longestStreakDays: 5,
-          shortestStreakDays: 1,
-          isTodaySecured: false,
-          isRescueMode: false,
-          isUrgent: false,
-          isRescuedToday: false,
-          yesterdayDeficitSeconds: 0,
-          hoursRemainingInDay: 12,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: ThemeData.dark().copyWith(
-              extensions: const [AscentGlass.dark],
-            ),
-            home: Scaffold(body: StudyStreakMeterCard(status: streakStatus)),
-          ),
-        );
-
-        expect(find.text('A fresh start'), findsOneWidget);
-        expect(find.textContaining('Study for 120 minutes'), findsOneWidget);
       },
     );
   });

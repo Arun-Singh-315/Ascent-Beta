@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../app/theme/app_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
@@ -126,10 +125,7 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => Theme(
-    data: AscentTheme.light(preset: DayThemePreset.nordicSky),
-    child: Builder(builder: _buildCard),
-  );
+  Widget build(BuildContext context) => _buildCard(context);
 
   Widget _buildCard(BuildContext context) {
     final media = MediaQuery.of(context);

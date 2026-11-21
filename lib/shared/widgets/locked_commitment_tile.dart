@@ -5,7 +5,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 
 /// Canonical, contrast-safe tile for shielded/private commitments and thoughts.
-/// Guarantees WCAG AAA contrast across all themes (Merlot Linen, Clear Sky, Classic Clay)
+/// Guarantees WCAG AAA contrast in light and dark.
 /// in both Dark and Day modes with zero bleached/chalky backgrounds.
 /// Overflow immune at 320px width with 2.0x text scaling.
 class LockedCommitmentTile extends StatelessWidget {
@@ -33,10 +33,7 @@ class LockedCommitmentTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isDark ? const Color(0x1C000000) : const Color(0x0A000000),
             borderRadius: BorderRadius.circular(12),
@@ -47,11 +44,7 @@ class LockedCommitmentTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.lock_outline_rounded,
-                size: 16,
-                color: g.clay,
-              ),
+              Icon(Icons.lock_outline_rounded, size: 16, color: g.clay),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -67,10 +60,7 @@ class LockedCommitmentTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: g.clay.withValues(alpha: isDark ? 0.20 : 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -95,11 +85,7 @@ class LockedCommitmentTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 3),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 11,
-                      color: g.clay,
-                    ),
+                    Icon(Icons.arrow_forward_rounded, size: 11, color: g.clay),
                   ],
                 ),
               ),

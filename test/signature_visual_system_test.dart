@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,9 +18,7 @@ void main() {
   }
 
   for (final dark in [false, true]) {
-    final theme = dark
-        ? AscentTheme.dark(preset: DayThemePreset.merlotLinen)
-        : AscentTheme.light(preset: DayThemePreset.merlotLinen);
+    final theme = dark ? AscentTheme.dark() : AscentTheme.light();
     test('Signature text hierarchy remains readable, dark=$dark', () {
       final glass = theme.extension<AscentGlass>()!;
       for (final background in [glass.bg, theme.colorScheme.surface]) {
@@ -34,7 +31,6 @@ void main() {
         }
       }
     });
-
   }
 
   testWidgets('Floating glass remains available when explicitly requested', (

@@ -52,57 +52,14 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
 );
 
-// ── Daylight Theme Preset ───────────────────────────────────────────────────
-
-enum DayThemePreset {
-  merlotLinen,
-  classicClay,
-  nordicSky,
-}
-
-const _dayThemePresetKey = 'ascent_day_theme_preset';
-
-class DayThemePresetNotifier extends Notifier<DayThemePreset> {
-  static const _values = {
-    'merlotLinen': DayThemePreset.merlotLinen,
-    'classicClay': DayThemePreset.classicClay,
-    'nordicSky': DayThemePreset.nordicSky,
-  };
-
-  @override
-  DayThemePreset build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final stored = prefs.getString(_dayThemePresetKey) ?? 'merlotLinen';
-    if (stored == 'auroraCalm') {
-      return DayThemePreset.merlotLinen;
-    }
-    return _values[stored] ?? DayThemePreset.merlotLinen;
-  }
-
-  Future<void> setPreset(DayThemePreset preset) async {
-    state = preset;
-    final prefs = ref.read(sharedPreferencesProvider);
-    final key = _values.entries.firstWhere((e) => e.value == preset).key;
-    await prefs.setString(_dayThemePresetKey, key);
-  }
-}
-
-final dayThemePresetProvider =
-    NotifierProvider<DayThemePresetNotifier, DayThemePreset>(
-      DayThemePresetNotifier.new,
-    );
-
 // ── Glass Translucency Preset (Apple Glass Style) ───────────────────────────
 
-enum GlassTranslucencyPreset {
-  subtleFrosted,
-  balancedLiquid,
-  highContrast,
-}
+enum GlassTranslucencyPreset { subtleFrosted, balancedLiquid, highContrast }
 
 const _glassTranslucencyPresetKey = 'ascent_glass_translucency_preset';
 
-class GlassTranslucencyPresetNotifier extends Notifier<GlassTranslucencyPreset> {
+class GlassTranslucencyPresetNotifier
+    extends Notifier<GlassTranslucencyPreset> {
   static const _values = {
     'subtleFrosted': GlassTranslucencyPreset.subtleFrosted,
     'balancedLiquid': GlassTranslucencyPreset.balancedLiquid,

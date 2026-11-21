@@ -1,22 +1,20 @@
-import 'package:flutter/cupertino.dart' show CupertinoThemeData;
+import 'package:flutter/cupertino.dart'
+    show CupertinoPageTransitionsBuilder, CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'color_tokens.dart';
-import 'dimension_tokens.dart';
-import 'frozen_palette.dart';
-import 'merlot_palette.dart';
-import 'glass_theme.dart';
-import 'day_glass_material.dart';
-import 'text_styles.dart';
-import 'surface_tokens.dart';
-import 'shared_control_tokens.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
+import 'calm_blue_palette.dart';
+import 'day_glass_material.dart';
+import 'dimension_tokens.dart';
+import 'glass_theme.dart';
+import 'shared_control_tokens.dart';
+import 'surface_tokens.dart';
+import 'text_styles.dart';
 
-/// Provides the light and dark [ThemeData] for the Ascent app.
+/// Light and dark [ThemeData] for Ascent: one Calm Blue palette, mirrored.
 ///
-/// Usage:
 /// ```dart
 /// MaterialApp(
 ///   theme: AscentTheme.light(),
@@ -26,52 +24,34 @@ import '../../core/theme/app_colors.dart';
 class AscentTheme {
   AscentTheme._();
 
-  // ── Light ──────────────────────────────────────────────────────────────────
-
   static ThemeData light({
-    DayThemePreset preset = DayThemePreset.merlotLinen,
     GlassTranslucencyPreset translucency =
         GlassTranslucencyPreset.balancedLiquid,
   }) {
-    final base = _build(brightness: Brightness.light, preset: preset);
+    final base = _build(Brightness.light);
     final glass = base.extension<AscentGlass>()!;
     final material = DayGlassMaterial.from(glass, translucency);
-    final muted = glass.frozen
-        ? glass.inkMuted
-        : Color.lerp(glass.inkMuted, glass.ink, .16)!;
     final surface = base.extension<AppSurfaces>()!.copyWith(
-      mutedText: muted,
       cardFill: glass.fill.withValues(alpha: material.topOpacity),
-      cardBorderColor: material.rim.top.color,
+      cardBorderColor: Colors.white.withValues(alpha: .70),
       blur: material.blur,
       shadow: material.shadow,
     );
     return base.copyWith(
-      scaffoldBackgroundColor: material.canvas,
-      appBarTheme: base.appBarTheme.copyWith(backgroundColor: material.canvas),
-      colorScheme: base.colorScheme.copyWith(
-        surfaceContainer: surface.cardFill,
-        onSurfaceVariant: muted,
-      ),
-      textTheme: base.textTheme.copyWith(
-        bodySmall: base.textTheme.bodySmall?.copyWith(color: muted),
-        labelMedium: base.textTheme.labelMedium?.copyWith(color: muted),
-        labelSmall: base.textTheme.labelSmall?.copyWith(color: muted),
-      ),
       cardTheme: base.cardTheme.copyWith(
         color: surface.cardFill,
         shadowColor: material.shadow,
+      ),
+      colorScheme: base.colorScheme.copyWith(
+        surfaceContainer: surface.cardFill,
       ),
       extensions: [
         material,
         surface,
         glass.copyWith(
-          bg: material.canvas,
-          inkMuted: muted,
           fill: surface.cardFill,
           nav: surface.cardFill,
           edge: surface.cardBorderColor,
-          highlight: Colors.white.withValues(alpha: .90),
           shadow: material.shadow,
         ),
         AppColors.light,
@@ -79,194 +59,216 @@ class AscentTheme {
     );
   }
 
-  // ── Dark ───────────────────────────────────────────────────────────────────
+  static ThemeData dark() => _build(Brightness.dark);
 
-  static ThemeData dark({DayThemePreset preset = DayThemePreset.classicClay}) =>
-      _build(brightness: Brightness.dark, preset: preset);
-
-  // Assistant routes share the current palette and translucency preference.
+  /// Assistant routes share the app theme.
   static ThemeData assistant(ThemeData parent) => parent;
 
-  // ── Utility ────────────────────────────────────────────────────────────────
-
-  /// Overlays JetBrains Mono onto any [TextStyle] for use in numeric/stat
-  /// contexts that fall outside the standard type scale.
+  /// JetBrains Mono for timers and code (CLAUDE.md §3.2).
   static TextStyle monoStyle(TextStyle base) =>
       GoogleFonts.jetBrainsMono(textStyle: base);
 
-  // ── Internal builder ───────────────────────────────────────────────────────
-
-  static ThemeData _build({
-    required Brightness brightness,
-    DayThemePreset preset = DayThemePreset.merlotLinen,
-    bool outlinedDay = false,
-  }) {
+  static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final isNordicSky = preset == DayThemePreset.nordicSky;
-    final isMerlotLinen = preset == DayThemePreset.merlotLinen;
-    final day = !isDark && outlinedDay;
-
-    // Resolve semantic tokens for this brightness.
-    final bgBase = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.canvas)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
-        : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
-    final bgSurface = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-        : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
-    final bgSurfaceElevated = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-        : (isDark
-              ? AscentColors.bgSurfaceElevatedDark
-              : AscentColors.bgSurfaceElevated);
-    final accentPrimary = isMerlotLinen
-        ? (isDark ? AscentColors.accentPrimaryDark : MerlotPalette.action)
-        : isNordicSky
-        ? (isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
-        : (isDark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue);
-    final stateDanger = isMerlotLinen
-        ? (isDark ? MerlotPalette.darkDanger : MerlotPalette.danger)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
-        : (isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger);
-    final textPrimary = day
-        ? (isMerlotLinen
-              ? AppSurfaces.merlotLinen.ink
-              : isNordicSky
-              ? AppSurfaces.nordicSky.ink
-              : AppSurfaces.day.ink)
-        : isMerlotLinen
-        ? (isDark ? MerlotPalette.darkInk : MerlotPalette.ink)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
-        : (isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary);
-    final textMuted = day
-        ? (isMerlotLinen
-              ? AppSurfaces.merlotLinen.mutedText
-              : isNordicSky
-              ? AppSurfaces.nordicSky.mutedText
-              : AppSurfaces.day.mutedText)
-        : isMerlotLinen
-        ? (isDark ? MerlotPalette.darkMutedInk : MerlotPalette.mutedInk)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-        : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
-    final textOnPrimary = isDark
-        ? (isMerlotLinen
-              ? MerlotPalette.darkCanvas
-              : AscentColors.textOnPrimaryDark)
-        : AscentColors.textOnPrimary;
-    final divider = day
-        ? (isMerlotLinen
-              ? AppSurfaces.merlotLinen.dividerColor
-              : isNordicSky
-              ? AppSurfaces.nordicSky.dividerColor
-              : AppSurfaces.day.dividerColor)
-        : isMerlotLinen
-        ? (isDark ? MerlotPalette.darkLineSubtle : MerlotPalette.lineSubtle)
-        : isNordicSky
-        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-        : (isDark ? AscentColors.dividerDark : AscentColors.divider);
+    final glass = isDark ? AscentGlass.dark : AscentGlass.light;
+    final canvas = glass.bg;
+    final surface = glass.surface;
+    final elevated = glass.elevated;
+    final recessed = glass.recessed;
+    final separator = glass.line;
+    final label = glass.ink;
+    final secondary = glass.inkSecondary;
+    final tertiary = glass.inkMuted;
+    final action = glass.actionInk;
+    final actionFill = glass.primaryButtonBg;
+    final danger = glass.coral;
 
     final colorScheme = ColorScheme(
       brightness: brightness,
-      primary: accentPrimary,
-      onPrimary: const Color(0xFFFFFFFF),
-      primaryContainer:
-          isDark ? const Color(0xFF1E293B) : const Color(0xFFEBF4FF),
-      onPrimaryContainer:
-          isDark ? const Color(0xFF93C5FD) : const Color(0xFF004CA6),
-      secondary: isDark ? const Color(0xFF60A5FA) : const Color(0xFF0284C7),
-      onSecondary: const Color(0xFFFFFFFF),
-      secondaryContainer:
-          isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
-      onSecondaryContainer:
-          isDark ? const Color(0xFF93C5FD) : const Color(0xFF0369A1),
-      tertiary: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706),
-      onTertiary: const Color(0xFFFFFFFF),
-      tertiaryContainer:
-          isDark ? const Color(0xFF292014) : const Color(0xFFFEF3C7),
-      onTertiaryContainer:
-          isDark ? const Color(0xFFFDE68A) : const Color(0xFF78350F),
-      error: isDark ? const Color(0xFFEF4444) : const Color(0xFFDC2626),
-      onError: const Color(0xFFFFFFFF),
-      errorContainer:
-          isDark ? const Color(0xFF2E1719) : const Color(0xFFFEE2E2),
-      onErrorContainer:
-          isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
-      surface: bgSurface,
-      onSurface: textPrimary,
-      surfaceContainerHighest: bgSurfaceElevated,
-      onSurfaceVariant: textMuted,
-      outline: isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
-      outlineVariant:
-          isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
-      shadow: isDark ? const Color(0x40000000) : const Color(0x0E0F172A),
-      scrim: const Color(0x73000000), // black@45% for overlays
-      inverseSurface:
-          isDark ? const Color(0xFFF8FAFC) : const Color(0xFF16181F),
-      onInverseSurface:
-          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-      inversePrimary:
-          isDark ? const Color(0xFF006FE6) : const Color(0xFF60A5FA),
+      primary: action,
+      onPrimary: CalmBluePalette.onAction,
+      primaryContainer: glass.tonalBg,
+      onPrimaryContainer: glass.tonalFg,
+      secondary: glass.tonalFg,
+      onSecondary: CalmBluePalette.onAction,
+      secondaryContainer: glass.tonalBg,
+      onSecondaryContainer: glass.tonalFg,
+      tertiary: glass.amber,
+      onTertiary: CalmBluePalette.onAction,
+      tertiaryContainer: glass.amberSoft,
+      onTertiaryContainer: label,
+      error: danger,
+      onError: CalmBluePalette.onAction,
+      errorContainer: glass.coralSoft,
+      onErrorContainer: label,
+      surface: surface,
+      onSurface: label,
+      surfaceContainerHighest: elevated,
+      onSurfaceVariant: tertiary,
+      outline: separator,
+      outlineVariant: separator,
+      shadow: glass.shadow,
+      scrim: const Color(0x66000000), // black @ 40% (CLAUDE.md §3.4)
+      inverseSurface: isDark
+          ? CalmBluePalette.label
+          : CalmBluePalette.darkLabel,
+      onInverseSurface: isDark
+          ? CalmBluePalette.darkLabel
+          : CalmBluePalette.label,
+      inversePrimary: isDark
+          ? CalmBluePalette.action
+          : CalmBluePalette.darkAction,
     );
 
-    final baseTextTheme = TextTheme(
-      displayLarge: AscentTextStyles.displayLarge.copyWith(color: textPrimary),
-      displayMedium: AscentTextStyles.displayMedium.copyWith(
-        color: textPrimary,
-      ),
-      displaySmall: AscentTextStyles.displaySmall.copyWith(color: textPrimary),
-      headlineLarge: AscentTextStyles.displayLarge.copyWith(color: textPrimary),
-      headlineMedium: AscentTextStyles.displayMedium.copyWith(
-        color: textPrimary,
-      ),
-      headlineSmall: AscentTextStyles.displaySmall.copyWith(color: textPrimary),
-      titleLarge: AscentTextStyles.labelLarge.copyWith(color: textPrimary),
-      titleMedium: AscentTextStyles.bodyMediumMedium.copyWith(
-        color: textPrimary,
-      ),
-      titleSmall: AscentTextStyles.labelSmall.copyWith(color: textPrimary),
-      bodyLarge: AscentTextStyles.bodyLarge.copyWith(color: textPrimary),
-      bodyMedium: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
-      bodySmall: AscentTextStyles.bodySmall.copyWith(color: textMuted),
-      labelLarge: AscentTextStyles.labelLarge.copyWith(color: textPrimary),
-      labelMedium: AscentTextStyles.bodyMediumMedium.copyWith(color: textMuted),
-      labelSmall: AscentTextStyles.labelSmall.copyWith(color: textMuted),
+    TextStyle ink(TextStyle s) => s.copyWith(color: label);
+    final textTheme = TextTheme(
+      displayLarge: ink(AscentTextStyles.displayLarge),
+      displayMedium: ink(AscentTextStyles.displayMedium),
+      displaySmall: ink(AscentTextStyles.displaySmall),
+      headlineLarge: ink(AscentTextStyles.displayLarge),
+      headlineMedium: ink(AscentTextStyles.displayMedium),
+      headlineSmall: ink(AscentTextStyles.displaySmall),
+      titleLarge: ink(AscentTextStyles.labelLarge),
+      titleMedium: ink(AscentTextStyles.bodyMediumMedium),
+      titleSmall: ink(AscentTextStyles.labelSmall),
+      bodyLarge: ink(AscentTextStyles.bodyLarge),
+      bodyMedium: ink(AscentTextStyles.bodyMedium),
+      bodySmall: AscentTextStyles.bodySmall.copyWith(color: secondary),
+      labelLarge: ink(AscentTextStyles.labelLarge),
+      labelMedium: AscentTextStyles.bodyMediumMedium.copyWith(color: secondary),
+      labelSmall: AscentTextStyles.labelSmall.copyWith(color: secondary),
     );
 
-    final cardRadius = const Radius.circular(16);
-    final inputRadius = const Radius.circular(12);
-    final buttonRadius = const Radius.circular(12);
-    final dialogRadius = const Radius.circular(20);
-    final sheetRadius = const Radius.circular(28);
+    const controlRadius = BorderRadius.all(Radius.circular(12));
+    final buttonShape = const WidgetStatePropertyAll(
+      RoundedRectangleBorder(borderRadius: controlRadius),
+    );
+    OutlineInputBorder inputBorder(Color c, [double w = 1]) =>
+        OutlineInputBorder(
+          borderRadius: controlRadius,
+          borderSide: BorderSide(color: c, width: w),
+        );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: canvas,
+      canvasColor: canvas,
+      fontFamily: GoogleFonts.dmSans().fontFamily,
+      textTheme: textTheme,
       cupertinoOverrideTheme: CupertinoThemeData(
-        primaryColor: accentPrimary,
+        primaryColor: action,
         brightness: brightness,
       ),
       textSelectionTheme: TextSelectionThemeData(
-        cursorColor: isDark ? const Color(0xFF60A5FA) : const Color(0xFFD2643A),
-        selectionColor: (isDark ? const Color(0xFF60A5FA) : const Color(0xFFD2643A))
-            .withValues(alpha: 0.30),
-        selectionHandleColor:
-            isDark ? const Color(0xFF60A5FA) : const Color(0xFFD2643A),
+        cursorColor: action,
+        selectionColor: action.withValues(alpha: .25),
+        selectionHandleColor: action,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: canvas,
+        foregroundColor: label,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        centerTitle: false,
+        titleTextStyle: AscentTextStyles.displaySmall.copyWith(color: label),
+        iconTheme: IconThemeData(color: label),
+        actionsIconTheme: IconThemeData(color: secondary),
+      ),
+      cardTheme: CardThemeData(
+        color: surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(20)),
+          side: isDark ? BorderSide(color: separator) : BorderSide.none,
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: surface,
+        selectedItemColor: action,
+        unselectedItemColor: tertiary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        showUnselectedLabels: true,
+        selectedLabelStyle: AscentTextStyles.labelSmall,
+        unselectedLabelStyle: AscentTextStyles.labelSmall,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: recessed,
+        border: inputBorder(Colors.transparent),
+        enabledBorder: inputBorder(Colors.transparent),
+        focusedBorder: inputBorder(action),
+        errorBorder: inputBorder(danger),
+        focusedErrorBorder: inputBorder(danger),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 14,
+        ),
+        hintStyle: AscentTextStyles.body.copyWith(color: tertiary),
+        labelStyle: AscentTextStyles.body.copyWith(color: secondary),
+        floatingLabelStyle: AscentTextStyles.caption.copyWith(color: action),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: SharedControlColors.actionBlue,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(48, 36),
+          backgroundColor: actionFill,
+          foregroundColor: CalmBluePalette.onAction,
+          minimumSize: const Size(48, 44),
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(borderRadius: controlRadius),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.disabled)
+                ? glass.disabledBg
+                : actionFill,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.disabled)
+                ? glass.disabledFg
+                : CalmBluePalette.onAction,
+          ),
+          overlayColor: WidgetStatePropertyAll(
+            CalmBluePalette.onAction.withValues(alpha: .12),
+          ),
+          elevation: const WidgetStatePropertyAll(0),
+          shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: buttonShape,
+          minimumSize: const WidgetStatePropertyAll(Size(64, 44)),
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: WidgetStatePropertyAll(action),
+          overlayColor: WidgetStatePropertyAll(action.withValues(alpha: .08)),
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
+          shape: buttonShape,
+          minimumSize: const WidgetStatePropertyAll(Size(44, 44)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: WidgetStatePropertyAll(action),
+          overlayColor: WidgetStatePropertyAll(action.withValues(alpha: .08)),
+          side: WidgetStatePropertyAll(BorderSide(color: separator)),
+          shape: buttonShape,
+          minimumSize: const WidgetStatePropertyAll(Size(64, 44)),
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),
       ),
@@ -278,594 +280,127 @@ class AscentTheme {
           tapTargetSize: MaterialTapTargetSize.padded,
         ),
       ),
-      brightness: brightness,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: bgBase,
-      fontFamily: GoogleFonts.dmSans().fontFamily,
-      textTheme: baseTextTheme,
-
-      // ── App bar ─────────────────────────────────────────────────────────────
-      appBarTheme: AppBarTheme(
-        backgroundColor: bgBase,
-        foregroundColor: textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: day ? 0 : 0.5,
-        shadowColor: (isDark ? AscentColors.shadowDark : AscentColors.shadow)
-            .withValues(alpha: 0.08),
-        centerTitle: false,
-        titleTextStyle: AscentTextStyles.displaySmall.copyWith(
-          color: textPrimary,
-        ),
-        iconTheme: IconThemeData(color: textPrimary),
-        actionsIconTheme: IconThemeData(color: textMuted),
-      ),
-
-      // ── Card ────────────────────────────────────────────────────────────────
-      cardTheme: CardThemeData(
-        color: day
-            ? (isMerlotLinen
-                  ? AppSurfaces.merlotLinen.cardFill
-                  : isNordicSky
-                  ? AppSurfaces.nordicSky.cardFill
-                  : AppSurfaces.day.cardFill)
-            : (isMerlotLinen
-                  ? (isDark
-                        ? MerlotPalette.darkSurface
-                        : MerlotPalette.surface.withValues(alpha: 0.96))
-                  : isNordicSky
-                  ? (isDark
-                        ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
-                        : FrozenPalette.surface.withValues(alpha: 0.94))
-                  : bgSurface),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(cardRadius),
-          side: day
-              ? BorderSide(
-                  color: isMerlotLinen
-                      ? AppSurfaces.merlotLinen.cardBorderColor
-                      : isNordicSky
-                      ? AppSurfaces.nordicSky.cardBorderColor
-                      : AppSurfaces.day.cardBorderColor,
-                  width: isMerlotLinen
-                      ? AppSurfaces.merlotLinen.cardBorderWidth
-                      : AppSurfaces.day.cardBorderWidth,
-                )
-              : BorderSide(
-                  color: isMerlotLinen
-                      ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                      : isNordicSky
-                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                      : divider,
-                  width: (isNordicSky || isMerlotLinen) ? 0.75 : 0.8,
-                ),
-        ),
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-      ),
-
-      // ── Bottom navigation bar ───────────────────────────────────────────────
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: isMerlotLinen
-            ? (isDark
-                  ? MerlotPalette.darkElevated
-                  : MerlotPalette.elevated.withValues(alpha: 0.96))
-            : isNordicSky
-            ? (isDark
-                  ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
-                  : FrozenPalette.surface.withValues(alpha: 0.96))
-            : bgBase,
-        selectedItemColor: isMerlotLinen && isDark
-            ? MerlotPalette.darkInk
-            : accentPrimary,
-        unselectedItemColor: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkMutedInk : MerlotPalette.mutedInk)
-            : isNordicSky
-            ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-            : textMuted,
-        type: BottomNavigationBarType.fixed,
-        elevation: 0,
-        showUnselectedLabels: true,
-        selectedLabelStyle: AscentTextStyles.labelSmall,
-        unselectedLabelStyle: AscentTextStyles.labelSmall,
-      ),
-
-      // ── Input decoration ────────────────────────────────────────────────────
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: isNordicSky
-            ? (isDark ? FrozenPalette.darkRecessed : FrozenPalette.recessed)
-            : (isMerlotLinen
-                  ? (isDark
-                        ? MerlotPalette.darkCanvas
-                        : MerlotPalette.recessedWell)
-                  : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(
-            color: isNordicSky
-                ? (isDark
-                      ? FrozenPalette.darkControlOutline
-                      : FrozenPalette.controlOutline)
-                : (isMerlotLinen
-                      ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                      : (isDark
-                            ? AscentColors.dividerDark
-                            : AscentColors.outlineDay)),
-            width: 1.0,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(
-            color: isNordicSky
-                ? (isDark
-                      ? FrozenPalette.darkControlOutline
-                      : FrozenPalette.controlOutline)
-                : (isMerlotLinen
-                      ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                      : (isDark
-                            ? AscentColors.dividerDark
-                            : AscentColors.outlineDay)),
-            width: 1.0,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: accentPrimary, width: 2.0),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: stateDanger, width: 1.0),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: stateDanger, width: 2.0),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
-        ),
-        hintStyle: AscentTextStyles.body.copyWith(color: textMuted),
-        labelStyle: AscentTextStyles.body.copyWith(color: textMuted),
-        floatingLabelStyle: AscentTextStyles.caption.copyWith(
-          color: isMerlotLinen && isDark
-              ? MerlotPalette.darkSecondaryInk
-              : accentPrimary,
-        ),
-      ),
-
-      // ── Elevated button ─────────────────────────────────────────────────────
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.disabled)) {
-              if (isMerlotLinen) {
-                return isDark ? MerlotPalette.darkElevated : MerlotPalette.tint;
-              }
-              return isNordicSky
-                  ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                  : bgSurfaceElevated.withValues(alpha: 0.4);
-            }
-            if (isNordicSky) {
-              return FrozenPalette.action.withValues(alpha: .94);
-            }
-            return accentPrimary;
-          }),
-          foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.disabled)) {
-              if (isMerlotLinen) {
-                return isDark
-                    ? MerlotPalette.darkMutedInk
-                    : MerlotPalette.mutedInk;
-              }
-              return isNordicSky
-                  ? (isDark
-                        ? FrozenPalette.darkMutedInk
-                        : FrozenPalette.mutedInk)
-                  : textPrimary.withValues(alpha: 0.4);
-            }
-            return textOnPrimary;
-          }),
-          overlayColor: WidgetStatePropertyAll(
-            textOnPrimary.withValues(alpha: 0.12),
-          ),
-          elevation: const WidgetStatePropertyAll(0),
-          shadowColor: const WidgetStatePropertyAll(Colors.transparent),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(buttonRadius),
-            ),
-          ),
-          minimumSize: const WidgetStatePropertyAll(Size(64, 36)),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
-          padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          ),
-        ),
-      ),
-
-      // ── Text button ─────────────────────────────────────────────────────────
-      textButtonTheme: TextButtonThemeData(
-        style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(
-            isMerlotLinen && isDark
-                ? MerlotPalette.darkSecondaryInk
-                : accentPrimary,
-          ),
-          overlayColor: WidgetStatePropertyAll(
-            accentPrimary.withValues(alpha: 0.08),
-          ),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(buttonRadius),
-            ),
-          ),
-          padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          ),
-        ),
-      ),
-
-      // ── Outlined button ─────────────────────────────────────────────────────
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(
-            isMerlotLinen && isDark
-                ? MerlotPalette.darkSecondaryInk
-                : accentPrimary,
-          ),
-          overlayColor: WidgetStatePropertyAll(
-            accentPrimary.withValues(alpha: 0.08),
-          ),
-          side: WidgetStatePropertyAll(
-            BorderSide(
-              color: day
-                  ? (isMerlotLinen
-                        ? AppSurfaces.merlotLinen.cardBorderColor
-                        : isNordicSky
-                        ? AppSurfaces.nordicSky.cardBorderColor
-                        : AppSurfaces.day.ink)
-                  : (isMerlotLinen
-                        ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                        : isNordicSky
-                        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                        : divider),
-              width: day
-                  ? (isMerlotLinen
-                        ? AppSurfaces.merlotLinen.cardBorderWidth
-                        : AppSurfaces.day.cardBorderWidth)
-                  : 1.0,
-            ),
-          ),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(buttonRadius),
-            ),
-          ),
-          minimumSize: WidgetStatePropertyAll(Size(64, 36)),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
-          padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          ),
-        ),
-      ),
-
-      // ── Switch ──────────────────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return isDark
-                ? SharedControlColors.disabledFgDark
-                : SharedControlColors.disabledFgLight;
-          }
-          return SharedControlColors.switchThumb;
-        }),
-        trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.disabled)) {
-            return isDark
-                ? SharedControlColors.disabledBgDark
-                : SharedControlColors.disabledBgLight;
-          }
-          if (states.contains(WidgetState.selected)) {
-            return SharedControlColors.switchTrackOn;
-          }
-          return isDark
-              ? SharedControlColors.switchTrackOffDark
-              : SharedControlColors.switchTrackOffLight;
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.disabled)
+              ? glass.disabledFg
+              : SharedControlColors.switchThumb,
+        ),
+        trackColor: WidgetStateProperty.resolveWith((s) {
+          if (s.contains(WidgetState.disabled)) return glass.disabledBg;
+          if (s.contains(WidgetState.selected)) return glass.switchTrackOn;
+          return glass.switchTrackOff;
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-
-      // ── Divider ─────────────────────────────────────────────────────────────
-      dividerTheme: DividerThemeData(
-        color: day
-            ? (isMerlotLinen
-                  ? AppSurfaces.merlotLinen.dividerColor
-                  : isNordicSky
-                  ? AppSurfaces.nordicSky.dividerColor
-                  : AppSurfaces.day.dividerColor)
-            : divider,
-        thickness: 1,
-        space: 1,
-      ),
-
-      // ── Snack bar ────────────────────────────────────────────────────────────
+      dividerTheme: DividerThemeData(color: separator, thickness: 1, space: 1),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark
-            ? (isMerlotLinen
-                  ? MerlotPalette.darkElevated
-                  : isNordicSky
-                  ? FrozenPalette.darkElevated
-                  : const Color(0xFF1E212B))
-            : (isMerlotLinen
-                  ? MerlotPalette.ink
-                  : isNordicSky
-                  ? FrozenPalette.ink
-                  : const Color(0xFF2B221B)),
+        backgroundColor: elevated,
         contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
-          color: const Color(0xFFF1F5F9),
+          color: label,
           fontWeight: FontWeight.w500,
         ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-          side: BorderSide(color: Color(0x33FFFFFF), width: 0.9),
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(14)),
+          side: BorderSide(color: separator),
         ),
         behavior: SnackBarBehavior.floating,
-        actionTextColor: const Color(0xFFF0D5A8),
-        elevation: day ? 0 : 6,
+        actionTextColor: action,
+        elevation: 6,
       ),
-
-      // ── Bottom sheet ─────────────────────────────────────────────────────────
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
-            : isNordicSky
-            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-            : bgSurface,
-        modalBackgroundColor: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
-            : isNordicSky
-            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-            : bgSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            topLeft: sheetRadius,
-            topRight: sheetRadius,
-          ),
+        backgroundColor: elevated,
+        modalBackgroundColor: elevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         modalElevation: 0,
         elevation: 0,
-        dragHandleColor: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkLine : MerlotPalette.lineSubtle)
-            : isNordicSky
-            ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-            : divider,
+        dragHandleColor: separator,
         dragHandleSize: const Size(40, 4),
       ),
-
-      // ── Page transitions ─────────────────────────────────────────────────────
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.linux: ZoomPageTransitionsBuilder(),
-          TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.windows: ZoomPageTransitionsBuilder(),
           TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
         },
       ),
-
-      // ── Icon theme ───────────────────────────────────────────────────────────
-      iconTheme: IconThemeData(color: textPrimary, size: 24),
-      primaryIconTheme: IconThemeData(
-        color: isMerlotLinen && isDark
-            ? MerlotPalette.darkSecondaryInk
-            : accentPrimary,
-        size: 24,
-      ),
-
-      // ── Chip ─────────────────────────────────────────────────────────────────
+      iconTheme: IconThemeData(color: label, size: 24),
+      primaryIconTheme: IconThemeData(color: action, size: 24),
       chipTheme: ChipThemeData(
-        backgroundColor: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.pillSoft)
-            : isNordicSky
-            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-            : (day ? AppSurfaces.day.cardFill : bgSurfaceElevated),
-        selectedColor: isMerlotLinen
-            ? accentPrimary
-            : isNordicSky
-            ? accentPrimary
-            : (day ? AppSurfaces.day.accent : null),
-        labelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: isMerlotLinen && isDark
-              ? MerlotPalette.darkSecondaryInk
-              : (isMerlotLinen || isNordicSky)
-              ? accentPrimary
-              : textPrimary,
-        ),
+        backgroundColor: recessed,
+        selectedColor: glass.tonalBg,
+        labelStyle: AscentTextStyles.labelSmall.copyWith(color: label),
         secondaryLabelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: textOnPrimary,
+          color: glass.tonalFg,
           fontWeight: FontWeight.w600,
         ),
-        checkmarkColor: textOnPrimary,
-        side: isMerlotLinen
-            ? BorderSide(
-                color: isDark
-                    ? AscentColors.dividerDark
-                    : MerlotPalette.lineSubtle,
-                width: 0.75,
-              )
-            : isNordicSky
-            ? BorderSide(
-                color: isDark ? FrozenPalette.darkLine : FrozenPalette.line,
-                width: 1.0,
-              )
-            : (day
-                  ? BorderSide(
-                      color: AppSurfaces.day.pillBorderColor,
-                      width: AppSurfaces.day.pillBorderWidth,
-                    )
-                  : BorderSide.none),
+        checkmarkColor: glass.tonalFg,
+        side: BorderSide.none,
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
-
-      // ── Dialog ───────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
-        backgroundColor: bgSurfaceElevated,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(dialogRadius),
+        backgroundColor: elevated,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        titleTextStyle: AscentTextStyles.cardTitle.copyWith(color: textPrimary),
+        titleTextStyle: AscentTextStyles.cardTitle.copyWith(color: label),
         contentTextStyle: AscentTextStyles.supportingText.copyWith(
-          color: textMuted,
+          color: secondary,
         ),
         elevation: 0,
       ),
-
-      // ── Popup Menu ────────────────────────────────────────────────────────────
       popupMenuTheme: PopupMenuThemeData(
-        color: bgSurfaceElevated,
+        color: elevated,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: divider, width: 1.0),
+          side: BorderSide(color: separator),
         ),
         elevation: 4,
-        shadowColor: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),
+        shadowColor: Color.fromRGBO(0, 0, 0, isDark ? .30 : .10),
         surfaceTintColor: Colors.transparent,
         menuPadding: const EdgeInsets.symmetric(vertical: 4),
         textStyle: AscentTextStyles.body.copyWith(
-          color: textPrimary,
+          color: label,
           fontWeight: FontWeight.w500,
         ),
         labelTextStyle: WidgetStatePropertyAll(
           AscentTextStyles.body.copyWith(
-            color: textPrimary,
+            color: label,
             fontWeight: FontWeight.w500,
           ),
         ),
       ),
-
-      // ── Slider ───────────────────────────────────────────────────────────────
       sliderTheme: SliderThemeData(
-        activeTrackColor: accentPrimary,
-        inactiveTrackColor: isNordicSky
-            ? (isDark
-                  ? FrozenPalette.darkControlOutline
-                  : FrozenPalette.controlOutline)
-            : (isMerlotLinen
-                  ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                  : (isDark
-                        ? AscentColors.dividerDark
-                        : AscentColors.outlineDay)),
-        trackHeight: 4.0,
-        thumbColor: accentPrimary,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10.0),
-        overlayShape: const RoundSliderOverlayShape(overlayRadius: 24.0),
+        activeTrackColor: action,
+        inactiveTrackColor: separator,
+        trackHeight: 4,
+        thumbColor: action,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
       ),
-
-      // ── Progress indicator ───────────────────────────────────────────────────
       progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: isMerlotLinen
-            ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
-            : (isNordicSky
-                  ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                  : accentPrimary),
-        linearTrackColor: isMerlotLinen
-            ? (isDark
-                  ? const Color(0x1FFFFFFF)
-                  : const Color.fromRGBO(88, 24, 37, 0.12))
-            : (isNordicSky
-                  ? (isDark
-                        ? const Color(0x1FFFFFFF)
-                        : const Color.fromRGBO(29, 100, 180, 0.12))
-                  : (isDark
-                        ? const Color(0x1FFFFFFF)
-                        : const Color.fromRGBO(15, 23, 42, 0.12))),
+        color: action,
+        linearTrackColor: glass.track,
         linearMinHeight: 4,
         borderRadius: BorderRadius.circular(4),
       ),
-
-      // ── Scrollbar ────────────────────────────────────────────────────────────
       scrollbarTheme: ScrollbarThemeData(
-        thumbColor: WidgetStatePropertyAll(
-          isDark
-              ? Colors.white.withValues(alpha: 0.28)
-              : Colors.black.withValues(alpha: 0.22),
-        ),
-        trackColor: WidgetStatePropertyAll(
-          isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.black.withValues(alpha: 0.04),
-        ),
+        thumbColor: WidgetStatePropertyAll(tertiary.withValues(alpha: .45)),
         radius: const Radius.circular(4),
-        thickness: const WidgetStatePropertyAll(4.0),
-        thumbVisibility: const WidgetStatePropertyAll(true),
+        thickness: const WidgetStatePropertyAll(4),
         interactive: true,
       ),
       extensions: [
         isDark ? AppColors.dark : AppColors.light,
-        isDark
-            ? (isMerlotLinen
-                  ? AscentGlass.merlotLinenDark
-                  : isNordicSky
-                  ? AscentGlass.nordicSkyDark
-                  : AscentGlass.dark)
-            : isMerlotLinen
-            ? (!day
-                  ? AscentGlass.merlotLinenLight
-                  : AscentGlass.merlotLinenLight.copyWith(
-                      fill: AppSurfaces.merlotLinen.cardFill,
-                      line: AppSurfaces.merlotLinen.dividerColor,
-                      clay: AppSurfaces.merlotLinen.accent,
-                      claySoft: AppSurfaces.merlotLinen.tintFill,
-                      ink: AppSurfaces.merlotLinen.ink,
-                      inkMuted: AppSurfaces.merlotLinen.mutedText,
-                      glow1: const Color(0x29C28834),
-                      glow2: const Color(0x1F581825),
-                      shadow: MerlotPalette.shadowAmbient,
-                    ))
-            : isNordicSky
-            ? (!day
-                  ? AscentGlass.nordicSky
-                  : AscentGlass.nordicSky.copyWith(
-                      fill: AppSurfaces.nordicSky.cardFill,
-                      line: AppSurfaces.nordicSky.dividerColor,
-                      clay: AppSurfaces.nordicSky.accent,
-                      claySoft: AppSurfaces.nordicSky.tintFill,
-                      ink: AppSurfaces.nordicSky.ink,
-                      inkMuted: AppSurfaces.nordicSky.mutedText,
-                      glow1: Colors.transparent,
-                      glow2: Colors.transparent,
-                      shadow: Colors.transparent,
-                    ))
-            : !day
-            ? AscentGlass.light
-            : AscentGlass.light.copyWith(
-                fill: AppSurfaces.day.cardFill,
-                line: AppSurfaces.day.dividerColor,
-                clay: AppSurfaces.day.accent,
-                claySoft: AppSurfaces.day.tintFill,
-                ink: AppSurfaces.day.ink,
-                inkMuted: AppSurfaces.day.mutedText,
-                glow1: Colors.transparent,
-                glow2: Colors.transparent,
-                shadow: Colors.transparent,
-              ),
-        isDark
-            ? (isMerlotLinen
-                  ? AppSurfaces.legacyMerlotLinenDark
-                  : (isNordicSky
-                        ? AppSurfaces.legacyNordicSkyDark
-                        : AppSurfaces.night))
-            : isMerlotLinen
-            ? (day ? AppSurfaces.merlotLinen : AppSurfaces.legacyMerlotLinen)
-            : isNordicSky
-            ? (day ? AppSurfaces.nordicSky : AppSurfaces.legacyNordicSky)
-            : (day ? AppSurfaces.day : AppSurfaces.legacyLight),
+        glass,
+        isDark ? AppSurfaces.night : AppSurfaces.legacyLight,
       ],
     );
   }

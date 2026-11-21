@@ -7,7 +7,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/plans/planning_providers.dart';
 import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
@@ -174,104 +173,6 @@ void main() {
       }
     },
   );
-
-  for (final preset in DayThemePreset.values) {
-    for (final dark in [false, true]) {
-      testWidgets(
-        'compact rows bound 1000 tasks and chips fit $preset dark=$dark',
-        (t) async {
-          SharedPreferences.setMockInitialValues({});
-          final prefs = await SharedPreferences.getInstance();
-          final db = AppDatabase.forTesting(NativeDatabase.memory());
-          addTearDown(db.close);
-          final items = [
-            for (var i = 0; i < 1000; i++) row(i, 'task'),
-            for (var i = 1000; i < 1008; i++) row(i, 'medicine'),
-            row(1009, 'lecture'),
-            row(1010, 'timer'),
-          ];
-          t.view.physicalSize = const Size(390, 1000);
-          t.view.devicePixelRatio = 1;
-          addTearDown(t.view.resetPhysicalSize);
-          addTearDown(t.view.resetDevicePixelRatio);
-          final container = ProviderContainer(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayActivitiesProvider.overrideWith(
-                (ref) => Stream.value(items),
-              ),
-              allRemindersProvider.overrideWith((ref) => Stream.value([])),
-              planCollectionsProvider.overrideWith((ref) => Stream.value([])),
-            ],
-          );
-          try {
-            await t.pumpWidget(
-              UncontrolledProviderScope(
-                container: container,
-                child: MaterialApp(
-                  theme: dark
-                      ? AscentTheme.dark(preset: preset)
-                      : AscentTheme.light(preset: preset),
-                  home: RepaintBoundary(
-                    key: const ValueKey('redesign_capture'),
-                    child: const Scaffold(
-                      body: SingleChildScrollView(
-                        child: Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(children: [ActivityHubCard()]),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-            await t.pumpAndSettle();
-            expect(find.byType(ActivityRowItem), findsNWidgets(4));
-            expect(
-              find.byKey(const ValueKey('activity_hub_type_filters')),
-              findsNothing,
-            );
-            await capture(t, 'hub-${preset.name}-${dark ? 'dark' : 'light'}');
-            t.view.physicalSize = const Size(320, 1000);
-            await t.pumpWidget(
-              UncontrolledProviderScope(
-                container: container,
-                child: MaterialApp(
-                  theme: dark
-                      ? AscentTheme.dark(preset: preset)
-                      : AscentTheme.light(preset: preset),
-                  builder: (context, child) => MediaQuery(
-                    data: MediaQuery.of(
-                      context,
-                    ).copyWith(textScaler: const TextScaler.linear(2)),
-                    child: child!,
-                  ),
-                  home: const Scaffold(
-                    body: SingleChildScrollView(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: ActivityHubCard(),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-            await t.pumpAndSettle();
-            expect(t.takeException(), isNull);
-            expect(find.byType(ActivityRowItem), findsNWidgets(4));
-            expect(t.takeException(), isNull);
-          } finally {
-            await t.pumpWidget(const SizedBox());
-            container.dispose();
-            await t.pump(const Duration(seconds: 2));
-          }
-        },
-      );
-    }
-  }
 
   testWidgets('wall settings no longer offer ineffective card colours', (
     t,

@@ -95,10 +95,7 @@ void main() {
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
         todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
       ],
-      child: MaterialApp(
-        theme: theme ?? AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        home: child,
-      ),
+      child: MaterialApp(theme: theme ?? AscentTheme.light(), home: child),
     );
   }
 
@@ -160,7 +157,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            theme: AscentTheme.light(),
             home: Scaffold(
               body: HomeDismissibleRemindersSection(
                 reminders: [reminder1],
@@ -186,7 +183,7 @@ void main() {
         // Pump second reminder to test swipe left delete
         await tester.pumpWidget(
           MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            theme: AscentTheme.light(),
             home: Scaffold(
               body: HomeDismissibleRemindersSection(
                 reminders: [reminder2],
@@ -211,6 +208,5 @@ void main() {
         await tester.pump();
       },
     );
-
   });
 }

@@ -107,10 +107,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        wrap(
-          const HomeHeader(profile: null),
-          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-        ),
+        wrap(const HomeHeader(profile: null), theme: AscentTheme.light()),
       );
       await tester.pumpAndSettle();
 

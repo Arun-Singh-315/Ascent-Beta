@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/services/plan_child_protection.dart';
@@ -87,16 +86,12 @@ Future<void> showPlanProtectionDialog(
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? FrozenPalette.darkAction.withValues(alpha: 0.15)
-                        : FrozenPalette.action.withValues(alpha: 0.12),
+                    color: context.glass.tonalBg,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     Icons.event_repeat_rounded,
-                    color: isDark
-                        ? FrozenPalette.darkActionBright
-                        : FrozenPalette.action,
+                    color: context.glass.actionInk,
                     size: 22,
                   ),
                 ),

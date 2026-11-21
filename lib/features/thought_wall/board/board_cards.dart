@@ -13,22 +13,18 @@ import '../thought_wall_preferences.dart';
 import '../utils/thought_checklist_helper.dart';
 import 'board_logic.dart';
 
-/// Accent colour for a thought, taken from the active theme so every theme
-/// (Frost, Merlot, Evergreen, Dusk) keeps its own palette.
+/// Accent colour for a thought, taken from the theme's accent roles.
 ///
 /// Special moods keep a stable colour. Plain thoughts rotate gently through
 /// the theme accents so the wall has variety without any setup.
 Color boardAccentFor(AscentGlass g, Thought thought) {
-  if (g.frozen) {
-    return thought.mood == 'win' ? g.sage : g.slate;
-  }
   switch (thought.mood) {
     case 'idea':
       return g.amber;
     case 'win':
       return g.sage;
     case 'future':
-      return g.merlot ? g.clay : g.coral;
+      return g.coral;
     case 'me_to_me':
     case 'promise':
       return g.clay;
@@ -39,9 +35,7 @@ Color boardAccentFor(AscentGlass g, Thought thought) {
 
 /// Accent colour for a space, stable for the same space key.
 Color spaceAccentFor(AscentGlass g, String key) {
-  final palette = g.frozen
-      ? [g.slate, g.sage]
-      : [g.slate, g.clay, g.sage, g.amber];
+  final palette = [g.slate, g.clay, g.sage, g.amber];
   return palette[stableHash(key) % palette.length];
 }
 
@@ -57,8 +51,12 @@ IconData? boardMoodIcon(String mood) => switch (mood) {
 
 BorderRadius _boardRadius(ThoughtCardStyle style, int index) => switch (style) {
   ThoughtCardStyle.soft || ThoughtCardStyle.bubble => BorderRadius.only(
-    topLeft: index.isEven ? const Radius.circular(6) : const Radius.circular(18),
-    topRight: index.isOdd ? const Radius.circular(6) : const Radius.circular(18),
+    topLeft: index.isEven
+        ? const Radius.circular(6)
+        : const Radius.circular(18),
+    topRight: index.isOdd
+        ? const Radius.circular(6)
+        : const Radius.circular(18),
     bottomLeft: const Radius.circular(18),
     bottomRight: const Radius.circular(18),
   ),
@@ -122,13 +120,13 @@ class _BoardCardState extends State<BoardCard>
       parent: _cardAnimController,
       curve: Curves.easeOut,
     );
-    _cardSlide = Tween<Offset>(
-      begin: const Offset(0, 0.07),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _cardAnimController,
-      curve: Curves.easeOutCubic,
-    ));
+    _cardSlide = Tween<Offset>(begin: const Offset(0, 0.07), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _cardAnimController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
     _cardAnimController.forward();
   }
 
@@ -183,7 +181,8 @@ class _BoardCardState extends State<BoardCard>
 
     final comfortable = appearance.density == ThoughtCardDensity.comfortable;
     final padding = comfortable ? AppSpace.s16 : AppSpace.s12;
-    final chrome = padding * 2 + 4; // padding, 1px borders and a small safety gap
+    final chrome =
+        padding * 2 + 4; // padding, 1px borders and a small safety gap
 
     final textStyle = kind == BoardCardKind.spark
         ? AscentTextStyles.interfaceSupporting.copyWith(
@@ -194,10 +193,7 @@ class _BoardCardState extends State<BoardCard>
         : AppTypography.thoughtContent(color: context.glass.ink);
 
     final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: textStyle,
-      ),
+      text: TextSpan(text: text, style: textStyle),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 6,
@@ -228,24 +224,24 @@ class _BoardCardState extends State<BoardCard>
     final filled = appearance.bubbleFilled && !dark;
     final fill = (!filled || minimal)
         ? (dark
-            ? Colors.transparent
-            : MindspacePalette.cardPaperLight.withValues(alpha: .75))
-        : (dark ? MindspacePalette.cardPaperDark : MindspacePalette.cardPaperLight);
+              ? Colors.transparent
+              : MindspacePalette.cardPaperLight.withValues(alpha: .75))
+        : (dark
+              ? MindspacePalette.cardPaperDark
+              : MindspacePalette.cardPaperLight);
     final borderColor = isSelected
-        ? (dark ? SharedControlColors.actionBlueDark : SharedControlColors.actionBlue)
+        ? (dark
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue)
         : thought.isCompleted
         ? context.doneInk.withValues(alpha: dark ? .35 : .25)
         : (dark
-            // A visible hairline on the night canvas, softly tinted by mood.
-            ? Color.alphaBlend(
-                accent.withValues(alpha: 0.40),
-                g.ink.withValues(alpha: 0.26),
-              )
-            : Color.lerp(
-                g.edge,
-                accent.withValues(alpha: 0.20),
-                0.40,
-              )!);
+              // A visible hairline on the night canvas, softly tinted by mood.
+              ? Color.alphaBlend(
+                  accent.withValues(alpha: 0.40),
+                  g.ink.withValues(alpha: 0.26),
+                )
+              : Color.lerp(g.edge, accent.withValues(alpha: 0.20), 0.40)!);
     final borderWidth = isSelected ? 1.8 : 1.0;
     final radius = _boardRadius(appearance.style, index);
 
@@ -358,13 +354,18 @@ class _BoardCardState extends State<BoardCard>
               child: Semantics(
                 button: true,
                 selected: isSelected,
-                label: isLocked ? 'Private commitment' : displayContent(thought.content),
+                label: isLocked
+                    ? 'Private commitment'
+                    : displayContent(thought.content),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: onTap,
                   onLongPress: onLongPress,
                   onDoubleTap: isSelectionMode ? null : onDoubleTap,
-                  child: Opacity(opacity: thought.isCompleted ? .66 : 1, child: card),
+                  child: Opacity(
+                    opacity: thought.isCompleted ? .66 : 1,
+                    child: card,
+                  ),
                 ),
               ),
             ),

@@ -1,14 +1,10 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Sleek Dark Obsidian Popup Menu Theme', () {
-
-
-  });
+  group('Sleek Dark Obsidian Popup Menu Theme', () {});
 
   group('AscentPopupMenuButton Widget', () {
     testWidgets(
@@ -18,7 +14,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            theme: AscentTheme.light(),
             home: Scaffold(
               body: Center(
                 child: AscentPopupMenuButton<String>(
@@ -84,7 +80,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            theme: AscentTheme.light(),
             home: MediaQuery(
               data: const MediaQueryData(
                 size: Size(320, 640),

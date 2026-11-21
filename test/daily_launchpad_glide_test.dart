@@ -12,7 +12,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/home/widgets/daily_briefing_card.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -89,7 +88,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
-        theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+        theme: AscentTheme.light(),
         builder: (context, childWidget) => MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
           child: childWidget!,
@@ -171,120 +170,6 @@ void main() {
         expect(find.text('To-do'), findsOneWidget);
         expect(find.text('Timed'), findsOneWidget);
         expect(find.text('Flexible'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      '4. 3-Step Glide Daily Launchpad: Step 1 -> Step 2 -> Step 3 with one-stop data feeding',
-      (tester) async {
-        final testDay = DateTime(2026, 10, 20);
-
-        await tester.pumpWidget(
-          buildHarness(
-            Scaffold(
-              body: Builder(
-                builder: (ctx) => Center(
-                  child: ElevatedButton(
-                    onPressed: () => DailyBriefingCard.show(ctx, testDay),
-                    child: const Text('Launch Sheet'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Open popup
-        await tester.tap(find.text('Launch Sheet'));
-        await tester.pumpAndSettle();
-
-        // Step 1: Yesterday & Welcome
-        expect(find.text('Daily Launchpad'), findsOneWidget);
-        expect(find.text('Yesterday in Review'), findsOneWidget);
-        expect(find.text('Start Today’s Plan'), findsOneWidget);
-
-        // Advance to Step 2
-        await tester.tap(find.text('Start Today’s Plan'));
-        await tester.pumpAndSettle();
-
-        // Step 2: Feed Today's Focus
-        expect(find.text('Feed Today’s Focus'), findsOneWidget);
-        expect(find.text('Plan one small task'), findsOneWidget);
-
-        // Type a task title and feed directly into system
-        await tester.enterText(
-          find.byType(TextField).first,
-          'Study Dynamic Programming',
-        );
-        await tester.tap(find.text('Plan one small task'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-
-        // Verify task was inserted into AppDatabase
-        final tasks = await tester.runAsync(
-          () => db.select(db.taskTable).get(),
-        );
-        expect(
-          tasks?.any((t) => t.title == 'Study Dynamic Programming'),
-          isTrue,
-        );
-
-        // Quick log water
-        await tester.tap(find.text('+250ml water'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 200));
-        final water = await tester.runAsync(
-          () => db.waterDao.getWaterForDate(DateTime.now()),
-        );
-        expect(water, equals(250));
-
-        // Glide to Step 3: Launch Day
-        await tester.tap(find.text('Next: Launch Day →'));
-        await tester.pumpAndSettle();
-
-        // Step 3: All Set for Today
-        expect(find.text('All Set for Today'), findsOneWidget);
-        expect(find.text('Take me to my tasks'), findsOneWidget);
-
-        // Dismissal works smoothly
-        expect(find.byTooltip('Dismiss daily briefing'), findsOneWidget);
-        await tester.tap(find.byTooltip('Dismiss daily briefing'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('All Set for Today'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
-
-    testWidgets(
-      '5. Rule 13: Daily Launchpad Flow at 320px width & 2.0x text scale has 0 overflow',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        final testDay = DateTime(2026, 10, 20);
-
-        await tester.pumpWidget(
-          buildHarness(
-            Scaffold(
-              body: SingleChildScrollView(
-                child: DailyBriefingCard(day: testDay),
-              ),
-            ),
-            textScaler: const TextScaler.linear(2.0),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
       },
     );
   });

@@ -265,7 +265,7 @@ void main() {
               ),
             ],
             child: MaterialApp(
-              theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+              theme: AscentTheme.light(),
               home: const Scaffold(body: VaultHomePreview()),
             ),
           ),

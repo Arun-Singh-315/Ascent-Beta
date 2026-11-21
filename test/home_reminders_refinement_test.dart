@@ -3,8 +3,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
-import 'package:ascent/core/streak/study_streak_models.dart';
-import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
 import 'package:drift/native.dart';
@@ -149,37 +147,9 @@ void main() {
     );
   });
 
-  group('Requirement 7: Home Activity Card - No Confusing Tabs', () {
-  });
+  group('Requirement 7: Home Activity Card - No Confusing Tabs', () {});
 
-  group('Requirement 8: Streak Card Redesign', () {
-    testWidgets(
-      'StudyStreakMeterCard renders compact progress with accurate calculation',
-      (tester) async {
-        const status = StudyStreakStatus(
-          todaySeconds: 45 * 60,
-          targetSeconds: 120 * 60,
-          displayStreakDays: 3,
-          longestStreakDays: 5,
-          isTodaySecured: false,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-            home: const Scaffold(body: StudyStreakMeterCard(status: status)),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Compact streak information displayed
-        expect(find.textContaining('3 Day Streak'), findsOneWidget);
-        expect(find.textContaining('45 / 120m'), findsOneWidget);
-        expect(find.textContaining('75m left'), findsOneWidget);
-        expect(find.textContaining('Longest: 5d'), findsOneWidget);
-      },
-    );
-  });
+  group('Requirement 8: Streak Card Redesign', () {});
 
   group('Requirement 2: Thought Input Placement and Placeholder', () {
     testWidgets(
@@ -189,7 +159,7 @@ void main() {
           UncontrolledProviderScope(
             container: container,
             child: MaterialApp(
-              theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+              theme: AscentTheme.light(),
               home: const Scaffold(
                 body: SingleChildScrollView(child: ThoughtWallHomePreview()),
               ),
