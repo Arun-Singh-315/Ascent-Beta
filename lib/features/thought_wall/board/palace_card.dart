@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/mindspace_palette.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
@@ -528,16 +529,28 @@ class _PalaceCardState extends State<PalaceCard> {
             !thought.isCompleted &&
             !thought.isArchived &&
             allItemsDone(displayContent(thought.content));
+        // CLAUDE.md §3.3: light cards are a soft paper with a shadow and no
+        // outline; dark cards are a fill with a hairline. Selection and the
+        // opened-from-Home highlight keep their accent border.
+        final accentBorder = widget.isSelected || widget.highlight;
         return Container(
           decoration: BoxDecoration(
-            color: fill,
+            color: dark ? g.surface : (filled ? fill : g.elevated),
             borderRadius: minimal
                 ? AppGeometry.roundedr8
-                : BorderRadius.circular(18),
-            border: Border.all(
-              color: borderColor,
-              width: widget.isSelected ? 1.8 : 1.0,
-            ),
+                : BorderRadius.circular(20),
+            border: accentBorder
+                ? Border.all(color: borderColor, width: 1.8)
+                : (dark ? Border.all(color: borderColor) : null),
+            boxShadow: dark || minimal
+                ? null
+                : [
+                    BoxShadow(
+                      color: MindspacePalette.cardShadowLight(.05),
+                      blurRadius: 12,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
           padding: EdgeInsets.all(padding),
           child: AnimatedSize(
