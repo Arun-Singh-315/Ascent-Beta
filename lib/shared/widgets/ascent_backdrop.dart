@@ -5,32 +5,46 @@ import 'package:flutter/material.dart';
 import '../../app/theme/calm_blue_palette.dart';
 import '../../app/theme/glass_theme.dart';
 
-/// The soft Apple-blue backdrop behind screens: a gentle top-to-bottom
-/// gradient with two faint colour clouds, and optionally a WhatsApp-style
-/// doodle of small, faint glyphs. Still (no animation), so it costs nothing
-/// while scrolling and never distracts from text.
-class AscentBackdrop extends StatelessWidget {
-  const AscentBackdrop({super.key, required this.child, this.doodle = false});
-  final Widget child;
+/// Which screen a backdrop belongs to. Each has its own colours and doodle.
+enum BackdropTone { home, mind, riya }
 
-  /// Draw the faint doodle pattern (Mindspace and Riya).
-  final bool doodle;
+/// A soft gradient backdrop with two faint colour clouds and, for Mindspace
+/// and Riya, a chat-wallpaper doodle of small faint glyphs. Still (no
+/// animation), so it costs nothing while scrolling and never sits behind
+/// text loudly.
+class AscentBackdrop extends StatelessWidget {
+  const AscentBackdrop({
+    super.key,
+    required this.child,
+    this.tone = BackdropTone.home,
+  });
+  final Widget child;
+  final BackdropTone tone;
+
+  /// Whether this tone draws the doodle pattern.
+  bool get doodle => tone != BackdropTone.home;
 
   @override
   Widget build(BuildContext context) {
     final dark = context.glass.isDark;
+    final colors = switch (tone) {
+      BackdropTone.home =>
+        dark ? CalmBluePalette.backdropDark : CalmBluePalette.backdropLight,
+      BackdropTone.mind =>
+        dark ? CalmBluePalette.mindDark : CalmBluePalette.mindLight,
+      BackdropTone.riya =>
+        dark ? CalmBluePalette.riyaDark : CalmBluePalette.riyaLight,
+    };
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: dark
-              ? CalmBluePalette.backdropDark
-              : CalmBluePalette.backdropLight,
+          colors: colors,
         ),
       ),
       child: CustomPaint(
-        painter: _BackdropPainter(dark: dark, doodle: doodle),
+        painter: _BackdropPainter(dark: dark, tone: tone),
         child: child,
       ),
     );
@@ -38,23 +52,31 @@ class AscentBackdrop extends StatelessWidget {
 }
 
 class _BackdropPainter extends CustomPainter {
-  _BackdropPainter({required this.dark, required this.doodle});
+  _BackdropPainter({required this.dark, required this.tone});
   final bool dark;
-  final bool doodle;
+  final BackdropTone tone;
 
-  static const _glyphs = [
+  static const _mindGlyphs = [
     Icons.lightbulb_outline_rounded,
+    Icons.edit_outlined,
     Icons.favorite_border_rounded,
     Icons.star_border_rounded,
-    Icons.edit_outlined,
-    Icons.chat_bubble_outline_rounded,
-    Icons.local_florist_outlined,
-    Icons.music_note_outlined,
-    Icons.wb_sunny_outlined,
-    Icons.coffee_outlined,
-    Icons.auto_awesome_outlined,
-    Icons.bookmark_border_rounded,
     Icons.cloud_outlined,
+    Icons.local_florist_outlined,
+    Icons.bookmark_border_rounded,
+    Icons.music_note_outlined,
+    Icons.push_pin_outlined,
+    Icons.wb_sunny_outlined,
+  ];
+  static const _riyaGlyphs = [
+    Icons.auto_awesome_outlined,
+    Icons.chat_bubble_outline_rounded,
+    Icons.star_border_rounded,
+    Icons.nightlight_outlined,
+    Icons.favorite_border_rounded,
+    Icons.bolt_outlined,
+    Icons.question_answer_outlined,
+    Icons.emoji_objects_outlined,
   ];
 
   @override
@@ -66,31 +88,54 @@ class _BackdropPainter extends CustomPainter {
         r,
         Paint()
           ..shader = RadialGradient(
-            colors: [c.withValues(alpha: a), c.withValues(alpha: 0)],
+            colors: [
+              c.withValues(alpha: a),
+              c.withValues(alpha: 0),
+            ],
           ).createShader(rect),
       );
     }
 
     final w = size.width, h = size.height;
-    final a = dark ? .10 : .28;
-    cloud(CalmBluePalette.cloudBlue, Offset(w * .9, h * .12), w * .8, a);
-    cloud(CalmBluePalette.cloudLilac, Offset(w * .05, h * .55), w * .7, a * .8);
+    final a = dark ? .10 : .26;
+    final (cloudA, cloudB) = switch (tone) {
+      BackdropTone.home => (
+        CalmBluePalette.cloudBlue,
+        CalmBluePalette.cloudLilac,
+      ),
+      BackdropTone.mind => (
+        CalmBluePalette.mindCloudA,
+        CalmBluePalette.mindCloudB,
+      ),
+      BackdropTone.riya => (
+        CalmBluePalette.riyaCloudA,
+        CalmBluePalette.riyaCloudB,
+      ),
+    };
+    cloud(cloudA, Offset(w * .9, h * .1), w * .8, a);
+    cloud(cloudB, Offset(w * .05, h * .6), w * .7, a * .8);
 
-    if (!doodle) return;
-    final ink = dark ? CalmBluePalette.doodleDark : CalmBluePalette.doodleLight;
+    if (tone == BackdropTone.home) return;
+    final ink = switch (tone) {
+      BackdropTone.mind =>
+        dark ? CalmBluePalette.mindDoodleDark : CalmBluePalette.mindDoodleLight,
+      _ =>
+        dark ? CalmBluePalette.riyaDoodleDark : CalmBluePalette.riyaDoodleLight,
+    };
+    final glyphs = tone == BackdropTone.mind ? _mindGlyphs : _riyaGlyphs;
     const cell = 64.0;
     var i = 0;
     for (var y = 18.0; y < h; y += cell) {
       final row = (y / cell).round();
       for (var x = (row.isOdd ? cell / 2 : 0) + 14.0; x < w; x += cell) {
-        final glyph = _glyphs[(i * 7 + row) % _glyphs.length];
+        final glyph = glyphs[(i * 7 + row) % glyphs.length];
         final tp = TextPainter(
           text: TextSpan(
             text: String.fromCharCode(glyph.codePoint),
             style: TextStyle(
               fontFamily: glyph.fontFamily,
               package: glyph.fontPackage,
-              fontSize: 20,
+              fontSize: 19,
               color: ink,
             ),
           ),
@@ -108,5 +153,5 @@ class _BackdropPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BackdropPainter old) =>
-      old.dark != dark || old.doodle != doodle;
+      old.dark != dark || old.tone != tone;
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +13,7 @@ import '../../../app/theme/text_styles.dart';
 import '../../../core/features/feature_registry.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
+import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/database/app_database.dart';
 import '../../../shared/widgets/ascent_composer.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
@@ -22,7 +25,7 @@ import '../../thought_wall/board/board_logic.dart' show displayContent;
 
 /// Home's hero cards, in feed order (CLAUDE.md §5.1): Things and Mind are
 /// live summaries with their own inline input (see, add, leave), then one
-/// row of Life tiles. Every card is iOS glass over the [AscentBackdrop], and
+/// big "Your day" card that closes the feed. Every card is iOS glass over the [AscentBackdrop], and
 /// each feature appears once.
 
 /// Things today: progress, the next four items with tap-to-complete, and
@@ -58,7 +61,7 @@ class HomeThingsCard extends ConsumerWidget {
     return _FeedCard(
       key: const ValueKey('home_things_card'),
       header: _CardHeader(
-        icon: Icons.checklist_rounded,
+        icon: Icons.checklist_rtl_rounded,
         tint: tint,
         title: 'Things',
         subtitle: total == 0
@@ -219,7 +222,7 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
     return _FeedCard(
       key: const ValueKey('home_mind_card'),
       header: _CardHeader(
-        icon: Icons.lightbulb_rounded,
+        icon: Icons.lightbulb_outline_rounded,
         tint: tint,
         title: 'Mind',
         subtitle: count == 0
@@ -273,49 +276,127 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
   }
 }
 
-/// Water, Medicine and Money as one row of small glass tiles.
+/// "Your day": one big glass card that closes the feed. Water, Medicine,
+/// Money and Focus sit in a grid divided by hairline borders; an odd last
+/// cell spans the full width.
 class HomeLifeTiles extends ConsumerWidget {
   const HomeLifeTiles({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
     final on = ref.watch(unlockedFeaturesProvider);
-    final tiles = [
+    final cells = <Widget>[
       if (on.contains(AscentFeature.care)) const _WaterTile(),
       if (on.contains(AscentFeature.care)) const _MedicineTile(),
       if (on.contains(AscentFeature.money)) const _MoneyTile(),
+      if (on.contains(AscentFeature.focus)) const _FocusTile(),
     ];
-    if (tiles.isEmpty) return const SizedBox.shrink();
-    final largeText = MediaQuery.textScalerOf(context).scale(14) > 22;
-    const gap = AppSpace.s12;
+    if (cells.isEmpty) return const SizedBox.shrink();
+    final line = BorderSide(
+      color: g.ink.withValues(alpha: g.isDark ? .14 : .10),
+    );
+    final oneColumn = MediaQuery.textScalerOf(context).scale(14) > 22;
+    final rows = <List<Widget>>[];
+    for (var i = 0; i < cells.length; i += oneColumn ? 1 : 2) {
+      rows.add(
+        cells.sublist(i, math.min(i + (oneColumn ? 1 : 2), cells.length)),
+      );
+    }
     return Padding(
+      key: const ValueKey('home_day_card'),
       padding: const EdgeInsets.fromLTRB(
         AppSpace.s16,
         0,
         AppSpace.s16,
         AppSpace.s20,
       ),
-      child: largeText
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < tiles.length; i++) ...[
-                  if (i > 0) const SizedBox(height: gap),
-                  tiles[i],
-                ],
-              ],
-            )
-          : IntrinsicHeight(
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s16,
+                AppSpace.s16,
+                AppSpace.s16,
+                AppSpace.s8,
+              ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (var i = 0; i < tiles.length; i++) ...[
-                    if (i > 0) const SizedBox(width: gap),
-                    Expanded(child: tiles[i]),
-                  ],
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        'Your day',
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    DateFormat('EEE d MMM').format(DateTime.now()),
+                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+                  ),
                 ],
               ),
             ),
+            for (var r = 0; r < rows.length; r++)
+              DecoratedBox(
+                decoration: BoxDecoration(border: Border(top: line)),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var c = 0; c < rows[r].length; c++)
+                        Expanded(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              border: c > 0
+                                  ? Border(left: line)
+                                  : const Border(),
+                            ),
+                            child: rows[r][c],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusTile extends ConsumerWidget {
+  const _FocusTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final minutes = ref.watch(studyStreakProvider).todaySeconds ~/ 60;
+    final tint = BrandPalette.pillarTint('focus', dark: g.isDark);
+    return _Tile(
+      key: const ValueKey('home_bento_focus'),
+      route: '/focus',
+      semantics: minutes == 0
+          ? 'Focus: no session yet'
+          : 'Focus: $minutes minutes today',
+      child: _Stat(
+        icon: Icons.timer_outlined,
+        tint: tint,
+        label: 'Focus',
+        value: minutes == 0
+            ? '–'
+            : minutes >= 60
+            ? '${minutes ~/ 60}h ${minutes % 60}m'
+            : '${minutes}m',
+        detail: minutes == 0 ? 'Start a session' : 'focused today',
+      ),
     );
   }
 }
@@ -337,7 +418,11 @@ class _FeedCard extends StatelessWidget {
     child: GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [header, const SizedBox(height: AppSpace.s8), ...children],
+        children: [
+          header,
+          const SizedBox(height: AppSpace.s8),
+          ...children,
+        ],
       ),
     ),
   );
@@ -458,7 +543,7 @@ class _WaterTileState extends ConsumerState<_WaterTile> {
         onPressed: _saving ? null : _log,
       ),
       child: _Stat(
-        icon: Icons.water_drop_rounded,
+        icon: Icons.water_drop_outlined,
         tint: tint,
         label: 'Water',
         value: ml == 0 ? '–' : '${(ml / 1000).toStringAsFixed(1)} L',
@@ -503,7 +588,7 @@ class _MedicineTile extends ConsumerWidget {
           ? 'Medicine: nothing due'
           : 'Medicine: $taken of ${doses.length} taken',
       child: _Stat(
-        icon: Icons.medication_rounded,
+        icon: Icons.medication_outlined,
         tint: tint,
         label: 'Medicine',
         value: doses.isEmpty ? '–' : '$taken/${doses.length}',
@@ -530,7 +615,7 @@ class _MoneyTile extends ConsumerWidget {
       route: '/money',
       semantics: spent == 0 ? 'Money: nothing spent' : 'Money: spent $spent',
       child: _Stat(
-        icon: Icons.account_balance_wallet_rounded,
+        icon: Icons.account_balance_wallet_outlined,
         tint: tint,
         label: 'Spent',
         value: spent == 0 ? '–' : '₹${NumberFormat.compact().format(spent)}',
@@ -542,7 +627,8 @@ class _MoneyTile extends ConsumerWidget {
 
 // Building blocks -------------------------------------------------------------
 
-/// One small Life tile: glass, opens its screen, optional corner action.
+/// One cell of the "Your day" grid: opens its screen, optional corner
+/// action. The grid's hairlines frame it; the big card supplies the glass.
 class _Tile extends StatelessWidget {
   const _Tile({
     super.key,
@@ -557,19 +643,24 @@ class _Tile extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => GlassCard(
-    padding: const EdgeInsets.all(AppSpace.s12),
-    semanticLabel: semantics,
-    onTap: () {
-      HapticFeedback.selectionClick();
-      context.open(route);
-    },
-    child: Stack(
-      children: [
-        ExcludeSemantics(child: child),
-        if (action != null)
-          PositionedDirectional(top: -8, end: -8, child: action!),
-      ],
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: semantics,
+    child: InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        context.open(route);
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s16),
+        child: Stack(
+          children: [
+            ExcludeSemantics(child: child),
+            if (action != null)
+              PositionedDirectional(top: -8, end: -8, child: action!),
+          ],
+        ),
+      ),
     ),
   );
 }
@@ -640,7 +731,8 @@ class _Stat extends StatelessWidget {
   }
 }
 
-/// Rounded glyph in a softly tinted square (CLAUDE.md §3.3 icon tiles).
+/// Outlined ring icon: a tinted 1.5 px ring with a nearly see-through
+/// inside and an outlined glyph, so icons feel light on glass.
 class _IconChip extends StatelessWidget {
   const _IconChip({required this.icon, required this.tint, this.size = 40});
   final IconData icon;
@@ -652,10 +744,14 @@ class _IconChip extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: tint.withValues(alpha: context.glass.isDark ? .18 : .12),
-      borderRadius: BorderRadius.circular(size * .3),
+      shape: BoxShape.circle,
+      color: tint.withValues(alpha: context.glass.isDark ? .10 : .06),
+      border: Border.all(
+        color: tint.withValues(alpha: context.glass.isDark ? .70 : .55),
+        width: 1.5,
+      ),
     ),
-    child: Icon(icon, size: size * .55, color: tint),
+    child: Icon(icon, size: size * .5, color: tint),
   );
 }
 

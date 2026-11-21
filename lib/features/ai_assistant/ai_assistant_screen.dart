@@ -2347,5 +2347,5 @@ class _AtmosphericChatBackground extends StatelessWidget {
   /// Soft blue backdrop with a faint doodle, like a chat wallpaper.
   @override
   Widget build(BuildContext context) =>
-      const AscentBackdrop(doodle: true, child: SizedBox.expand());
+      const AscentBackdrop(tone: BackdropTone.riya, child: SizedBox.expand());
 }

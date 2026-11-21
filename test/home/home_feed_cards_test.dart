@@ -91,7 +91,8 @@ void main() {
     expect(find.text('2 left · 1 done'), findsOneWidget);
     expect(find.byKey(const ValueKey('activity_quick_input')), findsOneWidget);
     expect(find.byKey(const ValueKey('home_mind_field')), findsOneWidget);
-    for (final k in ['water', 'medicine', 'money']) {
+    expect(find.byKey(const ValueKey('home_day_card')), findsOneWidget);
+    for (final k in ['water', 'medicine', 'money', 'focus']) {
       expect(find.byKey(ValueKey('home_bento_$k')), findsOneWidget);
     }
     await unmount(tester);

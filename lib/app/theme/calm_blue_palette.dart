@@ -80,7 +80,8 @@ abstract final class CalmBluePalette {
   static const darkSkyNight = Color(0xFF192440);
   static const darkSkyNightLight = Color(0xFF272542);
 
-  // ── Backdrop: soft Apple-blue gradient behind screens (top → bottom) ─────
+  // ── Backdrops (top → bottom), one identity per screen ────────────────
+  // Home: soft Apple blue.
   static const backdropLight = [
     Color(0xFFDDE9FB),
     Color(0xFFEDF3FD),
@@ -91,12 +92,42 @@ abstract final class CalmBluePalette {
     Color(0xFF0C1425),
     Color(0xFF0A0E16),
   ];
-
-  /// Two soft colour clouds that give the gradient depth.
   static const cloudBlue = Color(0xFF8DB7F5);
   static const cloudLilac = Color(0xFFC7B8F2);
 
-  /// Doodle wallpaper ink (Mind, Riya): faint, never competing with text.
+  // Mindspace: lilac "mind palace" mist by day, deep plum by night.
+  static const mindLight = [
+    Color(0xFFEFE9FB),
+    Color(0xFFF6F2FD),
+    Color(0xFFFCFAFE),
+  ];
+  static const mindDark = [
+    Color(0xFF1B1433),
+    Color(0xFF140F26),
+    Color(0xFF0D0A17),
+  ];
+  static const mindCloudA = Color(0xFFC3A9F2);
+  static const mindCloudB = Color(0xFFF2B8D2);
+  static const mindDoodleLight = Color(0x1A8063C4);
+  static const mindDoodleDark = Color(0x1AB59CF0);
+
+  // Riya: indigo to rose by day, indigo night after dark.
+  static const riyaLight = [
+    Color(0xFFE9EBFC),
+    Color(0xFFF3EFFB),
+    Color(0xFFFCF6F8),
+  ];
+  static const riyaDark = [
+    Color(0xFF111735),
+    Color(0xFF16122E),
+    Color(0xFF0E0B19),
+  ];
+  static const riyaCloudA = Color(0xFF9C9AF0);
+  static const riyaCloudB = Color(0xFFF0A9C0);
+  static const riyaDoodleLight = Color(0x175E5CE6);
+  static const riyaDoodleDark = Color(0x1AA9A7FF);
+
+  /// Doodle ink for the Home tone (unused by default).
   static const doodleLight = Color(0x142F68C8);
   static const doodleDark = Color(0x14A9C4F2);
 
