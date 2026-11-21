@@ -95,9 +95,6 @@ void main() {
   );
 
   for (final dark in [false, true]) {
-  }
-
-  for (final dark in [false, true]) {
     testWidgets(
       'Tinted action labels meet text contrast at rest and pressed, dark=$dark',
       (t) async {

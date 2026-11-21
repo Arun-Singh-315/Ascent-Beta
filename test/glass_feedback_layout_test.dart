@@ -2,10 +2,8 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/features/reminders/widgets/in_app_reminder_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
 
 void main() {
   for (final dark in [false, true]) {

@@ -105,38 +105,20 @@ void main() {
 
       await settle();
       // Step 0: Welcome
-      await tester.ensureVisible(find.text('Let’s begin'));
-      await tester.tap(find.text('Let’s begin'));
+      await tester.tap(find.byKey(const ValueKey('onboarding_next')));
       await settle();
 
-      // Step 1: What you get
-      await tester.ensureVisible(find.text('Continue'));
-      await tester.tap(find.text('Continue'));
-      await settle();
-
-      // Step 2: Your name
+      // Step 1: Your name
       await tester.enterText(
         find.byKey(const ValueKey('onboarding_name')),
         'Arun',
       );
       await settle();
-      await tester.ensureVisible(find.text('Continue'));
-      await tester.tap(find.text('Continue'));
+      await tester.tap(find.byKey(const ValueKey('onboarding_next')));
       await settle();
 
-      // Step 3: Birthday
-      await tester.ensureVisible(find.text('Continue'));
-      await tester.tap(find.text('Continue'));
-      await settle();
-
-      // Step 4: Your climb
-      await tester.ensureVisible(find.text('Continue'));
-      await tester.tap(find.text('Continue'));
-      await settle();
-
-      // Step 5: Ready
-      await tester.ensureVisible(find.text('Enter Ascent'));
-      await tester.tap(find.text('Enter Ascent'));
+      // Step 2: Theme / Look
+      await tester.tap(find.byKey(const ValueKey('onboarding_next')));
       await settle();
 
       expect(find.text('Home ready'), findsOneWidget);

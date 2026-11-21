@@ -71,11 +71,11 @@ void main() {
 
         // Verify canonical AscentSegmentedControl is rendered
         expect(find.byType(AscentSegmentedControl<int>), findsOneWidget);
-        expect(find.text('Active (1)'), findsOneWidget);
-        expect(find.text('Completed (1)'), findsOneWidget);
+        expect(find.text('Active 1'), findsOneWidget);
+        expect(find.text('Completed 1'), findsOneWidget);
 
         // Tap Completed tab
-        await tester.tap(find.text('Completed (1)'));
+        await tester.tap(find.text('Completed 1'));
         await tester.pumpAndSettle();
 
         expect(find.text('Reviewed quarterly goals'), findsOneWidget);

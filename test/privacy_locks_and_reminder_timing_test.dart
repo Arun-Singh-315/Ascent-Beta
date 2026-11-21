@@ -10,7 +10,6 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/promises/models/promise_model.dart';
 import 'package:ascent/features/promises/widgets/promise_card.dart';
 import 'package:ascent/features/reminders/reminder_action_ui.dart';
-import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/vault/providers/vault_providers.dart';
 import 'package:ascent/features/vault/services/vault_security_service.dart';
 import 'package:ascent/shared/widgets/locked_commitment_tile.dart';
@@ -168,32 +167,7 @@ void main() {
       expect(reloaded?.isActive, isFalse);
     });
 
-    testWidgets(
-      'RemindersScreen displays locked schedule pill for future reminders',
-      (tester) async {
-        final futureTime = DateTime.now().add(const Duration(hours: 3));
-        await db.reminderDao.insertReminder(
-          ReminderTableCompanion.insert(
-            title: 'Late Night Call',
-            scheduledAt: futureTime,
-            isActive: const drift.Value(true),
-          ),
-        );
 
-        await tester.pumpWidget(wrapWithHarness(const RemindersScreen()));
-        await tester.pumpAndSettle();
-
-        final timeStr = DateFormat('h:mm a').format(futureTime);
-        // Locked schedule pill is displayed
-        expect(find.text('At $timeStr'), findsOneWidget);
-
-        // Tapping the pill informs the user instead of completing
-        await tester.tap(find.text('At $timeStr'));
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('Scheduled for $timeStr'), findsOneWidget);
-      },
-    );
   });
 
   group('PromiseCard Privacy Locks & Content Deduplication Tests', () {

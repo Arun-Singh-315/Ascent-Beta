@@ -46,8 +46,6 @@ void main() {
       );
     },
   );
-  for (final route in ['workspace', 'Home', 'Riya']) {
-  }
   test(
     'preset marker survives extension cloning without color-identity guessing',
     () {

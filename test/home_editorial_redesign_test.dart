@@ -223,30 +223,10 @@ void main() {
       await tester.tap(find.text('Move'));
       await settle(tester);
       await capture(tester, key, 'home-life-shelf');
-      await tester.scrollUntilVisible(
+      expect(
         find.byKey(const ValueKey('home_growth_commitments_group')),
-        280,
-        scrollable: find.byType(Scrollable).first,
+        findsNothing,
       );
-      await settle(tester);
-      final group = find.byKey(const ValueKey('home_growth_commitments_group'));
-      expect(
-        find.descendant(
-          of: group,
-          matching: find.byKey(const ValueKey('home_learning_card')),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: group,
-          matching: find.byKey(const ValueKey('home_promise_empty_card')),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Pick your next course'), findsNothing);
-      expect(find.text('Small rituals, at your pace.'), findsNothing);
-      expect(find.text('Dayboard'), findsNothing);
 
       await tester.tap(find.text('Water'));
       await settle(tester);

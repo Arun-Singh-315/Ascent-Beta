@@ -40,14 +40,16 @@ class HomeAskBar extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            button: true,
-            label: 'Ask $name',
-            child: InkWell(
-              key: const ValueKey('home_ask_bar'),
-              borderRadius: BorderRadius.circular(24),
-              onTap: open,
-              child: Container(
+          Tooltip(
+            message: 'Ask $name',
+            child: Semantics(
+              button: true,
+              label: 'Ask $name',
+              child: InkWell(
+                key: const ValueKey('home_ask_bar'),
+                borderRadius: BorderRadius.circular(24),
+                onTap: open,
+                child: Container(
                 constraints: const BoxConstraints(minHeight: 56),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpace.s12,
@@ -108,6 +110,7 @@ class HomeAskBar extends ConsumerWidget {
                 ),
               ),
             ),
+          ),
           ),
           const SizedBox(height: AppSpace.s8),
           SizedBox(
