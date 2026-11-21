@@ -1465,7 +1465,8 @@ class _ConversationMessageBubbleState
         ? (msg.actionType?.startsWith('promises.') == true
               ? 'Here are your Promises.'
               : 'Here are your Todos. Choose a card below.')
-        : msg.message;
+        // Older replies were saved with raw timestamps; show them plainly.
+        : (isUser ? msg.message : _RiyaRecordCard.humanise(msg.message));
 
     Widget bubbleContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2280,11 +2281,15 @@ class _RiyaRecordCard extends StatelessWidget {
     r'(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2}(\.\d+)?)?Z?',
   );
 
-  /// Any timestamp left in a summary reads as "tomorrow at 7:00 PM".
-  static String humanise(String text) => text.replaceAllMapped(_stamp, (m) {
-    final at = DateTime.tryParse('${m.group(1)} ${m.group(2)}');
-    return at == null ? m.group(0)! : humanWhen(at);
-  });
+  /// Any timestamp left in a reply reads as "tomorrow at 7:00 PM", and the
+  /// old internal "not been verified" note is dropped.
+  static String humanise(String text) => text
+      .replaceAllMapped(_stamp, (m) {
+        final at = DateTime.tryParse('${m.group(1)} ${m.group(2)}');
+        return at == null ? m.group(0)! : humanWhen(at);
+      })
+      .replaceAll(' Device alert scheduling has not been verified.', '')
+      .trim();
 
   @override
   Widget build(BuildContext context) {
