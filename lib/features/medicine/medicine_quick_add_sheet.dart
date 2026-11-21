@@ -17,8 +17,10 @@ import '../../shared/widgets/ascent_dialog.dart';
 import 'care_forms.dart';
 import 'medicine_editor_sheet.dart';
 
-/// Quick add: type a medicine (or the whole prescription line) and the rest
-/// is filled from what Ascent knows. Returns the new medicine id, or null.
+/// Quick add: pick the kind (medicine, homeopathic, ayurvedic, supplement),
+/// tap a popular one or type the whole prescription line, and the rest is
+/// filled from what Ascent knows. "Save and add another" keeps the sheet
+/// open so a whole shelf goes in one sitting. Returns the last new id.
 Future<int?> showMedicineQuickAdd(BuildContext context) => showAscentSheet<int>(
   context: context,
   builder: (_) => const MedicineQuickAddSheet(),
@@ -38,6 +40,10 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
   final _name = TextEditingController();
   final _strength = TextEditingController();
   final _stock = TextEditingController();
+  final _amount = TextEditingController();
+  MedicineSystem _system = MedicineSystem.allopathy;
+  int? _lastId;
+  int _addedCount = 0;
 
   /// Who the medicine is for. "Me" keeps it outside any care plan.
   String _person = 'Me';
@@ -46,8 +52,20 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
   bool _picked = false;
   bool _saving = false;
 
-  static const _forms = ['tablet', 'capsule', 'syrup', 'drops', 'injection'];
   static const _days = [3, 5, 7, 14, 30, 90];
+  static const _weeks = [28, 56, 84, 90];
+
+  static List<int> _dayChoices(MedicineDraft d) =>
+      d.frequency == DoseFrequency.weekly ? _weeks : _days;
+
+  static String _hint(MedicineSystem s) => switch (s) {
+    MedicineSystem.allopathy => 'e.g. Dolo 650 twice a day after food, 5 days',
+    MedicineSystem.homeopathy => 'e.g. Arnica 30C, 4 pills thrice daily',
+    MedicineSystem.ayurveda => 'e.g. Triphala churna 1 tsp at bedtime',
+    MedicineSystem.supplement => 'e.g. Vitamin D3 60K once a week',
+  };
+
+  static String _cap(String f) => '${f[0].toUpperCase()}${f.substring(1)}';
 
   @override
   void initState() {
@@ -61,6 +79,7 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
     _name.dispose();
     _strength.dispose();
     _stock.dispose();
+    _amount.dispose();
     super.dispose();
   }
 
@@ -72,9 +91,26 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
         _draft = null;
         return;
       }
-      _draft = parseMedicineText(t);
-      _name.text = _draft!.name;
-      _strength.text = _draft!.strength;
+      _draft = parseMedicineText(t, hint: _system);
+      _fillFields(_draft!);
+    });
+  }
+
+  void _fillFields(MedicineDraft d) {
+    _name.text = d.name;
+    _strength.text = d.strength;
+    _amount.text = d.amount;
+    _system = d.system;
+  }
+
+  void _chooseSystem(MedicineSystem s) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _system = s;
+      if (_draft != null) {
+        _draft = _draft!.withSystem(s);
+        _amount.text = _draft!.amount;
+      }
     });
   }
 
@@ -86,8 +122,21 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
       // Keep anything else the user already typed (timing, days).
       final typed = parseMedicineText('${m.name} ${_text.text}');
       _draft = typed;
-      _name.text = typed.name;
-      _strength.text = typed.strength;
+      _fillFields(typed);
+    });
+  }
+
+  /// Back to an empty sheet for the next one; keeps kind and person.
+  void _reset() {
+    _text.clear();
+    _name.clear();
+    _strength.clear();
+    _amount.clear();
+    _stock.clear();
+    setState(() {
+      _draft = null;
+      _picked = false;
+      _saving = false;
     });
   }
 
@@ -96,10 +145,11 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
     setState(() => _draft = change(_draft!));
   }
 
-  Future<void> _save() async {
+  Future<void> _save({bool another = false}) async {
     final d = _draft!.copyWith(
       name: _name.text.trim(),
       strength: _strength.text.trim(),
+      amount: _amount.text.trim(),
     );
     if (d.name.isEmpty) {
       AscentSnackBar.error(context, message: 'Add the medicine’s name.');
@@ -133,15 +183,23 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
         purpose: d.purpose,
         carePlanId: carePlanId,
         stockCount: stock,
+        system: d.system.name,
+        everyDays: d.everyDays,
       );
       if (!mounted) return;
       HapticFeedback.lightImpact();
+      _lastId = id;
+      _addedCount++;
       showUndoSnackbar(
         context,
         message: '${d.name} added · ${d.frequency.label.toLowerCase()}',
         onUndo: () => service.deleteMedicine(id),
       );
-      Navigator.of(context).pop(id);
+      if (another) {
+        _reset();
+      } else {
+        Navigator.of(context).pop(id);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -242,13 +300,16 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
           Row(
             children: [
               AscentButton.ghost(
-                label: 'Cancel',
+                key: const ValueKey('medicine_quick_close'),
+                label: _addedCount == 0 ? 'Cancel' : 'Done',
                 compact: true,
-                onPressed: _saving ? null : () => Navigator.of(context).pop(),
+                onPressed: _saving
+                    ? null
+                    : () => Navigator.of(context).pop(_lastId),
               ),
               Expanded(
                 child: Text(
-                  'Add medicine',
+                  _addedCount == 0 ? 'Add medicine' : '$_addedCount added',
                   textAlign: TextAlign.center,
                   style: AscentTextStyles.dialogTitle.copyWith(color: g.ink),
                 ),
@@ -257,6 +318,26 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
             ],
           ),
           const SizedBox(height: AppSpace.s8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: [
+                for (final s in MedicineSystem.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpace.s8),
+                    child: AppChip(
+                      key: ValueKey('medicine_system_${s.name}'),
+                      label: s.label,
+                      icon: s.icon,
+                      isSelected: _system == s,
+                      onTap: () => _chooseSystem(s),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpace.s12),
           if (_draft == null)
             Align(
               alignment: Alignment.centerLeft,
@@ -277,9 +358,26 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
               key: const ValueKey('medicine_quick_text'),
               controller: _text,
               autofocus: true,
-              hintText: 'e.g. Dolo 650 twice a day after food, 5 days',
+              hintText: _hint(_system),
               textCapitalization: TextCapitalization.sentences,
             ),
+          if (_draft == null) ...[
+            label(
+              'Popular ${_system == MedicineSystem.allopathy ? 'medicines' : _system.label.toLowerCase()}',
+            ),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final m in popularFor(_system))
+                  AppChip(
+                    key: ValueKey('medicine_popular_${m.name}'),
+                    label: m.name,
+                    onTap: () => _pick(m),
+                  ),
+              ],
+            ),
+          ],
           for (final m in suggestions)
             InkWell(
               key: ValueKey('medicine_suggestion_${m.name}'),
@@ -294,14 +392,16 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.medication_outlined, color: g.actionInk),
+                      Icon(m.system.icon, color: g.actionInk),
                       const SizedBox(width: AppSpace.s12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${m.name} · ${m.strength}',
+                              m.strength.isEmpty
+                                  ? m.name
+                                  : '${m.name} · ${m.strength}',
                               style: AscentTextStyles.body.copyWith(
                                 color: g.ink,
                               ),
@@ -339,25 +439,51 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
                   child: AppTextField(
                     key: const ValueKey('medicine_quick_strength'),
                     controller: _strength,
-                    hintText: 'e.g. 500 mg',
+                    hintText: d.system == MedicineSystem.homeopathy
+                        ? 'Potency, e.g. 30C'
+                        : 'e.g. 500 mg',
                   ),
                 ),
               ],
             ),
             label('Form'),
             chips<String>(
-              _forms,
+              d.system.forms,
               d.form,
-              (f) => '${f[0].toUpperCase()}${f.substring(1)}',
-              (f) => _set((x) => x.copyWith(form: f)),
+              _cap,
+              (f) => _set((x) {
+                // A new form brings its usual amount unless one was typed.
+                final typed = _amount.text.trim();
+                final usual = defaultAmountFor(f);
+                if (typed.isEmpty || typed == defaultAmountFor(x.form)) {
+                  _amount.text = usual;
+                }
+                return x.copyWith(form: f, amount: _amount.text);
+              }),
               'medicine_form',
+            ),
+            label('How much each time'),
+            AppTextField(
+              key: const ValueKey('medicine_quick_amount'),
+              controller: _amount,
+              hintText: d.system == MedicineSystem.homeopathy
+                  ? 'e.g. 4 pills'
+                  : d.form == 'syrup'
+                  ? 'e.g. 10 ml'
+                  : 'e.g. 1 tablet',
             ),
             label('When'),
             chips<DoseFrequency>(
               DoseFrequency.values,
               d.frequency,
               (f) => f.label,
-              (f) => _set((x) => x.copyWith(frequency: f)),
+              (f) => _set(
+                (x) => x.copyWith(
+                  frequency: f,
+                  // Weekly over a few days would be a single dose.
+                  days: f == DoseFrequency.weekly && x.days < 28 ? 56 : null,
+                ),
+              ),
               'medicine_freq',
             ),
             Padding(
@@ -378,13 +504,17 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
             ),
             label('How long'),
             chips<int>(
-              _days,
-              _days.contains(d.days) ? d.days : -1,
-              (n) => n == 90 ? 'Ongoing' : '$n days',
+              _dayChoices(d),
+              _dayChoices(d).contains(d.days) ? d.days : -1,
+              (n) => n == 90
+                  ? 'Ongoing'
+                  : d.frequency == DoseFrequency.weekly
+                  ? '${n ~/ 7} weeks'
+                  : '$n days',
               (n) => _set((x) => x.copyWith(days: n)),
               'medicine_days',
             ),
-            if (!_days.contains(d.days))
+            if (!_dayChoices(d).contains(d.days))
               Padding(
                 padding: const EdgeInsets.only(top: AppSpace.s8),
                 child: Text(
@@ -424,17 +554,25 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
             const SizedBox(height: AppSpace.s16),
             Text(
               d.known != null
-                  ? 'Usual timing for ${d.known!.name} filled in. Follow your doctor’s prescription and change anything here.'
-                  : 'Follow your doctor’s prescription and change anything here.',
+                  ? 'Usual timing for ${d.known!.name} filled in. ${d.system.tip} Change anything here.'
+                  : '${d.system.tip} Change anything here.',
               style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
             ),
             const SizedBox(height: AppSpace.s12),
             AscentButton.primary(
               key: const ValueKey('medicine_quick_save'),
-              label: 'Add medicine',
+              label:
+                  'Add ${d.system == MedicineSystem.supplement ? 'supplement' : 'medicine'}',
               expanded: true,
               loading: _saving,
               onPressed: _saving ? null : _save,
+            ),
+            const SizedBox(height: AppSpace.s8),
+            AscentButton.ghost(
+              key: const ValueKey('medicine_quick_save_another'),
+              label: 'Save and add another',
+              expanded: true,
+              onPressed: _saving ? null : () => _save(another: true),
             ),
           ],
         ],

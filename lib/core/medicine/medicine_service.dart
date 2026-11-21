@@ -3,6 +3,7 @@ import '../history/history_ledger.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
+import 'medicine_catalog.dart';
 import '../notifications/reminder_alert_sync.dart';
 import '../ai/riya_alert_effects.dart';
 
@@ -30,7 +31,7 @@ class MedicineService {
         instructions.length > 2000 ||
         days < 1 ||
         days > 366 ||
-        !{'tablet', 'capsule', 'syrup', 'drops', 'injection'}.contains(type) ||
+        !allMedicineForms.contains(type) ||
         times.isEmpty ||
         times.length > 10 ||
         times.toSet().length != times.length ||
@@ -77,8 +78,10 @@ class MedicineService {
     bool active, {
     DateTime? futureOnly,
     Set<String> preserved = const {},
+    int everyDays = 1,
   }) async {
-    for (var dayIndex = 0; dayIndex < days; dayIndex++) {
+    final step = everyDays.clamp(1, 366);
+    for (var dayIndex = 0; dayIndex < days; dayIndex += step) {
       final day = DateTime(start.year, start.month, start.day + dayIndex);
       final date = DateFormat('yyyy-MM-dd').format(day);
       for (final time in times) {
@@ -140,8 +143,13 @@ class MedicineService {
     String purpose = '',
     int? stockCount,
     int unitsPerDose = 1,
+    String system = 'allopathy',
+    int everyDays = 1,
   }) async {
     _validate(name, dosage, scheduledTimes, durationDays, instructions, type);
+    if (everyDays < 1 || everyDays > 366) {
+      throw ArgumentError('Repeat every 1–366 days');
+    }
     if ((stockCount != null && (stockCount < 0 || stockCount > 100000)) ||
         unitsPerDose < 1 ||
         unitsPerDose > 100) {
@@ -163,6 +171,8 @@ class MedicineService {
           type: Value(type),
           stockCount: Value(stockCount),
           unitsPerDose: Value(unitsPerDose),
+          system: Value(MedicineSystem.from(system).name),
+          everyDays: Value(everyDays),
         ),
       );
       await _generate(
@@ -174,6 +184,7 @@ class MedicineService {
         startDate,
         instructions,
         true,
+        everyDays: everyDays,
       );
       return id;
     });
@@ -195,6 +206,8 @@ class MedicineService {
     bool? active,
     Value<int?> carePlanId = const Value.absent(),
     String? purpose,
+    String? system,
+    int? everyDays,
   }) async {
     await db.transaction(() async {
       final old = await db.medicineDao.getMedicineById(id);
@@ -215,13 +228,18 @@ class MedicineService {
       final text = instructions ?? old.instructions,
           form = type ?? old.type,
           isActive = active ?? old.isActive;
+      final step = everyDays ?? old.everyDays;
       _validate(nextName, nextDosage, times, days, text, form);
+      if (step < 1 || step > 366) {
+        throw ArgumentError('Repeat every 1–366 days');
+      }
       final sorted = [...times]..sort();
       final oldTimes = (jsonDecode(old.scheduledTimes) as List).cast<String>()
         ..sort();
       final scheduleChanged =
           jsonEncode(sorted) != jsonEncode(oldTimes) ||
           days != old.durationDays ||
+          step != old.everyDays ||
           DateTime(start.year, start.month, start.day) != old.startDate;
       final logs = await db.medicineDao.watchLogsForMedicine(id).first;
       final preserved = <String>{};
@@ -297,6 +315,10 @@ class MedicineService {
           instructions: Value(text),
           type: Value(form),
           isActive: Value(isActive),
+          system: system == null
+              ? const Value.absent()
+              : Value(MedicineSystem.from(system).name),
+          everyDays: Value(step),
         ),
       );
       if (scheduleChanged) {
@@ -311,6 +333,7 @@ class MedicineService {
           isActive,
           futureOnly: now,
           preserved: preserved,
+          everyDays: step,
         );
       }
     });
@@ -324,15 +347,16 @@ class MedicineService {
         (unitsPerDose != null && (unitsPerDose < 1 || unitsPerDose > 100))) {
       throw ArgumentError('Use a stock of 0–100000 and 1–100 per dose');
     }
-    await (db.update(db.medicineTable)..where((m) => m.id.equals(medicineId)))
-        .write(
-          MedicineTableCompanion(
-            stockCount: Value(count),
-            unitsPerDose: unitsPerDose == null
-                ? const Value.absent()
-                : Value(unitsPerDose),
-          ),
-        );
+    await (db.update(
+      db.medicineTable,
+    )..where((m) => m.id.equals(medicineId))).write(
+      MedicineTableCompanion(
+        stockCount: Value(count),
+        unitsPerDose: unitsPerDose == null
+            ? const Value.absent()
+            : Value(unitsPerDose),
+      ),
+    );
   }
 
   Future<void> toggleDose(int logId, bool taken) async {
@@ -344,11 +368,15 @@ class MedicineService {
   /// Silences linked reminder, records note on linked task, marks dose completed so it does not stay overdue.
   Future<void> skipDose(int logId, {String reason = 'Skipped by user'}) async {
     await db.transaction(() async {
-      final log = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
+      final log = await (db.select(
+        db.medicineLogTable,
+      )..where((l) => l.id.equals(logId))).getSingleOrNull();
       if (log == null) throw StateError('This dose no longer exists');
 
       if (log.linkedReminderId != null) {
-        await (db.update(db.reminderTable)..where((r) => r.id.equals(log.linkedReminderId!))).write(
+        await (db.update(
+          db.reminderTable,
+        )..where((r) => r.id.equals(log.linkedReminderId!))).write(
           const ReminderTableCompanion(
             isActive: Value(false),
             alertSyncPending: Value(true),
@@ -360,8 +388,12 @@ class MedicineService {
         final task = await db.taskDao.getTaskById(log.linkedTaskId!);
         if (task != null) {
           final noteBase = task.notes ?? '';
-          final updatedNotes = noteBase.isEmpty ? 'Skipped: $reason' : '$noteBase • Skipped: $reason';
-          await (db.update(db.taskTable)..where((t) => t.id.equals(task.id))).write(
+          final updatedNotes = noteBase.isEmpty
+              ? 'Skipped: $reason'
+              : '$noteBase • Skipped: $reason';
+          await (db.update(
+            db.taskTable,
+          )..where((t) => t.id.equals(task.id))).write(
             TaskTableCompanion(
               notes: Value(updatedNotes),
               actualCompletedDate: Value(clock()),
@@ -370,7 +402,9 @@ class MedicineService {
         }
       }
 
-      await (db.update(db.medicineLogTable)..where((l) => l.id.equals(logId))).write(
+      await (db.update(
+        db.medicineLogTable,
+      )..where((l) => l.id.equals(logId))).write(
         MedicineLogTableCompanion(
           isTaken: const Value(true),
           takenAt: Value(clock()),
@@ -380,14 +414,21 @@ class MedicineService {
     await _alerts();
   }
 
-  Future<void> snoozeDose(int logId, {Duration duration = const Duration(minutes: 30)}) async {
+  Future<void> snoozeDose(
+    int logId, {
+    Duration duration = const Duration(minutes: 30),
+  }) async {
     await db.transaction(() async {
-      final log = await (db.select(db.medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
+      final log = await (db.select(
+        db.medicineLogTable,
+      )..where((l) => l.id.equals(logId))).getSingleOrNull();
       if (log == null || log.linkedReminderId == null) return;
       final rem = await db.reminderDao.getReminderById(log.linkedReminderId!);
       if (rem == null) return;
       final newScheduledAt = clock().add(duration);
-      await (db.update(db.reminderTable)..where((r) => r.id.equals(rem.id))).write(
+      await (db.update(
+        db.reminderTable,
+      )..where((r) => r.id.equals(rem.id))).write(
         ReminderTableCompanion(
           scheduledAt: Value(newScheduledAt),
           isActive: const Value(true),
@@ -398,7 +439,10 @@ class MedicineService {
     await _alerts();
   }
 
-  Future<int> scheduleRefillReminder(Medicine medicine, {DateTime? date}) async {
+  Future<int> scheduleRefillReminder(
+    Medicine medicine, {
+    DateTime? date,
+  }) async {
     final start = DateTime(
       medicine.startDate.year,
       medicine.startDate.month,
@@ -411,14 +455,20 @@ class MedicineService {
       9,
       0,
     );
-    final targetDate = date ?? (medicine.durationDays > 3
-        ? courseEnd.subtract(const Duration(days: 2))
-        : courseEnd);
-    final reminderTime = targetDate.isAfter(clock()) ? targetDate : clock().add(const Duration(hours: 1));
+    final targetDate =
+        date ??
+        (medicine.durationDays > 3
+            ? courseEnd.subtract(const Duration(days: 2))
+            : courseEnd);
+    final reminderTime = targetDate.isAfter(clock())
+        ? targetDate
+        : clock().add(const Duration(hours: 1));
 
     final id = await db.reminderDao.insertReminder(
       ReminderTableCompanion.insert(
-        title: _bounded('Refill prescription: ${medicine.name} (${medicine.dosage})'),
+        title: _bounded(
+          'Refill prescription: ${medicine.name} (${medicine.dosage})',
+        ),
         scheduledAt: reminderTime,
         isActive: const Value(true),
         alertSyncPending: const Value(true),

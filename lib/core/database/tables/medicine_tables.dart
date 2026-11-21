@@ -47,6 +47,12 @@ class MedicineTable extends Table {
   /// How many units one dose uses (e.g. 2 tablets), for the count-down.
   IntColumn get unitsPerDose => integer().withDefault(const Constant(1))();
 
+  /// System of medicine: allopathy, homeopathy, ayurveda or supplement.
+  TextColumn get system => text().withDefault(const Constant('allopathy'))();
+
+  /// Doses repeat every this many days (1 = daily, 7 = weekly).
+  IntColumn get everyDays => integer().withDefault(const Constant(1))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

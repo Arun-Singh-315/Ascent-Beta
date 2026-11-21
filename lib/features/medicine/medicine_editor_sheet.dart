@@ -8,6 +8,10 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/medicine/medicine_catalog.dart';
+import '../../shared/widgets/app_chip.dart';
+import '../../app/theme/surface_tokens.dart';
+import '../../app/theme/text_styles.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -53,6 +57,8 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     text: '${widget.medicine?.durationDays ?? 7}',
   );
   late final _purpose = TextEditingController(text: widget.medicine?.purpose);
+  late MedicineSystem _system = MedicineSystem.from(widget.medicine?.system);
+  late int _everyDays = widget.medicine?.everyDays ?? 1;
   late int? _carePlanId = widget.medicine?.carePlanId ?? widget.carePlanId;
   late DateTime _start = widget.medicine?.startDate ?? DateTime.now();
   late List<String> _times;
@@ -156,7 +162,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
           carePlanId: _carePlanId,
           purpose: _purpose.text,
           instructions: _instructions.text.trim(),
-          type: _type.text.trim().isEmpty ? 'other' : _type.text.trim(),
+          type: _type.text.trim(),
+          system: _system.name,
+          everyDays: _everyDays,
         );
       } else {
         await service.updateMedicine(
@@ -169,7 +177,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
           carePlanId: Value(_carePlanId),
           purpose: _purpose.text,
           instructions: _instructions.text.trim(),
-          type: _type.text.trim().isEmpty ? 'other' : _type.text.trim(),
+          type: _type.text.trim(),
+          system: _system.name,
+          everyDays: _everyDays,
         );
       }
       if (mounted) Navigator.of(context).pop();
@@ -400,23 +410,43 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                   keyboard: TextInputType.number,
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _type.text,
-                  decoration: const InputDecoration(labelText: 'Medicine form'),
-                  items: [
-                    for (final type in [
-                      'tablet',
-                      'capsule',
-                      'syrup',
-                      'drops',
-                      'injection',
-                    ])
-                      DropdownMenuItem(
-                        value: type,
-                        child: Text(type[0].toUpperCase() + type.substring(1)),
-                      ),
+                _ChipGroup<MedicineSystem>(
+                  label: 'Kind',
+                  values: MedicineSystem.values,
+                  selected: _system,
+                  name: (s) => s.label,
+                  keyPrefix: 'medicine_editor_system',
+                  onTap: _saving
+                      ? null
+                      : (s) => setState(() {
+                          _system = s;
+                          if (!s.forms.contains(_type.text)) {
+                            _type.text = s.forms.first;
+                          }
+                        }),
+                ),
+                _ChipGroup<String>(
+                  label: 'Form',
+                  values: [
+                    ..._system.forms,
+                    if (!_system.forms.contains(_type.text)) _type.text,
                   ],
-                  onChanged: _saving ? null : (value) => _type.text = value!,
+                  selected: _type.text,
+                  name: (f) => '${f[0].toUpperCase()}${f.substring(1)}',
+                  keyPrefix: 'medicine_editor_form',
+                  onTap: _saving ? null : (f) => setState(() => _type.text = f),
+                ),
+                _ChipGroup<int>(
+                  label: 'Repeats',
+                  values: const [1, 2, 7],
+                  selected: _everyDays,
+                  name: (n) => switch (n) {
+                    1 => 'Every day',
+                    2 => 'Every other day',
+                    _ => 'Once a week',
+                  },
+                  keyPrefix: 'medicine_editor_every',
+                  onTap: _saving ? null : (n) => setState(() => _everyDays = n),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -499,6 +529,55 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A labelled row of choice chips (shared AppChip).
+class _ChipGroup<T> extends StatelessWidget {
+  const _ChipGroup({
+    required this.label,
+    required this.values,
+    required this.selected,
+    required this.name,
+    required this.keyPrefix,
+    required this.onTap,
+  });
+  final String label;
+  final List<T> values;
+  final T selected;
+  final String Function(T) name;
+  final String keyPrefix;
+  final ValueChanged<T>? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+          ),
+          const SizedBox(height: AppSpace.s8),
+          Wrap(
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              for (final v in values)
+                AppChip(
+                  key: ValueKey('${keyPrefix}_$v'),
+                  label: name(v),
+                  isSelected: v == selected,
+                  onTap: onTap == null ? null : () => onTap!(v),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
