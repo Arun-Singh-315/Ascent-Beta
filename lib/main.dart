@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'core/backup/backup_service.dart';
+import 'core/backup/backup_providers.dart';
 import 'core/services/plan_collection_service.dart';
 import 'core/notifications/alarm_lifecycle.dart';
 import 'core/notifications/reminder_alarm_bridge.dart';
@@ -25,6 +27,12 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   final prefs = await SharedPreferences.getInstance();
+  // A restore chosen last session is moved in before the database opens.
+  try {
+    await BackupService.applyPendingRestore(prefs);
+  } catch (e) {
+    debugPrint('Restore could not be applied: $e');
+  }
   final bootstrapDb = AppDatabase();
   try {
     await PlanCollectionService(bootstrapDb).importLegacy();
@@ -38,6 +46,15 @@ Future<void> main() async {
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],
   );
+
+  // Daily automatic backup, after start-up so it never slows the first frame.
+  Future<void>.delayed(const Duration(seconds: 20), () async {
+    try {
+      await container.read(backupServiceProvider).runAutoIfDue();
+    } catch (e) {
+      debugPrint('Automatic backup skipped: $e');
+    }
+  });
 
   NotificationService.setNotificationNavigateHandler((route) {
     final destination = NotificationService.destinationForPayload(route);

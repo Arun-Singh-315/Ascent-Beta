@@ -15,6 +15,7 @@ dependencies:
   drift: ^2.35.0
   drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0+eol
+  sqlite3: any
   path: ^1.9.0
   crypto: ^3.0.7
 
@@ -73,7 +74,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
-  sqlite3: any
 flutter_launcher_icons:
   android: true
   ios: true
