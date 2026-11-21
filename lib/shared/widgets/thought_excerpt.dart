@@ -74,14 +74,15 @@ class ThoughtExcerpt extends StatefulWidget {
     return raw
         .replaceAllMapped(
           RegExp(r'(^|\n)[ \t]*(?:-->|->)[ \t]*', multiLine: true),
-          (m) => '${m[1]}• ',
+          // An arrow the user typed stays an arrow; "--" is a plain bullet.
+          (m) => '${m[1]}→ ',
         )
         .replaceAllMapped(
           RegExp(r'(^|\n)[ \t]*--[ \t]*', multiLine: true),
           (m) => '${m[1]}• ',
         )
-        .replaceAll('-->', '• ')
-        .replaceAll('->', '• ');
+        .replaceAll('-->', '→')
+        .replaceAll('->', '→');
   }
 
   static String displayContent(String raw) {

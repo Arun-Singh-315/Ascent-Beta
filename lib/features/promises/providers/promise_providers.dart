@@ -66,6 +66,10 @@ class UnlockedPromiseIdsNotifier extends Notifier<Set<int>> {
     state = <int>{};
   }
 
+  /// Locks everything right after the current frame. Use from `dispose`,
+  /// where changing a provider during the tree rebuild is not allowed.
+  void lockAllSoon() => scheduleMicrotask(lockAll);
+
   void toggle(int id) {
     if (!ref.mounted) return;
     if (state.contains(id)) {

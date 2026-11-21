@@ -93,7 +93,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   @override
   void dispose() {
     _lifecycle?.dispose();
-    _unlocked?.lockAll();
+    _unlocked?.lockAllSoon();
     super.dispose();
   }
 

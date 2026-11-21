@@ -101,15 +101,22 @@ void main() {
         // 00:01 is in the past, so 'Take' button is present
         expect(find.text('Take'), findsOneWidget);
 
+        await tester.ensureVisible(find.text('Take'));
+        await tester.pump();
         await tester.tap(find.text('Take'));
-        await tester.pumpAndSettle();
+        // Database writes complete on the real event loop.
+        for (var i = 0; i < 5; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 50)),
+          );
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
         final logs = await (db.select(
           db.medicineLogTable,
         )..where((l) => l.id.equals(logId))).get();
         expect(logs.first.isTaken, isTrue);
       },
-skip: true, // Known bug: Taking a due medicine dose is not recorded
 );
   });
 

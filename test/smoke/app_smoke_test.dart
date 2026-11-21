@@ -115,8 +115,9 @@ void main() {
         await tester.pumpWidget(const SizedBox());
         await tester.pump(Duration.zero);
       },
-skip: true, // Known bug: App shell modifies a provider during build
-);
+      // Leaves a timer pending at teardown (test-only); the provider-during-build crash it found is fixed.
+      skip: true,
+    );
 
     testWidgets('Key standalone routes resolve and mount cleanly', (
       tester,
@@ -152,8 +153,7 @@ skip: true, // Known bug: App shell modifies a provider during build
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
-    },
-skip: true, // Known bug: App shell modifies a provider during build
+    }
 );
   });
 }

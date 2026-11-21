@@ -50,7 +50,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _unlockedNotifier?.lockAll();
+    _unlockedNotifier?.lockAllSoon();
     _tabController.dispose();
     super.dispose();
   }

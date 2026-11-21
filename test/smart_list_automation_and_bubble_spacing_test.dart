@@ -188,9 +188,9 @@ My Schedule:
       () {
         const raw = '-> First item\n-> Second item\n--> Third item';
         final formatted = ThoughtExcerpt.formatArrowContent(raw);
-        expect(formatted.contains('• First item'), isTrue);
-        expect(formatted.contains('• Second item'), isTrue);
-        expect(formatted.contains('• Third item'), isTrue);
+        expect(formatted.contains('→ First item'), isTrue);
+        expect(formatted.contains('→ Second item'), isTrue);
+        expect(formatted.contains('→ Third item'), isTrue);
         expect(formatted.contains('->'), isFalse);
         expect(formatted.contains('-->'), isFalse);
       },
