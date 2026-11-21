@@ -19,11 +19,12 @@ import 'widgets/home_unlock_next_card.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import 'widgets/home_day_design.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_now_card.dart';
 import 'widgets/home_ask_bar.dart';
-import 'widgets/home_today_bento.dart';
+import 'widgets/home_feed_cards.dart';
+import 'home_customization_sheet.dart';
+import '../../shared/widgets/ascent_backdrop.dart';
 import 'widgets/home_feed_entrance.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_theme.dart';
@@ -144,7 +145,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       backgroundColor: c.bg,
       extendBody: true,
       body: SafeArea(
-        child: HomeDayBackground(
+        child: AscentBackdrop(
           child: Stack(
             children: [
               Positioned.fill(
@@ -224,11 +225,20 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             child: HomeNowCard(),
                           ),
 
-                          // Today: one bento of live tiles, each feature
-                          // once (Things, Water, Mind, Medicine, Money).
+                          // Hero feed (CLAUDE.md §5.1): Things and Mind are
+                          // live summaries with inline input; Life tiles
+                          // follow. Each feature appears once.
                           const HomeFeedEntrance(
                             index: 1,
-                            child: HomeTodayBento(),
+                            child: HomeThingsCard(),
+                          ),
+                          const HomeFeedEntrance(
+                            index: 2,
+                            child: HomeMindCard(),
+                          ),
+                          const HomeFeedEntrance(
+                            index: 3,
+                            child: HomeLifeTiles(),
                           ),
 
                           PlanningNotificationHandler(
@@ -257,6 +267,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                           // Suggests the next feature; comes and goes.
                           const HomeUnlockNextCard(),
+
+                          Center(
+                            child: TextButton.icon(
+                              key: const ValueKey('home_customize'),
+                              onPressed: () => showHomeCustomization(context),
+                              icon: const Icon(Icons.tune_rounded, size: 18),
+                              label: const Text('Customize Home'),
+                            ),
+                          ),
 
                           // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
                           SizedBox(

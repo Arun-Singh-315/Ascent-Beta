@@ -4,7 +4,7 @@ import 'package:ascent/core/features/feature_registry.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/widgets/home_today_bento.dart';
+import 'package:ascent/features/home/widgets/home_feed_cards.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,9 +33,7 @@ void main() {
     Size size = const Size(390, 900),
     double scale = 1,
   }) async {
-    SharedPreferences.setMockInitialValues({
-      unlockedFeaturesKey: ?unlocked,
-    });
+    SharedPreferences.setMockInitialValues({unlockedFeaturesKey: ?unlocked});
     final prefs = await SharedPreferences.getInstance();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
@@ -60,7 +58,11 @@ void main() {
             child: child!,
           ),
           home: const Scaffold(
-            body: SingleChildScrollView(child: HomeTodayBento()),
+            body: SingleChildScrollView(
+              child: Column(
+                children: [HomeThingsCard(), HomeMindCard(), HomeLifeTiles()],
+              ),
+            ),
           ),
         ),
       ),
@@ -79,21 +81,51 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  testWidgets('each switched-on feature shows once', (tester) async {
+  testWidgets('Things and Mind are hero cards with their own input', (
+    tester,
+  ) async {
     await pump(tester);
-    for (final k in ['things', 'water', 'mind', 'medicine', 'money']) {
+    expect(find.byKey(const ValueKey('home_things_card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_mind_card')), findsOneWidget);
+    expect(find.text('Thing 1'), findsOneWidget);
+    expect(find.text('2 left · 1 done'), findsOneWidget);
+    expect(find.byKey(const ValueKey('activity_quick_input')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_mind_field')), findsOneWidget);
+    for (final k in ['water', 'medicine', 'money']) {
       expect(find.byKey(ValueKey('home_bento_$k')), findsOneWidget);
     }
-    expect(find.text('2 left'), findsOneWidget);
     await unmount(tester);
   });
 
-  testWidgets('locked features have no tile', (tester) async {
-    await pump(tester, unlocked: ['things', 'mind']);
-    expect(find.byKey(const ValueKey('home_bento_things')), findsOneWidget);
-    expect(find.byKey(const ValueKey('home_bento_mind')), findsOneWidget);
+  testWidgets('a thought saves from Home in one step', (tester) async {
+    final db = await pump(tester);
+    await tester.enterText(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('home_mind_field')),
+            matching: find.byType(EditableText),
+          )
+          .first,
+      'Call the plumber',
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('home_mind_send')));
+    for (var i = 0; i < 4; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final rows = await tester.runAsync(() => db.select(db.thoughtTable).get());
+    expect(rows!.single.content, 'Call the plumber');
+    await unmount(tester);
+  });
+
+  testWidgets('locked features have no card', (tester) async {
+    await pump(tester, unlocked: ['things']);
+    expect(find.byKey(const ValueKey('home_things_card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home_mind_card')), findsNothing);
     expect(find.byKey(const ValueKey('home_bento_water')), findsNothing);
-    expect(find.byKey(const ValueKey('home_bento_money')), findsNothing);
     await unmount(tester);
   });
 
@@ -115,7 +147,7 @@ void main() {
     testWidgets('320 px at 2x text has no overflow (dark=$dark)', (
       tester,
     ) async {
-      await pump(tester, size: const Size(320, 1400), scale: 2);
+      await pump(tester, size: const Size(320, 2600), scale: 2);
       expect(tester.takeException(), isNull);
       await unmount(tester);
     });

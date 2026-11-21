@@ -79,4 +79,31 @@ abstract final class CalmBluePalette {
   static const darkSkyEveningLight = Color(0xFF3B2E34);
   static const darkSkyNight = Color(0xFF192440);
   static const darkSkyNightLight = Color(0xFF272542);
+
+  // ── Backdrop: soft Apple-blue gradient behind screens (top → bottom) ─────
+  static const backdropLight = [
+    Color(0xFFDDE9FB),
+    Color(0xFFEDF3FD),
+    Color(0xFFF7F9FD),
+  ];
+  static const backdropDark = [
+    Color(0xFF0E1A33),
+    Color(0xFF0C1425),
+    Color(0xFF0A0E16),
+  ];
+
+  /// Two soft colour clouds that give the gradient depth.
+  static const cloudBlue = Color(0xFF8DB7F5);
+  static const cloudLilac = Color(0xFFC7B8F2);
+
+  /// Doodle wallpaper ink (Mind, Riya): faint, never competing with text.
+  static const doodleLight = Color(0x142F68C8);
+  static const doodleDark = Color(0x14A9C4F2);
+
+  // ── iOS glass cards ───────────────────────────────────────────────────────
+  static const glassFillLight = Color(0xB8FFFFFF);
+  static const glassFillDark = Color(0x8C1A2234);
+  static const glassRimLight = Color(0xCCFFFFFF);
+  static const glassRimDark = Color(0x1FFFFFFF);
+  static const glassShadow = Color(0x142F4F86);
 }

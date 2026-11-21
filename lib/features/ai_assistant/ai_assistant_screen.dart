@@ -1,6 +1,7 @@
 import '../../app/theme/chat_palette.dart';
 import '../../core/services/voice_input.dart';
 import 'assistant_suggestions.dart';
+import '../../shared/widgets/ascent_backdrop.dart';
 import '../../app/theme/text_styles.dart';
 import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
@@ -2343,9 +2344,8 @@ class _AtmosphericChatBackground extends StatelessWidget {
     required this.accentColor,
   });
 
-  /// Plain chat canvas: no glows or colour washes.
+  /// Soft blue backdrop with a faint doodle, like a chat wallpaper.
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: (isDark ? ChatPalette.dark : ChatPalette.light).canvas,
-  );
+  Widget build(BuildContext context) =>
+      const AscentBackdrop(doodle: true, child: SizedBox.expand());
 }
