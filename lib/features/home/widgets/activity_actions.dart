@@ -25,7 +25,7 @@ Future<void> completeActivityWithUndo(
 ) async {
   if (activity.linkedTaskId == null) return;
 
-  if (activity.isScheduledInFuture) {
+  if (activity.isLockedUntilScheduled) {
     AscentSnackBar.show(
       context,
       message:

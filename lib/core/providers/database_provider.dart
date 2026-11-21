@@ -554,6 +554,13 @@ class TodayActivityItem {
     return DateTime.now().isBefore(scheduledTime!);
   }
 
+  /// Whether this item waits for its time before it can be done or started.
+  /// To-dos can be ticked off early (like Apple Reminders); medicine doses
+  /// and timed activities still wait, so a dose is never logged early.
+  bool get isLockedUntilScheduled =>
+      isScheduledInFuture &&
+      (sourceType == 'medicine' || kind != ActivityKind.todo);
+
   TodayActivityItem copyWith({
     String? id,
     String? title,

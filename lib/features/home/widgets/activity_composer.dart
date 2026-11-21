@@ -39,8 +39,13 @@ class ActivityComposer extends ConsumerStatefulWidget {
     this.linkedThoughtId,
     this.onSaved,
     this.remind = false,
+    this.defaultDay,
   });
   final FocusNode? focusNode;
+
+  /// Day used when nothing is chosen or typed (Things Upcoming uses
+  /// tomorrow). Null means today.
+  final DateTime? defaultDay;
   final String? initialTitle;
 
   /// Saved as the to-do's notes (e.g. the rest of a converted thought).
@@ -108,9 +113,10 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
     return parseQuickAdd(entries.single, DateTime.now(), ignore: _ignored);
   }
 
-  /// Day: chosen in options, else typed, else today.
+  /// Day: chosen in options, else typed, else [ActivityComposer.defaultDay],
+  /// else today.
   DateTime _effectiveDay(QuickAddResult? parsed) {
-    final d = _date ?? parsed?.day ?? DateTime.now();
+    final d = _date ?? parsed?.day ?? widget.defaultDay ?? DateTime.now();
     return DateTime(d.year, d.month, d.day);
   }
 
@@ -547,7 +553,9 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   leading: const Icon(Icons.calendar_today_outlined, size: 20),
                   title: const Text('Day'),
                   trailing: Text(
-                    _date == null ? 'Today' : _dayLabel(_day),
+                    _date == null && widget.defaultDay == null
+                        ? 'Today'
+                        : _dayLabel(_effectiveDay(_parse())),
                     style: valueStyle,
                   ),
                   onTap: () => edit(chooseDate),
