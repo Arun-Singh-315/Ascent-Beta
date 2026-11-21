@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,9 +9,12 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
+import '../../core/features/feature_registry.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/local_day_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../home/widgets/home_unlock_next_card.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_logo.dart';
@@ -21,11 +22,12 @@ import '../../shared/widgets/ascent_segmented_control.dart';
 
 /// First run: three calm, skippable screens (CLAUDE.md §1.2).
 ///
-/// 1. Welcome — what Ascent is, in one line, with the five pillars.
-/// 2. Your name — optional; a live preview of the Home greeting.
-/// 3. Your look — light/dark and a colour theme, applied live.
+/// 1. Welcome — what Ascent is, in one line.
+/// 2. You — optional name with a live greeting, and Auto/Light/Dark.
+/// 3. Your first two — pick the features to start with (see
+///    [featureSpecs]); the rest unlock later from Home and You.
 ///
-/// Skip works on every screen and goes straight in with defaults.
+/// Skip works on every screen and goes straight in with Plan and Thoughts.
 class OnboardingShell extends ConsumerStatefulWidget {
   const OnboardingShell({super.key});
 
@@ -38,6 +40,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
   final _name = TextEditingController();
   int _page = 0;
   bool _finishing = false;
+  final Set<AscentFeature> _picked = {...defaultStarterFeatures};
 
   @override
   void initState() {
@@ -74,7 +77,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
       .join(' ');
 
-  Future<void> _finish() async {
+  Future<void> _finish({bool skipped = false}) async {
     if (_finishing) return;
     setState(() => _finishing = true);
     HapticFeedback.lightImpact();
@@ -95,6 +98,13 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
         );
       }
       final prefs = ref.read(sharedPreferencesProvider);
+      await ref
+          .read(unlockedFeaturesProvider.notifier)
+          .set(skipped || _picked.isEmpty ? defaultStarterFeatures : _picked);
+      await prefs.setString(
+        featuresStartedKey,
+        ref.read(localDayProvider).toIso8601String(),
+      );
       await prefs.setBool('ascent_quick_start_v1', true);
       await prefs.setBool('ascent_first_moment_pending_v1', true);
       await markOnboardingComplete(ref);
@@ -134,7 +144,9 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                         key: const ValueKey('onboarding_skip'),
                         label: 'Skip',
                         compact: true,
-                        onPressed: _finishing ? null : _finish,
+                        onPressed: _finishing
+                            ? null
+                            : () => _finish(skipped: true),
                       ),
                     ],
                   ),
@@ -146,8 +158,17 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                     onPageChanged: (p) => setState(() => _page = p),
                     children: [
                       _WelcomePage(active: _page == 0),
-                      _NamePage(controller: _name, active: _page == 1),
-                      _LookPage(active: _page == 2),
+                      _YouPage(controller: _name, active: _page == 1),
+                      _PickPage(
+                        active: _page == 2,
+                        picked: _picked,
+                        onToggle: (f) => setState(() {
+                          HapticFeedback.selectionClick();
+                          _picked.contains(f)
+                              ? _picked.remove(f)
+                              : _picked.add(f);
+                        }),
+                      ),
                     ],
                   ),
                 ),
@@ -166,11 +187,18 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                         _name.text.trim().isEmpty
                             ? 'Continue'
                             : 'Nice to meet you',
-                      _ => 'Enter Ascent',
+                      _ =>
+                        _picked.isEmpty
+                            ? 'Pick at least one'
+                            : 'Start with ${_picked.length == 1
+                                  ? 'one'
+                                  : _picked.length == 2
+                                  ? 'these two'
+                                  : 'these ${_picked.length}'}',
                     },
                     expanded: true,
                     loading: _finishing,
-                    onPressed: _finishing
+                    onPressed: _finishing || (_page == 2 && _picked.isEmpty)
                         ? null
                         : () => _page < 2 ? _go(_page + 1) : _finish(),
                   ),
@@ -194,8 +222,7 @@ class _WelcomePage extends StatelessWidget {
     (Icons.wb_sunny_outlined, 'Today', 'Your day at a glance'),
     (Icons.checklist_rounded, 'Plan', 'To-dos, routines and plans'),
     (Icons.bubble_chart_outlined, 'Think', 'Thoughts, safely kept'),
-    (Icons.favorite_border_rounded, 'Live', 'Water, medicine, breaks'),
-    (Icons.trending_up_rounded, 'Grow', 'Learning and momentum'),
+    (Icons.favorite_border_rounded, 'Live', 'Water, medicine and money'),
   ];
 
   @override
@@ -226,7 +253,7 @@ class _WelcomePage extends StatelessWidget {
           active: active,
           index: 2,
           child: Text(
-            'Plan, think, take care of yourself and grow. It all works offline and stays yours.',
+            'Plan, think and take care of yourself. It works offline and stays yours.',
             textAlign: TextAlign.center,
             style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
           ),
@@ -250,8 +277,8 @@ class _WelcomePage extends StatelessWidget {
   }
 }
 
-class _NamePage extends ConsumerWidget {
-  const _NamePage({required this.controller, required this.active});
+class _YouPage extends ConsumerWidget {
+  const _YouPage({required this.controller, required this.active});
   final TextEditingController controller;
   final bool active;
 
@@ -332,7 +359,7 @@ class _NamePage extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: AppSpace.s12),
+        const SizedBox(height: AppSpace.s8),
         _Reveal(
           active: active,
           index: 4,
@@ -341,48 +368,22 @@ class _NamePage extends ConsumerWidget {
             style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _LookPage extends ConsumerWidget {
-  const _LookPage({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final mode = ref.watch(themeModeProvider);
-    return _PageBody(
-      children: [
+        const SizedBox(height: AppSpace.s32),
         _Reveal(
           active: active,
-          index: 0,
+          index: 5,
           child: Text(
-            'Make it\nfeel like yours.',
-            style: AscentTextStyles.interfaceDisplay.copyWith(
-              color: g.ink,
-              height: 1.15,
-            ),
+            'Light or dark',
+            style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
           ),
         ),
         const SizedBox(height: AppSpace.s8),
         _Reveal(
           active: active,
-          index: 1,
-          child: Text(
-            'You can change this any time in Settings.',
-            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
-          ),
-        ),
-        const SizedBox(height: AppSpace.s24),
-        _Reveal(
-          active: active,
-          index: 2,
+          index: 6,
           child: AscentSegmentedControl<ThemeMode>(
             key: const ValueKey('onboarding_mode'),
-            selected: mode,
+            selected: ref.watch(themeModeProvider),
             onChanged: (m) {
               HapticFeedback.selectionClick();
               ref.read(themeModeProvider.notifier).setThemeMode(m);
@@ -395,6 +396,149 @@ class _LookPage extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PickPage extends StatelessWidget {
+  const _PickPage({
+    required this.active,
+    required this.picked,
+    required this.onToggle,
+  });
+  final bool active;
+  final Set<AscentFeature> picked;
+  final ValueChanged<AscentFeature> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final starters = featureSpecs.where((s) => s.starter).toList();
+    return _PageBody(
+      children: [
+        _Reveal(
+          active: active,
+          index: 0,
+          child: Text(
+            'Pick your\nfirst two.',
+            style: AscentTextStyles.interfaceDisplay.copyWith(
+              color: g.ink,
+              height: 1.15,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpace.s8),
+        _Reveal(
+          active: active,
+          index: 1,
+          child: Text(
+            'Start small. More unlock as you go.',
+            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
+          ),
+        ),
+        const SizedBox(height: AppSpace.s24),
+        for (var i = 0; i < starters.length; i++)
+          _Reveal(
+            active: active,
+            index: 2 + i,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.s12),
+              child: _PickCard(
+                spec: starters[i],
+                selected: picked.contains(starters[i].id),
+                onTap: () => onToggle(starters[i].id),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PickCard extends StatelessWidget {
+  const _PickCard({
+    required this.spec,
+    required this.selected,
+    required this.onTap,
+  });
+  final FeatureSpec spec;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final tint = BrandPalette.pillarTint(spec.tintId, dark: g.isDark);
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${spec.pick}. ${spec.pitch}',
+      child: InkWell(
+        key: ValueKey('onboarding_pick_${spec.id.name}'),
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: reduce ? Duration.zero : const Duration(milliseconds: 200),
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.all(AppSpace.s16),
+          decoration: BoxDecoration(
+            color: selected ? g.tonalBg : g.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: selected ? g.actionInk : g.line),
+          ),
+          child: ExcludeSemantics(
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: tint.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(spec.icon, color: tint, size: 22),
+                ),
+                const SizedBox(width: AppSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        spec.pick,
+                        style: AscentTextStyles.cardTitle.copyWith(
+                          color: g.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        spec.pitch,
+                        style: AscentTextStyles.caption.copyWith(
+                          color: g.inkSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s8),
+                AnimatedSwitcher(
+                  duration: reduce
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
+                  child: Icon(
+                    selected
+                        ? Icons.check_circle_rounded
+                        : Icons.circle_outlined,
+                    key: ValueKey(selected),
+                    color: selected ? g.actionInk : g.inkMuted,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -601,91 +745,22 @@ class _Dots extends StatelessWidget {
 
 /// Slow, soft colour fields in the assistant gradient. One 18 s loop that
 /// stops under reduce motion (CLAUDE.md §3.5).
-class _AuroraBackground extends StatefulWidget {
+/// A still, calm wash: soft action tint fading into the canvas. No motion
+/// and no glow, so the first screens stay easy on the eyes.
+class _AuroraBackground extends StatelessWidget {
   const _AuroraBackground();
-  @override
-  State<_AuroraBackground> createState() => _AuroraBackgroundState();
-}
-
-class _AuroraBackgroundState extends State<_AuroraBackground>
-    with SingleTickerProviderStateMixin {
-  late final _c = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 18),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final inTest = WidgetsBinding.instance.runtimeType.toString().contains(
-      'Test',
-    );
-    if (MediaQuery.disableAnimationsOf(context) || inTest) {
-      _c.stop();
-    } else if (!_c.isAnimating) {
-      _c.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final dark = context.glass.isDark;
-    final a = dark ? .22 : .16;
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (context, _) {
-          final t = _c.value * 2 * math.pi;
-          Widget blob(Color c, Alignment base, double r, double phase) => Align(
-            alignment: Alignment(
-              base.x + .25 * math.sin(t + phase),
-              base.y + .2 * math.cos(t + phase),
-            ),
-            child: FractionallySizedBox(
-              widthFactor: r,
-              heightFactor: r * .7,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      c.withValues(alpha: a),
-                      c.withValues(alpha: 0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              blob(
-                BrandPalette.assistantIndigo,
-                const Alignment(-.9, -.8),
-                1.3,
-                0,
-              ),
-              blob(
-                BrandPalette.assistantViolet,
-                const Alignment(.9, -.3),
-                1.1,
-                2,
-              ),
-              blob(
-                BrandPalette.assistantPink,
-                const Alignment(-.2, .9),
-                1.2,
-                4,
-              ),
-            ],
-          );
-        },
+    final g = context.glass;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [g.tonalBg, g.bg],
+          stops: const [0, .55],
+        ),
       ),
     );
   }

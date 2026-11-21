@@ -58,20 +58,7 @@ class HomeAskBar extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: g.surface,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: BrandPalette.assistantViolet.withValues(alpha: .35),
-                  ),
-                  boxShadow: g.isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: BrandPalette.assistantIndigo.withValues(
-                              alpha: .10,
-                            ),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                  border: Border.all(color: g.line),
                 ),
                 child: Row(
                   children: [

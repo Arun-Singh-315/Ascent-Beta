@@ -310,21 +310,6 @@ void main() {
   });
 
   group('Study Streak Card Visibility Toggle Tests', () {
-    test(
-      'StudyStreakCardVisibilityNotifier defaults to true and toggles cleanly',
-      () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        expect(container.read(studyStreakCardVisibleProvider), isTrue);
-
-        container.read(studyStreakCardVisibleProvider.notifier).toggle();
-        expect(container.read(studyStreakCardVisibleProvider), isFalse);
-
-        container.read(studyStreakCardVisibleProvider.notifier).toggle();
-        expect(container.read(studyStreakCardVisibleProvider), isTrue);
-      },
-    );
 
     testWidgets(
       'HomeHeader streak flame pill saves canonical Home visibility',

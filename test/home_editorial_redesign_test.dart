@@ -1,5 +1,3 @@
-import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
-import 'package:ascent/features/home/widgets/smart_catch_up_banner.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
@@ -339,20 +337,5 @@ void main() {
         await unmount(tester);
       }
     }
-  });
-  testWidgets('First Home opens without blocking welcome or catch-up dialogs', (
-    tester,
-  ) async {
-    await prefs.setBool(DayOneTutorialDialog.prefKey, false);
-    await tester.pumpWidget(buildApp());
-    await settle(tester);
-    expect(find.byType(DayOneTutorialDialog), findsNothing);
-    expect(find.byType(Dialog), findsNothing);
-    expect(find.byType(SmartCatchUpBanner), findsNothing);
-    await tester.runAsync(
-      () async => expect(await db.select(db.taskTable).get(), isEmpty),
-    );
-    expect(tester.takeException(), isNull);
-    await unmount(tester);
   });
 }

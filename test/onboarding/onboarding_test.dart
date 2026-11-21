@@ -1,5 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
+import 'package:ascent/core/features/feature_registry.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/onboarding/onboarding_shell.dart';
@@ -81,10 +82,11 @@ void main() {
     await settle(tester);
     expect(find.text('home page'), findsOneWidget);
     expect(prefs.getBool('ascent_quick_start_v1'), isTrue);
+    expect(prefs.getStringList(unlockedFeaturesKey), ['things', 'mind']);
     await done(tester);
   });
 
-  testWidgets('three screens: name is saved, theme applies live', (
+  testWidgets('three screens: name saved, mode set, first features picked', (
     tester,
   ) async {
     final (db, prefs) = await pump(tester);
@@ -99,14 +101,26 @@ void main() {
     );
     await tester.pump();
     expect(find.textContaining('Arun singh.'), findsOneWidget);
+    final dark = find.text('Dark');
+    await tester.ensureVisible(dark);
+    await tester.tap(dark);
+    await tester.pump();
+    expect(prefs.getString('ascent_theme_mode'), contains('dark'));
     await tester.tap(find.byKey(const ValueKey('onboarding_next')));
     await settle(tester);
-    await tester.tap(find.byKey(const ValueKey('onboarding_preset_nordicSky')));
-    await tester.pump();
-    expect(prefs.getString('ascent_day_theme_preset'), 'nordicSky');
+
+    // Plan + Thoughts start selected; swap Thoughts for Care.
+    expect(find.text('Start with these two'), findsOneWidget);
+    for (final key in ['onboarding_pick_mind', 'onboarding_pick_care']) {
+      final f = find.byKey(ValueKey(key));
+      await tester.ensureVisible(f);
+      await tester.tap(f);
+      await tester.pump();
+    }
     await tester.tap(find.byKey(const ValueKey('onboarding_next')));
     await settle(tester);
     expect(find.text('home page'), findsOneWidget);
+    expect(prefs.getStringList(unlockedFeaturesKey), ['things', 'care']);
     final profile = await tester.runAsync(() => db.userProfileDao.getProfile());
     expect(profile!.name, 'Arun Singh');
     await done(tester);

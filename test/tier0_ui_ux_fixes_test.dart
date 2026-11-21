@@ -1,8 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/providers/daily_briefing_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/daily_welcome_dialog.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,76 +11,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
-
-  group('Tier 0: DailyWelcomeDialog Pager and Honest Numbers', () {
-    testWidgets(
-      'footer shows interactive Next button and no static Swipe label',
-      (tester) async {
-        final today = briefingDay(DateTime.now());
-        final briefing = DailyBriefing(
-          completedYesterday: 0,
-          plannedYesterday: 0,
-          finishedPlannedYesterday: 0,
-          trackedMinutesYesterday: 0,
-          dueToday: 0,
-          overdue: 0,
-          unscheduled: 0,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            dailyBriefingProvider(
-              today,
-            ).overrideWithValue(AsyncValue.data(briefing)),
-          ],
-        );
-
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: Builder(
-                builder: (ctx) => Scaffold(
-                  body: DailyWelcomeDialog(day: today, name: 'Alex', host: ctx),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Confirm 'Swipe' label is removed
-        expect(find.text('Swipe'), findsNothing);
-
-        // Confirm interactive 'Next' button is present
-        final nextButton = find.text('Next');
-        expect(nextButton, findsOneWidget);
-
-        // Confirm Honest Numbers: does not display raw '0m' or '0' counters in pulse items
-        expect(find.text('0m'), findsNothing);
-        expect(find.text('0'), findsNothing);
-
-        // Tap Next button to advance pager
-        await tester.tap(nextButton);
-        await tester.pumpAndSettle();
-
-        // On Page 2, Next button is still present
-        expect(find.text('Next'), findsOneWidget);
-
-        // Tap Next button to advance to Page 3 (Launchpad)
-        await tester.tap(find.text('Next'));
-        await tester.pumpAndSettle();
-
-        // On Page 3 (final page), 'Next' is replaced by 'Done'
-        expect(find.text('Next'), findsNothing);
-        expect(find.text('Done'), findsOneWidget);
-      },
-    );
-  });
 
   group('Tier 0: DayOneTutorial emoji purge', () {
     testWidgets('DayOneTutorialCard buttons do not contain emojis', (

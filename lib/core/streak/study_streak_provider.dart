@@ -293,9 +293,6 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
                 );
           } catch (_) {}
         });
-
-        // Emit celebration state
-        ref.read(streakCelebrationEventProvider.notifier).trigger(newStatus);
       }
     }
 
@@ -306,42 +303,4 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
 final studyStreakProvider =
     NotifierProvider<StudyStreakNotifier, StudyStreakStatus>(() {
       return StudyStreakNotifier();
-    });
-
-/// Notifier for one-time celebration events
-class StreakCelebrationEventNotifier extends Notifier<StudyStreakStatus?> {
-  @override
-  StudyStreakStatus? build() => null;
-
-  void trigger(StudyStreakStatus status) {
-    state = status;
-  }
-
-  void clear() {
-    state = null;
-  }
-}
-
-final streakCelebrationEventProvider =
-    NotifierProvider<StreakCelebrationEventNotifier, StudyStreakStatus?>(() {
-      return StreakCelebrationEventNotifier();
-    });
-
-/// Controls visibility/expansion of the StudyStreakMeterCard on HomeScreen
-class StudyStreakCardVisibilityNotifier extends Notifier<bool> {
-  @override
-  bool build() => true; // Default expanded when entering Home
-
-  void toggle() {
-    state = !state;
-  }
-
-  void setVisible(bool visible) {
-    state = visible;
-  }
-}
-
-final studyStreakCardVisibleProvider =
-    NotifierProvider<StudyStreakCardVisibilityNotifier, bool>(() {
-      return StudyStreakCardVisibilityNotifier();
     });

@@ -7,13 +7,17 @@ import '../../../app/app_navigation.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
+import '../../../core/features/feature_registry.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../hydration/hydration_pace.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 
-/// "Your day" at a glance: one big card, six live tiles in a bento grid.
-/// Every tile is real data and opens its screen; empty values show "–"
-/// with a one-word start instead of a zero (CLAUDE.md §1, §2.6).
+/// "Your day" at a glance: one card of live tiles, one per switched-on
+/// feature (see [featureSpecs]). Every tile is real data and opens its screen;
+/// empty values show "–" with a one-word start instead of a zero
+/// (CLAUDE.md §1, §2.6). The Water tile carries the hydration nudge inline,
+/// so Home never interrupts with a pop-up.
 class HomeGlanceCard extends ConsumerWidget {
   const HomeGlanceCard({super.key});
 
@@ -31,10 +35,17 @@ class HomeGlanceCard extends ConsumerWidget {
     final doses = ref.watch(todayMedicineLogsStreamProvider).value ?? const [];
     final taken = doses.where((d) => d.isTaken).length;
     final spent = ref.watch(todaySpendingStreamProvider).value ?? 0;
+    final unlocked = ref.watch(unlockedFeaturesProvider);
+    final behind = hydrationBehindMl(
+      now: DateTime.now(),
+      drankMl: water,
+      goalMl: goal,
+    );
 
     final tiles = [
       _Tile(
         id: 'things',
+        feature: AscentFeature.things,
         icon: Icons.checklist_rounded,
         tint: g.actionInk,
         label: 'Things',
@@ -49,13 +60,17 @@ class HomeGlanceCard extends ConsumerWidget {
       ),
       _Tile(
         id: 'water',
+        feature: AscentFeature.care,
         icon: Icons.water_drop_outlined,
         tint: g.slate,
         label: 'Water',
         value: water == 0 ? '–' : '${(water / 1000).toStringAsFixed(1)} L',
-        detail: water == 0
+        detail: behind != null
+            ? '$behind ml behind'
+            : water == 0
             ? 'First glass'
             : 'of ${(goal / 1000).toStringAsFixed(1)} L',
+        nudge: behind != null,
         progress: water <= 0 || goal <= 0
             ? null
             : (water / goal).clamp(0, 1).toDouble(),
@@ -63,6 +78,7 @@ class HomeGlanceCard extends ConsumerWidget {
       ),
       _Tile(
         id: 'focus',
+        feature: AscentFeature.focus,
         icon: Icons.timer_outlined,
         tint: g.amber,
         label: 'Focus',
@@ -76,6 +92,7 @@ class HomeGlanceCard extends ConsumerWidget {
       ),
       _Tile(
         id: 'mind',
+        feature: AscentFeature.mind,
         icon: Icons.bubble_chart_outlined,
         tint: g.clay,
         label: 'Mind',
@@ -89,6 +106,7 @@ class HomeGlanceCard extends ConsumerWidget {
       ),
       _Tile(
         id: 'medicine',
+        feature: AscentFeature.care,
         icon: Icons.medication_outlined,
         tint: g.coral,
         label: 'Medicine',
@@ -103,6 +121,7 @@ class HomeGlanceCard extends ConsumerWidget {
       ),
       _Tile(
         id: 'money',
+        feature: AscentFeature.money,
         icon: Icons.account_balance_wallet_outlined,
         tint: g.sage,
         label: 'Spent',
@@ -110,7 +129,8 @@ class HomeGlanceCard extends ConsumerWidget {
         detail: spent == 0 ? 'Nothing yet' : 'today',
         route: '/money',
       ),
-    ];
+    ].where((t) => unlocked.contains(t.feature)).toList();
+    if (tiles.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -158,9 +178,10 @@ class HomeGlanceCard extends ConsumerWidget {
             LayoutBuilder(
               builder: (context, box) {
                 // Three columns on phones, two when text is very large.
-                final cols = MediaQuery.textScalerOf(context).scale(14) > 22
+                final maxCols = MediaQuery.textScalerOf(context).scale(14) > 22
                     ? 2
                     : 3;
+                final cols = tiles.length < maxCols ? tiles.length : maxCols;
                 const gap = AppSpace.s8;
                 final w = (box.maxWidth - gap * (cols - 1)) / cols;
                 return Wrap(
@@ -182,6 +203,7 @@ class HomeGlanceCard extends ConsumerWidget {
 class _Tile extends StatelessWidget {
   const _Tile({
     required this.id,
+    required this.feature,
     required this.icon,
     required this.tint,
     required this.label,
@@ -189,8 +211,11 @@ class _Tile extends StatelessWidget {
     required this.detail,
     required this.route,
     this.progress,
+    this.nudge = false,
   });
   final String id;
+  final AscentFeature feature;
+  final bool nudge;
   final IconData icon;
   final Color tint;
   final String label;
@@ -255,7 +280,10 @@ class _Tile extends StatelessWidget {
                   detail,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+                  style: AscentTextStyles.caption.copyWith(
+                    color: nudge ? g.warningInk : g.inkMuted,
+                    fontWeight: nudge ? FontWeight.w600 : null,
+                  ),
                 ),
                 if (progress != null) ...[
                   const SizedBox(height: AppSpace.s8),

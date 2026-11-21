@@ -74,7 +74,7 @@ class HomeHeaderScene extends StatelessWidget {
                       (night
                               ? const Color(0xFFB9C9FF)
                               : const Color(0xFFFFEDC8))
-                          .withValues(alpha: dark || night ? .13 : .48),
+                          .withValues(alpha: dark || night ? .10 : .18),
                       Colors.transparent,
                     ],
                   ),
@@ -135,7 +135,7 @@ class _CelestialPainter extends CustomPainter {
       Paint()
         ..shader = RadialGradient(
           colors: [
-            glow.withValues(alpha: dark || night ? .24 : .5),
+            glow.withValues(alpha: dark || night ? .16 : .22),
             glow.withValues(alpha: 0),
           ],
         ).createShader(Rect.fromCircle(center: center, radius: 43)),
@@ -188,7 +188,7 @@ class _CelestialPainter extends CustomPainter {
     }
     canvas.drawCircle(center, radius, discPaint);
     final rayPaint = Paint()
-      ..color = design.solarRay.withValues(alpha: .65)
+      ..color = design.solarRay.withValues(alpha: .4)
       ..strokeWidth = 1.3
       ..strokeCap = StrokeCap.round;
     for (var i = 0; i < 12; i++) {
