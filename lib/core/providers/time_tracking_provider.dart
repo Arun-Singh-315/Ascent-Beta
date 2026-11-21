@@ -2,6 +2,7 @@ import 'local_day_provider.dart';
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../medicine/medicine_service.dart';
 
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
@@ -783,7 +784,10 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       items.add(
         TodayActivityItem(
           id: 'task_${task.id}',
-          title: task.title,
+          // Medicine doses show their clean name; the dose goes in notes.
+          title: medicineDose != null
+              ? MedicineService.displayName(task.title)
+              : task.title,
           sourceType: medicineDose != null
               ? 'medicine'
               : (categoryTag == 'Study'
@@ -796,13 +800,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
               ? taskSessions.first.id
               : null,
           categoryTag: medicineDose != null ? 'Medicine' : categoryTag,
-          priority: task.priority,
+          // Doses are not starred to-dos.
+          priority: medicineDose != null ? null : task.priority,
           kind: kind,
           targetMinutes: targetMinutes,
           plannedDate: medicineDose == null ? task.plannedDate : scheduledTime,
           isOverdue: isOverdue,
           hasReminder: hasReminder,
-          notes: task.notes,
+          notes: medicineDose != null
+              ? (MedicineService.displayDosage(task.title) ?? task.notes)
+              : task.notes,
           createdAt: task.createdAt,
           completedAt: isTaskDoneToday ? task.actualCompletedDate : null,
           medicineId: medicineDose?.medicineId,

@@ -8,7 +8,6 @@ import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart'
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:drift/native.dart';
 import 'support/returning_user_guides.dart';
 
@@ -48,24 +47,6 @@ void main() {
     );
   }
 
-  group('Glass Translucency UI in Settings', () {
-    testWidgets(
-      'immune to overflow at 320px width with 2.0x accessibility text scale',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(const SettingsScreen(), width: 320, textScale: 2.0),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(tester.takeException(), isNull);
-        expect(find.text('Glass Translucency'), findsOneWidget);
-        expect(find.text('Subtle'), findsOneWidget);
-        expect(find.text('Balanced'), findsOneWidget);
-        expect(find.text('Contrast'), findsOneWidget);
-      },
-    );
-  });
 
   group('Thought appearance settings', () {
     testWidgets('settings no longer expose Home thought card controls', (
@@ -102,38 +83,5 @@ void main() {
   });
 
   group('Home Thought Preview Custom Tone and Font Typography', () {
-    testWidgets(
-      'Home thoughts render with AppTypography.thoughtContent and ignore legacy Home appearance preferences',
-      (tester) async {
-        await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Reflective thought on Home'),
-        );
-
-        // Set appearance with custom tone and applyToHome = true
-        await prefs.setString(
-          thoughtWallAppearanceKey,
-          '{"version":1,"style":"soft","tone":"sage","density":"compact","applyToHome":true}',
-        );
-
-        await tester.pumpWidget(
-          buildApp(const Scaffold(body: ThoughtWallHomePreview())),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Reflective thought on Home'), findsOneWidget);
-
-        // Verify the thought text uses comfortable 14.5px font with 1.5 height
-        final textWidget = tester.widget<Text>(
-          find.text('Reflective thought on Home'),
-        );
-        final spanStyle = textWidget.textSpan?.style ?? textWidget.style;
-        expect(spanStyle?.fontSize, 15.0);
-        expect(spanStyle?.height, 1.5);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.pump(const Duration(seconds: 5));
-      },
-    );
   });
 }

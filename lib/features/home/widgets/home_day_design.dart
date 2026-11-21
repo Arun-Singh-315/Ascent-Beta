@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/calm_blue_palette.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../app/theme/monochrome_surfaces.dart';
 
 /// Shared atmosphere for Home's header, working surface and quieter lower area.
@@ -69,16 +68,4 @@ class HomeDayDesign {
   static Color ink(bool dark) => _neutral(dark).primaryText;
   static Color secondary(bool dark) => _neutral(dark).secondaryText;
   static Color line(bool dark) => _neutral(dark).separator;
-}
-
-class HomeDayBackground extends StatelessWidget {
-  const HomeDayBackground({super.key, required this.child});
-  final Widget child;
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(color: context.c.bg),
-      child: child,
-    );
-  }
 }

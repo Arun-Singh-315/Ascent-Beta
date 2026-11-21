@@ -4,10 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/activity_composer.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:drift/drift.dart' as drift;
@@ -53,83 +50,10 @@ void main() {
   });
 
   group('Ask Riya Button Contrast & Styling', () {
-    testWidgets(
-      'Ask Riya button displays blue outline, light background, and blue foreground',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: HomeShortcutPanel()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
 
-        final buttonFinder = find.byKey(const ValueKey('shortcut_assistant'));
-        expect(buttonFinder, findsOneWidget);
-
-        final button = tester.widget<InkWell>(buttonFinder);
-        expect(button.onTap, isNotNull);
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'Ask Riya button in dark theme maintains high contrast with blue outline and blue tint',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: HomeShortcutPanel()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final buttonFinder = find.byKey(const ValueKey('shortcut_assistant'));
-        expect(buttonFinder, findsOneWidget);
-
-        final button = tester.widget<InkWell>(buttonFinder);
-        expect(button.onTap, isNotNull);
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      },
-    );
   });
 
   group('Activity Hub Ergonomics & Separator Removal', () {
-    testWidgets(
-      'ActivityHubCard does not render the removed divider separator before composer',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ActivityHubCard()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Controls separator is completely removed
-        expect(
-          find.byKey(const ValueKey('activity_hub_controls_separator')),
-          findsNothing,
-        );
-        // ActivityComposer is present directly below
-        expect(find.byType(ActivityComposer), findsOneWidget);
-      },
-    );
 
     testWidgets(
       'Compact to-do item renders leading check target and allows completion',
@@ -274,40 +198,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Activity composer options displays clear settings_outlined icon',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ActivityHubCard()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Enter text to reveal Options button
-        await tester.enterText(
-          find.byKey(const ValueKey('activity_quick_input')),
-          'Test Task',
-        );
-        await tester.pumpAndSettle();
-
-        final optionsFinder = find.byKey(const ValueKey('activity_options'));
-        expect(optionsFinder, findsOneWidget);
-        expect(
-          find.descendant(
-            of: optionsFinder,
-            matching: find.byIcon(Icons.settings_outlined),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
   });
 
   group('Swipe to Delete in To-Do and Thought', () {

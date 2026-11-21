@@ -53,7 +53,7 @@ void main() {
     },
   );
   test(
-    'Hidden Promises stay hidden while older populated layouts gain new sections',
+    'Hidden sections stay hidden while older populated layouts gain new sections',
     () {
       final hidden = HomeLayout.defaults().copyWith(visible: {'mind', 'life'});
       expect(HomeLayout.fromJson(hidden.toJson()).visible, {'mind', 'life'});
@@ -63,7 +63,7 @@ void main() {
         'visible': ['mind', 'life'],
         'tools': ['hydration'],
       });
-      expect(legacy.visible, {'mind', 'life', 'promises', 'vault'});
+      expect(legacy.visible, {'mind', 'life', 'vault'});
     },
   );
   test(
@@ -89,7 +89,7 @@ void main() {
       expect(layout.visible, isEmpty);
       expect(layout.tools, {'hydration'});
       expect(layout.compact, {'today'});
-      expect(layout.shortcuts, ['today', 'money', 'walk', 'focus']);
+      expect(layout.shortcuts, ['today', 'money', 'focus']);
     },
   );
 }

@@ -70,7 +70,7 @@ class GlassSurface extends StatelessWidget {
             gradient ??
             (!enableBlur
                 ? null
-                : (material != null && !transparent
+                : (material != null && !transparent && material.blur > 0.01
                           ? material.gradient(
                               base,
                               minimumOpacity: minimumOpacity,
@@ -116,9 +116,11 @@ class GlassSurface extends StatelessWidget {
             ),
             child: pane,
           );
-    final blurVal =
-        material?.blur ??
-        (context.surfaces.blur > 0 ? context.surfaces.blur : 0.0);
+    // Cards are solid; explicitly requested glass (persistent chrome such as
+    // the collapsing nav bar, CLAUDE.md §3.4) still blurs at 24.
+    final blurVal = material != null && material.blur > 0.01
+        ? material.blur
+        : (context.surfaces.blur > 0 ? context.surfaces.blur : 24.0);
     if (!enableBlur || blurVal <= 0.01) {
       return withShadow(content);
     }
@@ -128,14 +130,7 @@ class GlassSurface extends StatelessWidget {
         child: ClipRRect(
           borderRadius: r,
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX:
-                  material?.blur ??
-                  (context.surfaces.blur > 0 ? context.surfaces.blur : 12),
-              sigmaY:
-                  material?.blur ??
-                  (context.surfaces.blur > 0 ? context.surfaces.blur : 12),
-            ),
+            filter: ImageFilter.blur(sigmaX: blurVal, sigmaY: blurVal),
             child: content,
           ),
         ),

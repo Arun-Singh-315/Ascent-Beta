@@ -485,7 +485,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   const SizedBox(height: 6),
                   Text(
                     '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
-                    style: AscentTextStyles.monoCode.copyWith(
+                    style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
                       color: isExpense ? g.coral : g.sage,
                       fontWeight: FontWeight.w700,
                     ),
@@ -718,6 +718,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
             children: [
               // Safe to Spend Velocity Card
               AscentCard(
+ variant: AscentCardVariant.outlined,
                 margin: const EdgeInsets.only(bottom: AppSpace.s16),
                 padding: const EdgeInsets.all(AppSpace.s16),
                 child: Column(
@@ -781,7 +782,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           child: Text(
                             isMindfulPace
                                 ? 'Mindful Pace 🍃'
-                                : 'Adjusting Pace ⚡',
+                                : 'Adjusting pace',
                             style: AppTypeRoles.typeRole34.copyWith(
                               color: isMindfulPace ? g.sage : g.amber,
                               fontWeight: FontWeight.w700,
@@ -830,6 +831,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
               // Hero Balance Card
               AscentCard(
+ variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -986,6 +988,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   final sorted = catMap.entries.toList()
                     ..sort((a, b) => b.value.compareTo(a.value));
                   return AscentCard(
+ variant: AscentCardVariant.outlined,
                     margin: const EdgeInsets.only(bottom: AppSpace.s16),
                     padding: const EdgeInsets.all(AppSpace.s16),
                     child: Column(
@@ -1021,7 +1024,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             ),
                             Text(
                               '₹${totalCategorySpend.toStringAsFixed(0)}',
-                              style: AscentTextStyles.monoCode.copyWith(
+                              style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
                                 color: g.inkSecondary,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1155,6 +1158,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     children: [
                       if (recurringBills.isNotEmpty)
                         AscentCard(
+ variant: AscentCardVariant.outlined,
                           margin: const EdgeInsets.only(bottom: AppSpace.s16),
                           padding: const EdgeInsets.all(AppSpace.s14),
                           child: Column(
@@ -1263,6 +1267,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         ),
                       for (final entry in visibleEntries)
                         AscentCard(
+ variant: AscentCardVariant.outlined,
                           key: ValueKey(
                             'transactions_${entry.key.toIso8601String()}',
                           ),
@@ -1334,6 +1339,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
                       // Direct Link to Full Module History
                       AscentCard(
+ variant: AscentCardVariant.outlined,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpace.s16,
                           vertical: AppSpace.s12,
@@ -1389,6 +1395,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
             children: [
               // Monthly Budget Setting Card
               AscentCard(
+ variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1437,6 +1444,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
               // Daily Mindful Expense Check-in Card
               AscentCard(
+ variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s16),
                 child: Row(
                   children: [
@@ -1519,6 +1527,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 data: (goals) {
                   if (goals.isEmpty) {
                     return AscentCard(
+ variant: AscentCardVariant.outlined,
                       padding: const EdgeInsets.all(AppSpace.s24),
                       child: Center(
                         child: Column(
@@ -1556,6 +1565,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         1.0,
                       );
                       return AscentCard(
+ variant: AscentCardVariant.outlined,
                         margin: const EdgeInsets.only(bottom: AppSpace.s10),
                         padding: const EdgeInsets.all(AppSpace.s16),
                         child: Column(
@@ -1586,7 +1596,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                     ),
                                     Text(
                                       '${(percent * 100).toInt()}%',
-                                      style: AscentTextStyles.monoCode
+                                      style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle)
                                           .copyWith(color: context.accentPrimary)
                                           .merge(AppTypeRoles.typeRole9),
                                     ),

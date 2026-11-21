@@ -1,12 +1,9 @@
-import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -152,29 +149,5 @@ void main() {
   group('Requirement 8: Streak Card Redesign', () {});
 
   group('Requirement 2: Thought Input Placement and Placeholder', () {
-    testWidgets(
-      'Thought input has intentional placeholder "Capture a thought…"',
-      (tester) async {
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Capture a thought…'), findsOneWidget);
-        // The generic confusing placeholder must NOT be present
-        expect(
-          find.text('A thought, a task, or something to remember…'),
-          findsNothing,
-        );
-      },
-    );
   });
 }

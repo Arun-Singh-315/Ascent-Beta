@@ -3,12 +3,10 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/notifications/things_check_in.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/features/today/widgets/things_hero_card.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,39 +115,6 @@ void main() {
   });
 
   group('Phase 2: Things Hub Hero & Day Progress Line', () {
-    testWidgets('ThingsHeroCard displays context badge, title, and action', (
-      tester,
-    ) async {
-      final heroItem = makeActivity(
-        id: 'task_hero_1',
-        title: 'Review System Architecture',
-        kind: ActivityKind.duration,
-        targetMinutes: 25,
-        priority: 'high',
-        linkedTaskId: 1,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWithValue(db)],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: Padding(
-                padding: const EdgeInsets.all(16),
-                child: ThingsHeroCard(activity: heroItem),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('HIGH PRIORITY'), findsOneWidget);
-      expect(find.text('Review System Architecture'), findsOneWidget);
-      expect(find.text('25 min'), findsOneWidget);
-      expect(find.text('Start'), findsOneWidget);
-    });
   });
 
   group('Button Accessibility & Semantics', () {

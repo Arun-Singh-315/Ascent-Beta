@@ -1,3 +1,4 @@
+import '../utils/human_time.dart';
 import '../medicine/medicine_catalog.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart';
@@ -181,7 +182,7 @@ class RiyaMedicineActions {
     }
     if (command.id == 'medicine.read') {
       return RiyaResult(
-        '#${medicine.id} ${medicine.name}\n${medicine.dosage} · ${(jsonDecode(medicine.scheduledTimes) as List).join(', ')}\n${medicine.durationDays} days from ${medicine.startDate.toIso8601String()} · ${medicine.instructions} · ${medicine.isActive ? 'active' : 'paused'}',
+        '#${medicine.id} ${medicine.name}\n${medicine.dosage} · ${(jsonDecode(medicine.scheduledTimes) as List).join(', ')}\n${medicine.durationDays} days from ${humanDay(medicine.startDate)} · ${medicine.instructions} · ${medicine.isActive ? 'active' : 'paused'}',
         '/medicine',
         entityType: 'medicine',
         entityId: medicine.id,

@@ -3,6 +3,7 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../app/theme/calm_blue_palette.dart';
 import '../../app/theme/color_tokens.dart';
 
 /// A shimmer loading placeholder that respects the Ascent light/dark palette.
@@ -68,14 +69,15 @@ class SkeletonShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Calm Blue placeholders: the recessed fill, shimmering toward the card
+    // surface (the old warm browns read muddy, especially in dark mode).
     final isDark = context.isDark;
-
     final baseColor = isDark
-        ? AppPalette.colorFF372D25
-        : AppPalette.colorFFEFEDE9;
+        ? CalmBluePalette.darkRecessed
+        : CalmBluePalette.recessed;
     final highlightColor = isDark
-        ? AppPalette.colorFF45392E
-        : AppPalette.colorFFFBF9F6;
+        ? CalmBluePalette.darkSeparator
+        : CalmBluePalette.surface;
 
     return Shimmer.fromColors(
       baseColor: baseColor,

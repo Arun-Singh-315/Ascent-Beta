@@ -20,6 +20,8 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_dialog.dart';
+import '../../shared/widgets/ascent_action_menu.dart';
+import '../../app/theme/brand_palette.dart';
 import '../../core/medicine/refill.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
@@ -426,6 +428,55 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     );
   }
 
+  /// One part of the day inside the Today card: a coloured side border,
+  /// a small label with the count, then compact dose rows.
+  Widget _doseSection(
+    String slot,
+    List<MedicineLog> slotLogs,
+    Map<int, Medicine> byId,
+  ) {
+    final g = context.glass;
+    final tint = switch (slot) {
+      'Morning' => g.amber,
+      'Afternoon' => g.actionInk,
+      'Evening' => BrandPalette.pillarTint('mind', dark: g.isDark),
+      _ => BrandPalette.pillarTint('assistant', dark: g.isDark),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: BorderDirectional(start: BorderSide(color: tint, width: 3)),
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    slot,
+                    key: ValueKey('dose_group_$slot'),
+                    style: AscentTextStyles.listRowTitle.copyWith(color: tint),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
+                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+                  ),
+                ],
+              ),
+              for (var i = 0; i < slotLogs.length; i++)
+                if (byId[slotLogs[i].medicineId] case final m?)
+                  _dose(slotLogs[i], m, isLast: i == slotLogs.length - 1),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _dose(MedicineLog log, Medicine medicine, {bool isLast = true}) {
     final g = context.glass;
     final now = DateTime.now();
@@ -482,32 +533,50 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         runSpacing: 6,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          if (isOverdue) ...[
-            GlassChip(
-              label: 'Snooze 30m',
-              icon: Icons.snooze_rounded,
-              tooltip: 'Push reminder 30 minutes forward',
-              onTap: () => _snoozeDose(log, const Duration(minutes: 30)),
-            ),
-            GlassChip(
-              label: 'Skip',
-              icon: Icons.skip_next_rounded,
-              tooltip: 'Skip dose with clinical/personal reason',
-              onTap: () => _skipDose(log, medicine),
-            ),
-          ],
           GlassChip(
             label: _updating.contains(log.id) ? 'Saving…' : 'Take',
             tooltip: 'Mark taken',
             success: false,
             onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
           ),
+          // Late doses: Snooze and Skip live in one small menu, so each row
+          // stays a single line however many doses there are.
+          if (isOverdue)
+            IconButton(
+              key: ValueKey('medicine_dose_more_${log.id}'),
+              tooltip: 'Snooze or skip',
+              icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted),
+              onPressed: () async {
+                final choice = await showAscentActionMenu<String>(
+                  context: context,
+                  title: medicine.name,
+                  actions: const [
+                    AscentAction(
+                      'snooze',
+                      'Snooze 30 minutes',
+                      Icons.snooze_rounded,
+                    ),
+                    AscentAction(
+                      'skip',
+                      'Skip this dose',
+                      Icons.skip_next_rounded,
+                    ),
+                  ],
+                );
+                if (!mounted) return;
+                if (choice == 'snooze') {
+                  await _snoozeDose(log, const Duration(minutes: 30));
+                } else if (choice == 'skip') {
+                  await _skipDose(log, medicine);
+                }
+              },
+            ),
         ],
       );
     }
     return Container(
       key: ValueKey('medicine_dose_${log.id}'),
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         border: isLast ? null : Border(bottom: BorderSide(color: g.line)),
       ),
@@ -516,9 +585,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(14) > 16 ||
-                  isOverdue) {
+              if (constraints.maxWidth < 300 ||
+                  MediaQuery.textScalerOf(context).scale(14) > 16) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [details, const SizedBox(height: 10), action],
@@ -1153,116 +1221,51 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                                         ? 'Taken today'
                                         : 'Today’s schedule',
                                   ),
-                                  for (final slot
-                                      in logs
-                                          .where((l) => l.isTaken == _showTaken)
-                                          .map((l) => partOfDay(l.timeSlot))
-                                          .toSet())
-                                    Builder(
-                                      builder: (context) {
-                                        final slotLogs = logs
-                                            .where(
-                                              (l) =>
-                                                  partOfDay(l.timeSlot) ==
-                                                      slot &&
-                                                  l.isTaken == _showTaken,
-                                            )
-                                            .toList();
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 12,
-                                          ),
-                                          child: CarePanel(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Wrap(
-                                                  spacing: 12,
-                                                  runSpacing: 8,
-                                                  crossAxisAlignment:
-                                                      WrapCrossAlignment.center,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .schedule_rounded,
-                                                          size: 15,
-                                                          color: context
-                                                              .glass
-                                                              .inkSecondary,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 6,
-                                                        ),
-                                                        Text(
-                                                          slot,
-                                                          key: ValueKey(
-                                                            'dose_group_$slot',
-                                                          ),
-                                                          style: TextStyle(
-                                                            fontSize: 13.5,
-                                                            fontWeight:
-                                                                FontWeight.w700,
-                                                            color: context
-                                                                .glass
-                                                                .ink,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 3,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: context.glass.ink
-                                                            .withValues(
-                                                              alpha: 0.06,
-                                                            ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
-                                                        style: TextStyle(
-                                                          fontSize: 11.5,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: context
-                                                              .glass
-                                                              .inkSecondary,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 12),
-                                                for (
-                                                  int i = 0;
-                                                  i < slotLogs.length;
-                                                  i++
-                                                )
-                                                  _dose(
-                                                    slotLogs[i],
-                                                    byId[slotLogs[i]
-                                                        .medicineId]!,
-                                                    isLast:
-                                                        i ==
-                                                        slotLogs.length - 1,
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                  // All of today's doses in one card,
+                                  // grouped by part of day with a coloured
+                                  // side border, so many medicines stay
+                                  // easy to scan.
+                                  if (logs.any((l) => l.isTaken == _showTaken))
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: CarePanel(
+                                        key: const ValueKey(
+                                          'medicine_today_board',
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            for (final slot
+                                                in logs
+                                                    .where(
+                                                      (l) =>
+                                                          l.isTaken ==
+                                                          _showTaken,
+                                                    )
+                                                    .map(
+                                                      (l) =>
+                                                          partOfDay(l.timeSlot),
+                                                    )
+                                                    .toSet())
+                                              _doseSection(
+                                                slot,
+                                                logs
+                                                    .where(
+                                                      (l) =>
+                                                          partOfDay(
+                                                                l.timeSlot,
+                                                              ) ==
+                                                              slot &&
+                                                          l.isTaken ==
+                                                              _showTaken,
+                                                    )
+                                                    .toList(),
+                                                byId,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   if (!logs.any((l) => l.isTaken == _showTaken))
                                     Text(

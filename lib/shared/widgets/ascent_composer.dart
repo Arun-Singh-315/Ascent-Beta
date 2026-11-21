@@ -32,6 +32,8 @@ class AscentComposer extends StatefulWidget {
     this.busy = false,
     this.autofocus = false,
     this.maxLines = 6,
+    this.minLines = 1,
+    this.minHeight = 56,
     this.checklist = false,
     this.onMic,
     this.listening = false,
@@ -52,6 +54,11 @@ class AscentComposer extends StatefulWidget {
 
   /// An example, not a label: "e.g. Call mom at 6".
   final String hint;
+  /// Lines the field shows before typing (a taller, Gemini-like box).
+  final int minLines;
+
+  /// Minimum height of the composer pill.
+  final double minHeight;
   final ValueChanged<String> onSend;
   final FocusNode? focusNode;
   final bool busy;
@@ -197,7 +204,7 @@ class _AscentComposerState extends State<AscentComposer> {
                 child: _maybeGlass(
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
-                    constraints: const BoxConstraints(minHeight: 56),
+                    constraints: BoxConstraints(minHeight: widget.minHeight),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s4,
                       vertical: AppSpace.s4,
@@ -236,7 +243,9 @@ class _AscentComposerState extends State<AscentComposer> {
                               controller: widget.controller,
                               focusNode: _focus,
                               autofocus: widget.autofocus,
-                              minLines: 1,
+                              minLines: widget.submitOnEnter
+                                  ? 1
+                                  : widget.minLines,
                               maxLines: widget.submitOnEnter
                                   ? 1
                                   : widget.maxLines,

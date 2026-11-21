@@ -1,3 +1,4 @@
+import '../utils/human_time.dart';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
@@ -175,7 +176,7 @@ class RiyaMoneyActions {
         throw StateError('Recorded amounts exceed the supported total range');
       }
       return RiyaResult(
-        'Recorded income ₹${income.toStringAsFixed(2)} · spending ₹${spending.toStringAsFixed(2)} · net ₹${(income - spending).toStringAsFixed(2)}.\n${from.toIso8601String()} to ${to.toIso8601String()} (end exclusive).',
+        'Recorded income ₹${income.toStringAsFixed(2)} · spending ₹${spending.toStringAsFixed(2)} · net ₹${(income - spending).toStringAsFixed(2)}.\n${humanDay(from)} to ${humanDay(to.subtract(const Duration(days: 1)))}.',
         '/money',
       );
     }
@@ -219,7 +220,7 @@ class RiyaMoneyActions {
     if (old == null) throw StateError('This Money record no longer exists');
     if (cmd.id == 'transactions.read') {
       return RiyaResult(
-        '${_line(old)}\n${old.date.toIso8601String()} · ${old.category} · ${old.account}${old.notes == null ? '' : '\n${_excerpt(old.notes!)}'}',
+        '${_line(old)}\n${humanDay(old.date)} · ${old.category} · ${old.account}${old.notes == null ? '' : '\n${_excerpt(old.notes!)}'}',
         '/money',
         entityType: 'transactions',
         entityId: old.id,

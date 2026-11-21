@@ -1,5 +1,5 @@
+import 'package:go_router/go_router.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -310,9 +310,8 @@ void main() {
   });
 
   group('Study Streak Card Visibility Toggle Tests', () {
-
     testWidgets(
-      'HomeHeader streak flame pill saves canonical Home visibility',
+      'HomeHeader streak flame pill routes to /focus',
       (tester) async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
@@ -324,29 +323,39 @@ void main() {
           ],
         );
 
+        String? navigatedRoute;
+        final router = GoRouter(
+          initialLocation: '/',
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const Scaffold(body: HomeHeader(profile: null)),
+            ),
+            GoRoute(
+              path: '/focus',
+              builder: (context, state) {
+                navigatedRoute = '/focus';
+                return const Scaffold(body: Text('Focus'));
+              },
+            ),
+          ],
+        );
+
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(
-              home: Scaffold(body: HomeHeader(profile: null)),
+            child: MaterialApp.router(
+              routerConfig: router,
             ),
           ),
         );
         await tester.pumpAndSettle();
 
-        expect(container.read(homeStreakVisibleProvider), isTrue);
-
         // Tap on the streak pill in the header
         await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
         await tester.pumpAndSettle();
 
-        // Card visibility should now be toggled to false (hidden)
-        expect(container.read(homeStreakVisibleProvider), isFalse);
-
-        // Tap again to restore
-        await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
-        await tester.pumpAndSettle();
-        expect(container.read(homeStreakVisibleProvider), isTrue);
+        expect(navigatedRoute, '/focus');
         await tester.pumpWidget(const SizedBox());
         container.dispose();
         await tester.pump(const Duration(milliseconds: 300));

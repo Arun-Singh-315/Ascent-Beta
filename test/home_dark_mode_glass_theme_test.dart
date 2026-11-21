@@ -6,9 +6,7 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/ascent_dialog.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -65,118 +63,7 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Requirement 2: Home activity and mind space cards use dark glass surfaces',
-      (tester) async {
-        final id = await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Dark mode glass note'),
-        );
-        final thought = (await db.thoughtDao.getThoughtById(id))!;
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              latestHomeThoughtProvider.overrideWith(
-                (ref) => Stream.value(thought),
-              ),
-              todayActivitiesProvider.overrideWith(
-                (ref) => Stream.value(const []),
-              ),
-              currentStreakStreamProvider.overrideWith(
-                (ref) => Stream.value(3),
-              ),
-              timeTrackingProvider.overrideWith(
-                () => _FakeTimeTrackingNotifier(),
-              ),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              home: Theme(
-                data: HomeTheme.from(AscentTheme.dark()),
-                child: const Scaffold(
-                  body: SingleChildScrollView(
-                    child: Column(
-                      children: [ThoughtWallHomePreview(), ActivityHubCard()],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Verify Mind Space card is rendered
-        final mindSpaceFinder = find.byKey(
-          const ValueKey('home_mind_space_card'),
-        );
-        expect(mindSpaceFinder, findsOneWidget);
-
-        // Verify Things Hub card is rendered
-        final activityCardFinder = find.byKey(
-          const ValueKey('home_activity_card'),
-        );
-        expect(activityCardFinder, findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      },
-    );
-
-    testWidgets(
-      'Requirement 3: Nested thought bubbles use a subtle tint and outline in dark mode',
-      (tester) async {
-        final id = await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Night thought contrast'),
-        );
-        final thought = (await db.thoughtDao.getThoughtById(id))!;
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              latestHomeThoughtProvider.overrideWith(
-                (ref) => Stream.value(thought),
-              ),
-              timeTrackingProvider.overrideWith(
-                () => _FakeTimeTrackingNotifier(),
-              ),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              home: Theme(
-                data: HomeTheme.from(AscentTheme.dark()),
-                child: const Scaffold(
-                  body: SingleChildScrollView(
-                    child: ThoughtWallHomePreview(compact: true),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        final bubbleFinder = find.byKey(
-          const ValueKey('home_latest_thought_bubble'),
-        );
-        expect(bubbleFinder, findsOneWidget);
-
-        final excerpt = tester.widget<Text>(
-          find.byKey(const ValueKey('home_latest_thought_text')),
-        );
-        expect(excerpt.maxLines, 4);
-        expect(excerpt.overflow, TextOverflow.ellipsis);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      },
-    );
 
     testWidgets(
       'Requirement 4 (Exception): Docked ActivityComposer has distinct dock container in dark mode',

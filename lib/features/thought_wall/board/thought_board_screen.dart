@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -806,14 +805,10 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   }
 
   Widget _composer() {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // The board body already ends at the tab bar, so a small gap is enough:
+    // the field sits right above it instead of floating mid-screen.
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        16.0 + math.max(12.0, bottomInset),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,7 +834,9 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
             focusNode: _focus,
             hint: 'e.g. Idea for the weekend trip',
             busy: _saving,
-            minHeight: 56,
+            // Taller, Gemini-like field: two lines visible before typing.
+            minHeight: 76,
+            minLines: 2,
             onMic: _toggleVoice,
             listening: _listening,
             onSend: (_) {
@@ -1743,7 +1740,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 AppSpace.s16,
                 AppSpace.s4,
                 AppSpace.s16,
-                _selecting ? 90.0 : (showComposer ? 160.0 : 40.0),
+                _selecting ? 90.0 : (showComposer ? 190.0 : 40.0),
               ),
               sliver: SliverList.builder(
                 itemCount: entries.length,

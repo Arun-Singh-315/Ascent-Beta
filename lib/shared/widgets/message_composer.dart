@@ -16,6 +16,7 @@ class MessageComposer extends StatelessWidget {
     this.quiet = false,
     this.maxLines = 6,
     this.minHeight,
+    this.minLines = 1,
     this.onMic,
     this.listening = false,
     this.accessory,
@@ -34,6 +35,7 @@ class MessageComposer extends StatelessWidget {
 
   /// Kept for callers; the composer is always at least 56 pt tall.
   final double? minHeight;
+  final int minLines;
   final FocusNode? focusNode;
   final VoidCallback? onMic;
   final bool listening;
@@ -52,6 +54,8 @@ class MessageComposer extends StatelessWidget {
     busy: busy,
     autofocus: autofocus,
     maxLines: maxLines,
+    minLines: minLines,
+    minHeight: minHeight ?? 56,
     checklist: checklist,
     onMic: onMic,
     listening: listening,

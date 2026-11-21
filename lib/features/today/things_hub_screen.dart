@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/brand_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -350,6 +351,113 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
     ];
   }
 
+  /// Today as one big card: sections by part of the day (and medicine
+  /// together), each marked by a coloured side border, so long lists stay
+  /// readable and you can see at a glance what is where.
+  Widget _dayBoard(List<TodayActivityItem> items) {
+    final g = context.glass;
+    final parts = groupByDayPart(items);
+    Color tint(DayPart p) => switch (p) {
+      DayPart.morning => g.amber,
+      DayPart.afternoon => g.actionInk,
+      DayPart.evening => BrandPalette.pillarTint('mind', dark: g.isDark),
+      DayPart.anytime => g.inkMuted,
+      DayPart.medicine => BrandPalette.pillarTint('medicine', dark: g.isDark),
+    };
+    IconData icon(DayPart p) => switch (p) {
+      DayPart.morning => Icons.wb_twilight_rounded,
+      DayPart.afternoon => Icons.wb_sunny_outlined,
+      DayPart.evening => Icons.nightlight_outlined,
+      DayPart.anytime => Icons.all_inclusive_rounded,
+      DayPart.medicine => Icons.medication_outlined,
+    };
+    return SliverToBoxAdapter(
+      key: const ValueKey('things_day_board'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: g.isDark
+                ? Border.all(color: g.line.withValues(alpha: .30))
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < parts.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 16,
+                    indent: 16,
+                    endIndent: 16,
+                    color: g.line.withValues(alpha: .5),
+                  ),
+                Padding(
+                  key: ValueKey('things_part_${parts[i].$1.name}'),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: BorderDirectional(
+                        start: BorderSide(color: tint(parts[i].$1), width: 3),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(start: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Semantics(
+                            header: true,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    icon(parts[i].$1),
+                                    size: 16,
+                                    color: tint(parts[i].$1),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    parts[i].$1.label,
+                                    style: AscentTextStyles.listRowTitle
+                                        .copyWith(color: tint(parts[i].$1)),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${parts[i].$2.length}',
+                                    style: AscentTextStyles.caption.copyWith(
+                                      color: g.inkMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          for (final item in parts[i].$2) _row(item),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _box(Widget child) => SliverToBoxAdapter(
     child: Padding(padding: const EdgeInsets.all(16), child: child),
   );
@@ -458,7 +566,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               ),
       ),
       if (view.today.isNotEmpty)
-        ..._section('Today', view.today, id: 'today')
+        _dayBoard(view.today)
       else if (_query.isEmpty && view.overdue.isEmpty)
         _box(
           EmptyState.inline(

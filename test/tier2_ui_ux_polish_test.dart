@@ -1,4 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/calm_blue_palette.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -84,7 +85,7 @@ void main() {
       'dueRed is centralized in SharedControlColors for destructive actions',
       () {
         expect(SharedControlColors.dueRed, isNotNull);
-        expect(SharedControlColors.dueRed, const Color(0xFFD92D20));
+        expect(SharedControlColors.dueRed, CalmBluePalette.danger);
       },
     );
   });

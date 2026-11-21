@@ -182,3 +182,41 @@ String upcomingDayLabel(DateTime day, DateTime now) {
 bool matchesThingsQuery(TodayActivityItem a, String query) =>
     query.isEmpty ||
     '${a.title} ${a.notes ?? ''}'.toLowerCase().contains(query);
+
+/// Where a thing sits in the Today board. Lists stay readable with lots of
+/// data by grouping: medicine doses together, everything else by the part
+/// of the day it is scheduled for.
+enum DayPart {
+  morning('Morning'),
+  afternoon('Afternoon'),
+  evening('Evening'),
+  anytime('Anytime'),
+  medicine('Medicine');
+
+  const DayPart(this.label);
+  final String label;
+}
+
+DayPart dayPartOf(TodayActivityItem a) {
+  if (a.sourceType == 'medicine') return DayPart.medicine;
+  final t = a.scheduledTime;
+  if (t == null) return DayPart.anytime;
+  if (t.hour < 12) return DayPart.morning;
+  if (t.hour < 17) return DayPart.afternoon;
+  return DayPart.evening;
+}
+
+/// [items] split into day parts, in display order, keeping their order
+/// within each part. Empty parts are left out.
+List<(DayPart, List<TodayActivityItem>)> groupByDayPart(
+  Iterable<TodayActivityItem> items,
+) {
+  final map = <DayPart, List<TodayActivityItem>>{};
+  for (final a in items) {
+    (map[dayPartOf(a)] ??= []).add(a);
+  }
+  return [
+    for (final p in DayPart.values)
+      if (map[p] case final list?) (p, list),
+  ];
+}

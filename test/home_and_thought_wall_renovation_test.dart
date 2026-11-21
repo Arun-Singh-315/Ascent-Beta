@@ -1,12 +1,9 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/festival_service.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/home_weather.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -145,147 +142,9 @@ void main() {
   });
 
   group('Home Thought Wall Preview & Bubble Expansion Tests', () {
-    testWidgets(
-      'Tapping "Show more" expands bubble inline without popup dialog',
-      (tester) async {
-        final longContent = List.generate(
-          8,
-          (i) => 'Line ${i + 1}: Continuous reflection and mindful presence.',
-        ).join('\n');
-        await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(
-            content: longContent,
-            createdAt: Value(DateTime.now()),
-          ),
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              homeWeatherProvider.overrideWith((ref) => Future.value(null)),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(
-                  child: ThoughtWallHomePreview(compact: true),
-                ),
-              ),
-            ),
-          ),
-        );
-        await settle(tester);
-
-        // Verify collapsed initial state has maxLines: 4 and shows "Show more" button
-        final textBefore = tester.widget<Text>(
-          find.byKey(const ValueKey('home_latest_thought_text')),
-        );
-        expect(textBefore.maxLines, 4);
-
-        final expandToggle = find.byKey(
-          const ValueKey('home_thought_expand_toggle'),
-        );
-        expect(expandToggle, findsOneWidget);
-        expect(find.text('Show more'), findsOneWidget);
-
-        // Tap "Show more"
-        await tester.tap(expandToggle);
-        await settle(tester);
-
-        // Verify no dialog or popup was opened
-        expect(find.byType(Dialog), findsNothing);
-        expect(find.byType(BottomSheet), findsNothing);
-
-        // Verify expanded inline state
-        final textAfter = tester.widget<Text>(
-          find.byKey(const ValueKey('home_latest_thought_text')),
-        );
-        expect(textAfter.maxLines, isNull);
-        expect(find.text('Show less'), findsOneWidget);
-
-        // Tap "Show less" to collapse back
-        await tester.tap(expandToggle);
-        await settle(tester);
-
-        final textCollapsedAgain = tester.widget<Text>(
-          find.byKey(const ValueKey('home_latest_thought_text')),
-        );
-        expect(textCollapsedAgain.maxLines, 4);
-        expect(find.text('Show more'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pumpAndSettle();
-      },
-    );
   });
 
   group('Thought Wall Screen Renovated Atmosphere & Bubbles Tests', () {
 
-    testWidgets('320px width & 2.0x accessibility text scale immunity', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320 * 2, 800 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Accessibility test thought for high zoom viewports.',
-          createdAt: Value(DateTime.now()),
-        ),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayFestivalProvider.overrideWithValue(
-              const FestivalEvent(
-                id: 'diwali_2026',
-                name: 'Diwali',
-                greeting: 'Happy Diwali!',
-                thought: 'Festival of Lights',
-                riyaWish: 'Happy Diwali!',
-                month: 11,
-                day: 8,
-                emoji: '🪔',
-                accentColor: Color(0xFFE0A94E),
-              ),
-            ),
-            homeWeatherProvider.overrideWith((ref) => Future.value(null)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.dark(),
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: const TextScaler.linear(2.0)),
-              child: child!,
-            ),
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    HomeHeader(profile: null, now: DateTime(2026, 11, 16)),
-                    const ThoughtWallHomePreview(compact: true),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await settle(tester);
-
-      // Assert zero RenderFlex overflows
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    });
   });
 }

@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart'
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/providers/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import 'calm_blue_palette.dart';
 import 'day_glass_material.dart';
@@ -24,16 +23,13 @@ import 'text_styles.dart';
 class AscentTheme {
   AscentTheme._();
 
-  static ThemeData light({
-    GlassTranslucencyPreset translucency =
-        GlassTranslucencyPreset.balancedLiquid,
-  }) {
+  static ThemeData light() {
     final base = _build(Brightness.light);
     final glass = base.extension<AscentGlass>()!;
-    final material = DayGlassMaterial.from(glass, translucency);
+    final material = DayGlassMaterial.from(glass);
     final surface = base.extension<AppSurfaces>()!.copyWith(
-      cardFill: glass.fill.withValues(alpha: material.topOpacity),
-      cardBorderColor: Colors.white.withValues(alpha: .70),
+      cardFill: glass.fill,
+      cardBorderColor: Colors.transparent,
       blur: material.blur,
       shadow: material.shadow,
     );
