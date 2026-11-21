@@ -1,20 +1,41 @@
 import 'package:flutter/material.dart';
 
-/// Mindspace surface colours: the board backdrops and the soft paper fill of
-/// thought cards. Literals live here, not in feature code (CLAUDE.md §2.1).
+/// Mindspace colours: the soft thought hues and card fills. The board itself
+/// uses the plain app canvas. Literals live here, not in feature code (CLAUDE.md §2.1).
 abstract final class MindspacePalette {
-  // Board backdrops, as [top-left, bottom-right] gradient stops.
-  static const skyLight = [Color(0xFFE8EEF5), Color(0xFFDFE7F0)];
-  static const skyDark = [Color(0xFF10141D), Color(0xFF151B26)];
-  static const plainLight = [Color(0xFFEFECE6), Color(0xFFE5E1D8)];
-  static const paperLight = [Color(0xFFEFECE6), Color(0xFFE6E2D9)];
-  static const paperDark = [Color(0xFF161920), Color(0xFF0F1218)];
-  static const duskLight = [Color(0xFFE8E5DF), Color(0xFFDDD8CE)];
-  static const duskDark = [Color(0xFF1E222B), Color(0xFF171A21)];
+  /// Thought hues (blue, violet, rose, teal, amber, sage): soft pastels for
+  /// light mode, quiet jewel tones for dark. Used for the card tint, mood
+  /// glyph and space dot, so each space keeps one colour.
+  static const _huesLight = [
+    Color(0xFF4F7BC9),
+    Color(0xFF8063C4),
+    Color(0xFFC0607F),
+    Color(0xFF2F8F8A),
+    Color(0xFFB7792A),
+    Color(0xFF4E8F5C),
+  ];
+  static const _huesDark = [
+    Color(0xFF8EB1EC),
+    Color(0xFFB59CF0),
+    Color(0xFFEB9AB6),
+    Color(0xFF6CCBC3),
+    Color(0xFFE2B26A),
+    Color(0xFF8DCB98),
+  ];
+  static int get hueCount => _huesLight.length;
+  static Color hue(int index, {required bool dark}) =>
+      (dark ? _huesDark : _huesLight)[index % _huesLight.length];
 
-  /// Dot grid on the paper backdrop.
-  static Color paperDots(bool dark) =>
-      (dark ? Colors.white : Colors.black).withValues(alpha: .045);
+  /// Named hues for moods.
+  static Color blue(bool dark) => hue(0, dark: dark);
+  static Color violet(bool dark) => hue(1, dark: dark);
+  static Color rose(bool dark) => hue(2, dark: dark);
+  static Color amber(bool dark) => hue(4, dark: dark);
+  static Color sage(bool dark) => hue(5, dark: dark);
+
+  /// Bubble fill: the hue washed softly into the card surface.
+  static Color bubbleFill(Color hue, Color surface, {required bool dark}) =>
+      Color.alphaBlend(hue.withValues(alpha: dark ? .08 : .06), surface);
 
   /// Thought card paper fill.
   static const cardPaperLight = Color(0xFFF7F5F0);

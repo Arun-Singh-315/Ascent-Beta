@@ -4,7 +4,6 @@ import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';
-import 'package:ascent/shared/widgets/ascent_atmosphere.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,10 +27,7 @@ void main() {
           expect(theme.extension<AppSurfaces>()!.blur, material.blur);
           expect(HomeTheme.from(theme), same(theme));
           expect(AscentTheme.assistant(theme), same(theme));
-          final underlying = Color.alphaBlend(
-            AscentAtmosphereBackground.softenGlow(glass.glow2, maxAlpha: .025),
-            material.canvas,
-          );
+          final underlying = material.canvas;
           final effective = Color.alphaBlend(
             glass.fill.withValues(alpha: material.bottomOpacity),
             underlying,

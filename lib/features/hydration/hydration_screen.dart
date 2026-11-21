@@ -264,7 +264,6 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
     return AscentScaffold(
       title: 'Hydration',
       subtitle: 'Daily fluid health & vitality',
-      glow2: g.slateSoft,
       actions: [
         const HistoryAction(module: 'hydration'),
         IconButton(

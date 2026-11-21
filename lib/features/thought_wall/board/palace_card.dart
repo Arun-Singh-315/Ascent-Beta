@@ -533,22 +533,39 @@ class _PalaceCardState extends State<PalaceCard> {
         // outline; dark cards are a fill with a hairline. Selection and the
         // opened-from-Home highlight keep their accent border.
         final accentBorder = widget.isSelected || widget.highlight;
+        // A thought bubble carries its hue: a soft wash in the fill, a
+        // tinted shadow by day and a tinted hairline by night.
+        final base = dark ? g.surface : (filled ? fill : g.elevated);
+        final bubble = minimal || dimmed
+            ? base
+            : MindspacePalette.bubbleFill(accentColor, base, dark: dark);
         return Container(
           decoration: BoxDecoration(
-            color: dark ? g.surface : (filled ? fill : g.elevated),
+            color: bubble,
             borderRadius: minimal
                 ? AppGeometry.roundedr8
                 : BorderRadius.circular(20),
             border: accentBorder
                 ? Border.all(color: borderColor, width: 1.8)
-                : (dark ? Border.all(color: borderColor) : null),
+                : (dark
+                      ? Border.all(
+                          color: minimal
+                              ? borderColor
+                              : accentColor.withValues(alpha: .22),
+                        )
+                      : null),
             boxShadow: dark || minimal
                 ? null
                 : [
                     BoxShadow(
-                      color: MindspacePalette.cardShadowLight(.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
+                      color: accentColor.withValues(alpha: .07),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                    BoxShadow(
+                      color: MindspacePalette.cardShadowLight(.03),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
                     ),
                   ],
           ),

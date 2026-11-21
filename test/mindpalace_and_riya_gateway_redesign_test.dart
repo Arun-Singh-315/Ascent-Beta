@@ -10,7 +10,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/thought_wall/board/board_background.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
 
@@ -116,15 +115,6 @@ void main() {
   });
 
   group('Mind Palace Style & Typography Tests', () {
-    testWidgets('Default BoardBackdrop is plain', (tester) async {
-      final container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-      );
-      addTearDown(container.dispose);
-
-      final backdrop = container.read(boardBackdropProvider);
-      expect(backdrop, BoardBackdrop.plain);
-    });
 
     testWidgets('ThoughtWallAppearance bubbleFilled defaults to false', (
       tester,

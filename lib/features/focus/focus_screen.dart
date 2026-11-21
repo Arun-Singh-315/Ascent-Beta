@@ -343,7 +343,6 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     return AscentScaffold(
       title: 'Focus Timer',
       subtitle: 'One thing at a time',
-      glow2: g.amberSoft,
       actions: [
         const HistoryAction(module:'focus'),
         IconButton(

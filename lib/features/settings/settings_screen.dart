@@ -838,7 +838,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         subtitle: 'Preferences & profile',
         showBackButton: true,
         onBack: _persistAndReturn,
-        glow2: g.slateSoft,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpace.s8),

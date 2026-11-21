@@ -41,6 +41,7 @@ import '../thought_share.dart' show shareMultipleThoughts;
 import '../utils/thought_checklist_helper.dart';
 import 'board_actions.dart';
 import 'board_background.dart';
+import 'board_cards.dart' show spaceAccentFor;
 import 'board_logic.dart';
 import 'board_routes.dart';
 import 'palace_card.dart';
@@ -706,7 +707,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           'New space',
           Icons.create_new_folder_outlined,
         ),
-        const AscentAction('background', 'Background', Icons.palette_outlined),
         const AscentAction(
           'appearance',
           'Card style',
@@ -726,11 +726,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
         await _newSpace();
       case 'open_space':
         _openSpace(space!);
-      case 'background':
-        await showAscentSheet<void>(
-          context: context,
-          builder: (_) => const BoardBackgroundSheet(),
-        );
       default:
         await showAscentSheet<void>(
           context: context,
@@ -1334,8 +1329,21 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
 
   /// Space filter. Shown only when at least one space exists.
   Widget? _spaceChips(Map<String, String> categories, PalaceFilter filter) {
+    // Built-in spaces (Suggestions, Bugs, Life Goals) only show once they
+    // hold a thought; spaces the person made always show.
+    final used = {
+      for (final t in ref.watch(allThoughtsStreamProvider).value ?? const [])
+        t.category,
+    };
+    final g = context.glass;
     final spaces = categories.entries
-        .where((e) => e.key != wallCategoryKey)
+        .where(
+          (e) =>
+              e.key != wallCategoryKey &&
+              (e.key.startsWith('custom_') ||
+                  used.contains(e.key) ||
+                  filter.space == e.key),
+        )
         .toList();
     if (spaces.isEmpty) return null;
     return SizedBox(
@@ -1360,6 +1368,8 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                 child: AppChip(
                   key: ValueKey('space_chip_${e.key}'),
                   label: e.value,
+                  icon: Icons.circle,
+                  iconColor: spaceAccentFor(g, e.key),
                   isSelected: filter.space == e.key,
                   onTap: () =>
                       ref.read(palaceFilterProvider.notifier).setSpace(e.key),
@@ -1761,8 +1771,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           largeTitle: true,
           showBackButton: false,
           subtitle: _selecting ? 'Tap cards to add or remove' : null,
-          glow1: Colors.transparent,
-          glow2: Colors.transparent,
           showFeatureHelp: false,
           leading: _selecting
               ? IconButton(

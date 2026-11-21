@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/glass_theme.dart';
-import 'ascent_atmosphere.dart';
 import 'feature_guide.dart';
 import 'glass_surface.dart';
 
@@ -30,8 +29,6 @@ class AscentScaffold extends StatelessWidget {
 
   /// A flat canvas shared by the page and app bar when supplied.
   final Color? backgroundColor;
-  final Color? glow1;
-  final Color? glow2;
   final PreferredSizeWidget? bottom;
   final bool showFeatureHelp;
   final bool safeAreaTop;
@@ -55,8 +52,6 @@ class AscentScaffold extends StatelessWidget {
     this.floatingActionButtonLocation,
     this.bottomNavigationBar,
     this.backgroundColor,
-    this.glow1,
-    this.glow2,
     this.bottom,
     this.showFeatureHelp = true,
     this.safeAreaTop = true,
@@ -121,16 +116,11 @@ class AscentScaffold extends StatelessWidget {
       body: SafeArea(
         top: safeAreaTop && (title == null && titleWidget == null),
         bottom: safeAreaBottom,
-        child: backgroundColor != null
-            ? ColoredBox(
-                color: backgroundColor!,
-                child: FeatureGuideHost(feature: title, child: body),
-              )
-            : AscentAtmosphereBackground(
-                glow1: glow1,
-                glow2: glow2,
-                child: FeatureGuideHost(feature: title, child: body),
-              ),
+        // Plain canvas on every screen: no glows or tinted washes.
+        child: ColoredBox(
+          color: backgroundColor ?? context.glass.bg,
+          child: FeatureGuideHost(feature: title, child: body),
+        ),
       ),
     );
   }

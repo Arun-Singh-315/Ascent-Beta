@@ -16,7 +16,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/shared/widgets/message_composer.dart';
-import 'package:ascent/shared/widgets/ascent_atmosphere.dart';
 import 'package:ascent/features/money/money_screen.dart';
 
 void main() {
@@ -197,7 +196,8 @@ void main() {
               key: key,
               child: ColoredBox(
                 color: dark ? AscentGlass.dark.bg : AscentGlass.light.bg,
-                child: AscentAtmosphereBackground(
+                child: Padding(
+                  padding: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
