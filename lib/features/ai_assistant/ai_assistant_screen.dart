@@ -1042,6 +1042,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                                     .toList()
                                               : const <String>[],
                                           onSelectChip: _handleSubmitted,
+                                          isLatest:
+                                              index == messages.length - 1,
                                           busy: _isLoading,
                                           onEditDraft: () =>
                                               _editDraft(actionData!),
@@ -1360,6 +1362,9 @@ class _ConversationMessageBubble extends ConsumerStatefulWidget {
   final bool busy;
   final VoidCallback onEditDraft;
 
+  /// Only the latest reply can be regenerated.
+  final bool isLatest;
+
   const _ConversationMessageBubble({
     required this.msg,
     required this.isUser,
@@ -1375,6 +1380,7 @@ class _ConversationMessageBubble extends ConsumerStatefulWidget {
     required this.onReview,
     required this.busy,
     required this.onEditDraft,
+    this.isLatest = false,
   });
 
   @override
@@ -1524,7 +1530,8 @@ class _ConversationMessageBubbleState
                 ),
           ),
 
-        // Action row under each assistant reply: Copy, Share, Save to Mindspace, Regenerate
+        // Action row under each assistant reply: Copy, Share, Save to
+        // Mindspace; Regenerate only under the latest reply.
         if (!isUser) ...[
           const SizedBox(height: 6),
           Row(
@@ -1620,6 +1627,7 @@ class _ConversationMessageBubbleState
                   }
                 },
               ),
+              if (widget.isLatest) ...[
               const SizedBox(width: 4),
               IconButton(
                 icon: Icon(
@@ -1632,6 +1640,7 @@ class _ConversationMessageBubbleState
                 constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 onPressed: busy ? null : onRecover,
               ),
+              ],
             ],
           ),
         ],
@@ -2245,12 +2254,17 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                 ),
                 const SizedBox(height: 24),
 
-                // At most 4 suggestion tiles (2x2, surfaceAlt, no icons)
+                // Four suggestion tiles in a 2x2 grid (CLAUDE.md §5.4); one
+                // column only when text is very large.
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final cardWidth = constraints.maxWidth < 360
-                        ? constraints.maxWidth
-                        : (constraints.maxWidth - 10) / 2;
+                    final twoColumns =
+                        constraints.maxWidth >= 280 &&
+                        MediaQuery.textScalerOf(context).scale(1) < 1.6;
+                    final cardWidth = twoColumns
+                        ? (constraints.maxWidth - 10) / 2
+                        : constraints.maxWidth;
+                    final chat = ChatPalette.of(context);
                     return Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -2268,23 +2282,36 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome> {
                                   HapticFeedback.lightImpact();
                                   widget.onSelectPrompt(title);
                                 },
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
+                                  constraints: const BoxConstraints(
+                                    minHeight: 84,
                                   ),
+                                  padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: ChatPalette.of(context).recessed,
-                                    borderRadius: BorderRadius.circular(14),
+                                    color: chat.recessed,
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Text(
-                                    title,
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w500,
-                                      color: c.textPrimary,
-                                    ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        assistantSuggestionIcon(title),
+                                        size: 20,
+                                        color: chat.action,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        title,
+                                        style: AscentTextStyles.bodyMedium
+                                            .copyWith(
+                                              color: chat.label,
+                                              fontWeight: FontWeight.w500,
+                                              height: 1.3,
+                                            ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

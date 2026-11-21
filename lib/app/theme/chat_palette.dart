@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'calm_blue_palette.dart';
+
 /// Assistant chat colours (CLAUDE.md §3.1, §5.4), light and dark as one swap.
 ///
 /// Grouped canvas, an action-tint bubble for the user, no bubble for the
@@ -37,36 +39,37 @@ class ChatPalette {
   final Color assistantName;
   final Color highlightInk;
 
+  // Every role is a Calm Blue role, so chat matches the rest of the app.
   static const light = ChatPalette._(
-    canvas: Color(0xFFF2F2F7),
-    surface: Color(0xFFFFFFFF),
-    elevated: Color(0xFFFFFFFF),
-    recessed: Color(0xFFE9E9EE),
-    separator: Color(0x99C6C6C8),
-    label: Color(0xFF1D1D1F),
-    labelSecondary: Color(0xFF6E6E73),
-    labelTertiary: Color(0xFF8E8E93),
-    action: Color(0xFF007AFF),
-    userBubble: Color(0xFFE5F0FF),
-    userText: Color(0xFF1D1D1F),
+    canvas: CalmBluePalette.canvas,
+    surface: CalmBluePalette.surface,
+    elevated: CalmBluePalette.elevated,
+    recessed: CalmBluePalette.recessed,
+    separator: CalmBluePalette.separator,
+    label: CalmBluePalette.label,
+    labelSecondary: CalmBluePalette.labelSecondary,
+    labelTertiary: CalmBluePalette.labelTertiary,
+    action: CalmBluePalette.action,
+    userBubble: CalmBluePalette.actionTint,
+    userText: CalmBluePalette.label,
     assistantName: Color(0xFF5E5CE6),
-    highlightInk: Color(0xFF92400E),
+    highlightInk: CalmBluePalette.warning,
   );
 
   static const dark = ChatPalette._(
-    canvas: Color(0xFF000000),
-    surface: Color(0xFF1C1C1E),
-    elevated: Color(0xFF2C2C2E),
-    recessed: Color(0xFF2C2C2E),
-    separator: Color(0xFF38383A),
-    label: Color(0xFFF5F5F7),
-    labelSecondary: Color(0xFFAEAEB2),
-    labelTertiary: Color(0xFF8E8E93),
-    action: Color(0xFF0A84FF),
-    userBubble: Color(0xFF0A2A4D),
-    userText: Color(0xFFF5F5F7),
-    assistantName: Color(0xFF8E8CFF),
-    highlightInk: Color(0xFFFDE68A),
+    canvas: CalmBluePalette.darkCanvas,
+    surface: CalmBluePalette.darkSurface,
+    elevated: CalmBluePalette.darkElevated,
+    recessed: CalmBluePalette.darkRecessed,
+    separator: CalmBluePalette.darkSeparator,
+    label: CalmBluePalette.darkLabel,
+    labelSecondary: CalmBluePalette.darkLabelSecondary,
+    labelTertiary: CalmBluePalette.darkLabelTertiary,
+    action: CalmBluePalette.darkAction,
+    userBubble: CalmBluePalette.darkActionTint,
+    userText: CalmBluePalette.darkLabel,
+    assistantName: Color(0xFFA9A7FF),
+    highlightInk: CalmBluePalette.darkWarning,
   );
 
   static ChatPalette of(BuildContext context) =>
