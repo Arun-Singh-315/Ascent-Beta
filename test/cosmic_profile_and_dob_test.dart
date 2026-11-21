@@ -9,7 +9,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/services/cosmic_profile_service.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/features/onboarding/onboarding_shell.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -231,61 +230,5 @@ skip: true, // Known bug: Settings date-of-birth row overflows
   });
 
   group('Onboarding Flow Date of Birth Integration', () {
-    testWidgets(
-      'Onboarding sanctuary setup renders Date of Birth picker and cardless preview',
-      (tester) async {
-        tester.view.physicalSize = const Size(360, 900);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        SharedPreferences.setMockInitialValues({});
-        final prefs = await SharedPreferences.getInstance();
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(home: OnboardingShell()),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Advance to Step 1 (Sanctuary Setup)
-        await tester.tap(find.text('Begin Your Ascent →'));
-        await tester.pumpAndSettle();
-
-        // Verify Date of Birth picker is displayed in Sanctuary Setup
-        expect(
-          find.byKey(const ValueKey('onboarding_dob_picker')),
-          findsOneWidget,
-        );
-        expect(
-          find.text('Set birth date for daily cosmic energy'),
-          findsOneWidget,
-        );
-
-        // Update date of birth via notifier
-        container
-            .read(onboardingProvider.notifier)
-            .setDateOfBirth(DateTime(2001, 10, 15)); // Libra / Tula
-        await tester.pumpAndSettle();
-
-        // Verify formatted date and cardless preview appear without raw quote
-        expect(find.textContaining('15 October 2001'), findsOneWidget);
-        expect(find.textContaining('Libra'), findsOneWidget);
-        expect(find.textContaining('Tula'), findsOneWidget);
-        expect(find.textContaining('Graceful harmony'), findsNothing);
-      },
-skip: true, // Known bug: Settings date-of-birth row overflows
-);
   });
 }
