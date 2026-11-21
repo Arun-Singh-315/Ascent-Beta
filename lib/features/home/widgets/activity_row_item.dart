@@ -1028,6 +1028,54 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       );
     }
 
+    Future<void> toggleTimer() async {
+      HapticFeedback.selectionClick();
+      if (_timerActionBusy) return;
+      setState(() => _timerActionBusy = true);
+      try {
+        final tracker = ref.read(timeTrackingProvider.notifier);
+        if (running) {
+          final session = ref.read(timeTrackingProvider).activeSession;
+          final matches =
+              session != null &&
+              (activity.linkedSessionId != null
+                  ? session.id == activity.linkedSessionId
+                  : activity.linkedTaskId != null &&
+                        session.linkedTaskId == activity.linkedTaskId);
+          if (!matches) throw StateError('Timer changed');
+          await tracker.pauseSession();
+        } else {
+          await tracker.switchToTask(
+            title: activity.title,
+            taskId: activity.linkedTaskId,
+            sourceType: activity.sourceType,
+            autoStart: true,
+          );
+        }
+      } catch (_) {
+        if (context.mounted) {
+          AscentSnackBar.error(
+            context,
+            message: 'Could not update this timer. Please retry.',
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _timerActionBusy = false);
+      }
+    }
+
+    // In the Things Hub an idle timed row gets a compact trailing play
+    // button, so it stays one line tall (CLAUDE.md §5.2).
+    final hubInlinePlay =
+        widget.hubStyle &&
+        timed &&
+        !done &&
+        !widget.featured &&
+        !running &&
+        !paused &&
+        activity.elapsedSecondsToday == 0 &&
+        !activity.isScheduledInFuture;
+
     final Widget? timedAction = (timed && !done)
         ? (activity.isScheduledInFuture
               ? Semantics(
@@ -1135,47 +1183,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         size: 13,
                       ),
                       label: Text(actionLabel),
-                      onPressed: () async {
-                        HapticFeedback.selectionClick();
-                        if (_timerActionBusy) return;
-                        setState(() => _timerActionBusy = true);
-                        try {
-                          final tracker = ref.read(
-                            timeTrackingProvider.notifier,
-                          );
-                          if (running) {
-                            final session = ref
-                                .read(timeTrackingProvider)
-                                .activeSession;
-                            final matches =
-                                session != null &&
-                                (activity.linkedSessionId != null
-                                    ? session.id == activity.linkedSessionId
-                                    : activity.linkedTaskId != null &&
-                                          session.linkedTaskId ==
-                                              activity.linkedTaskId);
-                            if (!matches) throw StateError('Timer changed');
-                            await tracker.pauseSession();
-                          } else {
-                            await tracker.switchToTask(
-                              title: activity.title,
-                              taskId: activity.linkedTaskId,
-                              sourceType: activity.sourceType,
-                              autoStart: true,
-                            );
-                          }
-                        } catch (_) {
-                          if (context.mounted) {
-                            AscentSnackBar.error(
-                              context,
-                              message:
-                                  'Could not update this timer. Please retry.',
-                            );
-                          }
-                        } finally {
-                          if (mounted) setState(() => _timerActionBusy = false);
-                        }
-                      },
+                      onPressed: toggleTimer,
                     ),
                   ),
                 ))
@@ -1344,6 +1352,35 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         ],
                       ),
                     ),
+                    if (hubInlinePlay)
+                      Semantics(
+                        button: true,
+                        label: 'Start ${activity.title}',
+                        child: InkResponse(
+                          key: ValueKey('activity_action_${activity.id}'),
+                          radius: 22,
+                          onTap: _timerActionBusy ? null : toggleTimer,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: g.tonalBg,
+                                ),
+                                child: Icon(
+                                  Icons.play_arrow_rounded,
+                                  size: 20,
+                                  color: g.actionInk,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (activity.linkedTaskId != null && !done)
                       // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
                       if (timedAction == null || activity.priority == 'high')
@@ -1431,7 +1468,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     !running &&
                     !paused &&
                     activity.elapsedSecondsToday == 0)
-                  if (timedAction != null && !activity.isScheduledInFuture)
+                  if (timedAction != null &&
+                      !activity.isScheduledInFuture &&
+                      !hubInlinePlay)
                     Padding(
                       padding: const EdgeInsets.only(left: 42, top: 4),
                       child: Align(

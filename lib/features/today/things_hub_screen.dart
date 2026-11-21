@@ -12,6 +12,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/ascent_composer.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -56,6 +57,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   bool _moving = false;
   final FocusNode _composerFocusNode = FocusNode();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _anytimeController = TextEditingController();
+  bool _savingAnytime = false;
 
   static const _starters = [
     'Drink a glass of water',
@@ -72,6 +75,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _anytimeController.dispose();
     _composerFocusNode.dispose();
     super.dispose();
   }
@@ -190,6 +194,38 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       message: 'Added “$title” to today',
       onUndo: () => dao.deleteTask(id),
     );
+  }
+
+  /// Saves an undated thing for the Anytime list, with Undo.
+  Future<void> _addAnytime() async {
+    final title = _anytimeController.text.trim();
+    if (title.isEmpty || _savingAnytime) return;
+    if (title.length > 300) {
+      AscentSnackBar.error(context, message: 'Keep it under 300 characters.');
+      return;
+    }
+    setState(() => _savingAnytime = true);
+    final dao = ref.read(taskDaoProvider);
+    try {
+      final id = await dao.insertTask(TaskTableCompanion.insert(title: title));
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      _anytimeController.clear();
+      showUndoSnackbar(
+        context,
+        message: 'Added “$title” to Anytime',
+        onUndo: () => dao.deleteTask(id),
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not save. Your text is still here.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingAnytime = false);
+    }
   }
 
   void _focusComposer() {
@@ -399,7 +435,11 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
     if (_query.isNotEmpty && view.isEmpty) return [_noMatches()];
 
     return [
-      if (_query.isEmpty) SliverToBoxAdapter(child: _summary(items)),
+      // Progress counts only what belongs to today, not Anytime things.
+      if (_query.isEmpty)
+        SliverToBoxAdapter(
+          child: _summary([...all.overdue, ...all.today, ...all.completed]),
+        ),
       if (_wrapupMode && hasPending)
         SliverToBoxAdapter(child: _buildWrapup(all)),
       ..._section(
@@ -550,7 +590,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
             subtitle:
                 'Keep things without a date here and pick them up when you have a moment.',
             actionLabel: 'Add an anytime thing',
-            onAction: () => AddActivitySheet.show(context),
+            onAction: _composerFocusNode.requestFocus,
           ),
         ),
       ];
@@ -676,8 +716,31 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   );
 
   Widget _buildComposer(BuildContext context) {
+    // Anytime things have no date, so that segment gets a one-field capture
+    // that saves without one.
+    if (_segment == ThingsSegment.anytime) {
+      return AscentComposer(
+        key: const ValueKey('things_anytime_composer'),
+        controller: _anytimeController,
+        focusNode: _composerFocusNode,
+        hint: 'e.g. Read that article',
+        maxLines: 1,
+        submitOnEnter: true,
+        busy: _savingAnytime,
+        fieldKey: const ValueKey('things_anytime_field'),
+        sendKey: const ValueKey('things_anytime_send'),
+        sendTooltip: 'Add to Anytime',
+        onSend: (_) => _addAnytime(),
+      );
+    }
     if (!_usesScrollingControls(context)) {
-      return ActivityComposer(focusNode: _composerFocusNode);
+      return ActivityComposer(
+        key: ValueKey('things_composer_${_segment.name}'),
+        focusNode: _composerFocusNode,
+        defaultDay: _segment == ThingsSegment.upcoming
+            ? _today.add(const Duration(days: 1))
+            : null,
+      );
     }
     return AscentButton.primary(
       label: 'Add a thing',
@@ -777,7 +840,9 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               ],
             ),
           ),
-          if (_segment == ThingsSegment.today)
+          // Quick add on every list segment; Routines has its own plan
+          // controls.
+          if (_segment != ThingsSegment.routines)
             SafeArea(
               top: false,
               child: Container(
