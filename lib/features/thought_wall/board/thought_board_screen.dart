@@ -1785,66 +1785,69 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && _selecting) _stopSelecting();
       },
-      child: AscentScaffold(
-        title: _selecting ? '${_selected.length} selected' : 'Mindspace',
-        largeTitle: true,
-        showBackButton: false,
-        subtitle: _selecting ? 'Tap cards to add or remove' : null,
-        glow1: Colors.transparent,
-        glow2: Colors.transparent,
-        showFeatureHelp: false,
-        leading: _selecting
-            ? IconButton(
-                icon: Icon(Icons.close_rounded, color: g.ink),
-                tooltip: 'Exit selection',
-                onPressed: _stopSelecting,
-              )
-            : null,
-        onBack: _selecting ? _stopSelecting : null,
-        actions: _selecting
-            ? [
-                AscentButton.ghost(
-                  key: const ValueKey('select_all'),
-                  label: _selected.length == _visible.length ? 'None' : 'All',
-                  compact: true,
-                  onPressed: () => setState(() {
-                    final ids = _visible.map((t) => t.id).toSet();
-                    if (_selected.length == ids.length) {
-                      _selected.clear();
-                      _selecting = false;
-                    } else {
-                      _selected.addAll(ids);
-                    }
-                  }),
-                ),
-              ]
-            : [
-                IconButton(
-                  key: const ValueKey('palace_search_toggle'),
-                  tooltip: _searching ? 'Close search' : 'Search',
-                  icon: Icon(
-                    _searching
-                        ? Icons.search_off_rounded
-                        : Icons.search_rounded,
-                    color: g.ink,
+      // One backdrop behind the title and the board, so the large
+      // title never sits on a different colour band.
+      child: BoardBackground(
+        child: AscentScaffold(
+          backgroundColor: Colors.transparent,
+          title: _selecting ? '${_selected.length} selected' : 'Mindspace',
+          largeTitle: true,
+          showBackButton: false,
+          subtitle: _selecting ? 'Tap cards to add or remove' : null,
+          glow1: Colors.transparent,
+          glow2: Colors.transparent,
+          showFeatureHelp: false,
+          leading: _selecting
+              ? IconButton(
+                  icon: Icon(Icons.close_rounded, color: g.ink),
+                  tooltip: 'Exit selection',
+                  onPressed: _stopSelecting,
+                )
+              : null,
+          onBack: _selecting ? _stopSelecting : null,
+          actions: _selecting
+              ? [
+                  AscentButton.ghost(
+                    key: const ValueKey('select_all'),
+                    label: _selected.length == _visible.length ? 'None' : 'All',
+                    compact: true,
+                    onPressed: () => setState(() {
+                      final ids = _visible.map((t) => t.id).toSet();
+                      if (_selected.length == ids.length) {
+                        _selected.clear();
+                        _selecting = false;
+                      } else {
+                        _selected.addAll(ids);
+                      }
+                    }),
                   ),
-                  onPressed: () {
-                    setState(() => _searching = !_searching);
-                    if (!_searching) {
-                      _search.clear();
-                      ref.read(palaceFilterProvider.notifier).setQuery('');
-                    }
-                  },
-                ),
-                IconButton(
-                  key: const ValueKey('board_settings'),
-                  tooltip: 'Settings',
-                  icon: Icon(Icons.tune_rounded, color: g.ink),
-                  onPressed: _settings,
-                ),
-              ],
-        body: BoardBackground(
-          child: Stack(
+                ]
+              : [
+                  IconButton(
+                    key: const ValueKey('palace_search_toggle'),
+                    tooltip: _searching ? 'Close search' : 'Search',
+                    icon: Icon(
+                      _searching
+                          ? Icons.search_off_rounded
+                          : Icons.search_rounded,
+                      color: g.ink,
+                    ),
+                    onPressed: () {
+                      setState(() => _searching = !_searching);
+                      if (!_searching) {
+                        _search.clear();
+                        ref.read(palaceFilterProvider.notifier).setQuery('');
+                      }
+                    },
+                  ),
+                  IconButton(
+                    key: const ValueKey('board_settings'),
+                    tooltip: 'Settings',
+                    icon: Icon(Icons.tune_rounded, color: g.ink),
+                    onPressed: _settings,
+                  ),
+                ],
+          body: Stack(
             children: [
               Positioned.fill(
                 child: Column(

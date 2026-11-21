@@ -6,6 +6,11 @@ import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
 import 'widgets/ios_reminder_dialog.dart';
 import 'reminder_action_ui.dart';
+import 'package:drift/drift.dart' as drift;
+import '../../core/services/quick_add_parser.dart';
+import '../../shared/widgets/app_input_bar.dart';
+import '../../shared/widgets/ascent_action_menu.dart';
+import '../../shared/widgets/undo_snackbar.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -195,6 +200,105 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     }
   }
 
+  Future<void> _more() async {
+    final action = await showAscentActionMenu<String>(
+      context: context,
+      title: 'Reminders',
+      actions: [
+        const AscentAction(
+          'things',
+          'Open Things',
+          Icons.dashboard_customize_outlined,
+        ),
+        const AscentAction('plans', 'Routines and plans', Icons.event_repeat_rounded),
+        AscentAction(
+          'sync',
+          _syncingAlerts ? 'Syncing alerts…' : 'Sync reminder alerts',
+          Icons.sync_rounded,
+        ),
+        const AscentAction('help', 'How this works', Icons.help_outline_rounded),
+      ],
+    );
+    if (!mounted) return;
+    switch (action) {
+      case 'things':
+        context.open('/things');
+      case 'plans':
+        context.push('/plans');
+      case 'sync':
+        if (!_syncingAlerts) await _syncAlerts();
+      case 'help':
+        showFeatureGuide(context, 'Reminders & Alerts');
+    }
+  }
+
+  // Quick add ---------------------------------------------------------------
+
+  final _quick = TextEditingController();
+
+  @override
+  void dispose() {
+    _quick.dispose();
+    super.dispose();
+  }
+
+  /// "Pay rent tomorrow 9am" → a reminder at that time; with no time, the
+  /// next half hour today (9:00 on other days). Undo removes it.
+  Future<void> _quickAdd() async {
+    final text = _quick.text.trim();
+    if (text.isEmpty) return;
+    final now = DateTime.now();
+    final parsed = parseQuickAdd(text, now);
+    final title = parsed.title.trim().isEmpty ? text : parsed.title.trim();
+    final day = parsed.day ?? DateTime(now.year, now.month, now.day);
+    DateTime at;
+    if (parsed.hour != null) {
+      at = DateTime(day.year, day.month, day.day, parsed.hour!, parsed.minute ?? 0);
+    } else if (DateTime(day.year, day.month, day.day)
+        .isAfter(DateTime(now.year, now.month, now.day))) {
+      at = DateTime(day.year, day.month, day.day, 9);
+    } else {
+      final next = now.add(Duration(minutes: 30 - now.minute % 30));
+      at = DateTime(next.year, next.month, next.day, next.hour, next.minute);
+    }
+    if (!at.isAfter(now)) at = at.add(const Duration(days: 1));
+    final db = ref.read(databaseProvider);
+    try {
+      final id = await db.reminderDao.insertReminder(
+        ReminderTableCompanion.insert(
+          title: title,
+          scheduledAt: at,
+          alertSyncPending: const drift.Value(true),
+        ),
+      );
+      _quick.clear();
+      HapticFeedback.lightImpact();
+      try {
+        await ReminderAlertSync.device(db).sync(ids: [id], onlyPending: true);
+      } catch (_) {}
+      if (!mounted) return;
+      showUndoSnackbar(
+        context,
+        message:
+            'Reminder set for ${DateFormat('EEE h:mm a').format(at)}',
+        onUndo: () async {
+          await (db.update(db.reminderTable)..where((r) => r.id.equals(id)))
+              .write(
+                const ReminderTableCompanion(
+                  isActive: drift.Value(false),
+                  alertSyncPending: drift.Value(true),
+                ),
+              );
+          await db.reminderDao.deleteReminder(id);
+        },
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not set the reminder.');
+      }
+    }
+  }
+
   Future<void> _finishReminder(Reminder row) async {
     await runReminderAction(context, ref, row, ReminderRowAction.done);
   }
@@ -377,7 +481,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       );
     }
     return AscentScaffold(
-      title: 'Reminders & Alerts',
+      title: 'Reminders',
       titleWidget: _isCalendarView
           ? Text(
               'Calendar',
@@ -389,7 +493,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       showFeatureHelp: !_isCalendarView,
       glow1: _isCalendarView ? Colors.transparent : null,
       glow2: _isCalendarView ? Colors.transparent : null,
-      subtitle: 'Scheduled notifications & deadlines',
       actions: [
         IconButton(
           key: const ValueKey('reminders_view_mode_toggle'),
@@ -441,40 +544,39 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               const PopupMenuItem(value: 'help', child: Text('How this works')),
             ],
           )
-        else ...[
+        else
           IconButton(
-            key: const ValueKey('calendar_dayboard_button'),
-            tooltip: 'Dayboard & Activities',
-            icon: const Icon(Icons.dashboard_customize_outlined),
-            onPressed: () => context.open('/things'),
+            key: const ValueKey('reminders_more'),
+            tooltip: 'More',
+            icon: const Icon(Icons.more_horiz_rounded),
+            onPressed: _more,
           ),
-          IconButton(
-            tooltip: 'Routines & Plans',
-            icon: const Icon(Icons.event_repeat_rounded),
-            onPressed: () => context.push('/plans'),
-          ),
-          IconButton(
-            tooltip: 'Sync reminder alerts',
-            icon: _syncingAlerts
-                ? SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: g.clay,
-                    ),
-                  )
-                : const Icon(Icons.sync_rounded),
-            onPressed: _syncingAlerts ? null : _syncAlerts,
-          ),
-        ],
       ],
-      floatingActionButton: remindersAsync.value?.isNotEmpty == true
-          ? AscentButton.fab(
-              icon: Icons.add_rounded,
-              onPressed: () => _openAddEditReminderSheet(),
-            )
-          : null,
+      // Quick add at the thumb: type it, send it. "+" opens the full form.
+      bottomNavigationBar: _isCalendarView
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s16,
+                  AppSpace.s8,
+                  AppSpace.s16,
+                  AppSpace.s12,
+                ),
+                child: AppInputBar(
+                  key: const ValueKey('reminders_quick_add'),
+                  controller: _quick,
+                  hint: 'e.g. Pay rent tomorrow 9am',
+                  singleLine: true,
+                  submitTooltip: 'Set reminder',
+                  leadingIcon: Icons.add_rounded,
+                  leadingTooltip: 'More options',
+                  onLeadingTap: () => _openAddEditReminderSheet(),
+                  onSubmit: _quickAdd,
+                ),
+              ),
+            ),
       body: remindersAsync.when(
         data: (allReminders) {
           final reminders = allReminders
@@ -497,8 +599,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       Expanded(
                         child: AscentSegmentedControl<int>(
                           segments: const [
-                            AscentSegment(value: 0, label: 'Active (0)'),
-                            AscentSegment(value: 1, label: 'Completed (0)'),
+                            AscentSegment(value: 0, label: 'Active'),
+                            AscentSegment(value: 1, label: 'Completed'),
                           ],
                           selected: _selectedTab,
                           onChanged: (val) {
@@ -507,25 +609,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(width: AppSpace.s8),
-                      IconButton.filledTonal(
-                        key: const ValueKey('calendar_toggle_button'),
-                        tooltip: 'Show Calendar',
-                        style: IconButton.styleFrom(
-                          backgroundColor: g.fill,
-                          foregroundColor: g.inkSecondary,
-                          side: BorderSide(color: g.line),
-                          padding: const EdgeInsets.all(AppSpace.s10),
-                        ),
-                        icon: const Icon(
-                          Icons.calendar_month_rounded,
-                          size: 20,
-                        ),
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _isCalendarView = true);
-                        },
-                      ),
+
                     ],
                   ),
                 ),
@@ -646,12 +730,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         segments: [
                           AscentSegment(
                             value: 0,
-                            label:
-                                'Active (${reminders.where((r) => r.isActive).length})',
+                            label: _count(
+                              'Active',
+                              reminders.where((r) => r.isActive).length,
+                            ),
                           ),
                           AscentSegment(
                             value: 1,
-                            label: 'Completed (${pastReminders.length})',
+                            label: _count('Completed', pastReminders.length),
                           ),
                         ],
                         selected: _selectedTab,
@@ -661,37 +747,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: AppSpace.s8),
-                    IconButton.filledTonal(
-                      key: const ValueKey('calendar_toggle_button'),
-                      tooltip: _isCalendarView
-                          ? 'Show as List'
-                          : 'Show Calendar',
-                      style: IconButton.styleFrom(
-                        backgroundColor: _isCalendarView
-                            ? MonochromeSurfaces.of(context).neutralSelection
-                            : g.fill,
-                        foregroundColor: _isCalendarView
-                            ? g.ink
-                            : g.inkSecondary,
-                        side: BorderSide(
-                          color: _isCalendarView
-                              ? MonochromeSurfaces.of(context).controlOutline
-                              : g.line,
-                        ),
-                        padding: const EdgeInsets.all(AppSpace.s10),
-                      ),
-                      icon: Icon(
-                        _isCalendarView
-                            ? Icons.view_agenda_rounded
-                            : Icons.calendar_month_rounded,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        _toggleCalendarView();
-                      },
-                    ),
+
                   ],
                 ),
               ),
@@ -1114,33 +1170,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 color: g.coral,
-                              ),
-                            ),
-                          if (reminder.isActive &&
-                              reminder.scheduledAt.isAfter(DateTime.now()))
-                            InkWell(
-                              onTap: () => _finishReminder(reminder),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: g.fill.withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: g.line.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                child: Text(
-                                  'At ${DateFormat('h:mm a').format(reminder.scheduledAt)}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: g.inkMuted,
-                                  ),
-                                ),
                               ),
                             ),
                         ],
@@ -2081,3 +2110,5 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     );
   }
 }
+
+String _count(String label, int n) => n > 0 ? '$label $n' : label;

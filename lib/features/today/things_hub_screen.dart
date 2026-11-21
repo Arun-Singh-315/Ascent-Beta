@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import '../../app/theme/home_design.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -262,12 +263,13 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: g.line.withValues(alpha: g.isDark ? .30 : .20),
-          ),
+          // Light cards: shadow, no outline; dark cards: a hairline (§3.3).
+          border: g.isDark
+              ? Border.all(color: g.line.withValues(alpha: .30))
+              : null,
           boxShadow: [
             BoxShadow(
-              color: g.shadow.withValues(alpha: g.isDark ? 0 : .05),
+              color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
               blurRadius: 12,
               offset: const Offset(0, 2),
             ),
@@ -472,7 +474,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Completed ($count)',
+                    'Completed · $count',
                     style: AscentTextStyles.sectionHeading.copyWith(
                       color: g.inkMuted,
                     ),
@@ -706,7 +708,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       title: 'Things',
       largeTitle: true,
       showBackButton: false,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      // Grouped canvas behind white cards, like Home (CLAUDE.md §3.1).
+      backgroundColor: HomeDesign.of(context).canvas,
       actions: [
         AscentButton.icon(
           icon: _showSearch ? Icons.search_off_rounded : Icons.search_rounded,

@@ -972,15 +972,15 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         (activity.kind != ActivityKind.todo ||
             (activity.targetMinutes ?? 0) > 0);
 
-    final String? createdLabel = activity.createdAt != null
-        ? 'Created ${_formatActivityTimestamp(activity.createdAt!)}'
-        : null;
+    // When it was created is noise on a to-do row (CLAUDE.md §5.2: one meta
+    // line of time · duration · category).
+    const String? createdLabel = null;
     final String? finishedLabel = (visualDone && activity.completedAt != null)
         ? 'Finished ${_formatActivityTimestamp(activity.completedAt!)}'
         : null;
 
     final String? timeLabel = (widget.hubStyle && activity.scheduledTime != null)
-        ? 'Scheduled ${DateFormat('h:mm a').format(activity.scheduledTime!)}'
+        ? DateFormat('h:mm a').format(activity.scheduledTime!)
         : (activity.sourceType == 'medicine' && activity.plannedDate != null)
             ? DateFormat('h:mm a').format(activity.plannedDate!)
             : createdLabel;
@@ -994,6 +994,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             if (activity.sourceType == 'medicine') 'Medicine',
             if (lecture) (running ? 'Lecture in progress' : 'Lecture'),
             ?timeLabel,
+            if (timed && (activity.targetMinutes ?? 0) > 0)
+              '${activity.targetMinutes} min',
           ].join(' · ');
 
     final actionLabel = done
@@ -1588,7 +1590,26 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       onPressed: completeTask,
                     ),
                   ],
-                  if (timed)
+                  // The timer block appears once a timer has started (or on
+                  // the featured row). Before that, a due item shows only its
+                  // Start button; a future one shows nothing extra.
+                  if (timed &&
+                      !widget.featured &&
+                      !running &&
+                      !paused &&
+                      activity.elapsedSecondsToday == 0)
+                    if (timedAction != null &&
+                        !activity.isScheduledInFuture)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 42, top: 4),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: timedAction,
+                        ),
+                      )
+                    else
+                      const SizedBox.shrink()
+                  else if (timed)
                     Padding(
                       padding: EdgeInsets.only(
                         left: widget.featured ? 0 : 42,
