@@ -177,7 +177,8 @@ class AppCard extends StatelessWidget {
         ),
       );
     }
-    if (frosted) {
+    // No blur layer when the material is solid (blur 0): it only costs.
+    if (frosted && material.blur > 0.01) {
       content = ClipRRect(
         borderRadius:
             decoration.borderRadius?.resolve(Directionality.of(context)) ??

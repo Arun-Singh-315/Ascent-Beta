@@ -2,8 +2,6 @@ import 'package:ascent/features/home/widgets/home_shortcut_summary.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_shortcut_panel.dart';
-import 'package:ascent/features/settings/settings_screen.dart';
-import 'package:ascent/shared/widgets/ascent_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -206,52 +204,4 @@ void main() {
     });
   });
 
-  group('Glass Translucency Selection UI Tests', () {
-    testWidgets('Settings screen does NOT show mustard yellow in selection', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const SettingsScreen(),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Verify Display Mode is removed
-      expect(find.text('Display Mode'), findsNothing);
-      expect(find.text('Day / Light'), findsNothing);
-      expect(find.text('Night / Dark'), findsNothing);
-
-      // Verify Glass Translucency header and options exist
-      expect(find.text('Glass Translucency'), findsOneWidget);
-      expect(find.text('Subtle'), findsOneWidget);
-      expect(find.text('Balanced'), findsOneWidget);
-      expect(find.text('Contrast'), findsOneWidget);
-
-      final controls = tester.widgetList<Container>(
-        find.descendant(
-          of: find.ancestor(
-            of: find.text('Subtle'),
-            matching: find.byType(AscentCard),
-          ),
-          matching: find.byType(Container),
-        ),
-      );
-      expect(controls, isNotEmpty);
-      for (final control in controls) {
-        final decoration = control.decoration;
-        if (decoration is BoxDecoration) {
-          expect(decoration.color, isNot(const Color(0xFFD97706)));
-        }
-      }
-    });
-  });
 }

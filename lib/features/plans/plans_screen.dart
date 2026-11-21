@@ -102,73 +102,109 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
       return n > 0 ? '$name $n' : name;
     }
 
+    // While loading, assume plans exist so the list (skeleton) leads.
+    final hasPlans = !collections.hasValue || known.isNotEmpty;
+    final create = <Widget>[
+      SliverToBoxAdapter(child: _templates(g, heading: !hasPlans)),
+      SliverToBoxAdapter(child: _makers(g)),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s16,
+            AppSpace.s8,
+            AppSpace.s16,
+            AppSpace.s12,
+          ),
+          child: Wrap(
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              AscentButton.tonal(
+                key: const ValueKey('plans_blank'),
+                label: 'Blank plan',
+                icon: Icons.add_rounded,
+                compact: true,
+                onPressed: () => context.push(AscentRoutes.createPlan),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+    final mine = <Widget>[
+      if (hasPlans) ...[
+        SliverToBoxAdapter(child: _heading(g, 'Your plans')),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s8,
+              AppSpace.s16,
+              AppSpace.s12,
+            ),
+            child: AscentSegmentedControl<String>(
+              key: const ValueKey('plans_status'),
+              selected: _status,
+              onChanged: (s) => setState(() => _status = s),
+              segments: [
+                AscentSegment(
+                  value: 'active',
+                  label: label('active', 'Active'),
+                ),
+                AscentSegment(
+                  value: 'paused',
+                  label: label('paused', 'Paused'),
+                ),
+                AscentSegment(
+                  value: 'archived',
+                  label: label('archived', 'Archived'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+      ..._list(collections),
+    ];
+
     return AscentScaffold(
       title: 'Plans',
       actions: const [HistoryAction(module: 'routines')],
       body: CustomScrollView(
         key: const ValueKey('plans_scroll'),
         physics: const BouncingScrollPhysics(),
+        // Your plans come first once you have any; starting a new one
+        // follows. With none yet, the ways to start lead.
         slivers: [
-          SliverToBoxAdapter(child: _templates(g)),
-          SliverToBoxAdapter(child: _makers(g)),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s16,
-                AppSpace.s8,
-                AppSpace.s16,
-                AppSpace.s12,
-              ),
-              child: Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  AscentButton.tonal(
-                    key: const ValueKey('plans_blank'),
-                    label: 'Blank plan',
-                    icon: Icons.add_rounded,
-                    compact: true,
-                    onPressed: () => context.push(AscentRoutes.createPlan),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s16,
-                AppSpace.s8,
-                AppSpace.s16,
-                AppSpace.s12,
-              ),
-              child: AscentSegmentedControl<String>(
-                key: const ValueKey('plans_status'),
-                selected: _status,
-                onChanged: (s) => setState(() => _status = s),
-                segments: [
-                  AscentSegment(
-                    value: 'active',
-                    label: label('active', 'Active'),
-                  ),
-                  AscentSegment(
-                    value: 'paused',
-                    label: label('paused', 'Paused'),
-                  ),
-                  AscentSegment(
-                    value: 'archived',
-                    label: label('archived', 'Archived'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          ..._list(collections),
+          if (hasPlans) ...[
+            ...mine,
+            SliverToBoxAdapter(child: _heading(g, 'Start another plan')),
+            ...create,
+          ] else ...[
+            ...create,
+            ...mine,
+          ],
           const SliverToBoxAdapter(child: SizedBox(height: AppSpace.s40)),
         ],
       ),
     );
   }
+
+  Widget _heading(AscentGlass g, String text) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpace.s16,
+      AppSpace.s20,
+      AppSpace.s16,
+      AppSpace.s4,
+    ),
+    child: Semantics(
+      header: true,
+      child: Text(
+        text,
+        style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+      ),
+    ),
+  );
 
   /// "Let Ascent make one": generated study and meal plans.
   Widget _makers(AscentGlass g) {
@@ -261,21 +297,22 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     );
   }
 
-  Widget _templates(AscentGlass g) => Column(
+  Widget _templates(AscentGlass g, {bool heading = true}) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpace.s16,
-          AppSpace.s8,
-          AppSpace.s16,
-          AppSpace.s8,
+      if (heading)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s16,
+            AppSpace.s8,
+            AppSpace.s16,
+            AppSpace.s8,
+          ),
+          child: Text(
+            'Start a plan',
+            style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+          ),
         ),
-        child: Text(
-          'Start a plan',
-          style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
-        ),
-      ),
       Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpace.s16,
@@ -352,15 +389,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                   icon: Icons.event_repeat_rounded,
                   title: 'Plan anything, one tap to start',
                   subtitle:
-                      'Pick a routine. Its steps show up in Things each day.',
-                  starters: [
-                    for (final t in planTemplates.take(3))
-                      EmptyStarter(
-                        label: t.title,
-                        icon: t.icon,
-                        onTap: () => _startTemplate(t),
-                      ),
-                  ],
+                      'Pick a routine above. Its steps show up in Things each day.',
                 )
               : EmptyState(
                   icon: Icons.inventory_2_outlined,

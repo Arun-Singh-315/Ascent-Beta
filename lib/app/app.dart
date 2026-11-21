@@ -16,7 +16,6 @@ class AscentApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    final translucency = ref.watch(glassTranslucencyPresetProvider);
     ref.watch(pendingReminderEffectsProvider);
     ref.watch(thingsCheckInsProvider);
 
@@ -25,7 +24,7 @@ class AscentApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
 
       // Theme
-      theme: AscentTheme.light(translucency: translucency),
+      theme: AscentTheme.light(),
       darkTheme: AscentTheme.dark(),
       themeMode: themeMode,
 
