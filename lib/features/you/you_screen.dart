@@ -106,6 +106,13 @@ const youGroups = [
       route: '/history',
     ),
     YouEntry(
+      icon: Icons.backup_outlined,
+      tint: PillarTints.plan,
+      title: 'Backup & restore',
+      subtitle: 'Keep a copy of everything safe',
+      route: '/backup',
+    ),
+    YouEntry(
       icon: Icons.settings_outlined,
       tint: PillarTints.neutral,
       title: 'Settings',

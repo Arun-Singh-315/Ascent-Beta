@@ -893,6 +893,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 20),
 
             // ── Section 2: Profile & Identity (Always Visible) ──────────────
+            _SectionHeader(title: 'Your data', dotColor: g.actionInk),
+            AscentCard(
+              key: const ValueKey('settings_backup'),
+              padding: const EdgeInsets.all(AppSpace.s16),
+              onTap: () => context.push('/backup'),
+              child: Row(
+                children: [
+                  Icon(Icons.backup_outlined, color: g.actionInk),
+                  const SizedBox(width: AppSpace.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Backup & restore',
+                          style: AscentTextStyles.listRowTitle.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                        Text(
+                          'Keep a copy of everything safe',
+                          style: AscentTextStyles.caption.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: g.inkMuted),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
             _SectionHeader(title: 'Profile & Assistant', dotColor: g.slate),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
