@@ -61,12 +61,12 @@ final homeShortcutSummaryProvider = Provider.autoDispose.family<String, String>(
     case 'health':
       return _summary(
         ref.watch(todayWaterMlStreamProvider),
-        (ml) => '$ml ml today',
+        (ml) => ml == 0 ? 'Log your first glass' : '$ml ml today',
       );
     case 'walk':
       return _summary(
         ref.watch(todayWalkDistanceStreamProvider),
-        (m) => '${(m / 1000).toStringAsFixed(2)} km today',
+        (m) => m == 0 ? 'Start a walk' : '${(m / 1000).toStringAsFixed(2)} km today',
       );
     case 'medicine':
       return _summary(
@@ -78,10 +78,11 @@ final homeShortcutSummaryProvider = Provider.autoDispose.family<String, String>(
     case 'chai-break':
       return _summary(
         ref.watch(todayPauseCountProvider),
-        (n) => '$n ${n == 1 ? 'pause' : 'pauses'} today',
+        (n) => n == 0 ? 'Take a short break' : '$n ${n == 1 ? 'pause' : 'pauses'} today',
       );
     case 'focus':
-      return '${ref.watch(studyStreakProvider).todaySeconds ~/ 60} min today';
+      final focusMinutes = ref.watch(studyStreakProvider).todaySeconds ~/ 60;
+      return focusMinutes == 0 ? 'Start a session' : '$focusMinutes min today';
     case 'today':
       return _summary(
         ref.watch(todayActivitiesProvider),
@@ -92,7 +93,7 @@ final homeShortcutSummaryProvider = Provider.autoDispose.family<String, String>(
     case 'mind':
       return _summary(
         ref.watch(todayThoughtsCountStreamProvider),
-        (n) => '$n ${n == 1 ? 'thought' : 'thoughts'} today',
+        (n) => n == 0 ? 'Jot a thought' : '$n ${n == 1 ? 'thought' : 'thoughts'} today',
       );
     case 'reminders':
       return _summary(ref.watch(allRemindersProvider), (items) {
@@ -114,7 +115,7 @@ final homeShortcutSummaryProvider = Provider.autoDispose.family<String, String>(
     case 'assistant':
       return _summary(
         ref.watch(todayShortcutMessageCountProvider),
-        (n) => '$n ${n == 1 ? 'message' : 'messages'} today',
+        (n) => n == 0 ? 'Ask anything' : '$n ${n == 1 ? 'message' : 'messages'} today',
       );
     case 'learning':
       final learning = ref.watch(learningHubProvider);
