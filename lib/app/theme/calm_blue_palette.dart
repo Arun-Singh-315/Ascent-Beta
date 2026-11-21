@@ -61,4 +61,22 @@ abstract final class CalmBluePalette {
   static const darkStar = Color(0xFFE6C35A);
   static const darkTrack = Color(0x1FE4E9F0);
   static const darkShadow = Color(0x80000000);
+
+  // ── Home sky (time of day): muted, low-glare pairs of (sky, light) ────────
+  static const skyMorning = Color(0xFFCFE2F3);
+  static const skyMorningLight = Color(0xFFF3E6D8);
+  static const skyAfternoon = Color(0xFFC9E0F1);
+  static const skyAfternoonLight = Color(0xFFE6EFF7);
+  static const skyEvening = Color(0xFFD5D3EC);
+  static const skyEveningLight = Color(0xFFEFE0D9);
+  static const skyNight = Color(0xFFC8D2E8);
+  static const skyNightLight = Color(0xFFDAD8EC);
+  static const darkSkyMorning = Color(0xFF1D3450);
+  static const darkSkyMorningLight = Color(0xFF39332E);
+  static const darkSkyAfternoon = Color(0xFF1B3850);
+  static const darkSkyAfternoonLight = Color(0xFF243649);
+  static const darkSkyEvening = Color(0xFF2C2946);
+  static const darkSkyEveningLight = Color(0xFF3B2E34);
+  static const darkSkyNight = Color(0xFF192440);
+  static const darkSkyNightLight = Color(0xFF272542);
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/calm_blue_palette.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../app/theme/monochrome_surfaces.dart';
 
@@ -20,38 +21,38 @@ class HomeDayDesign {
       >= 5 && < 12 => const HomeDayDesign(
         'Good morning,',
         'A little space to begin.',
-        Color(0xFFADDDF8),
-        Color(0xFFFFE8B5),
+        CalmBluePalette.skyMorning,
+        CalmBluePalette.skyMorningLight,
         .58,
       ),
       >= 12 && < 17 => const HomeDayDesign(
         'Good afternoon,',
         'Make room for a little reset.',
-        Color(0xFF9EDBF3),
-        Color(0xFFFFF0C7),
+        CalmBluePalette.skyAfternoon,
+        CalmBluePalette.skyAfternoonLight,
         .85,
       ),
       >= 17 && < 21 => const HomeDayDesign(
         'Good evening,',
         'Close the day at your pace.',
-        Color(0xFFC8B5F1),
-        Color(0xFFFFCDB5),
+        CalmBluePalette.skyEvening,
+        CalmBluePalette.skyEveningLight,
         .14,
       ),
       _ => const HomeDayDesign(
         'Good night,',
         'Keep a little room for tomorrow.',
-        Color(0xFFB7C7EE),
-        Color(0xFFD9CEF5),
+        CalmBluePalette.skyNight,
+        CalmBluePalette.skyNightLight,
         .05,
       ),
     };
     if (!dark) return design;
     final (sky, light) = switch (now.hour) {
-      >= 5 && < 12 => (const Color(0xFF284F75), const Color(0xFF65533F)),
-      >= 12 && < 17 => (const Color(0xFF215B79), const Color(0xFF476477)),
-      >= 17 && < 21 => (const Color(0xFF55416F), const Color(0xFF79534E)),
-      _ => (const Color(0xFF304B78), const Color(0xFF524876)),
+      >= 5 && < 12 => (CalmBluePalette.darkSkyMorning, CalmBluePalette.darkSkyMorningLight),
+      >= 12 && < 17 => (CalmBluePalette.darkSkyAfternoon, CalmBluePalette.darkSkyAfternoonLight),
+      >= 17 && < 21 => (CalmBluePalette.darkSkyEvening, CalmBluePalette.darkSkyEveningLight),
+      _ => (CalmBluePalette.darkSkyNight, CalmBluePalette.darkSkyNightLight),
     };
     return HomeDayDesign(
       design.greeting,

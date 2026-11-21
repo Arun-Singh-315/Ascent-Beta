@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_provider.dart';
-import '../streak/study_streak_provider.dart';
 
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
@@ -186,5 +185,5 @@ final homeStreakVisibleProvider = Provider<bool>((ref) {
       return layout.visible.contains('streak');
     } catch (_) {}
   }
-  return ref.watch(studyStreakCardVisibleProvider);
+  return true;
 });

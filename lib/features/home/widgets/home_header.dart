@@ -13,6 +13,7 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/cosmic_profile_service.dart';
 import '../../../core/services/festival_service.dart';
 import '../../../core/streak/study_streak_provider.dart';
+import '../../../app/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import 'home_assistant_hero_card.dart';
@@ -46,8 +47,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
-    final inTest =
-        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final inTest = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (!inTest) {
       _animController.repeat();
     }
@@ -183,8 +185,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final current = weatherState.value?['current'] as Map<String, dynamic>?;
     String city = 'Local';
     try {
-      final configured =
-          ref.watch(sharedPreferencesProvider).getString('weather_city');
+      final configured = ref
+          .watch(sharedPreferencesProvider)
+          .getString('weather_city');
       if (configured != null && configured.trim().isNotEmpty) {
         city = configured.split(',').first.trim();
       }
@@ -221,9 +224,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         ? const Color(0xFF141824).withValues(alpha: 0.75)
         : c.surfaceAlt.withValues(alpha: 0.65);
     final pillBorder = Border.all(
-      color: dark
-          ? const Color(0xFF263044)
-          : c.border.withValues(alpha: 0.85),
+      color: dark ? const Color(0xFF263044) : c.border.withValues(alpha: 0.85),
       width: 1,
     );
 
@@ -236,60 +237,62 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         children: [
           // 1. Floating Weather & Temperature Pill (hidden when offline)
           if (showWeather)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              key: const ValueKey('home_weather'),
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                showWeatherForecastSheet(context);
-              },
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: math.max(
-                    0.0,
-                    MediaQuery.sizeOf(context).width - 32,
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                key: const ValueKey('home_weather'),
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  showWeatherForecastSheet(context);
+                },
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: math.max(
+                      0.0,
+                      MediaQuery.sizeOf(context).width - 32,
+                    ),
                   ),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: BoxDecoration(
-                  color: pillBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: pillBorder,
-                ),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(weatherIcon, size: 14, color: c.accent),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$tempStr · $descStr',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: c.textPrimary,
-                          letterSpacing: -0.1,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: pillBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: pillBorder,
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(weatherIcon, size: 14, color: c.accent),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$tempStr · $descStr',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: c.textPrimary,
+                            letterSpacing: -0.1,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '· $city',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
-                          color: c.textSecondary,
+                        const SizedBox(width: 4),
+                        Text(
+                          '· $city',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                            color: c.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
 
           if (sign != null)
             // 2. Floating Vedic Rashi & Cosmic Sign Pill
@@ -309,8 +312,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       MediaQuery.sizeOf(context).width - 32,
                     ),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: pillBg,
                     borderRadius: BorderRadius.circular(20),
@@ -321,10 +326,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          sign.symbol,
-                          style: const TextStyle(fontSize: 13),
-                        ),
+                        Text(sign.symbol, style: const TextStyle(fontSize: 13)),
                         const SizedBox(width: 6),
                         Text(
                           '${sign.vedicRashi} · ${sign.name}',
@@ -351,9 +353,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 borderRadius: BorderRadius.circular(20),
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  ref
-                      .read(studyStreakCardVisibleProvider.notifier)
-                      .toggle();
+                  context.open('/focus');
                 },
                 child: Container(
                   constraints: BoxConstraints(
@@ -362,8 +362,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       MediaQuery.sizeOf(context).width - 32,
                     ),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: pillBg,
                     borderRadius: BorderRadius.circular(20),
@@ -407,14 +409,18 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final cleaned = rawName.replaceAll(';)', '').trim();
     final name = cleaned.isEmpty
         ? ''
-        : cleaned.split(RegExp(r'\s+')).map((w) {
-            if (w.isEmpty) return '';
-            return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
-          }).join(' ');
+        : cleaned
+              .split(RegExp(r'\s+'))
+              .map((w) {
+                if (w.isEmpty) return '';
+                return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
+              })
+              .join(' ');
     final initial = name.isEmpty ? 'A' : name[0].toUpperCase();
     final dob = widget.profile?.dateOfBirth;
-    final sign =
-        dob == null ? null : const CosmicProfileService().getZodiac(dob);
+    final sign = dob == null
+        ? null
+        : const CosmicProfileService().getZodiac(dob);
     final todayFestival = ref.watch(todayFestivalProvider);
     final assistantName = ref.watch(assistantNameProvider);
 
@@ -428,7 +434,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     );
     final showStreak = streak > 0;
 
-    final quote = todayFestival?.thought ??
+    final quote =
+        todayFestival?.thought ??
         (day.cue.isNotEmpty
             ? day.cue
             : 'Rising with unwavering discipline and offering gratitude to the source of life.');
@@ -446,9 +453,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.header),
         ),
-        border: AppBorder.bottom(
-          dark ? const Color(0xFF1E2536) : c.border,
-        ),
+        border: AppBorder.bottom(dark ? const Color(0xFF1E2536) : c.border),
         boxShadow: dark
             ? [
                 BoxShadow(
@@ -468,10 +473,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
             // Time-of-day sky: dawn, clear day, golden hour, night
             // (CLAUDE.md §5.1). Cross-fades over 2 s when the period changes.
             Positioned.fill(
-              child: HomeHeaderScene(
-                now: now,
-                child: const SizedBox.expand(),
-              ),
+              child: HomeHeaderScene(now: now, child: const SizedBox.expand()),
             ),
             Positioned(
               right: 4,
@@ -548,8 +550,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                 borderRadius: BorderRadius.circular(20),
                                 onTap: () {
                                   HapticFeedback.lightImpact();
-                                  final newMode =
-                                      dark ? ThemeMode.light : ThemeMode.dark;
+                                  final newMode = dark
+                                      ? ThemeMode.light
+                                      : ThemeMode.dark;
                                   ref
                                       .read(themeModeProvider.notifier)
                                       .setThemeMode(newMode);
@@ -567,10 +570,12 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                     duration: const Duration(milliseconds: 300),
                                     transitionBuilder: (child, anim) =>
                                         RotationTransition(
-                                      turns: anim,
-                                      child: FadeTransition(
-                                          opacity: anim, child: child),
-                                    ),
+                                          turns: anim,
+                                          child: FadeTransition(
+                                            opacity: anim,
+                                            child: child,
+                                          ),
+                                        ),
                                     child: Icon(
                                       dark
                                           ? Icons.light_mode_rounded
@@ -646,16 +651,16 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2.5),
+                          horizontal: 8,
+                          vertical: 2.5,
+                        ),
                         decoration: BoxDecoration(
                           color: dark
                               ? const Color(0xFF161F30).withValues(alpha: 0.75)
                               : c.surfaceAlt,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: dark
-                                ? const Color(0xFF253755)
-                                : c.border,
+                            color: dark ? const Color(0xFF253755) : c.border,
                             width: 0.8,
                           ),
                         ),
@@ -665,9 +670,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                             Icon(
                               periodIcon,
                               size: 12,
-                              color: dark
-                                  ? const Color(0xFF7DD3FC)
-                                  : c.accent,
+                              color: dark ? const Color(0xFF7DD3FC) : c.accent,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -720,7 +723,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     Container(
                       key: const ValueKey('home_festival_banner'),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: c.warnTint,
                         borderRadius: BorderRadius.circular(12),
@@ -731,8 +736,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.celebration_rounded,
-                              size: 16, color: c.warn),
+                          Icon(
+                            Icons.celebration_rounded,
+                            size: 16,
+                            color: c.warn,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -754,9 +762,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                   // Optional embedded AI Gateway (spacious header keeps it outside by default)
                   if (widget.includeAssistant) ...[
                     const SizedBox(height: 12),
-                    HomeAssistantHeroCard(
-                      assistantName: assistantName,
-                    ),
+                    HomeAssistantHeroCard(assistantName: assistantName),
                   ],
 
                   // Row 6: Quote / Day Cue
@@ -845,16 +851,11 @@ class _AtmosphereCanvasPainter extends CustomPainter {
       final speed = 0.8 + ((i % 5) * 0.15);
 
       final x = seedX * size.width - 20;
-      final y =
-          ((seedY + progress * speed) % 1.0) * (size.height + 40) - 20;
+      final y = ((seedY + progress * speed) % 1.0) * (size.height + 40) - 20;
       const length = 16.0;
       const dx = 4.0; // slight wind angle
 
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(x + dx, y + length),
-        paint,
-      );
+      canvas.drawLine(Offset(x, y), Offset(x + dx, y + length), paint);
     }
   }
 
@@ -887,17 +888,16 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     final celestialPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          (dark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6))
-              .withValues(alpha: dark ? (0.24 + 0.06 * breath) : 0.12),
-          (dark ? const Color(0xFF312E81) : const Color(0xFF6366F1))
-              .withValues(alpha: dark ? 0.12 : 0.06),
+          (dark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6)).withValues(
+            alpha: dark ? (0.24 + 0.06 * breath) : 0.12,
+          ),
+          (dark ? const Color(0xFF312E81) : const Color(0xFF6366F1)).withValues(
+            alpha: dark ? 0.12 : 0.06,
+          ),
           Colors.transparent,
         ],
         stops: const [0.0, 0.55, 1.0],
-      ).createShader(Rect.fromCircle(
-        center: auraCenter,
-        radius: auraRadius,
-      ));
+      ).createShader(Rect.fromCircle(center: auraCenter, radius: auraRadius));
 
     canvas.drawCircle(auraCenter, auraRadius, celestialPaint);
 
@@ -906,14 +906,12 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     final twilightPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          (dark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0))
-              .withValues(alpha: dark ? 0.30 : 0.12),
+          (dark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)).withValues(
+            alpha: dark ? 0.30 : 0.12,
+          ),
           Colors.transparent,
         ],
-      ).createShader(Rect.fromCircle(
-        center: twilightCenter,
-        radius: 140,
-      ));
+      ).createShader(Rect.fromCircle(center: twilightCenter, radius: 140));
     canvas.drawCircle(twilightCenter, 140, twilightPaint);
 
     // 3. Ethereal Silky Horizon Ribbon (Living Midnight Aurora)
@@ -937,53 +935,66 @@ class _AtmosphereCanvasPainter extends CustomPainter {
       ..close();
 
     final ribbonPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          (dark ? const Color(0xFF38BDF8) : const Color(0xFF60A5FA))
-              .withValues(alpha: dark ? 0.08 : 0.04),
-          (dark ? const Color(0xFF818CF8) : const Color(0xFFA5B4FC))
-              .withValues(alpha: dark ? 0.04 : 0.02),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(
-          0, size.height * 0.35, size.width, size.height * 0.65));
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              (dark ? const Color(0xFF38BDF8) : const Color(0xFF60A5FA))
+                  .withValues(alpha: dark ? 0.08 : 0.04),
+              (dark ? const Color(0xFF818CF8) : const Color(0xFFA5B4FC))
+                  .withValues(alpha: dark ? 0.04 : 0.02),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromLTWH(
+              0,
+              size.height * 0.35,
+              size.width,
+              size.height * 0.65,
+            ),
+          );
 
     canvas.drawPath(wavePath, ribbonPaint);
   }
 
   void _paintMorningGlow(Canvas canvas, Size size) {
     final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          (dark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B))
-              .withValues(alpha: dark ? 0.12 : 0.10),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCircle(
-        center: Offset(size.width * 0.85, 20),
-        radius: 120,
-      ));
+      ..shader =
+          RadialGradient(
+            colors: [
+              (dark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B))
+                  .withValues(alpha: dark ? 0.12 : 0.10),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(center: Offset(size.width * 0.85, 20), radius: 120),
+          );
 
     canvas.drawCircle(Offset(size.width * 0.85, 20), 120, glowPaint);
   }
 
   void _paintEveningWarmth(Canvas canvas, Size size) {
     final warmthPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          (dark ? const Color(0xFFEA580C) : const Color(0xFFF97316))
-              .withValues(alpha: dark ? 0.15 : 0.08),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCircle(
-        center: Offset(size.width * 0.2, size.height * 0.8),
-        radius: 140,
-      ));
+      ..shader =
+          RadialGradient(
+            colors: [
+              (dark ? const Color(0xFFEA580C) : const Color(0xFFF97316))
+                  .withValues(alpha: dark ? 0.15 : 0.08),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.2, size.height * 0.8),
+              radius: 140,
+            ),
+          );
 
     canvas.drawCircle(
-        Offset(size.width * 0.2, size.height * 0.8), 140, warmthPaint);
+      Offset(size.width * 0.2, size.height * 0.8),
+      140,
+      warmthPaint,
+    );
   }
 
   @override

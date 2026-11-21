@@ -5,7 +5,6 @@ import 'widgets/home_content_transition.dart';
 import 'widgets/home_quick_expense_card.dart';
 import 'widgets/home_reveal.dart';
 import '../../core/providers/local_day_provider.dart';
-import 'widgets/home_coming_soon_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../app/theme/surface_tokens.dart';
@@ -17,14 +16,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
+import '../../core/features/feature_registry.dart';
+import 'widgets/home_unlock_next_card.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
 import 'widgets/activity_hub_card.dart';
-import 'widgets/day_one_tutorial_card.dart';
-import 'widgets/daily_welcome_dialog.dart';
-import '../../core/services/daily_welcome_service.dart';
-import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
@@ -36,8 +33,6 @@ import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
-import 'widgets/smart_catch_up_banner.dart';
-import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
@@ -101,7 +96,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
   int? _welcomeBackDays;
   bool _heavierModulesReady = false;
-  bool _entryDialogsReady = false;
 
   @override
   void initState() {
@@ -117,66 +111,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       if (mounted) setState(() => _heavierModulesReady = true);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        await Future.delayed(const Duration(milliseconds: 350));
-        if (!mounted) return;
-        final preferences = ref.read(sharedPreferencesProvider);
-        final notice = preferences.getString('ascent_restore_notice_v1');
-        if (notice != null) {
-          preferences.remove('ascent_restore_notice_v1');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(notice),
-              duration: const Duration(seconds: 8),
-            ),
-          );
-        }
-
-        if (!mounted) return;
-        final profile = await ref
-            .read(userProfileStreamProvider.future)
-            .onError((_, _) => null);
-        if (!mounted || !canEnterWorkspace(profile, preferences)) return;
-
-        final tutorialDismissed =
-            (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false);
-        if (!tutorialDismissed && mounted) {
-          // First login: the one-time guide is today's welcome, so the daily
-          // one waits for tomorrow instead of stacking on top of it.
-          preferences.setBool(DayOneTutorialDialog.prefKey, true);
-          await preferences.setString(
-            'ascent_first_home_day_v1',
-            briefingDay(DateTime.now()).toIso8601String(),
-          );
-          await markDailyWelcomeSeen(preferences, DateTime.now());
-          if (!mounted) return;
-          // First capture lives in Home, with no blocking welcome overlay.
-          return;
-        }
-
-        // Every other day: one daily welcome on the first open, never again that
-        // day, and never when Home was opened for a specific destination.
-        final uri = widget.notificationUri;
-        final homeOnly = uri == null || uri.path == '/home';
-        final now = DateTime.now();
-        if (!mounted ||
-            !homeOnly ||
-            !shouldShowDailyWelcome(
-              prefs: preferences,
-              now: now,
-              autoOpen: ref.read(dailyBriefingAutoOpenProvider),
-            )) {
-          return;
-        }
-        await markDailyWelcomeSeen(preferences, now);
-        if (!mounted) return;
-        await DailyWelcomeDialog.show(
-          context,
-          day: briefingDay(now),
-          name: profile?.name ?? '',
+      // Home never opens pop-ups on entry (CLAUDE.md §1): no daily welcome,
+      // tutorial, catch-up or celebration dialogs. Only a restore notice.
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+      final preferences = ref.read(sharedPreferencesProvider);
+      final notice = preferences.getString('ascent_restore_notice_v1');
+      if (notice != null) {
+        preferences.remove('ascent_restore_notice_v1');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
         );
-      } finally {
-        if (mounted) setState(() => _entryDialogsReady = true);
       }
     });
   }
@@ -199,19 +144,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final layout = ref.watch(homeLayoutProvider);
     ref.watch(localHourProvider);
 
-    // Listen for celebratory streak unlocked event
-    ref.listen<StudyStreakStatus?>(streakCelebrationEventProvider, (
-      prev,
-      next,
-    ) {
-      if (next != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          StreakCelebrationDialog.show(context, next);
-          ref.read(streakCelebrationEventProvider.notifier).clear();
-        });
-      }
-    });
+    final unlocked = ref.watch(unlockedFeaturesProvider);
+    bool on(AscentFeature f) => unlocked.contains(f);
 
     final c = context.c;
 
@@ -299,7 +233,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             child: HomeNowCard(),
                           ),
 
-                          // Your day at a glance: six live tiles.
+                          // Your day at a glance: one tile per feature.
                           const HomeFeedEntrance(
                             index: 1,
                             child: HomeGlanceCard(),
@@ -309,7 +243,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           HomeFeedEntrance(
                             index: 1,
                             child: HomeShortcutPanel(
-                              shortcuts: layout.shortcuts,
+                              shortcuts: [
+                                for (final id in layout.shortcuts)
+                                  if (featureForRoute('/$id') == null ||
+                                      on(featureForRoute('/$id')!))
+                                    id,
+                              ],
                               showReminders: layout.visible.contains(
                                 'reminders',
                               ),
@@ -317,7 +256,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           ),
 
                           // 4. Today timeline (Things), capped at 4 rows
-                          if (layout.visible.contains('today'))
+                          if (layout.visible.contains('today') &&
+                              on(AscentFeature.things))
                             HomeFeedEntrance(
                               index: 2,
                               child: ActivityHubCard(
@@ -328,7 +268,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             ),
 
                           // 5. Mind preview with inline capture
-                          if (layout.visible.contains('mind'))
+                          if (layout.visible.contains('mind') &&
+                              on(AscentFeature.mind))
                             const HomeFeedEntrance(
                               index: 3,
                               child: ThoughtWallHomePreview(
@@ -339,7 +280,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                           // 6. Life shelf
                           if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty)
+                              layout.tools.isNotEmpty &&
+                              on(AscentFeature.care))
                             const HomeFeedEntrance(
                               index: 4,
                               child: HomeLifeShelf(),
@@ -347,13 +289,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                           // Plans only get their own card when Things is
                           // hidden, because Things already has a Plans tab.
-                          if (!layout.visible.contains('today'))
+                          if (!layout.visible.contains('today') &&
+                              on(AscentFeature.things))
                             const HomePlansPreview(
                               key: ValueKey('home_plans_big_card'),
                             ),
-
-                          // 7. Assistant card
-
 
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
@@ -370,13 +310,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               child: module,
                             ),
 
-                          if (_entryDialogsReady &&
-                              ref
-                                      .read(sharedPreferencesProvider)
-                                      .getString('ascent_first_home_day_v1') !=
-                                  ref.watch(localDayProvider).toIso8601String())
-                            const SmartCatchUpBanner(),
-
                           if (layout.visible.isEmpty)
                             EmptyState(
                               icon: Icons.dashboard_customize_outlined,
@@ -386,8 +319,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               onAction: () => context.open('/you'),
                             ),
 
-                          // Upcoming features preview card
-                          const HomeComingSoonCard(),
+                          // Suggests the next feature; comes and goes.
+                          const HomeUnlockNextCard(),
 
                           // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
                           SizedBox(
@@ -465,11 +398,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         ref.watch(localHourProvider) >= 17) {
       modules.add(spaced(const DailyCheckInCard()));
     }
+    final unlocked = ref.watch(unlockedFeaturesProvider);
     if (layout.visible.contains('vault') &&
+        unlocked.contains(AscentFeature.vault) &&
         !layout.shortcuts.contains('vault')) {
       modules.add(spaced(const VaultHomePreview()));
     }
-    if (layout.visible.contains('money')) {
+    if (layout.visible.contains('money') &&
+        unlocked.contains(AscentFeature.money)) {
       modules.add(spaced(const HomeQuickExpenseCard()));
     }
     return modules;
