@@ -103,6 +103,10 @@ void main() {
       await t.tap(find.text('Continue'));
       await t.pumpAndSettle();
       await t.enterText(find.byKey(const ValueKey('medicine_duration')), '12');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Save medicine'));
+      await t.pumpAndSettle();
       await t.tap(find.text('Save medicine'));
       await flush(t);
       final meds = await db.select(db.medicineTable).get();

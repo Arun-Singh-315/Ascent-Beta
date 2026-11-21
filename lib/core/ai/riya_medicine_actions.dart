@@ -1,3 +1,4 @@
+import '../medicine/medicine_catalog.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
@@ -168,6 +169,9 @@ class RiyaMedicineActions {
             : DateTime.parse(a['startDate']).toLocal(),
         instructions: a['instructions'] as String? ?? 'As recorded',
         type: a['form'] as String? ?? 'tablet',
+        // Known remedies keep their kind (Arnica is homeopathic, Vitamin D3
+        // a supplement); unknown names stay allopathic.
+        system: parseMedicineText(a['name'] as String).system.name,
       );
       return _saved(id);
     }

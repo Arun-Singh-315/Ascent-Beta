@@ -21918,6 +21918,28 @@ class $MedicineTableTable extends MedicineTable
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _systemMeta = const VerificationMeta('system');
+  @override
+  late final GeneratedColumn<String> system = GeneratedColumn<String>(
+    'system',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('allopathy'),
+  );
+  static const VerificationMeta _everyDaysMeta = const VerificationMeta(
+    'everyDays',
+  );
+  @override
+  late final GeneratedColumn<int> everyDays = GeneratedColumn<int>(
+    'every_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -21945,6 +21967,8 @@ class $MedicineTableTable extends MedicineTable
     isActive,
     stockCount,
     unitsPerDose,
+    system,
+    everyDays,
     createdAt,
   ];
   @override
@@ -22057,6 +22081,18 @@ class $MedicineTableTable extends MedicineTable
         ),
       );
     }
+    if (data.containsKey('system')) {
+      context.handle(
+        _systemMeta,
+        system.isAcceptableOrUnknown(data['system']!, _systemMeta),
+      );
+    }
+    if (data.containsKey('every_days')) {
+      context.handle(
+        _everyDaysMeta,
+        everyDays.isAcceptableOrUnknown(data['every_days']!, _everyDaysMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -22124,6 +22160,14 @@ class $MedicineTableTable extends MedicineTable
         DriftSqlType.int,
         data['${effectivePrefix}units_per_dose'],
       )!,
+      system: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}system'],
+      )!,
+      everyDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}every_days'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -22174,6 +22218,12 @@ class Medicine extends DataClass implements Insertable<Medicine> {
 
   /// How many units one dose uses (e.g. 2 tablets), for the count-down.
   final int unitsPerDose;
+
+  /// System of medicine: allopathy, homeopathy, ayurveda or supplement.
+  final String system;
+
+  /// Doses repeat every this many days (1 = daily, 7 = weekly).
+  final int everyDays;
   final DateTime createdAt;
   const Medicine({
     required this.id,
@@ -22189,6 +22239,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     required this.isActive,
     this.stockCount,
     required this.unitsPerDose,
+    required this.system,
+    required this.everyDays,
     required this.createdAt,
   });
   @override
@@ -22211,6 +22263,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       map['stock_count'] = Variable<int>(stockCount);
     }
     map['units_per_dose'] = Variable<int>(unitsPerDose);
+    map['system'] = Variable<String>(system);
+    map['every_days'] = Variable<int>(everyDays);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -22234,6 +22288,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           ? const Value.absent()
           : Value(stockCount),
       unitsPerDose: Value(unitsPerDose),
+      system: Value(system),
+      everyDays: Value(everyDays),
       createdAt: Value(createdAt),
     );
   }
@@ -22257,6 +22313,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       isActive: serializer.fromJson<bool>(json['isActive']),
       stockCount: serializer.fromJson<int?>(json['stockCount']),
       unitsPerDose: serializer.fromJson<int>(json['unitsPerDose']),
+      system: serializer.fromJson<String>(json['system']),
+      everyDays: serializer.fromJson<int>(json['everyDays']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -22277,6 +22335,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       'isActive': serializer.toJson<bool>(isActive),
       'stockCount': serializer.toJson<int?>(stockCount),
       'unitsPerDose': serializer.toJson<int>(unitsPerDose),
+      'system': serializer.toJson<String>(system),
+      'everyDays': serializer.toJson<int>(everyDays),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -22295,6 +22355,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     bool? isActive,
     Value<int?> stockCount = const Value.absent(),
     int? unitsPerDose,
+    String? system,
+    int? everyDays,
     DateTime? createdAt,
   }) => Medicine(
     id: id ?? this.id,
@@ -22310,6 +22372,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     isActive: isActive ?? this.isActive,
     stockCount: stockCount.present ? stockCount.value : this.stockCount,
     unitsPerDose: unitsPerDose ?? this.unitsPerDose,
+    system: system ?? this.system,
+    everyDays: everyDays ?? this.everyDays,
     createdAt: createdAt ?? this.createdAt,
   );
   Medicine copyWithCompanion(MedicineTableCompanion data) {
@@ -22339,6 +22403,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       unitsPerDose: data.unitsPerDose.present
           ? data.unitsPerDose.value
           : this.unitsPerDose,
+      system: data.system.present ? data.system.value : this.system,
+      everyDays: data.everyDays.present ? data.everyDays.value : this.everyDays,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -22359,6 +22425,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           ..write('isActive: $isActive, ')
           ..write('stockCount: $stockCount, ')
           ..write('unitsPerDose: $unitsPerDose, ')
+          ..write('system: $system, ')
+          ..write('everyDays: $everyDays, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -22379,6 +22447,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     isActive,
     stockCount,
     unitsPerDose,
+    system,
+    everyDays,
     createdAt,
   );
   @override
@@ -22398,6 +22468,8 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           other.isActive == this.isActive &&
           other.stockCount == this.stockCount &&
           other.unitsPerDose == this.unitsPerDose &&
+          other.system == this.system &&
+          other.everyDays == this.everyDays &&
           other.createdAt == this.createdAt);
 }
 
@@ -22415,6 +22487,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
   final Value<bool> isActive;
   final Value<int?> stockCount;
   final Value<int> unitsPerDose;
+  final Value<String> system;
+  final Value<int> everyDays;
   final Value<DateTime> createdAt;
   const MedicineTableCompanion({
     this.id = const Value.absent(),
@@ -22430,6 +22504,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     this.isActive = const Value.absent(),
     this.stockCount = const Value.absent(),
     this.unitsPerDose = const Value.absent(),
+    this.system = const Value.absent(),
+    this.everyDays = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   MedicineTableCompanion.insert({
@@ -22446,6 +22522,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     this.isActive = const Value.absent(),
     this.stockCount = const Value.absent(),
     this.unitsPerDose = const Value.absent(),
+    this.system = const Value.absent(),
+    this.everyDays = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : name = Value(name),
        dosage = Value(dosage),
@@ -22465,6 +22543,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     Expression<bool>? isActive,
     Expression<int>? stockCount,
     Expression<int>? unitsPerDose,
+    Expression<String>? system,
+    Expression<int>? everyDays,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -22481,6 +22561,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
       if (isActive != null) 'is_active': isActive,
       if (stockCount != null) 'stock_count': stockCount,
       if (unitsPerDose != null) 'units_per_dose': unitsPerDose,
+      if (system != null) 'system': system,
+      if (everyDays != null) 'every_days': everyDays,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -22499,6 +22581,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     Value<bool>? isActive,
     Value<int?>? stockCount,
     Value<int>? unitsPerDose,
+    Value<String>? system,
+    Value<int>? everyDays,
     Value<DateTime>? createdAt,
   }) {
     return MedicineTableCompanion(
@@ -22515,6 +22599,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
       isActive: isActive ?? this.isActive,
       stockCount: stockCount ?? this.stockCount,
       unitsPerDose: unitsPerDose ?? this.unitsPerDose,
+      system: system ?? this.system,
+      everyDays: everyDays ?? this.everyDays,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -22561,6 +22647,12 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
     if (unitsPerDose.present) {
       map['units_per_dose'] = Variable<int>(unitsPerDose.value);
     }
+    if (system.present) {
+      map['system'] = Variable<String>(system.value);
+    }
+    if (everyDays.present) {
+      map['every_days'] = Variable<int>(everyDays.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -22583,6 +22675,8 @@ class MedicineTableCompanion extends UpdateCompanion<Medicine> {
           ..write('isActive: $isActive, ')
           ..write('stockCount: $stockCount, ')
           ..write('unitsPerDose: $unitsPerDose, ')
+          ..write('system: $system, ')
+          ..write('everyDays: $everyDays, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -43456,6 +43550,8 @@ typedef $$MedicineTableTableCreateCompanionBuilder =
       Value<bool> isActive,
       Value<int?> stockCount,
       Value<int> unitsPerDose,
+      Value<String> system,
+      Value<int> everyDays,
       Value<DateTime> createdAt,
     });
 typedef $$MedicineTableTableUpdateCompanionBuilder =
@@ -43473,6 +43569,8 @@ typedef $$MedicineTableTableUpdateCompanionBuilder =
       Value<bool> isActive,
       Value<int?> stockCount,
       Value<int> unitsPerDose,
+      Value<String> system,
+      Value<int> everyDays,
       Value<DateTime> createdAt,
     });
 
@@ -43588,6 +43686,16 @@ class $$MedicineTableTableFilterComposer
 
   ColumnFilters<int> get unitsPerDose => $composableBuilder(
     column: $table.unitsPerDose,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get system => $composableBuilder(
+    column: $table.system,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get everyDays => $composableBuilder(
+    column: $table.everyDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -43714,6 +43822,16 @@ class $$MedicineTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get system => $composableBuilder(
+    column: $table.system,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get everyDays => $composableBuilder(
+    column: $table.everyDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -43797,6 +43915,12 @@ class $$MedicineTableTableAnnotationComposer
     column: $table.unitsPerDose,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get system =>
+      $composableBuilder(column: $table.system, builder: (column) => column);
+
+  GeneratedColumn<int> get everyDays =>
+      $composableBuilder(column: $table.everyDays, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -43891,6 +44015,8 @@ class $$MedicineTableTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
                 Value<int> unitsPerDose = const Value.absent(),
+                Value<String> system = const Value.absent(),
+                Value<int> everyDays = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => MedicineTableCompanion(
                 id: id,
@@ -43906,6 +44032,8 @@ class $$MedicineTableTableTableManager
                 isActive: isActive,
                 stockCount: stockCount,
                 unitsPerDose: unitsPerDose,
+                system: system,
+                everyDays: everyDays,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -43923,6 +44051,8 @@ class $$MedicineTableTableTableManager
                 Value<bool> isActive = const Value.absent(),
                 Value<int?> stockCount = const Value.absent(),
                 Value<int> unitsPerDose = const Value.absent(),
+                Value<String> system = const Value.absent(),
+                Value<int> everyDays = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => MedicineTableCompanion.insert(
                 id: id,
@@ -43938,6 +44068,8 @@ class $$MedicineTableTableTableManager
                 isActive: isActive,
                 stockCount: stockCount,
                 unitsPerDose: unitsPerDose,
+                system: system,
+                everyDays: everyDays,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

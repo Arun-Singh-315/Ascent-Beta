@@ -33,8 +33,9 @@ RefillInfo? refillInfo(Medicine m, DateTime now) {
   try {
     perDay = (jsonDecode(m.scheduledTimes) as List).length;
   } catch (_) {}
-  final usePerDay = (perDay * m.unitsPerDose).clamp(1, 1000);
-  final daysLeft = left ~/ usePerDay;
+  final usePerDoseDay = (perDay * m.unitsPerDose).clamp(1, 1000);
+  // Weekly (every 7 days) stock lasts 7 days per dose day.
+  final daysLeft = (left ~/ usePerDoseDay) * m.everyDays.clamp(1, 366);
   final today = DateTime(now.year, now.month, now.day);
   final start = DateTime(m.startDate.year, m.startDate.month, m.startDate.day);
   final end = start.add(Duration(days: m.durationDays - 1));

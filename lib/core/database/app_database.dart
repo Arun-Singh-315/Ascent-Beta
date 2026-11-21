@@ -155,7 +155,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -355,6 +355,13 @@ class AppDatabase extends _$AppDatabase {
         // Refill tracking: how much is left and how much one dose uses.
         await addColumnSafely(medicineTable, medicineTable.stockCount);
         await addColumnSafely(medicineTable, medicineTable.unitsPerDose);
+      }
+      if (from < 27) {
+        // Medicine systems (homeopathic, ayurvedic, supplements) and
+        // every-N-days schedules such as weekly vitamin D. Existing rows keep
+        // their defaults: allopathy, daily.
+        await addColumnSafely(medicineTable, medicineTable.system);
+        await addColumnSafely(medicineTable, medicineTable.everyDays);
       }
     },
   );

@@ -46,12 +46,15 @@ class AppChip extends StatelessWidget {
         splashColor: c.accent.withValues(alpha: 0.1),
         highlightColor: c.accent.withValues(alpha: 0.05),
         onTap: onTap,
+        // No alignment here: an aligned Container expands to all the width
+        // it is offered, which stretched every chip in a Wrap to a full row.
+        // The Row hugs its label and still centres when a parent stretches it.
         child: Container(
           height: height,
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          alignment: Alignment.center,
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (emoji != null) ...[
                 Text(emoji!, style: TextStyle(fontSize: fontSize + 1)),

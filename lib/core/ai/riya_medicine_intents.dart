@@ -1,3 +1,4 @@
+import '../medicine/medicine_catalog.dart';
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
@@ -164,8 +165,9 @@ class RiyaMedicineIntents {
         }),
       );
     }
+    final forms = allMedicineForms.map(RegExp.escape).join('|');
     final create = RegExp(
-      r'^(?:add|create|schedule) medicine (.+?) dosage (.+?) form (tablet|capsule|syrup|drops|injection) at (.+?) for (\d+) days(?: from (\d{4}-\d{2}-\d{2}))?(?: instructions (.+))?$',
+      '^(?:add|create|schedule) medicine (.+?) dosage (.+?) form ($forms) at (.+?) for (\\d+) days(?: from (\\d{4}-\\d{2}-\\d{2}))?(?: instructions (.+))?\$',
       caseSensitive: false,
     ).firstMatch(text);
     if (create != null) {

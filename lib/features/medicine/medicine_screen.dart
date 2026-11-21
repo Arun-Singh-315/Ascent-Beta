@@ -1,5 +1,6 @@
 import 'care_design.dart';
 import 'care_forms.dart';
+import '../../core/medicine/medicine_catalog.dart';
 import 'care_plans_view.dart';
 import 'dose_history_screen.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
@@ -592,7 +593,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         ),
       );
     }
-    final unit = medicine.type == 'syrup' ? 'ml' : '${medicine.type}s';
+    final unit = switch (medicine.type) {
+      'syrup' || 'kadha' => 'ml',
+      'globules' => 'pills',
+      'churna' || 'powder' => 'servings',
+      final t when t.endsWith('s') => t,
+      final t => '${t}s',
+    };
     final line = info.coversCourse
         ? '${info.left} $unit left · enough for this course'
         : info.daysLeft == 0
@@ -711,11 +718,21 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               runSpacing: 6,
               alignment: WrapAlignment.spaceBetween,
               children: [
-                _tag(
-                  medicine.type.isEmpty
-                      ? 'Medicine'
-                      : '${medicine.type[0].toUpperCase()}${medicine.type.substring(1)}',
-                  icon: Icons.medication_outlined,
+                Builder(
+                  builder: (_) {
+                    final system = MedicineSystem.from(medicine.system);
+                    final form = medicine.type.isEmpty
+                        ? ''
+                        : '${medicine.type[0].toUpperCase()}${medicine.type.substring(1)}';
+                    return _tag(
+                      system == MedicineSystem.allopathy
+                          ? (form.isEmpty ? 'Medicine' : form)
+                          : form.isEmpty
+                          ? system.label
+                          : '${system.label} · $form',
+                      icon: system.icon,
+                    );
+                  },
                 ),
                 _tag(status),
               ],
@@ -749,10 +766,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                 ),
               ),
             const SizedBox(height: 16),
-            Text(
-              '${times.length} daily dose${times.length == 1 ? '' : 's'}',
-              style: TextStyle(color: g.inkMuted),
-            ),
+            Text(switch (medicine.everyDays) {
+              7 =>
+                times.length == 1
+                    ? 'Once a week'
+                    : '${times.length} doses, once a week',
+              2 =>
+                '${times.length} dose${times.length == 1 ? '' : 's'}, every other day',
+              _ => '${times.length} daily dose${times.length == 1 ? '' : 's'}',
+            }, style: TextStyle(color: g.inkMuted)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
