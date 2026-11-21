@@ -27,7 +27,11 @@ class CarePanel extends StatelessWidget {
       radius: hero ? 28 : 24,
       padding: padding,
       onTap: onTap,
-      customBorder: Border.all(color: g.ink.withValues(alpha: .07)),
+      customBorder: Border.all(
+        color: hero
+            ? g.ink.withValues(alpha: .07)
+            : g.ink.withValues(alpha: g.isDark ? .16 : .12),
+      ),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -46,10 +50,8 @@ class CarePanel extends StatelessWidget {
                   surface,
                 ),
               ]
-            : [
-                surface,
-                Color.alphaBlend(g.sage.withValues(alpha: .025), surface),
-              ],
+            // Sections are see-through with a border, not filled cards.
+            : [Colors.transparent, Colors.transparent],
       ),
       child: child,
     );

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/mindspace_palette.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
@@ -547,9 +546,10 @@ class _PalaceCardState extends State<PalaceCard> {
         // A thought bubble carries its hue: a soft wash in the fill, a
         // tinted shadow by day and a tinted hairline by night.
         final base = dark ? g.surface : (filled ? fill : g.elevated);
+        // See-through bubble with a border in the thought's colour.
         final bubble = minimal || dimmed
             ? base
-            : MindspacePalette.bubbleFill(accentColor, base, dark: dark);
+            : base.withValues(alpha: dark ? .35 : .55);
         return Container(
           decoration: BoxDecoration(
             color: bubble,
@@ -564,27 +564,13 @@ class _PalaceCardState extends State<PalaceCard> {
                   ).resolve(Directionality.of(context)),
             border: accentBorder
                 ? Border.all(color: borderColor, width: 1.8)
-                : (dark
-                      ? Border.all(
-                          color: minimal
-                              ? borderColor
-                              : accentColor.withValues(alpha: .22),
-                        )
-                      : null),
-            boxShadow: dark || minimal
-                ? null
-                : [
-                    BoxShadow(
-                      color: accentColor.withValues(alpha: .07),
-                      blurRadius: 14,
-                      offset: const Offset(0, 3),
-                    ),
-                    BoxShadow(
-                      color: MindspacePalette.cardShadowLight(.03),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
+                : Border.all(
+                    color: minimal
+                        ? borderColor
+                        : accentColor.withValues(alpha: dark ? .45 : .40),
+                    width: 1.2,
+                  ),
+            boxShadow: null,
           ),
           padding: EdgeInsets.all(padding),
           child: AnimatedSize(

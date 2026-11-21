@@ -95,21 +95,21 @@ abstract final class CalmBluePalette {
   static const cloudBlue = Color(0xFF8DB7F5);
   static const cloudLilac = Color(0xFFC7B8F2);
 
-  // Mindspace: lilac "mind palace" mist by day, deep plum by night.
+  // Mindspace: soft teal-blue mist by day, deep sea by night (no purple).
   static const mindLight = [
-    Color(0xFFEFE9FB),
-    Color(0xFFF6F2FD),
-    Color(0xFFFCFAFE),
+    Color(0xFFE3F1F1),
+    Color(0xFFEEF6F7),
+    Color(0xFFF8FBFC),
   ];
   static const mindDark = [
-    Color(0xFF1B1433),
-    Color(0xFF140F26),
-    Color(0xFF0D0A17),
+    Color(0xFF0C1C1F),
+    Color(0xFF0B1518),
+    Color(0xFF080D10),
   ];
-  static const mindCloudA = Color(0xFFC3A9F2);
-  static const mindCloudB = Color(0xFFF2B8D2);
-  static const mindDoodleLight = Color(0x1A8063C4);
-  static const mindDoodleDark = Color(0x1AB59CF0);
+  static const mindCloudA = Color(0xFF8FD3CC);
+  static const mindCloudB = Color(0xFF9CC3EE);
+  static const mindDoodleLight = Color(0x1A2F8F8A);
+  static const mindDoodleDark = Color(0x1A6CCBC3);
 
   // Riya: indigo to rose by day, indigo night after dark.
   static const riyaLight = [

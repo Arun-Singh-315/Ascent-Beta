@@ -249,9 +249,13 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
                   horizontal: AppSpace.s12,
                   vertical: AppSpace.s10,
                 ),
+                // See-through bubble with a border, no colour fill.
                 decoration: BoxDecoration(
-                  color: tint.withValues(alpha: g.isDark ? .14 : .08),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: tint.withValues(alpha: g.isDark ? .45 : .35),
+                    width: 1.2,
+                  ),
                 ),
                 child: Text(
                   displayContent(t.content).trim(),
@@ -494,7 +498,7 @@ class HomeLifeTiles extends ConsumerWidget {
               if (i > 0)
                 Divider(
                   height: 1,
-                  indent: 72,
+                  indent: 80,
                   color: g.ink.withValues(alpha: g.isDark ? .12 : .08),
                 ),
               rows[i],
@@ -555,49 +559,40 @@ class _DayRow extends StatelessWidget {
           ),
           padding: const EdgeInsets.fromLTRB(
             AppSpace.s16,
-            AppSpace.s12,
+            AppSpace.s20,
             AppSpace.s8,
-            AppSpace.s12,
+            AppSpace.s20,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IconChip(icon: icon, tint: tint, size: 44),
-              const SizedBox(width: AppSpace.s12),
+              _IconChip(icon: icon, tint: tint, size: 48),
+              const SizedBox(width: AppSpace.s16),
               Expanded(
                 child: ExcludeSemantics(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            title,
-                            style: AscentTextStyles.caption.copyWith(
-                              color: g.inkSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpace.s8),
-                          Flexible(
-                            child: Text(
-                              value,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AscentTextStyles.listRowTitle.copyWith(
-                                color: g.ink,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                      // Label above a large value, then roomy detail lines.
+                      Text(
+                        title,
+                        style: AscentTextStyles.caption.copyWith(
+                          color: g.inkSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
                       for (final d in details) ...[
-                        const SizedBox(height: AppSpace.s4),
+                        const SizedBox(height: AppSpace.s8),
                         d,
                       ],
                     ],
@@ -622,8 +617,8 @@ Widget _detail(
   text,
   maxLines: 2,
   overflow: TextOverflow.ellipsis,
-  style: AscentTextStyles.caption.copyWith(
-    color: color ?? context.glass.inkMuted,
+  style: AscentTextStyles.bodyMedium.copyWith(
+    color: color ?? context.glass.inkSecondary,
     fontWeight: strong ? FontWeight.w600 : null,
   ),
 );
