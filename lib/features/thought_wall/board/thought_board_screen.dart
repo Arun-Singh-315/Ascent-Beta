@@ -805,11 +805,10 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   }
 
   Widget _composer() {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // The board body already ends at the tab bar, so a small gap is enough:
+    // the field sits right above it instead of floating mid-screen.
     return Padding(
-      // Sit just above the tab bar (bottomInset already includes it), not
-      // floating mid-screen.
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 8.0 + bottomInset),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

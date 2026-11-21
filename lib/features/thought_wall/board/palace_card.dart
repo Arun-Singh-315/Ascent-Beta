@@ -324,7 +324,18 @@ class _PalaceCardState extends State<PalaceCard> {
     final progress = widget.isLocked ? null : progressLabel(thought.content);
     final origin = originTag(thought, widget.now);
     final tags = <Widget>[
-      Text(boardTimeLabel(thought.createdAt, widget.now), style: tagStyle),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
+          ),
+          const SizedBox(width: 6),
+          Text(boardTimeLabel(thought.createdAt, widget.now), style: tagStyle),
+        ],
+      ),
       if (origin != null)
         Text(origin, key: ValueKey('tag_origin_${thought.id}'), style: tagStyle),
       if (widget.place == ThoughtPlace.archivedToday)
@@ -542,9 +553,15 @@ class _PalaceCardState extends State<PalaceCard> {
         return Container(
           decoration: BoxDecoration(
             color: bubble,
+            // A chat-style bubble: one sharp corner, the rest round.
             borderRadius: minimal
                 ? AppGeometry.roundedr8
-                : BorderRadius.circular(20),
+                : const BorderRadiusDirectional.only(
+                    topStart: Radius.circular(6),
+                    topEnd: Radius.circular(22),
+                    bottomStart: Radius.circular(22),
+                    bottomEnd: Radius.circular(22),
+                  ).resolve(Directionality.of(context)),
             border: accentBorder
                 ? Border.all(color: borderColor, width: 1.8)
                 : (dark

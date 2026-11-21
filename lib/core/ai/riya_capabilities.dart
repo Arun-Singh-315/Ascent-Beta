@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import '../utils/human_time.dart';
 import 'riya_productivity.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart';
@@ -733,11 +735,11 @@ class RiyaExecutor {
         final overdue =
             (await overdueQuery.getSingle()).read(overdueCount) ?? 0;
         final label = scope == 'date'
-            ? '${from.day}/${from.month}/${from.year}'
+            ? humanDay(from)
             : '${scope[0].toUpperCase()}${scope.substring(1)}';
         final message = rows.isEmpty
             ? 'No reminders for $label.'
-            : '$label: $total reminder${total == 1 ? '' : 's'}.\n${rows.map((r) => '#${r.id} ${r.title.length > 140 ? '${r.title.substring(0, 137)}…' : r.title} · ${r.scheduledAt.hour.toString().padLeft(2, '0')}:${r.scheduledAt.minute.toString().padLeft(2, '0')}').join('\n')}';
+            : '$label: $total reminder${total == 1 ? '' : 's'}.\n${rows.map((r) => '#${r.id} ${r.title.length > 140 ? '${r.title.substring(0, 137)}…' : r.title} · ${DateFormat('h:mm a').format(r.scheduledAt)}').join('\n')}';
         return RiyaResult(
           '$message${overdue > 0 && scope != 'overdue' ? '\n$overdue overdue reminder${overdue == 1 ? '' : 's'} available separately.' : ''}',
           route,
@@ -821,7 +823,7 @@ class RiyaExecutor {
           throw StateError('Reminder verification failed');
         }
         return RiyaResult(
-          'Saved reminder “${saved.title}” for $at. Device alert scheduling has not been verified.',
+          'Reminder set: “${saved.title}”, ${humanWhen(at)}.',
           route,
           reminderIds: [id],
           entityType: 'reminders',

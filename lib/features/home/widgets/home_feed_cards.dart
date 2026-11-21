@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -281,139 +279,6 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
   }
 }
 
-/// "Your day": one big glass card that closes the feed. Water, Medicine,
-/// Money and Focus sit in a grid divided by hairline borders; an odd last
-/// cell spans the full width.
-class HomeLifeTiles extends ConsumerWidget {
-  const HomeLifeTiles({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final on = ref.watch(unlockedFeaturesProvider);
-    final cells = <Widget>[
-      if (on.contains(AscentFeature.care)) const _WaterTile(),
-      if (on.contains(AscentFeature.care)) const _MedicineTile(),
-      if (on.contains(AscentFeature.money)) const _MoneyTile(),
-      if (on.contains(AscentFeature.focus)) const _FocusTile(),
-    ];
-    if (cells.isEmpty) return const SizedBox.shrink();
-    final line = BorderSide(
-      color: g.ink.withValues(alpha: g.isDark ? .14 : .10),
-    );
-    final oneColumn = MediaQuery.textScalerOf(context).scale(14) > 22;
-    final rows = <List<Widget>>[];
-    for (var i = 0; i < cells.length; i += oneColumn ? 1 : 2) {
-      rows.add(
-        cells.sublist(i, math.min(i + (oneColumn ? 1 : 2), cells.length)),
-      );
-    }
-    return Padding(
-      key: const ValueKey('home_day_card'),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.s16,
-        0,
-        AppSpace.s16,
-        AppSpace.s20,
-      ),
-      child: GlassCard(
-        padding: EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpace.s16,
-                AppSpace.s16,
-                AppSpace.s16,
-                AppSpace.s8,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        'Your day',
-                        style: AscentTextStyles.homeTitle.copyWith(
-                          color: g.ink,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Text(
-                    DateFormat('EEE d MMM').format(DateTime.now()),
-                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-                  ),
-                ],
-              ),
-            ),
-            for (var r = 0; r < rows.length; r++)
-              DecoratedBox(
-                decoration: BoxDecoration(border: Border(top: line)),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var c = 0; c < rows[r].length; c++)
-                        Expanded(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              border: c > 0
-                                  ? Border(left: line)
-                                  : const Border(),
-                            ),
-                            child: rows[r][c],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FocusTile extends ConsumerWidget {
-  const _FocusTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final minutes = ref.watch(studyStreakProvider).todaySeconds ~/ 60;
-    final tint = BrandPalette.pillarTint('focus', dark: g.isDark);
-    return _Tile(
-      key: const ValueKey('home_bento_focus'),
-      route: '/focus',
-      tint: tint,
-      action: _QuickAction(
-        key: const ValueKey('home_bento_focus_start'),
-        icon: Icons.play_arrow_rounded,
-        tooltip: 'Start focus',
-        tint: tint,
-        onPressed: () => context.open('/focus'),
-      ),
-      semantics: minutes == 0
-          ? 'Focus: no session yet'
-          : 'Focus: $minutes minutes today',
-      child: _Stat(
-        icon: Icons.timer_outlined,
-        tint: tint,
-        label: 'Focus',
-        value: minutes == 0
-            ? '–'
-            : minutes >= 60
-            ? '${minutes ~/ 60}h ${minutes % 60}m'
-            : '${minutes}m',
-        detail: minutes == 0 ? 'Start a session' : 'focused today',
-      ),
-    );
-  }
-}
-
 /// A hero feed card: glass, a header that opens the screen, then content.
 class _FeedCard extends StatelessWidget {
   const _FeedCard({super.key, required this.header, required this.children});
@@ -500,288 +365,7 @@ class _CardHeader extends StatelessWidget {
   }
 }
 
-class _WaterTile extends ConsumerStatefulWidget {
-  const _WaterTile();
-
-  @override
-  ConsumerState<_WaterTile> createState() => _WaterTileState();
-}
-
-class _WaterTileState extends ConsumerState<_WaterTile> {
-  bool _saving = false;
-
-  Future<void> _log() async {
-    if (_saving) return;
-    setState(() => _saving = true);
-    HapticFeedback.lightImpact();
-    final dao = ref.read(waterDaoProvider);
-    try {
-      final id = await dao.addWater(250);
-      if (!mounted) return;
-      AscentSnackBar.show(
-        context,
-        message: '250 ml water logged',
-        actionLabel: 'Undo',
-        onAction: () => dao.deleteWater(id),
-      );
-    } catch (_) {
-      if (mounted) {
-        AscentSnackBar.error(context, message: 'Could not log water.');
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    final ml = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-    final goal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2000;
-    final behind = hydrationBehindMl(
-      now: DateTime.now(),
-      drankMl: ml,
-      goalMl: goal,
-    );
-    final tint = BrandPalette.pillarTint('hydration', dark: g.isDark);
-    return _Tile(
-      key: const ValueKey('home_bento_water'),
-      route: '/hydration',
-      tint: tint,
-      semantics: 'Water: ${ml == 0 ? 'none yet' : '$ml ml'}',
-      action: _QuickAction(
-        key: const ValueKey('home_bento_water_add'),
-        icon: Icons.add_rounded,
-        tooltip: 'Log 250 ml',
-        tint: tint,
-        onPressed: _saving ? null : _log,
-      ),
-      child: _Stat(
-        icon: Icons.water_drop_outlined,
-        tint: tint,
-        label: 'Water',
-        value: ml == 0 ? '–' : '${(ml / 1000).toStringAsFixed(1)} L',
-        detail: behind != null
-            ? '$behind ml behind'
-            : 'of ${(goal / 1000).toStringAsFixed(1)} L',
-        nudge: behind != null,
-        progress: goal <= 0 ? null : (ml / goal).clamp(0, 1).toDouble(),
-      ),
-    );
-  }
-}
-
-class _MedicineTile extends ConsumerWidget {
-  const _MedicineTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final doses = ref.watch(todayMedicineLogsStreamProvider).value ?? const [];
-    final taken = doses.where((d) => d.isTaken).length;
-    final pending = doses.where((d) => !d.isTaken).toList()
-      ..sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
-    final tint = BrandPalette.pillarTint('medicine', dark: g.isDark);
-    String at(String slot) {
-      final p = slot.split(':');
-      if (p.length != 2) return slot;
-      final t = DateTime(
-        2000,
-        1,
-        1,
-        int.tryParse(p[0]) ?? 0,
-        int.tryParse(p[1]) ?? 0,
-      );
-      return DateFormat('h:mm a').format(t);
-    }
-
-    return _Tile(
-      key: const ValueKey('home_bento_medicine'),
-      route: '/medicine',
-      tint: tint,
-      action: pending.isEmpty
-          ? null
-          : _QuickAction(
-              key: const ValueKey('home_bento_medicine_take'),
-              icon: Icons.check_rounded,
-              tooltip: 'Take next dose',
-              tint: tint,
-              onPressed: () => context.open('/medicine'),
-            ),
-      semantics: doses.isEmpty
-          ? 'Medicine: nothing due'
-          : 'Medicine: $taken of ${doses.length} taken',
-      child: _Stat(
-        icon: Icons.medication_outlined,
-        tint: tint,
-        label: 'Medicine',
-        value: doses.isEmpty ? '–' : '$taken/${doses.length}',
-        detail: doses.isEmpty
-            ? 'Nothing due'
-            : pending.isEmpty
-            ? 'All taken'
-            : 'Next ${at(pending.first.timeSlot)}',
-      ),
-    );
-  }
-}
-
-class _MoneyTile extends ConsumerWidget {
-  const _MoneyTile();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-    final spent = ref.watch(todaySpendingStreamProvider).value ?? 0;
-    final tint = BrandPalette.pillarTint('money', dark: g.isDark);
-    return _Tile(
-      key: const ValueKey('home_bento_money'),
-      route: '/money',
-      tint: tint,
-      action: _QuickAction(
-        key: const ValueKey('home_bento_money_add'),
-        icon: Icons.add_rounded,
-        tooltip: 'Add an expense',
-        tint: tint,
-        onPressed: () => context.open('/money'),
-      ),
-      semantics: spent == 0 ? 'Money: nothing spent' : 'Money: spent $spent',
-      child: _Stat(
-        icon: Icons.account_balance_wallet_outlined,
-        tint: tint,
-        label: 'Spent',
-        value: spent == 0 ? '–' : '₹${NumberFormat.compact().format(spent)}',
-        detail: spent == 0 ? 'Nothing yet' : 'today',
-      ),
-    );
-  }
-}
-
 // Building blocks -------------------------------------------------------------
-
-/// One cell of the "Your day" grid: opens its screen, optional corner
-/// action. The grid's hairlines frame it; the big card supplies the glass.
-class _Tile extends StatelessWidget {
-  const _Tile({
-    super.key,
-    required this.route,
-    required this.semantics,
-    required this.child,
-    this.action,
-    this.tint,
-  });
-  final String route;
-  final String semantics;
-  final Widget child;
-  final Widget? action;
-
-  /// The cell's colour, washed softly in from its top corner.
-  final Color? tint;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: semantics,
-    child: InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        context.open(route);
-      },
-      child: Ink(
-        decoration: tint == null
-            ? null
-            : BoxDecoration(
-                gradient: RadialGradient(
-                  center: AlignmentDirectional.topStart.resolve(
-                    Directionality.of(context),
-                  ),
-                  radius: 1.2,
-                  colors: [
-                    tint!.withValues(alpha: context.glass.isDark ? .14 : .10),
-                    tint!.withValues(alpha: 0),
-                  ],
-                ),
-              ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.s16),
-          child: Stack(
-            children: [
-              ExcludeSemantics(child: child),
-              if (action != null)
-                PositionedDirectional(top: -8, end: -8, child: action!),
-            ],
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({
-    required this.icon,
-    required this.tint,
-    required this.label,
-    required this.value,
-    required this.detail,
-    this.nudge = false,
-    this.progress,
-  });
-  final IconData icon;
-  final Color tint;
-  final String label, value, detail;
-  final bool nudge;
-  final double? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _IconChip(icon: icon, tint: tint, size: 34),
-        const SizedBox(height: AppSpace.s12),
-        Text(
-          label,
-          style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
-        ),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            value,
-            style: AscentTextStyles.interfaceTitle.copyWith(
-              color: g.ink,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ),
-        Text(
-          detail,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AscentTextStyles.caption.copyWith(
-            color: nudge ? g.warningInk : g.inkMuted,
-            fontWeight: nudge ? FontWeight.w600 : null,
-          ),
-        ),
-        if (progress != null) ...[
-          const SizedBox(height: AppSpace.s8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 4,
-              color: tint,
-              backgroundColor: tint.withValues(alpha: .14),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
 
 /// Outlined ring icon: a tinted 1.5 px ring with a nearly see-through
 /// inside and an outlined glyph, so icons feel light on glass.
@@ -845,4 +429,465 @@ class _QuickAction extends StatelessWidget {
       ),
     ),
   );
+}
+
+// "Your day" -----------------------------------------------------------------
+
+/// "Your day": one big glass card that closes the feed. Each feature is a
+/// full-width row with real detail (what's next, what's left, the last
+/// entry), not just a number, separated by hairlines.
+class HomeLifeTiles extends ConsumerWidget {
+  const HomeLifeTiles({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final on = ref.watch(unlockedFeaturesProvider);
+    final rows = <Widget>[
+      if (on.contains(AscentFeature.care)) const _WaterRow(),
+      if (on.contains(AscentFeature.care)) const _MedicineRow(),
+      if (on.contains(AscentFeature.money)) const _MoneyRow(),
+      if (on.contains(AscentFeature.focus)) const _FocusRow(),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      key: const ValueKey('home_day_card'),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s16,
+        0,
+        AppSpace.s16,
+        AppSpace.s20,
+      ),
+      child: GlassCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s16,
+                AppSpace.s16,
+                AppSpace.s16,
+                AppSpace.s4,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        'Your day',
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    DateFormat('EEE d MMM').format(DateTime.now()),
+                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+                  ),
+                ],
+              ),
+            ),
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0)
+                Divider(
+                  height: 1,
+                  indent: 72,
+                  color: g.ink.withValues(alpha: g.isDark ? .12 : .08),
+                ),
+              rows[i],
+            ],
+            const SizedBox(height: AppSpace.s4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One "Your day" row: ring icon, a title with its main value, detail
+/// lines, and an action button that always fits inside the row.
+class _DayRow extends StatelessWidget {
+  const _DayRow({
+    super.key,
+    required this.icon,
+    required this.tint,
+    required this.title,
+    required this.value,
+    required this.route,
+    required this.semantics,
+    this.details = const [],
+    this.action,
+  });
+  final IconData icon;
+  final Color tint;
+  final String title, value, route, semantics;
+  final List<Widget> details;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Semantics(
+      button: true,
+      label: semantics,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.open(route);
+        },
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.centerStart.resolve(
+                Directionality.of(context),
+              ),
+              end: AlignmentDirectional.centerEnd.resolve(
+                Directionality.of(context),
+              ),
+              colors: [
+                tint.withValues(alpha: g.isDark ? .10 : .06),
+                tint.withValues(alpha: 0),
+              ],
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s16,
+            AppSpace.s12,
+            AppSpace.s8,
+            AppSpace.s12,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _IconChip(icon: icon, tint: tint, size: 44),
+              const SizedBox(width: AppSpace.s12),
+              Expanded(
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            title,
+                            style: AscentTextStyles.caption.copyWith(
+                              color: g.inkSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.s8),
+                          Flexible(
+                            child: Text(
+                              value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AscentTextStyles.listRowTitle.copyWith(
+                                color: g.ink,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      for (final d in details) ...[
+                        const SizedBox(height: AppSpace.s4),
+                        d,
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              ?action,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _detail(
+  BuildContext context,
+  String text, {
+  Color? color,
+  bool strong = false,
+}) => Text(
+  text,
+  maxLines: 2,
+  overflow: TextOverflow.ellipsis,
+  style: AscentTextStyles.caption.copyWith(
+    color: color ?? context.glass.inkMuted,
+    fontWeight: strong ? FontWeight.w600 : null,
+  ),
+);
+
+Widget _bar(double value, Color tint) => ClipRRect(
+  borderRadius: BorderRadius.circular(999),
+  child: LinearProgressIndicator(
+    value: value.clamp(0, 1).toDouble(),
+    minHeight: 5,
+    color: tint,
+    backgroundColor: tint.withValues(alpha: .14),
+  ),
+);
+
+class _WaterRow extends ConsumerStatefulWidget {
+  const _WaterRow();
+
+  @override
+  ConsumerState<_WaterRow> createState() => _WaterRowState();
+}
+
+class _WaterRowState extends ConsumerState<_WaterRow> {
+  bool _saving = false;
+
+  Future<void> _log() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    HapticFeedback.lightImpact();
+    final dao = ref.read(waterDaoProvider);
+    try {
+      final id = await dao.addWater(250);
+      if (!mounted) return;
+      AscentSnackBar.show(
+        context,
+        message: '250 ml water logged',
+        actionLabel: 'Undo',
+        onAction: () => dao.deleteWater(id),
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(context, message: 'Could not log water.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final ml = ref.watch(todayWaterMlStreamProvider).value ?? 0;
+    final goal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2000;
+    final glasses = (ml / 250).floor();
+    final behind = hydrationBehindMl(
+      now: DateTime.now(),
+      drankMl: ml,
+      goalMl: goal,
+    );
+    final tint = BrandPalette.pillarTint('hydration', dark: g.isDark);
+    String l(int v) => (v / 1000).toStringAsFixed(1);
+    return _DayRow(
+      key: const ValueKey('home_bento_water'),
+      icon: Icons.water_drop_outlined,
+      tint: tint,
+      title: 'Water',
+      value: '${l(ml)} of ${l(goal)} L',
+      route: '/hydration',
+      semantics: 'Water: ${l(ml)} of ${l(goal)} litres',
+      details: [
+        _detail(
+          context,
+          behind != null
+              ? '$behind ml behind pace · $glasses glass${glasses == 1 ? '' : 'es'} so far'
+              : ml == 0
+              ? 'No water logged yet'
+              : '$glasses glass${glasses == 1 ? '' : 'es'} so far · on track',
+          color: behind != null ? g.warningInk : null,
+          strong: behind != null,
+        ),
+        _bar(goal <= 0 ? 0 : ml / goal, tint),
+      ],
+      action: _QuickAction(
+        key: const ValueKey('home_bento_water_add'),
+        icon: Icons.add_rounded,
+        tooltip: 'Log 250 ml',
+        tint: tint,
+        onPressed: _saving ? null : _log,
+      ),
+    );
+  }
+}
+
+class _MedicineRow extends ConsumerWidget {
+  const _MedicineRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final doses = [
+      ...(ref.watch(todayMedicineLogsStreamProvider).value ?? const []),
+    ]..sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
+    final meds = {
+      for (final m
+          in ref.watch(activeMedicinesStreamProvider).value ?? const [])
+        m.id: m.name,
+    };
+    final taken = doses.where((d) => d.isTaken).length;
+    final next = doses.where((d) => !d.isTaken).firstOrNull;
+    final tint = BrandPalette.pillarTint('medicine', dark: g.isDark);
+    String at(String slot) {
+      final p = slot.split(':');
+      if (p.length != 2) return slot;
+      return DateFormat('h:mm a').format(
+        DateTime(2000, 1, 1, int.tryParse(p[0]) ?? 0, int.tryParse(p[1]) ?? 0),
+      );
+    }
+
+    return _DayRow(
+      key: const ValueKey('home_bento_medicine'),
+      icon: Icons.medication_outlined,
+      tint: tint,
+      title: 'Medicine',
+      value: doses.isEmpty ? 'Nothing due' : '$taken of ${doses.length} taken',
+      route: '/medicine',
+      semantics: doses.isEmpty
+          ? 'Medicine: nothing due today'
+          : 'Medicine: $taken of ${doses.length} taken',
+      details: [
+        if (next != null)
+          _detail(
+            context,
+            'Next: ${meds[next.medicineId] ?? 'Medicine'} · ${at(next.timeSlot)}',
+            color: g.ink,
+            strong: true,
+          )
+        else if (doses.isNotEmpty)
+          _detail(context, 'All doses taken today', color: g.successInk),
+        if (doses.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              for (final d in doses.take(8))
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      d.isTaken
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 13,
+                      color: d.isTaken ? g.successInk : tint,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      at(d.timeSlot).replaceAll(':00', ''),
+                      style: AscentTextStyles.caption.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+      ],
+      action: next == null
+          ? null
+          : _QuickAction(
+              key: const ValueKey('home_bento_medicine_take'),
+              icon: Icons.check_rounded,
+              tooltip: 'Take next dose',
+              tint: tint,
+              onPressed: () => context.open('/medicine'),
+            ),
+    );
+  }
+}
+
+class _MoneyRow extends ConsumerWidget {
+  const _MoneyRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final today = ref.watch(todaySpendingStreamProvider).value ?? 0;
+    final month = ref.watch(currentMonthSpendingStreamProvider).value ?? 0;
+    final budget = ref.watch(overallBudgetStreamProvider).value;
+    final last = (ref.watch(recentTransactionsStreamProvider).value ?? const [])
+        .where((t) => t.type == 'expense')
+        .firstOrNull;
+    final tint = BrandPalette.pillarTint('money', dark: g.isDark);
+    final f = NumberFormat.compactCurrency(symbol: '₹', decimalDigits: 0);
+    return _DayRow(
+      key: const ValueKey('home_bento_money'),
+      icon: Icons.account_balance_wallet_outlined,
+      tint: tint,
+      title: 'Spent',
+      value: today == 0 ? 'Nothing today' : '${f.format(today)} today',
+      route: '/money',
+      semantics: 'Money: spent ${f.format(today)} today',
+      details: [
+        if (last != null)
+          _detail(
+            context,
+            'Last: ${last.title} · ${f.format(last.amount)}',
+            color: g.ink,
+          ),
+        _detail(
+          context,
+          budget != null && budget.monthlyLimit > 0
+              ? 'This month ${f.format(month)} of ${f.format(budget.monthlyLimit)}'
+              : 'This month ${f.format(month)}',
+        ),
+        if (budget != null && budget.monthlyLimit > 0)
+          _bar(month / budget.monthlyLimit, tint),
+      ],
+      action: _QuickAction(
+        key: const ValueKey('home_bento_money_add'),
+        icon: Icons.add_rounded,
+        tooltip: 'Add an expense',
+        tint: tint,
+        onPressed: () => context.open('/money'),
+      ),
+    );
+  }
+}
+
+class _FocusRow extends ConsumerWidget {
+  const _FocusRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final minutes = ref.watch(studyStreakProvider).todaySeconds ~/ 60;
+    final tint = BrandPalette.pillarTint('focus', dark: g.isDark);
+    final value = minutes == 0
+        ? 'Not started'
+        : minutes >= 60
+        ? '${minutes ~/ 60}h ${minutes % 60}m today'
+        : '${minutes}m today';
+    return _DayRow(
+      key: const ValueKey('home_bento_focus'),
+      icon: Icons.timer_outlined,
+      tint: tint,
+      title: 'Focus',
+      value: value,
+      route: '/focus',
+      semantics: 'Focus: $value',
+      details: [
+        _detail(
+          context,
+          minutes == 0
+              ? 'A 25-minute session is a good start'
+              : 'Keep it going with another session',
+        ),
+      ],
+      action: _QuickAction(
+        key: const ValueKey('home_bento_focus_start'),
+        icon: Icons.play_arrow_rounded,
+        tooltip: 'Start focus',
+        tint: tint,
+        onPressed: () => context.open('/focus'),
+      ),
+    );
+  }
 }
