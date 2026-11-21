@@ -1381,7 +1381,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           ),
                         ),
                       ),
-                    if (activity.linkedTaskId != null && !done)
+                    if (activity.linkedTaskId != null &&
+                        !done &&
+                        activity.sourceType != 'medicine')
                       // On timed tasks, only show star button if marked high-priority to prevent multi-button clustering
                       if (timedAction == null || activity.priority == 'high')
                         AscentStarButton(

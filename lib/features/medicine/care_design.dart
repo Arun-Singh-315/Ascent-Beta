@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../app/theme/brand_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/shared_control_tokens.dart';
 import '../../shared/widgets/glass_surface.dart';
@@ -31,17 +32,17 @@ class CarePanel extends StatelessWidget {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: hero
+            // Care pink washing into calm blue (no beige or sage).
             ? [
                 Color.alphaBlend(
-                  const Color(
-                    0xFF879783,
-                  ).withValues(alpha: g.isDark ? .20 : .17),
+                  BrandPalette.pillarTint(
+                    'medicine',
+                    dark: g.isDark,
+                  ).withValues(alpha: g.isDark ? .14 : .08),
                   surface,
                 ),
                 Color.alphaBlend(
-                  const Color(
-                    0xFFD4B99A,
-                  ).withValues(alpha: g.isDark ? .10 : .17),
+                  g.actionInk.withValues(alpha: g.isDark ? .10 : .07),
                   surface,
                 ),
               ]

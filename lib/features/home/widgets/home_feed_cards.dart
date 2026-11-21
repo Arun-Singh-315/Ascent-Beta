@@ -40,8 +40,13 @@ class HomeThingsCard extends ConsumerWidget {
     }
     final g = context.glass;
     final items = ref.watch(todayActivitiesProvider).value ?? const [];
+    // Medicine doses live in "Your day", not in the Things list.
     final today = items
-        .where((a) => a.plannedDate != null || a.isDailyStanding)
+        .where(
+          (a) =>
+              a.sourceType != 'medicine' &&
+              (a.plannedDate != null || a.isDailyStanding),
+        )
         .toList();
     final done = today
         .where((a) => a.status == TodayActivityStatus.done)
@@ -383,6 +388,14 @@ class _FocusTile extends ConsumerWidget {
     return _Tile(
       key: const ValueKey('home_bento_focus'),
       route: '/focus',
+      tint: tint,
+      action: _QuickAction(
+        key: const ValueKey('home_bento_focus_start'),
+        icon: Icons.play_arrow_rounded,
+        tooltip: 'Start focus',
+        tint: tint,
+        onPressed: () => context.open('/focus'),
+      ),
       semantics: minutes == 0
           ? 'Focus: no session yet'
           : 'Focus: $minutes minutes today',
@@ -534,6 +547,7 @@ class _WaterTileState extends ConsumerState<_WaterTile> {
     return _Tile(
       key: const ValueKey('home_bento_water'),
       route: '/hydration',
+      tint: tint,
       semantics: 'Water: ${ml == 0 ? 'none yet' : '$ml ml'}',
       action: _QuickAction(
         key: const ValueKey('home_bento_water_add'),
@@ -584,6 +598,16 @@ class _MedicineTile extends ConsumerWidget {
     return _Tile(
       key: const ValueKey('home_bento_medicine'),
       route: '/medicine',
+      tint: tint,
+      action: pending.isEmpty
+          ? null
+          : _QuickAction(
+              key: const ValueKey('home_bento_medicine_take'),
+              icon: Icons.check_rounded,
+              tooltip: 'Take next dose',
+              tint: tint,
+              onPressed: () => context.open('/medicine'),
+            ),
       semantics: doses.isEmpty
           ? 'Medicine: nothing due'
           : 'Medicine: $taken of ${doses.length} taken',
@@ -613,6 +637,14 @@ class _MoneyTile extends ConsumerWidget {
     return _Tile(
       key: const ValueKey('home_bento_money'),
       route: '/money',
+      tint: tint,
+      action: _QuickAction(
+        key: const ValueKey('home_bento_money_add'),
+        icon: Icons.add_rounded,
+        tooltip: 'Add an expense',
+        tint: tint,
+        onPressed: () => context.open('/money'),
+      ),
       semantics: spent == 0 ? 'Money: nothing spent' : 'Money: spent $spent',
       child: _Stat(
         icon: Icons.account_balance_wallet_outlined,
@@ -636,11 +668,15 @@ class _Tile extends StatelessWidget {
     required this.semantics,
     required this.child,
     this.action,
+    this.tint,
   });
   final String route;
   final String semantics;
   final Widget child;
   final Widget? action;
+
+  /// The cell's colour, washed softly in from its top corner.
+  final Color? tint;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -651,14 +687,30 @@ class _Tile extends StatelessWidget {
         HapticFeedback.selectionClick();
         context.open(route);
       },
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.s16),
-        child: Stack(
-          children: [
-            ExcludeSemantics(child: child),
-            if (action != null)
-              PositionedDirectional(top: -8, end: -8, child: action!),
-          ],
+      child: Ink(
+        decoration: tint == null
+            ? null
+            : BoxDecoration(
+                gradient: RadialGradient(
+                  center: AlignmentDirectional.topStart.resolve(
+                    Directionality.of(context),
+                  ),
+                  radius: 1.2,
+                  colors: [
+                    tint!.withValues(alpha: context.glass.isDark ? .14 : .10),
+                    tint!.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          child: Stack(
+            children: [
+              ExcludeSemantics(child: child),
+              if (action != null)
+                PositionedDirectional(top: -8, end: -8, child: action!),
+            ],
+          ),
         ),
       ),
     ),
