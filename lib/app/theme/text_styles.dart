@@ -343,9 +343,11 @@ class AppTypography {
 
   /// Dedicated typography for thought reflections and notes: crisp, readable,
   /// breathable line-height, and gentle letter-spacing.
+  // DM Sans like the rest of the app (CLAUDE.md §3.2: serif only in the
+  // book reader), a touch larger and airier for easy reading.
   static TextStyle thoughtContent({Color? color, TextDecoration? decoration}) =>
-      GoogleFonts.sourceSerif4(
-        fontSize: 15,
+      GoogleFonts.dmSans(
+        fontSize: 15.5,
         fontWeight: FontWeight.w400,
         height: 1.5,
         color: color,

@@ -125,7 +125,6 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          const Positioned.fill(child: _AuroraBackground()),
           SafeArea(
             child: Column(
               children: [
@@ -745,23 +744,3 @@ class _Dots extends StatelessWidget {
 
 /// Slow, soft colour fields in the assistant gradient. One 18 s loop that
 /// stops under reduce motion (CLAUDE.md §3.5).
-/// A still, calm wash: soft action tint fading into the canvas. No motion
-/// and no glow, so the first screens stay easy on the eyes.
-class _AuroraBackground extends StatelessWidget {
-  const _AuroraBackground();
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [g.tonalBg, g.bg],
-          stops: const [0, .55],
-        ),
-      ),
-    );
-  }
-}

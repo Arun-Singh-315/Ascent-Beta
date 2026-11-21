@@ -685,7 +685,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     return AscentScaffold(
       title: 'Money & Budgets',
       subtitle: 'Personal ledger & savings goals',
-      glow2: g.amberSoft,
       actions: [
         const HistoryAction(module: 'money'),
         IconButton(

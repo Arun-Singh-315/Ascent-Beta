@@ -2316,36 +2316,9 @@ class _AtmosphericChatBackground extends StatelessWidget {
     required this.accentColor,
   });
 
-  /// Grouped canvas with one quiet glow in the assistant gradient at the
-  /// top: calm in both themes, never a full-screen colour wash.
+  /// Plain chat canvas: no glows or colour washes.
   @override
-  Widget build(BuildContext context) {
-    final chat = isDark ? ChatPalette.dark : ChatPalette.light;
-    return DecoratedBox(
-      decoration: BoxDecoration(color: chat.canvas),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(-0.6, -1.1),
-                radius: 1.1,
-                colors: [chat.glowA, chat.glowA.withValues(alpha: 0)],
-              ),
-            ),
-          ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0.8, -0.9),
-                radius: 0.9,
-                colors: [chat.glowB, chat.glowB.withValues(alpha: 0)],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ColoredBox(
+    color: (isDark ? ChatPalette.dark : ChatPalette.light).canvas,
+  );
 }

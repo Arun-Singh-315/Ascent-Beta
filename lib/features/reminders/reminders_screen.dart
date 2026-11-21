@@ -419,8 +419,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             ? 'Reminders & alerts'
             : 'Tasks, activities & reminders',
         showFeatureHelp: false,
-        glow1: Colors.transparent,
-        glow2: Colors.transparent,
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
           children: [
@@ -491,8 +489,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             )
           : null,
       showFeatureHelp: !_isCalendarView,
-      glow1: _isCalendarView ? Colors.transparent : null,
-      glow2: _isCalendarView ? Colors.transparent : null,
       actions: [
         IconButton(
           key: const ValueKey('reminders_view_mode_toggle'),

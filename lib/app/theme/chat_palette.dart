@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 /// Assistant chat colours (CLAUDE.md §3.1, §5.4), light and dark as one swap.
 ///
 /// Grouped canvas, an action-tint bubble for the user, no bubble for the
-/// assistant, recessed suggestion tiles, and one quiet assistant-gradient
-/// glow at the top. Literals live here only.
+/// assistant and recessed suggestion tiles on a plain canvas. Literals live
+/// here only.
 @immutable
 class ChatPalette {
   const ChatPalette._({
@@ -20,8 +20,6 @@ class ChatPalette {
     required this.userBubble,
     required this.userText,
     required this.assistantName,
-    required this.glowA,
-    required this.glowB,
     required this.highlightInk,
   });
 
@@ -37,8 +35,6 @@ class ChatPalette {
   final Color userBubble;
   final Color userText;
   final Color assistantName;
-  final Color glowA;
-  final Color glowB;
   final Color highlightInk;
 
   static const light = ChatPalette._(
@@ -54,8 +50,6 @@ class ChatPalette {
     userBubble: Color(0xFFE5F0FF),
     userText: Color(0xFF1D1D1F),
     assistantName: Color(0xFF5E5CE6),
-    glowA: Color(0x0F5E5CE6),
-    glowB: Color(0x0ABF5AF2),
     highlightInk: Color(0xFF92400E),
   );
 
@@ -72,8 +66,6 @@ class ChatPalette {
     userBubble: Color(0xFF0A2A4D),
     userText: Color(0xFFF5F5F7),
     assistantName: Color(0xFF8E8CFF),
-    glowA: Color(0x245E5CE6),
-    glowB: Color(0x14BF5AF2),
     highlightInk: Color(0xFFFDE68A),
   );
 

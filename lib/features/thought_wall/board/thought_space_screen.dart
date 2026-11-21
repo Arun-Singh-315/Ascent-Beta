@@ -303,7 +303,6 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
       subtitle: all.isEmpty
           ? 'Your own collection'
           : '${all.length} ${all.length == 1 ? 'entry' : 'entries'} · $doneCount ${style.doneLabel.toLowerCase()}',
-      glow2: g.glow2,
       showFeatureHelp: false,
       actions: [
         if (!_isArchive)

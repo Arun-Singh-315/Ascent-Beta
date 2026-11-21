@@ -13,31 +13,33 @@ import '../thought_wall_preferences.dart';
 import '../utils/thought_checklist_helper.dart';
 import 'board_logic.dart';
 
-/// Accent colour for a thought, taken from the theme's accent roles.
+/// Accent colour for a thought, from the Mindspace hues.
 ///
-/// Special moods keep a stable colour. Plain thoughts rotate gently through
-/// the theme accents so the wall has variety without any setup.
+/// Moods keep a meaning (idea amber, win sage, future rose, notes to self
+/// violet). Other thoughts take their space's colour, so a space reads as
+/// one group; loose thoughts rotate gently so the wall has variety.
 Color boardAccentFor(AscentGlass g, Thought thought) {
+  final dark = g.isDark;
   switch (thought.mood) {
     case 'idea':
-      return g.amber;
+      return MindspacePalette.amber(dark);
     case 'win':
-      return g.sage;
+      return MindspacePalette.sage(dark);
     case 'future':
-      return g.coral;
+      return MindspacePalette.rose(dark);
     case 'me_to_me':
     case 'promise':
-      return g.clay;
+      return MindspacePalette.violet(dark);
   }
-  final rotation = [g.slate, g.clay, g.sage, g.amber];
-  return rotation[thought.id.abs() % rotation.length];
+  if (thought.category != wallCategoryKey) {
+    return spaceAccentFor(g, thought.category);
+  }
+  return MindspacePalette.hue(thought.id.abs(), dark: dark);
 }
 
 /// Accent colour for a space, stable for the same space key.
-Color spaceAccentFor(AscentGlass g, String key) {
-  final palette = [g.slate, g.clay, g.sage, g.amber];
-  return palette[stableHash(key) % palette.length];
-}
+Color spaceAccentFor(AscentGlass g, String key) =>
+    MindspacePalette.hue(stableHash(key), dark: g.isDark);
 
 /// Small glyph for non-plain moods, so colour is never the only signal.
 IconData? boardMoodIcon(String mood) => switch (mood) {
