@@ -7,7 +7,6 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/today/models/things_sections.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/features/today/things_providers.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
