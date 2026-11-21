@@ -296,11 +296,12 @@ class AscentTextStyles {
   );
 
   /// Title 21 / 27 · 700 (Plus Jakarta Sans) — Crisp geometric section heading
-  static TextStyle get homeTitle => GoogleFonts.plusJakartaSans(
-    fontSize: 21,
-    fontWeight: FontWeight.w700,
-    height: 27 / 21,
-    letterSpacing: -0.4,
+  /// Home section headings: Title 3, DM Sans 20/600 (CLAUDE.md §3.2).
+  static TextStyle get homeTitle => GoogleFonts.dmSans(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    height: 26 / 20,
+    letterSpacing: -0.3,
   );
 
   /// Headline 17 / 24 · 600 (DM Sans)

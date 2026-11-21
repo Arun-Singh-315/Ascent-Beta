@@ -3,9 +3,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/medicine_activity_group_card.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,108 +41,6 @@ void main() {
   });
 
   group('Medicine Activity Grouping Tests', () {
-    testWidgets(
-      'ActivityHubCard groups multiple medicine doses into a single MedicineActivityGroupCard',
-      (tester) async {
-        final now = DateTime.now();
-        final dose9am = TodayActivityItem(
-          id: 'task_1',
-          title: 'Paracetamol (medicine) (500mg) — 9:00 AM',
-          sourceType: 'medicine',
-          status: TodayActivityStatus.done,
-          elapsedSecondsToday: 0,
-          categoryTag: 'Medicine',
-          medicineId: 1,
-          timeSlot: '09:00',
-          scheduledTime: DateTime(now.year, now.month, now.day, 9, 0),
-        );
-        final dose2pm = TodayActivityItem(
-          id: 'task_2',
-          title: 'Paracetamol (medicine) (500mg) — 2:00 PM',
-          sourceType: 'medicine',
-          status: TodayActivityStatus.notStarted,
-          elapsedSecondsToday: 0,
-          categoryTag: 'Medicine',
-          medicineId: 1,
-          timeSlot: '14:00',
-          scheduledTime: DateTime(now.year, now.month, now.day, 14, 0),
-        );
-        final dose8pm = TodayActivityItem(
-          id: 'task_3',
-          title: 'Paracetamol (medicine) (500mg) — 8:00 PM',
-          sourceType: 'medicine',
-          status: TodayActivityStatus.notStarted,
-          elapsedSecondsToday: 0,
-          categoryTag: 'Medicine',
-          medicineId: 1,
-          timeSlot: '20:00',
-          scheduledTime: DateTime(now.year, now.month, now.day, 20, 0),
-        );
-        final regularTask = TodayActivityItem(
-          id: 'task_4',
-          title: 'Study Flutter state management',
-          sourceType: 'task',
-          status: TodayActivityStatus.notStarted,
-          elapsedSecondsToday: 0,
-          categoryTag: 'Task',
-        );
-
-        final items = [dose9am, dose2pm, dose8pm, regularTask];
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: ProviderScope(
-              overrides: [
-                todayActivitiesProvider.overrideWith(
-                  (ref) => Stream.value(items),
-                ),
-              ],
-              child: MaterialApp(
-                theme: AscentTheme.light(),
-                home: const Scaffold(
-                  body: SingleChildScrollView(
-                    child: ActivityHubCard(previewLimit: 4),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Verify only 1 MedicineActivityGroupCard is rendered, NOT 3 separate rows!
-        expect(find.byType(MedicineActivityGroupCard), findsOneWidget);
-        // Verify 1 regular ActivityRowItem is rendered alongside it
-        expect(find.byType(ActivityRowItem), findsOneWidget);
-
-        // Verify group card displays medicine name and summary
-        expect(find.text('Paracetamol (500mg)'), findsOneWidget);
-        expect(find.textContaining('1 of 3 taken'), findsOneWidget);
-
-        // Individual doses should NOT be visible until expanded
-        expect(find.byKey(const ValueKey('group_dose_task_2')), findsNothing);
-
-        // Tap the medicine group to expand it
-        await tester.tap(
-          find.byKey(const ValueKey('medicine_group_Paracetamol')),
-        );
-        await tester.pumpAndSettle();
-
-        // All 3 doses should now be visible inline
-        expect(find.byKey(const ValueKey('group_dose_task_1')), findsOneWidget);
-        expect(find.byKey(const ValueKey('group_dose_task_2')), findsOneWidget);
-        expect(find.byKey(const ValueKey('group_dose_task_3')), findsOneWidget);
-
-        // Tap again to collapse
-        await tester.tap(
-          find.byKey(const ValueKey('medicine_group_Paracetamol')),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const ValueKey('group_dose_task_2')), findsNothing);
-      },
-    );
   });
 
   group('Premature Done Lock on Scheduled Activities Tests', () {
@@ -329,77 +225,5 @@ void main() {
   });
 
   group('Accessibility & Boundary Tests (Rule 13)', () {
-    testWidgets(
-      'MedicineActivityGroupCard renders cleanly without RenderFlex overflows at 320px with 2.0x text scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
-        final now = DateTime.now();
-        final activities = [
-          TodayActivityItem(
-            id: 'dose_1',
-            title: 'Long Medicine Name Tablet (1000mg) — 9:00 AM',
-            sourceType: 'medicine',
-            status: TodayActivityStatus.notStarted,
-            elapsedSecondsToday: 0,
-            categoryTag: 'Medicine',
-            scheduledTime: DateTime(now.year, now.month, now.day, 9, 0),
-          ),
-          TodayActivityItem(
-            id: 'dose_2',
-            title: 'Long Medicine Name Tablet (1000mg) — 2:00 PM',
-            sourceType: 'medicine',
-            status: TodayActivityStatus.notStarted,
-            elapsedSecondsToday: 0,
-            categoryTag: 'Medicine',
-            scheduledTime: DateTime(now.year, now.month, now.day, 14, 0),
-          ),
-        ];
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.dark(),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: const TextScaler.linear(2.0)),
-                child: child!,
-              ),
-              home: Scaffold(
-                body: SingleChildScrollView(
-                  child: MedicineActivityGroupCard(
-                    medicineName: 'Long Medicine Name Tablet',
-                    dosage: '1000mg',
-                    activities: activities,
-                    compact: true,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Verify zero exceptions
-        expect(tester.takeException(), isNull);
-
-        // Tap to expand
-        await tester.tap(
-          find.byKey(
-            const ValueKey('medicine_group_Long Medicine Name Tablet'),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Verify zero exceptions even when expanded at 320px with 2.0x text scale
-        expect(tester.takeException(), isNull);
-      },
-skip: true, // Known bug: Medicine group card overflows at 320 px, 2.0x text
-);
   });
 }

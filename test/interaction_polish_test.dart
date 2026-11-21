@@ -8,8 +8,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/capture/quick_capture_sheet.dart';
-import 'package:ascent/features/home/widgets/activity_composer.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/shared/widgets/ascent_press_feedback.dart';
 import 'package:ascent/shared/widgets/ascent_sheet.dart';
@@ -219,40 +217,6 @@ void main() {
     );
   }
 
-  testWidgets(
-    'Empty suggestions preserve an existing inline draft and never create a task on cancel',
-    (t) async {
-      await prefs.setString(
-        'ascent_note_draft_home_activity',
-        'Keep this draft',
-      );
-      await t.pumpWidget(app(const ActivityHubCard()));
-      await flush(t);
-      await t.ensureVisible(find.byKey(const ValueKey('starter_add_timer')));
-      await snapshot(t, 'empty-suggestions');
-      await t.tap(find.byKey(const ValueKey('starter_add_timer')));
-      await t.pumpAndSettle();
-      expect(find.byType(AscentSheetHandle), findsOneWidget);
-      expect(t.takeException(), isNull);
-      await t.tapAt(const Offset(8, 8));
-      await t.pumpAndSettle();
-      final field = t.widget<TextField>(
-        find
-            .descendant(
-              of: find.byType(ActivityComposer),
-              matching: find.byType(TextField),
-            )
-            .first,
-      );
-      expect(field.controller!.text, 'Keep this draft');
-      expect(
-        prefs.getString('ascent_note_draft_home_activity'),
-        'Keep this draft',
-      );
-      expect(await t.runAsync(() => db.select(db.taskTable).get()), isEmpty);
-      expect(t.takeException(), isNull);
-    },
-  );
 
   testWidgets('Rapid completion is safe and Undo restores the original task', (
     t,

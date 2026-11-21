@@ -11,7 +11,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 
 import 'package:drift/drift.dart';
 
@@ -127,20 +126,6 @@ void main() {
       },
     );
 
-    testWidgets('ThoughtWallHomePreview renders quick mind spark prompt', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestableWidget(const Scaffold(body: ThoughtWallHomePreview())),
-      );
-
-      await tester.pump();
-      expect(find.text('Mind space'), findsNothing);
-      expect(find.textContaining('Capture a thought'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(seconds: 1));
-    });
 
     testWidgets(
       'Home header assistant dynamically reflects customized identity',

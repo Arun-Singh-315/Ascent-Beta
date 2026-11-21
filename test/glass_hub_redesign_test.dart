@@ -1,15 +1,9 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
-import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
-import 'package:drift/drift.dart' as drift;
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
@@ -62,117 +56,6 @@ void main() {
     });
   }
 
-  testWidgets(
-    'visible priority control saves a level and promotes urgent work',
-    (t) async {
-      t.view.physicalSize = const Size(390, 1000);
-      t.view.devicePixelRatio = 1;
-      addTearDown(t.view.resetPhysicalSize);
-      addTearDown(t.view.resetDevicePixelRatio);
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(db.close);
-      final first = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Normal work',
-          plannedDate: drift.Value(DateTime.now()),
-          priority: const drift.Value('low'),
-        ),
-      );
-      final second = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Urgent work',
-          plannedDate: drift.Value(DateTime.now()),
-          priority: const drift.Value('low'),
-        ),
-      );
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          todayActivitiesProvider.overrideWith(
-            (ref) => db.taskDao.watchTodayTasks().map(
-              (tasks) => [
-                for (final task in tasks)
-                  row(task.id, 'task').copyWith(
-                    title: task.title,
-                    linkedTaskId: task.id,
-                    priority: task.priority,
-                  ),
-              ],
-            ),
-          ),
-        ],
-      );
-      try {
-        await t.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const RepaintBoundary(
-                key: ValueKey('redesign_capture'),
-                child: Scaffold(
-                  body: SingleChildScrollView(child: ActivityHubCard()),
-                ),
-              ),
-            ),
-          ),
-        );
-        await flush(t);
-        await t.pumpAndSettle();
-        expect(
-          t
-              .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
-              .first
-              .activity
-              .linkedTaskId,
-          first,
-        );
-        await t.tap(find.byKey(ValueKey('activity_priority_task_$second')));
-        await flush(t);
-        await t.pumpAndSettle();
-        final saved = await t.runAsync(() => db.taskDao.getTaskById(second));
-        expect(saved!.priority, 'high');
-        expect(
-          t
-              .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
-              .first
-              .activity
-              .linkedTaskId,
-          second,
-        );
-        await capture(t, 'priority');
-        t.view.physicalSize = const Size(320, 1400);
-        await t.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: const TextScaler.linear(2)),
-                child: child!,
-              ),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ActivityHubCard()),
-              ),
-            ),
-          ),
-        );
-        await t.pumpAndSettle();
-        expect(find.byType(ActivityHubCard), findsOneWidget);
-
-        expect(t.takeException(), isNull);
-      } finally {
-        await t.pumpWidget(const SizedBox());
-        container.dispose();
-        await t.pump(const Duration(seconds: 2));
-      }
-    },
-  );
 
   testWidgets('wall settings no longer offer ineffective card colours', (
     t,

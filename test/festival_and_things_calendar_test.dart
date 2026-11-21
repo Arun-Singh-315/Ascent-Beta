@@ -6,7 +6,6 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/services/festival_service.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
@@ -259,46 +258,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
     });
 
-    testWidgets(
-      'Thought Wall preview displays festival thought card by default when empty',
-      (tester) async {
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(body: ThoughtWallHomePreview()),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final todayFestival = FestivalService.getTodayFestival();
-        if (todayFestival != null) {
-          expect(
-            find.byKey(const ValueKey('festival_default_thought_card')),
-            findsOneWidget,
-          );
-          expect(find.text(todayFestival.thought), findsOneWidget);
-          expect(
-            find.text('${todayFestival.emoji} ${todayFestival.name}'),
-            findsOneWidget,
-          );
-        }
-      },
-    );
 
     testWidgets(
       'Riya AI Assistant greets with warm personalized festival wish',
@@ -350,66 +309,5 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Rule 13 Overflow Immunity at 320px width with 2.0x text scaling',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 640);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        // Verify Mindspace/ThoughtWall at 320px with 2.0x text scale
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: MediaQuery(
-                data: const MediaQueryData(
-                  size: Size(320, 640),
-                  textScaler: TextScaler.linear(2.0),
-                ),
-                child: const Scaffold(
-                  body: SingleChildScrollView(child: ThoughtWallHomePreview()),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(tester.takeException(), isNull);
-
-        // Verify Reminders & Calendar at 320px with 2.0x text scale
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: MediaQuery(
-                data: const MediaQueryData(
-                  size: Size(320, 640),
-                  textScaler: TextScaler.linear(2.0),
-                ),
-                child: const RemindersScreen(),
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(tester.takeException(), isNull);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
   });
 }

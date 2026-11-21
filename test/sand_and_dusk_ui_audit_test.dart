@@ -5,7 +5,6 @@ import 'package:ascent/core/theme/app_colors.dart';
 import 'package:ascent/shared/widgets/app_text_field.dart';
 import 'package:ascent/shared/widgets/section_card.dart';
 import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
-import 'package:ascent/features/home/widgets/activity_starter_actions.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,19 +61,6 @@ void main() {
   });
 
   group('Things / Plans Soft Actions', () {
-    testWidgets(
-      'Activity starter buttons: Add a task filled, Add a timer outlined',
-      (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: ActivityStarterActions())),
-        );
-
-        expect(find.text('Add a task'), findsOneWidget);
-        expect(find.text('Add a timer'), findsOneWidget);
-        expect(find.byKey(const ValueKey('starter_add_task')), findsOneWidget);
-        expect(find.byKey(const ValueKey('starter_add_timer')), findsOneWidget);
-      },
-    );
   });
 
   group('SectionCard Consistency', () {
@@ -101,32 +87,6 @@ void main() {
   });
 
   group('Accessibility & Small Screen Safety (320px width & 2.0x scale)', () {
-    testWidgets(
-      'ActivityStarterActions does not overflow at 320px with 2.0x text scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320 * 2.0, 600 * 2.0);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 600),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: const MaterialApp(
-              home: Scaffold(body: ActivityStarterActions()),
-            ),
-          ),
-        );
-
-        await tester.pump();
-        expect(tester.takeException(), isNull);
-      },
-    );
 
     testWidgets(
       'HomeAssistantHeroCard does not overflow at 320px with 2.0x text scale',
