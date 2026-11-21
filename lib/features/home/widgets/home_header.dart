@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'home_header_scene.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -442,18 +443,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     return Container(
       key: const ValueKey('home_day_header'),
       decoration: BoxDecoration(
-        color: dark ? null : c.surface,
-        gradient: dark
-            ? const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF0C0F17),
-                  Color(0xFF121622),
-                  Color(0xFF0E111A),
-                ],
-              )
-            : null,
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.header),
         ),
@@ -476,6 +465,19 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         ),
         child: Stack(
           children: [
+            // Time-of-day sky: dawn, clear day, golden hour, night
+            // (CLAUDE.md §5.1). Cross-fades over 2 s when the period changes.
+            Positioned.fill(
+              child: HomeHeaderScene(
+                now: now,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            Positioned(
+              right: 4,
+              top: MediaQuery.paddingOf(context).top + 30,
+              child: HomeCelestialMark(now: now),
+            ),
             // Dynamic Living Atmospheric Canvas (Rain, stars, weather dynamics)
             Positioned.fill(
               child: AnimatedBuilder(

@@ -40,8 +40,10 @@ class HomeHeaderScene extends StatelessWidget {
     }
     final day = HomeDayDesign.at(now, dark: dark);
     final night = period == 'night';
-    final sky = night ? const Color(0xFF243D70) : day.sky;
-    final light = night ? const Color(0xFF60669D) : day.light;
+    // Light mode keeps a soft lavender night so dark text stays readable;
+    // dark mode's palette (from HomeDayDesign) is the deep indigo night.
+    final sky = day.sky;
+    final light = day.light;
     // No period key on the AnimatedContainer itself: a changing key would
     // rebuild it and skip the tween. The scene cross-fades over 2 s when the
     // period changes (CLAUDE.md §5.1); the key lives on the inner subtree.

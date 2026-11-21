@@ -30,10 +30,11 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_day_design.dart';
 import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
-import 'widgets/home_assistant_hero_card.dart';
 import 'widgets/home_now_card.dart';
+import 'widgets/home_ask_bar.dart';
 import '../promises/providers/promise_providers.dart';
 import 'widgets/home_feed_entrance.dart';
+import 'widgets/home_glance_card.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
@@ -296,13 +297,22 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             profile: profile,
                             includeAssistant: false,
                           ),
-                          const SizedBox(height: 12),
+
+                          // Ask Riya, right where the thumb starts.
+                          const HomeAskBar(),
+                          const SizedBox(height: 8),
 
                           // 2. Now card: the single "what should I do now?"
                           // answer (CLAUDE.md §5.1).
                           const HomeFeedEntrance(
                             index: 0,
                             child: HomeNowCard(),
+                          ),
+
+                          // Your day at a glance: six live tiles.
+                          const HomeFeedEntrance(
+                            index: 1,
+                            child: HomeGlanceCard(),
                           ),
 
                           // 3. Quick tools row
@@ -353,13 +363,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             ),
 
                           // 7. Assistant card
-                          const HomeFeedEntrance(
-                            index: 5,
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(16, 0, 16, 14),
-                              child: HomeAssistantHeroCard(),
-                            ),
-                          ),
+
 
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
