@@ -574,6 +574,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   leadingTooltip: 'More options',
                   onLeadingTap: () => _openAddEditReminderSheet(),
                   onSubmit: _quickAdd,
+                  glass: true,
                 ),
               ),
             ),

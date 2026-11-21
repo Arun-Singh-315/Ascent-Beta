@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../../app/theme/brand_palette.dart';
 import '../../../app/theme/home_design.dart';
-import '../../../app/theme/shared_control_tokens.dart';
 
 /// The same transparent outlined icon treatment in the hub and its editor.
 class HomeShortcutIcon extends StatelessWidget {
@@ -31,32 +29,29 @@ class HomeShortcutIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final iconInk = selected
-        ? (isDark
-              ? SharedControlColors.actionBlueDark
-              : SharedControlColors.actionBlue)
-        : inkFor(identity ?? '', context);
 
-    // Transparent, outlined, in the tool's pillar colour: premium and
-    // light, never a grey disc (CLAUDE.md §3.1 pillar tints).
-    final tint = BrandPalette.pillarTint(identity ?? '', dark: isDark);
+    // Monochrome and premium: black (light) or white (dark) glyph in a
+    // nearly transparent circle with a hairline ring. No colours.
+    final ink = isDark ? Colors.white : Colors.black;
     Widget coreIcon = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: tint.withValues(alpha: selected ? .20 : (isDark ? .14 : .09)),
+        color: ink.withValues(alpha: selected ? .10 : (isDark ? .07 : .035)),
         border: Border.all(
           color: selected
-              ? (isDark
-                    ? SharedControlColors.actionBlueDark
-                    : SharedControlColors.actionBlue)
-              : tint.withValues(alpha: isDark ? .45 : .35),
-          width: selected ? 1.6 : 1.0,
+              ? ink.withValues(alpha: .55)
+              : ink.withValues(alpha: isDark ? .22 : .14),
+          width: selected ? 1.4 : 1.0,
         ),
       ),
-      child: Icon(icon, size: size * .44, color: selected ? iconInk : tint),
+      child: Icon(
+        icon,
+        size: size * .44,
+        color: ink.withValues(alpha: isDark ? .92 : .86),
+      ),
     );
 
     if (progress != null) {

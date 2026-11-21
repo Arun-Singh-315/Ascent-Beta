@@ -9,7 +9,7 @@ import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/settings_provider.dart';
 import 'ascent_snack_bar.dart';
-import 'glass_surface.dart';
+import 'glass_chrome.dart';
 
 /// The persistent shell around the five main tabs (CLAUDE.md §4):
 /// Home · Things · Assistant (centre) · Mind · You.
@@ -128,14 +128,10 @@ class _AscentTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return GlassSurface(
+    return GlassChrome(
       key: const ValueKey('ascent_tab_bar'),
-      enableBlur: true,
-      hasShadow: false,
-      borderRadius: BorderRadius.zero,
-      customBorder: Border(top: BorderSide(color: g.line)),
+      rimTopOnly: true,
       padding: EdgeInsets.fromLTRB(
         AppSpace.s4,
         AppSpace.s4,

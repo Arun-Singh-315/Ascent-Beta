@@ -20,6 +20,7 @@ class MessageComposer extends StatelessWidget {
     this.listening = false,
     this.accessory,
     this.checklist = true,
+    this.glass = true,
   });
   final TextEditingController controller;
   final String hint;
@@ -39,6 +40,9 @@ class MessageComposer extends StatelessWidget {
   final Widget? accessory;
   final bool checklist;
 
+  /// Message composers dock over scrolling content, so they are glass.
+  final bool glass;
+
   @override
   Widget build(BuildContext context) => AscentComposer(
     controller: controller,
@@ -55,5 +59,6 @@ class MessageComposer extends StatelessWidget {
     sendKey: const ValueKey('message_composer_send'),
     micKey: const ValueKey('message_composer_mic'),
     sendTooltip: 'Send message',
+    glass: glass,
   );
 }
