@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../app/theme/brand_palette.dart';
 import '../../../app/theme/home_design.dart';
 import '../../../app/theme/shared_control_tokens.dart';
 
@@ -32,46 +33,30 @@ class HomeShortcutIcon extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconInk = selected
         ? (isDark
-            ? SharedControlColors.actionBlueDark
-            : SharedControlColors.actionBlue)
+              ? SharedControlColors.actionBlueDark
+              : SharedControlColors.actionBlue)
         : inkFor(identity ?? '', context);
 
+    // Transparent, outlined, in the tool's pillar colour: premium and
+    // light, never a grey disc (CLAUDE.md §3.1 pillar tints).
+    final tint = BrandPalette.pillarTint(identity ?? '', dark: isDark);
     Widget coreIcon = Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isDark
-            ? (selected
-                ? SharedControlColors.actionBlueDark.withValues(alpha: 0.22)
-                : const Color(0xFF1C2028))
-            : (selected
-                ? SharedControlColors.actionBlue.withValues(alpha: 0.12)
-                : Colors.white),
         shape: BoxShape.circle,
+        color: tint.withValues(alpha: selected ? .20 : (isDark ? .14 : .09)),
         border: Border.all(
           color: selected
               ? (isDark
-                  ? SharedControlColors.actionBlueDark
-                  : SharedControlColors.actionBlue)
-              : (isDark
-                  ? const Color(0xFF2E3442)
-                  : const Color(0xFFE2E8F0)),
+                    ? SharedControlColors.actionBlueDark
+                    : SharedControlColors.actionBlue)
+              : tint.withValues(alpha: isDark ? .45 : .35),
           width: selected ? 1.6 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
-      child: Icon(
-        icon,
-        size: size * .44,
-        color: iconInk,
-      ),
+      child: Icon(icon, size: size * .44, color: selected ? iconInk : tint),
     );
 
     if (progress != null) {
@@ -88,8 +73,9 @@ class HomeShortcutIcon extends StatelessWidget {
                 color: isDark
                     ? const Color(0xFF60A5FA)
                     : const Color(0xFF2563EB),
-                trackColor: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: 0.08),
+                trackColor: (isDark ? Colors.white : Colors.black).withValues(
+                  alpha: 0.08,
+                ),
                 strokeWidth: 2.5,
               ),
             ),
