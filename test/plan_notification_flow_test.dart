@@ -183,9 +183,7 @@ void main() {
         '/home?session=occ_plan_1_2027-01-01_0&reminder=12&at=1798797600000';
     expect(NotificationService.destinationForPayload(route), route);
     expect(NotificationService.destinationForPayload('$route&evil=1'), '/home');
-  },
-skip: 'Known bug: Notification taps pass unvetted query parameters into the route',
-);
+  });
   test('replaying a snoozed notification is rejected', () async {
     final target = await seed();
     final service = PlanService(db);

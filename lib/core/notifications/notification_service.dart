@@ -132,6 +132,17 @@ class NotificationService {
       }
     }
 
+    // Only parameters the app actually reads may pass through; anything
+    // else (from a tampered or stale payload) sends the user Home.
+    const allowedParams = {
+      'answer', 'applicationId', 'at', 'checkin', 'date', 'entity', 'focus',
+      'id', 'key', 'logId', 'mode', 'module', 'occ', 'prompt', 'reminder',
+      'scope', 'session', 'tab', 'task', 'thought', 'view',
+    };
+    if (uri.queryParameters.keys.any((k) => !allowedParams.contains(k))) {
+      return '/home';
+    }
+
     final path = uri.path;
 
     const baseDestinations = {

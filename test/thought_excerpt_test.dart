@@ -13,8 +13,7 @@ void main() {
         '→ positive\n→ no junk food\n• water',
       );
     },
-skip: 'Known bug: Arrow list lines render as bullets',
-);
+  );
 
   testWidgets('show more expands in place and show less collapses', (
     tester,

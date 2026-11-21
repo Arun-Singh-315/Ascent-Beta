@@ -1022,10 +1022,16 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         db.timeSessionTable,
       )..where((s) => s.id.equals(session.id))).getSingleOrNull();
       if (existing != null && existing.linkedTaskId == null) {
+        // Relink it and apply the same pause a fresh restore would get, so
+        // an Undo never brings back a timer that kept running meanwhile.
         await (db.update(
           db.timeSessionTable,
         )..where((s) => s.id.equals(session.id))).write(
-          TimeSessionTableCompanion(linkedTaskId: Value(session.linkedTaskId)),
+          TimeSessionTableCompanion(
+            linkedTaskId: Value(session.linkedTaskId),
+            status: restored.status,
+            pausedIntervals: restored.pausedIntervals,
+          ),
         );
       } else if (existing == null) {
         await db.into(db.timeSessionTable).insert(restored);

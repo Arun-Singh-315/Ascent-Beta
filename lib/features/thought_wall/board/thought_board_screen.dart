@@ -316,7 +316,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     _focus.dispose();
     _search.dispose();
     _scroll.dispose();
-    _unlockedNotifier?.lockAll();
+    _unlockedNotifier?.lockAllSoon();
     super.dispose();
   }
 

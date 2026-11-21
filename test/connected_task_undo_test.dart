@@ -71,7 +71,6 @@ void main() {
       expect(boundary.difference(restored.startedAt).inSeconds, 30);
       expect(pauses.last['resumedAt'], isNull);
     },
-skip: 'Known bug: Undo leaves the restored timer running instead of paused',
 );
   test(
     'Undo preserves a newer note association and never overwrites a reused task ID',
