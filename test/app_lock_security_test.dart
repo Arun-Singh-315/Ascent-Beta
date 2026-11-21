@@ -13,7 +13,6 @@ import 'package:drift/native.dart';
 import 'package:ascent/app/app.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/pending_reminder_effects_provider.dart';
-import 'package:ascent/core/notifications/promise_check_ins_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
 
@@ -325,7 +324,6 @@ void main() {
             vaultSecurityServiceProvider.overrideWithValue(testSecurityService),
             databaseProvider.overrideWithValue(db),
             pendingReminderEffectsProvider.overrideWith((ref) {}),
-            promiseCheckInsProvider.overrideWith((ref) {}),
           ],
           child: const AscentApp(),
         ),

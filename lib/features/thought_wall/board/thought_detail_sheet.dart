@@ -1,8 +1,6 @@
-import 'package:ascent/app/app_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
@@ -13,9 +11,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
-import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../home/widgets/home_schedule_sheet.dart';
-import '../../promises/providers/promise_providers.dart';
 import '../drop_thought_sheet.dart';
 import '../thought_action_ui.dart';
 import '../thought_share.dart' show shareThought;
@@ -71,12 +67,8 @@ class ThoughtDetailSheet extends ConsumerWidget {
     final categories =
         ref.watch(thoughtCategoriesStreamProvider).value ??
         ThoughtDao.builtInCategories;
-    final locked = isPrivateLocked(
-      thought,
-      ref.watch(privatePromiseIdsProvider),
-      ref.watch(unlockedPromiseIdsProvider),
-    );
-    final isPromise = thought.mood == 'promise';
+    const locked = false;
+    const isPromise = false;
     final inWall = thought.category == wallCategoryKey;
     final spaceName = inWall
         ? 'Wall'
@@ -139,12 +131,6 @@ class ThoughtDetailSheet extends ConsumerWidget {
       }
     }
 
-    void openRoute(String location, {Object? extra}) {
-      final router = GoRouter.of(context);
-      close();
-      router.open(location, extra: extra);
-    }
-
     return SafeArea(
       top: false,
       child: ConstrainedBox(
@@ -182,19 +168,13 @@ class ThoughtDetailSheet extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AppSpace.s16),
-              if (locked)
-                LockedCommitmentTile(
-                  label: 'Private commitment',
-                  onTap: () => unlockPrivateThought(ref, thought),
-                )
-              else
-                SelectableText(
-                  displayContent(thought.content).trim(),
-                  style: AppTypography.thoughtContent(
-                    color: g.ink,
-                  ).copyWith(fontSize: AscentTextStyles.interfaceBody.fontSize),
-                ),
-              if (showPrompt && !locked) ...[
+              SelectableText(
+                displayContent(thought.content).trim(),
+                style: AppTypography.thoughtContent(
+                  color: g.ink,
+                ).copyWith(fontSize: AscentTextStyles.interfaceBody.fontSize),
+              ),
+              if (showPrompt) ...[
                 const SizedBox(height: AppSpace.s12),
                 Text(
                   prompt,
@@ -294,21 +274,6 @@ class ThoughtDetailSheet extends ConsumerWidget {
                         label: 'Add to plan',
                         onTap: plan,
                       ),
-                    ],
-                    if (isPromise) ...[
-                      _DetailAction(
-                        key: const ValueKey('detail_promises'),
-                        icon: Icons.handshake_outlined,
-                        label: 'Commitments',
-                        onTap: () => openRoute('/promises'),
-                      ),
-                      if (!locked)
-                        _DetailAction(
-                          key: const ValueKey('detail_challenge'),
-                          icon: Icons.flag_outlined,
-                          label: 'Track with Challenge',
-                          onTap: () => openRoute('/momentum', extra: thought),
-                        ),
                     ],
                     if (!locked) ...[
                       _DetailAction(

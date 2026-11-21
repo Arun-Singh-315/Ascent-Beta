@@ -18,12 +18,6 @@ import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/shared/widgets/message_composer.dart';
 import 'package:ascent/shared/widgets/ascent_atmosphere.dart';
 import 'package:ascent/features/money/money_screen.dart';
-import 'package:ascent/features/chai_break/chai_break_provider.dart';
-
-class _QuietChaiNotifier extends ChaiBreakNotifier {
-  @override
-  ChaiBreakState build() => const ChaiBreakState(isRunning: false);
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +49,6 @@ void main() {
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
           recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
-          chaiBreakProvider.overrideWith(_QuietChaiNotifier.new),
         ],
         child: MaterialApp(
           theme: dark ? AscentTheme.dark() : AscentTheme.light(),

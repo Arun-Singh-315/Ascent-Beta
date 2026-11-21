@@ -293,9 +293,9 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                 )
               else
                 AscentButton.tonal(
-                  label: 'Open Study Hub',
+                  label: 'Open Plans',
                   compact: true,
-                  onPressed: () => context.push(AscentRoutes.studyPlan),
+                  onPressed: () => context.push(AscentRoutes.plans),
                 ),
               AscentButton.secondary(
                 key: const ValueKey('riya_study_customize'),

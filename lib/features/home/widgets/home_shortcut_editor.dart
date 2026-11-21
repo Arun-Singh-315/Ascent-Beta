@@ -125,7 +125,8 @@ class _ShortcutEditorState extends ConsumerState<_ShortcutEditor> {
                               child: Column(
                                 children: [
                                   HomeShortcutIcon(
-                                    icon: kRegisteredShortcuts[entry.key]!.icon,
+                                    icon: kRegisteredShortcuts[entry.key]?.icon ??
+                                        Icons.widgets_rounded,
                                     selected: _ids.contains(entry.key),
                                   ),
                                   const SizedBox(height: 8),

@@ -1,8 +1,6 @@
 import '../features/history/history_screen.dart';
 import '../features/today/things_hub_screen.dart';
-import '../features/promises/promises_screen.dart';
 import 'theme/app_theme.dart';
-import '../features/backup/workspace_backup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/splash_screen.dart';
@@ -10,27 +8,12 @@ import '../features/splash/splash_screen.dart';
 import '../features/onboarding/onboarding_shell.dart';
 import '../features/home/home_screen.dart';
 import '../features/today/task_board_screen.dart';
-import '../features/pipeline/pipeline_screen.dart';
-import '../features/pipeline/card_detail_screen.dart';
-import '../features/analytics/analytics_screen.dart';
-import '../features/analytics/series_report_card_screen.dart';
 import '../features/you/you_screen.dart';
 import 'app_navigation.dart';
-import '../features/study_plan/course_catalog_screen.dart';
-import '../features/study_plan/study_plan_screen.dart';
-import '../features/study_plan/lecture_focus_player_screen.dart';
-import '../features/book_reader/kindle_book_reader_screen.dart';
-import '../features/dsa/dsa_screen.dart';
-import '../features/interview_prep/interview_prep_screen.dart';
-import '../features/consistency/consistency_screen.dart';
-import '../features/resume_vault/resume_vault_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/focus/focus_screen.dart';
 import '../features/reminders/reminders_screen.dart';
 import '../features/money/money_screen.dart';
-import '../features/walk/walk_screen.dart';
-import '../features/momentum/momentum_screen.dart';
-import '../core/database/app_database.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/board/board_logic.dart' show wallCategoryKey;
@@ -38,7 +21,6 @@ import '../features/thought_wall/board/board_routes.dart';
 import '../features/thought_wall/board/thought_board_screen.dart';
 import '../features/thought_wall/board/thought_space_screen.dart';
 import '../features/hydration/hydration_screen.dart';
-import '../features/chai_break/chai_break_screen.dart';
 import '../features/plans/plans_screen.dart';
 import '../features/plans/screens/plan_creator_screen.dart';
 import '../features/plans/screens/plan_detail_screen.dart';
@@ -56,33 +38,17 @@ class AscentRoutes {
   static const history = '/history';
   static const things = AscentTabs.things;
   static const vault = '/vault';
-  static const bookReader = '/book-reader';
   static const today = '/today';
   static const money = '/money';
-  static const walk = '/walk';
-  static const momentum = '/momentum';
-  static const momentumOnboarding = '/momentum-onboarding';
-  static const momentumOnboardingAlt = '/momentum/onboarding';
   static const medicine = '/medicine';
   static const aiAssistant = AscentTabs.assistant;
   static const hydration = '/hydration';
   static const thoughtWall = AscentTabs.mind;
-  static const chaiBreak = '/chai-break';
-  static const pipeline = '/pipeline';
-  static const pipelineCard = '/pipeline/:id';
-  static const analytics = '/analytics';
-  static const analyticsSeriesReport = '/analytics/series/:id';
   /// Legacy location of the old More tab; redirects to [you].
   static const more = '/more';
   static const you = AscentTabs.you;
-  static const studyPlan = '/study-plan';
-  static const dsa = '/dsa';
-  static const interviewPrep = '/interview-prep';
-  static const consistency = '/consistency';
-  static const resumeVault = '/resume-vault';
   static const settings = '/settings';
   static const focus = '/focus';
-  static const learning = '/learning';
   static const reminders = '/reminders';
   static const calendar = '/calendar';
   static const plans = '/plans';
@@ -241,28 +207,6 @@ final ascentRouter = GoRouter(
     // ── Parent destinations (pushed over the shell) ───────────────────────
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.momentum,
-      builder: (context, state) => MomentumScreen(
-        linkedPromise: state.extra is Thought ? state.extra as Thought : null,
-      ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.momentumOnboarding,
-      builder: (context, state) => const MomentumScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.momentumOnboardingAlt,
-      builder: (context, state) => const MomentumScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.walk,
-      builder: (context, state) => const WalkScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.medicine,
       builder: (context, state) => const MedicineScreen(),
     ),
@@ -273,11 +217,6 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: '/promises',
-      builder: (_, _) => const PromisesScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
       path: thoughtSpacePath,
       builder: (context, state) => ThoughtSpaceScreen(
         spaceKey: state.uri.queryParameters['key'] ?? wallCategoryKey,
@@ -285,17 +224,6 @@ final ascentRouter = GoRouter(
           state.uri.queryParameters['thought'] ?? '',
         ),
       ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.chaiBreak,
-      builder: (context, state) =>
-          const FeatureGuideHost(feature: 'Pause', child: ChaiBreakScreen()),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.learning,
-      builder: (context, state) => const LectureFocusPlayerScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -321,99 +249,14 @@ final ascentRouter = GoRouter(
         return PlanDetailScreen(collectionId: id);
       },
     ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.pipeline,
-      builder: (context, state) => const PipelineScreen(),
-      routes: [
-        GoRoute(
-          path: ':id',
-          parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) {
-            final id = int.tryParse(state.pathParameters['id'] ?? '');
-            if (id == null) {
-              return const PipelineScreen();
-            }
-            return CardDetailScreen(applicationId: id);
-          },
-        ),
-      ],
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.analytics,
-      builder: (context, state) => const AnalyticsScreen(),
-      routes: [
-        GoRoute(
-          path: 'series/:id',
-          parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) {
-            final id = int.tryParse(state.pathParameters['id'] ?? '');
-            if (id == null) {
-              return const AnalyticsScreen();
-            }
-            return SeriesReportCardScreen(seriesId: id);
-          },
-        ),
-      ],
-    ),
 
     // ── Drawer destinations (pushed over the shell, with back arrow) ──────
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.studyPlan,
-      builder: (context, state) => const CourseCatalogScreen(),
-      routes: [
-        GoRoute(
-          path: 'course/:id',
-          parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) =>
-              StudyPlanScreen(courseId: state.pathParameters['id']),
-        ),
-      ],
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.bookReader,
-      builder: (context, state) => const KindleBookReaderScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.dsa,
-      builder: (context, state) => const DsaScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.interviewPrep,
-      builder: (context, state) {
-        final applicationId = state.uri.queryParameters['applicationId'];
-        return InterviewPrepScreen(
-          linkedApplicationId: applicationId != null
-              ? int.tryParse(applicationId)
-              : null,
-        );
-      },
-    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.today,
       builder: (context, state) => TaskBoardScreen(
         initialTaskId: int.tryParse(state.uri.queryParameters['task'] ?? ''),
       ),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.consistency,
-      builder: (context, state) => const ConsistencyScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.resumeVault,
-      builder: (context, state) => const ResumeVaultScreen(),
-    ),
-    GoRoute(
-      path: '/backup',
-      builder: (context, state) => const WorkspaceBackupScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

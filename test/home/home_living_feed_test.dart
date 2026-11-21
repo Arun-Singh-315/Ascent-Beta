@@ -4,7 +4,6 @@ import 'package:ascent/core/providers/local_day_provider.dart';
 import 'package:ascent/features/home/widgets/home_feed_entrance.dart';
 import 'package:ascent/features/home/widgets/home_life_shelf.dart';
 import 'package:ascent/features/home/widgets/home_resurfaced_thought.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +49,6 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           localDayProvider.overrideWithValue(today),
-          privatePromiseIdsProvider.overrideWith((ref) => <int>{}),
         ],
       );
     });

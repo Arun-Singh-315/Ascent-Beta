@@ -7,7 +7,6 @@ import 'package:ascent/core/history/history_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/history/history_screen.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +66,6 @@ void main() {
       databaseProvider.overrideWithValue(db),
       timeTrackingProvider.overrideWith(_Time.new),
       sharedPreferencesProvider.overrideWithValue(prefs),
-      allPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
       if (entries != null)
         historyEventsProvider.overrideWith((ref) => Stream.value(entries)),
       todayActivitiesProvider.overrideWith(

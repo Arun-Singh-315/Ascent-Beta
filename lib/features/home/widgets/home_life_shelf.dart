@@ -10,8 +10,6 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../../shared/widgets/segmented_tabs.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
-import '../../challenge/challenge_providers.dart';
-import 'home_shortcut_summary.dart';
 
 class HomeLifeShelf extends ConsumerStatefulWidget {
   const HomeLifeShelf({super.key});
@@ -24,8 +22,8 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
   int _selectedTabIndex = 0;
   bool _saving = false;
 
-  static const _tabTitles = ['Water', 'Move', 'Chai', 'Care', 'Momentum'];
-  static const _tabIds = ['hydration', 'walk', 'chai-break', 'medicine', 'momentum'];
+  static const _tabTitles = ['Water', 'Care'];
+  static const _tabIds = ['hydration', 'medicine'];
 
   Future<void> _logWater(int amount) async {
     if (_saving) return;
@@ -114,10 +112,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
     final doses = doseState.value ?? [];
     final takenDoses = doses.where((d) => d.isTaken).length;
 
-    final walkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0;
-    final pauseCount = ref.watch(todayPauseCountProvider).value ?? 0;
-    final challenge = ref.watch(activeChallengeProvider).value;
-
     final currentId = _tabIds[_selectedTabIndex];
 
     return SectionCard(
@@ -139,17 +133,10 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           const SizedBox(height: 18),
 
           // 2. Tab Panel
-          if (currentId == 'hydration') ...[
-            _buildWaterPanel(c, water, goal),
-          ] else if (currentId == 'walk') ...[
-            _buildWalkPanel(c, walkMeters),
-          ] else if (currentId == 'chai-break') ...[
-            _buildChaiPanel(c, pauseCount),
-          ] else if (currentId == 'medicine') ...[
+          if (currentId == 'hydration')
+            _buildWaterPanel(c, water, goal)
+          else
             _buildCarePanel(c, doses, takenDoses),
-          ] else ...[
-            _buildMomentumPanel(c, challenge),
-          ],
         ],
       ),
     );
@@ -330,139 +317,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
     );
   }
 
-  Widget _buildWalkPanel(AppColors c, num meters) {
-    final km = (meters / 1000).toStringAsFixed(2);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'DISTANCE TODAY',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: c.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: FittedBox(
-                alignment: Alignment.centerLeft,
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '$km km',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: c.textPrimary,
-                    height: 1.1,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.surfaceAlt,
-                border: Border.all(color: c.border),
-              ),
-              child: Icon(Icons.directions_walk_rounded, size: 24, color: c.accent),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Keep your movement rhythm steady.',
-          style: TextStyle(fontSize: 12, color: c.textSecondary),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: c.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Rd.field),
-            ),
-          ),
-          onPressed: () => context.push('/walk'),
-          icon: Icon(Icons.play_arrow_rounded, color: c.accent),
-          label: Text('Start a walk', style: TextStyle(color: c.textPrimary)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChaiPanel(AppColors c, int pauses) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'PAUSES TODAY',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: c.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: FittedBox(
-                alignment: Alignment.centerLeft,
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '$pauses ${pauses == 1 ? "pause" : "pauses"}',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: c.textPrimary,
-                    height: 1.1,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.surfaceAlt,
-                border: Border.all(color: c.border),
-              ),
-              child: Icon(Icons.coffee_outlined, size: 24, color: c.accent),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Mindful lo-fi study pause & tea brew.',
-          style: TextStyle(fontSize: 12, color: c.textSecondary),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: c.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Rd.field),
-            ),
-          ),
-          onPressed: () => context.push('/chai-break'),
-          icon: Icon(Icons.self_improvement_rounded, color: c.accent),
-          label: Text('Start session', style: TextStyle(color: c.textPrimary)),
-        ),
-      ],
-    );
-  }
-
   Widget _buildCarePanel(AppColors c, List<MedicineLog> doses, int taken) {
     final total = doses.length;
     return Column(
@@ -526,72 +380,6 @@ class _HomeLifeShelfState extends ConsumerState<HomeLifeShelf> {
           icon: Icon(Icons.visibility_outlined, color: c.accent),
           label: Text(total > 0 ? 'View your doses' : 'Set up a routine',
               style: TextStyle(color: c.textPrimary)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMomentumPanel(AppColors c, Challenge? challenge) {
-    final title = challenge?.title ?? 'Daily Momentum';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'CHALLENGE & MOMENTUM',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.0,
-            color: c.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: c.textPrimary,
-                  height: 1.1,
-                ),
-              ),
-            ),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: c.surfaceAlt,
-                border: Border.all(color: c.border),
-              ),
-              child: Icon(Icons.military_tech_outlined, size: 24, color: c.accent),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          challenge != null
-              ? 'Keep your momentum active for today.'
-              : 'Choose a challenge to build momentum.',
-          style: TextStyle(fontSize: 12, color: c.textSecondary),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: c.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(Rd.field),
-            ),
-          ),
-          onPressed: () => context.push('/momentum'),
-          icon: Icon(Icons.flag_outlined, color: c.accent),
-          label: Text('View challenge', style: TextStyle(color: c.textPrimary)),
         ),
       ],
     );

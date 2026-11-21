@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/shared_control_tokens.dart';
-import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../shared/widgets/ascent_button.dart';
@@ -442,18 +441,9 @@ class _ThingsHeroCardState extends ConsumerState<ThingsHeroCard> {
     HapticFeedback.lightImpact();
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
-    final isLecture = activity.sourceType == 'lecture';
     final isTimed =
         activity.kind == ActivityKind.duration ||
-        (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
-        isLecture;
-
-    if (isLecture) {
-      final notifier = ref.read(learningHubProvider.notifier);
-      notifier.togglePlayPause();
-      context.push('/learning');
-      return;
-    }
+        (activity.targetMinutes != null && activity.targetMinutes! > 0);
 
     if (isTimed) {
       final tracker = ref.read(timeTrackingProvider.notifier);

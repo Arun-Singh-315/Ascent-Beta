@@ -14,7 +14,6 @@ import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 
@@ -89,13 +88,6 @@ void main() {
         dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-        allChallengesProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider.overrideWith(
-          (ref) => Stream.value(null),
-        ),
-        todayMomentumCommitmentsStreamProvider.overrideWith(
-          (ref) => Stream.value([]),
-        ),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         userProfileStreamProvider.overrideWith(
           (ref) => Stream.value(testProfile),

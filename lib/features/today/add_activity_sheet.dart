@@ -24,7 +24,6 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
-import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/services/plan_child_protection.dart';
@@ -573,30 +572,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       ),
                     ],
                   ),
-
-                  if (widget.existingTask?.actualCompletedDate == null)
-                    TextButton.icon(
-                      icon: const Icon(Icons.school_outlined),
-                      label: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          widget.existingTask == null
-                              ? 'Plan a lecture instead'
-                              : 'Convert to a course lecture',
-                        ),
-                      ),
-                      onPressed: () async {
-                        final saved = await AddLectureActivitySheet.show(
-                          context,
-                          task: widget.existingTask,
-                          title: _titleController.text,
-                          minutes: _kind == ActivityKind.duration
-                              ? _targetMinutes
-                              : null,
-                        );
-                        if (saved && context.mounted) Navigator.pop(context);
-                      },
-                    ),
 
                   // 3. Progressive Target Duration (Shown only when Timed is selected)
                   if (_kind == ActivityKind.duration) ...[

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
 import '../../today/add_activity_sheet.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
-import '../../promises/widgets/promise_chat_composer.dart';
 import '../../money/add_transaction_sheet.dart';
 
 /// Home always retains a capture entry, independently of visible sections.
@@ -13,7 +12,6 @@ Future<void> showHomeCaptureActions(BuildContext context) async {
     actions: const [
       AscentAction('activity', 'Activity', Icons.add_task_rounded),
       AscentAction('thought', 'Thought', Icons.edit_note_rounded),
-      AscentAction('commitment', 'Commitment', Icons.commit_rounded),
       AscentAction('expense', 'Expense', Icons.account_balance_wallet_outlined),
     ],
   );
@@ -23,8 +21,6 @@ Future<void> showHomeCaptureActions(BuildContext context) async {
       await AddActivitySheet.show(context);
     case 'thought':
       await DropThoughtSheet.show(context);
-    case 'commitment':
-      await PromiseChatComposer.show(context);
     case 'expense':
       await AddTransactionSheet.show(context);
   }

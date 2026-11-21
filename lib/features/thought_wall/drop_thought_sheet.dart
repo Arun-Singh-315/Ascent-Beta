@@ -1,4 +1,3 @@
-import '../promises/promise_composer.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/note_list_button.dart';
 import '../../shared/utils/smart_list_input_formatter.dart';
@@ -40,16 +39,6 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
     this.existingThought,
   });
 
-  /// Guided entry sheet, one promise at a time.
-  static Future<void> showPromise(BuildContext context) {
-    return showAscentCenteredForm<void>(
-      context: context,
-      maxWidth: 420,
-      barrierDismissible: false,
-      builder: (_) => const PromiseComposerDialog(),
-    );
-  }
-
   /// Show the general thought entry bottom sheet.
   static Future<bool?> show(
     BuildContext context, {
@@ -58,12 +47,6 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
     String? initialText,
     Thought? existingThought,
   }) {
-    // Route promise entries to the dedicated centered dialog.
-    if (initialMood == 'promise' && existingThought == null) {
-      showPromise(context);
-      return Future.value(null);
-    }
-
     return showAscentCenteredForm<bool>(
       context: context,
       maxWidth: 520,
@@ -109,12 +92,6 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       'icon': Icons.edit_note_rounded,
       'color': AppPalette.colorFF6E8565,
     },
-    {
-      'key': 'promise',
-      'label': 'Promise',
-      'icon': Icons.handshake_outlined,
-      'color': AppPalette.colorFFB46824,
-    },
   ];
 
   static const _kDraftContent = 'thought_wall_draft_content';
@@ -128,9 +105,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     super.initState();
     if (widget.existingThought != null) {
       _contentController.text = widget.existingThought!.content;
-      _selectedMood = widget.existingThought!.mood == 'promise'
-          ? 'promise'
-          : 'thought';
+      _selectedMood = 'thought';
       _isPinned = widget.existingThought!.isPinned;
       _activePrompt = widget.existingThought!.promptQuestion;
     } else {
@@ -247,11 +222,6 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
     try {
       if (widget.existingThought != null) {
-        if (widget.existingThought!.mood == 'promise') {
-          await ref
-              .read(promiseServiceProvider)
-              .update(thoughtId: widget.existingThought!.id, content: text);
-        }
         await ref
             .read(thoughtDaoProvider)
             .updateThought(

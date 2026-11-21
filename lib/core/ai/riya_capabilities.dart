@@ -7,7 +7,6 @@ import 'ai_action_execution.dart';
 import 'ai_service.dart';
 import 'riya_workspace_actions.dart';
 import 'riya_life_actions.dart';
-import 'riya_learning_actions.dart';
 import 'riya_session_reads.dart';
 import 'riya_money_actions.dart';
 import 'riya_medicine_actions.dart';
@@ -52,7 +51,6 @@ const riyaCapabilities = <RiyaCapability>[
   ...riyaLifeCapabilities,
   ...riyaMoneyCapabilities,
   ...riyaMedicineCapabilities,
-  ...riyaLearningCapabilities,
   ...riyaSessionCapabilities,
   RiyaCapability(
     'tasks.today',
@@ -400,10 +398,6 @@ class RiyaExecutor {
       Expando<Map<String, (String, Future<RiyaResult>)>>();
   static const _recoverableExternal = {
     'home.visibility',
-    'learning.complete',
-    'learning.pause',
-    'learning.resume',
-    ...riyaLearningWriteIds,
   };
 
   void validate(RiyaCommand command, {bool checkTime = true}) {
@@ -491,16 +485,13 @@ class RiyaExecutor {
     _checkWorkspace(revision);
     final c = command.capability;
     if (c.write && !approved) throw StateError('Confirmation required');
-    if (command.id.startsWith('promises.')) {
-      await RiyaPromiseActions(db, clock).repo.initialize();
-    }
     // Request IDs belong to a persisted user chat turn, not arbitrary retrieved text.
     if (requestId.isEmpty) throw ArgumentError('Request ID required');
     validate(command, checkTime: false);
     if (!c.write) {
       return _run(command);
     }
-    if (c.id.startsWith('home.') || c.id.startsWith('learning.')) {
+    if (c.id.startsWith('home.')) {
       if (!_recoverableExternal.contains(c.id)) {
         throw UnsupportedError(
           'This workspace action needs a recoverable domain executor',
@@ -652,14 +643,7 @@ class RiyaExecutor {
     final money = RiyaMoneyActions(db, clock);
     if (money.handles(cmd.id)) return money.run(cmd);
     final workspace = RiyaWorkspaceActions(db, clock, external: external);
-    if (workspace.handles(cmd.id) ||
-        riyaLearningCapabilities.any((c) => c.id == cmd.id)) {
-      if (cmd.id.startsWith('learning.') && !workspace.handles(cmd.id)) {
-        if (external == null) {
-          throw StateError('This action needs the active workspace');
-        }
-        return external!(cmd);
-      }
+    if (workspace.handles(cmd.id)) {
       return workspace.run(cmd);
     }
     final life = RiyaLifeActions(db, clock);

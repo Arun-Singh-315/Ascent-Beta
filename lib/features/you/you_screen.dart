@@ -38,7 +38,7 @@ class YouGroup {
 /// Every destination the You tab offers. It keeps every entry point the old
 /// More tab and side drawer had (CLAUDE.md §9).
 const youGroups = [
-  YouGroup('Live', [
+  YouGroup('Daily Rhythm', [
     YouEntry(
       icon: Icons.water_drop_outlined,
       tint: PillarTints.water,
@@ -54,25 +54,11 @@ const youGroups = [
       route: '/medicine',
     ),
     YouEntry(
-      icon: Icons.directions_walk_rounded,
-      tint: PillarTints.live,
-      title: 'Walk',
-      subtitle: 'Routes, steps and pace',
-      route: '/walk',
-    ),
-    YouEntry(
       icon: Icons.account_balance_wallet_outlined,
       tint: PillarTints.money,
       title: 'Money',
       subtitle: 'Spending, bills and budgets',
       route: '/money',
-    ),
-    YouEntry(
-      icon: Icons.coffee_outlined,
-      tint: PillarTints.grow,
-      title: 'Pause',
-      subtitle: 'Mindful breaks',
-      route: '/chai-break',
     ),
     YouEntry(
       icon: Icons.timer_outlined,
@@ -104,75 +90,6 @@ const youGroups = [
       route: '/plans',
     ),
   ]),
-  YouGroup('Grow', [
-    YouEntry(
-      icon: Icons.school_outlined,
-      tint: PillarTints.grow,
-      title: 'Courses',
-      subtitle: 'Catalog and study plans',
-      route: '/study-plan',
-    ),
-    YouEntry(
-      icon: Icons.headphones_outlined,
-      tint: PillarTints.grow,
-      title: 'Lecture player',
-      subtitle: 'Pick up where you left off',
-      route: '/learning',
-    ),
-    YouEntry(
-      icon: Icons.menu_book_outlined,
-      tint: PillarTints.grow,
-      title: 'Books',
-      route: '/book-reader',
-    ),
-    YouEntry(
-      icon: Icons.local_fire_department_outlined,
-      tint: PillarTints.grow,
-      title: 'Momentum',
-      subtitle: 'Challenges and streaks',
-      route: '/momentum',
-    ),
-    YouEntry(
-      icon: Icons.grid_on_rounded,
-      tint: PillarTints.grow,
-      title: 'Consistency',
-      subtitle: 'Your activity heatmap',
-      route: '/consistency',
-    ),
-    YouEntry(
-      icon: Icons.insights_rounded,
-      tint: PillarTints.plan,
-      title: 'Analytics',
-      subtitle: 'Focus, habits and trends',
-      route: '/analytics',
-    ),
-  ]),
-  YouGroup('Career tools', [
-    YouEntry(
-      icon: Icons.view_kanban_outlined,
-      tint: PillarTints.neutral,
-      title: 'Job pipeline',
-      route: '/pipeline',
-    ),
-    YouEntry(
-      icon: Icons.code_rounded,
-      tint: PillarTints.neutral,
-      title: 'DSA tracker',
-      route: '/dsa',
-    ),
-    YouEntry(
-      icon: Icons.question_answer_outlined,
-      tint: PillarTints.neutral,
-      title: 'Interview prep',
-      route: '/interview-prep',
-    ),
-    YouEntry(
-      icon: Icons.description_outlined,
-      tint: PillarTints.neutral,
-      title: 'Resume vault',
-      route: '/resume-vault',
-    ),
-  ]),
   YouGroup('Private', [
     YouEntry(
       icon: Icons.shield_outlined,
@@ -192,7 +109,7 @@ const youGroups = [
       icon: Icons.settings_outlined,
       tint: PillarTints.neutral,
       title: 'Settings',
-      subtitle: 'Theme, notifications and backup',
+      subtitle: 'Theme, notifications and preferences',
       route: '/settings',
     ),
   ]),

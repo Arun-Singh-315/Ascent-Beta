@@ -13,11 +13,8 @@ import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
-import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
-import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -92,13 +89,6 @@ void main() {
         dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-        allChallengesProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider.overrideWith(
-          (ref) => Stream.value(null),
-        ),
-        todayMomentumCommitmentsStreamProvider.overrideWith(
-          (ref) => Stream.value([]),
-        ),
         recentThoughtsStreamProvider.overrideWith(
           (ref) => Stream.value(thoughts ?? []),
         ),
@@ -220,30 +210,6 @@ void main() {
     );
 
     testWidgets(
-      '3. QuickModulesNavHub renders seamless bento cells without nested AppCard rounded boxes',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: QuickModulesNavHub()),
-            ),
-            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        expect(find.text('Daily rhythm'), findsOneWidget);
-        expect(find.text('Medicine'), findsOneWidget);
-        expect(find.text('Hydration'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
-
-
-    testWidgets(
       '6. UI Overflow Immunity at 320px width with 2.0x text scale for Home widgets',
       (tester) async {
         tester.view.physicalSize = const Size(320 * 3, 800 * 3);
@@ -265,8 +231,6 @@ void main() {
                   child: Column(
                     children: [
                       HomeHeader(profile: testProfile),
-                      const QuickModulesNavHub(),
-                      const LearningHubCard(),
                     ],
                   ),
                 ),

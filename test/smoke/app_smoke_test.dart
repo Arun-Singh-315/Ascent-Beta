@@ -141,11 +141,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(ascentRouter.state.uri.path, AscentRoutes.thoughtWall);
 
-      // Chai Break
-      ascentRouter.push(AscentRoutes.chaiBreak);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(ascentRouter.state.uri.path, AscentRoutes.chaiBreak);
-
       // Plans
       ascentRouter.push(AscentRoutes.plans);
       await tester.pump(const Duration(milliseconds: 300));

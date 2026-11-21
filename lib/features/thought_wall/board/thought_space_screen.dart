@@ -21,7 +21,6 @@ import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../promises/providers/promise_providers.dart';
 import 'board_actions.dart';
 import 'board_cards.dart';
 import 'board_background.dart';
@@ -47,19 +46,16 @@ class ThoughtSpaceScreen extends ConsumerStatefulWidget {
   ConsumerState<ThoughtSpaceScreen> createState() => _ThoughtSpaceScreenState();
 }
 
-class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
-    with WidgetsBindingObserver {
+class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen> {
   final _input = TextEditingController();
   final _focus = FocusNode();
   late String _tab = widget.initialThoughtId == null ? 'open' : 'all';
   final _mode = SpaceViewMode.list;
   bool _saving = false;
   NoteDraftBinding? _draft;
-  UnlockedPromiseIdsNotifier? _unlocked;
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     if (!_isArchive) {
       _draft = NoteDraftBinding(
         _input,
@@ -69,25 +65,10 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
     }
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _unlocked = ref.read(unlockedPromiseIdsProvider.notifier);
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
-      _unlocked?.lockAll();
-    }
-  }
-
   bool get _isArchive => widget.spaceKey == archiveSpaceKey;
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _draft?.dispose();
     _input.dispose();
     _focus.dispose();
@@ -250,8 +231,6 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
     final active = ref.watch(allThoughtsStreamProvider).value ?? <Thought>[];
     final archived =
         ref.watch(archivedThoughtsStreamProvider).value ?? <Thought>[];
-    final privateIds = ref.watch(privatePromiseIdsProvider);
-    final unlocked = ref.watch(unlockedPromiseIdsProvider);
 
     final categoryState = ref.watch(thoughtCategoriesStreamProvider);
     if (categoryState.isLoading && !categoryState.hasValue) {
@@ -299,7 +278,7 @@ class _ThoughtSpaceScreenState extends ConsumerState<ThoughtSpaceScreen>
     }
 
     Widget entryFor(Thought t, int index) {
-      final locked = isPrivateLocked(t, privateIds, unlocked);
+      const locked = false;
       return _SpaceEntry(
         key: ValueKey('space_entry_${t.id}'),
         thought: t,

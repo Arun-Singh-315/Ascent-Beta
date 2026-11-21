@@ -6,26 +6,19 @@ import 'core/notifications/reminder_alarm_bridge.dart';
 import 'core/providers/database_provider.dart';
 import 'core/notifications/reminder_alert_sync.dart';
 import 'core/ai/riya_alert_effects.dart';
-import 'package:path_provider/path_provider.dart';
 import 'core/database/app_database.dart';
-import 'core/backup/workspace_backup_service.dart';
-import 'core/backup/workspace_restart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
-import 'app/theme/app_theme.dart';
 import 'app/app_navigation.dart';
 import 'core/services/share_intake.dart';
 import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
-import 'core/learning_hub/learning_hub_provider.dart';
-import 'core/walk/walk_tracking_service.dart';
-import 'features/chai_break/chai_break_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,77 +27,17 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   final bootstrapDb = AppDatabase();
   try {
-    try {
-      await WorkspaceBackupService(
-        bootstrapDb,
-        SharedBackupPreferences(prefs),
-        await getApplicationDocumentsDirectory(),
-      ).recoverPreferences();
-    } catch (e) {
-      debugPrint('Startup preferences recovery failed: $e');
-      await bootstrapDb.close();
-      runApp(
-        MaterialApp(
-          theme: AscentTheme.light(),
-          home: Scaffold(
-            body: SafeArea(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Finish restoring settings',
-                        style: TextStyle(fontSize: 24),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Your restored records are safe. Settings could not be synchronized. Free some storage and retry.',
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: main,
-                        child: const Text('Retry recovery'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      return;
-    }
-
     await PlanCollectionService(bootstrapDb).importLegacy();
   } finally {
     await bootstrapDb.close();
   }
   await touchLastOpened(prefs);
 
-  late ProviderContainer container;
-  ProviderContainer createContainer() => ProviderContainer(
+  final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      restartWorkspaceProvider.overrideWithValue(() async {
-        final previous = container;
-        container = createContainer();
-        ascentRouter.go('/');
-        runApp(
-          UncontrolledProviderScope(
-            key: UniqueKey(),
-            container: container,
-            child: const AscentApp(),
-          ),
-        );
-        await WidgetsBinding.instance.endOfFrame;
-        previous.dispose();
-      }),
     ],
   );
-  container = createContainer();
 
   NotificationService.setNotificationNavigateHandler((route) {
     final destination = NotificationService.destinationForPayload(route);
@@ -137,17 +70,6 @@ Future<void> main() async {
           NotificationService.onNotificationNavigate?.call(location),
     ),
   );
-
-  NotificationService.onNotificationSeek = (route, seconds) {
-    if (route != '/learning') return;
-    final duration = container
-        .read(learningHubProvider)
-        .activeLecture
-        .durationSeconds;
-    if (duration > 0) {
-      container.read(learningHubProvider.notifier).seekTo(seconds / duration);
-    }
-  };
 
   NotificationService.setNotificationActionHandler((actionId, payload) {
     final effectivePayload = payload?.isNotEmpty == true ? payload : null;
@@ -210,28 +132,7 @@ Future<void> main() async {
       }
       return;
     }
-    if (effectivePayload == '/walk') {
-      final walkNotifier = container.read(walkTrackingProvider.notifier);
-      if (actionId == NotificationService.actionPause) {
-        walkNotifier.pauseWalk();
-      } else if (actionId == NotificationService.actionResume) {
-        walkNotifier.resumeWalk();
-      }
-    } else if (effectivePayload == '/learning') {
-      final learningNotifier = container.read(learningHubProvider.notifier);
-      if (actionId == NotificationService.actionPause) {
-        learningNotifier.pause();
-      } else if (actionId == NotificationService.actionResume) {
-        learningNotifier.play();
-      } else if (actionId == NotificationService.actionRewind) {
-        learningNotifier.seekBy(-10);
-      } else if (actionId == NotificationService.actionForward) {
-        learningNotifier.seekBy(30);
-      } else if (actionId == NotificationService.actionDone) {
-        learningNotifier.pause(updateNotification: false);
-        NotificationService.instance.cancelOngoingLectureNotification();
-      }
-    } else if (effectivePayload == '/focus') {
+    if (effectivePayload == '/focus') {
       () async {
         final dao = container.read(timeSessionDaoProvider);
         final active = await dao.getActiveFocusSession();
@@ -245,34 +146,15 @@ Future<void> main() async {
           NotificationService.instance.cancelOngoingFocusNotification();
         }
       }();
-    } else if (effectivePayload == '/chai-break') {
-      final chaiNotifier = container.read(chaiBreakProvider.notifier);
-      if (actionId == NotificationService.actionPause) {
-        chaiNotifier.pause();
-      } else if (actionId == NotificationService.actionResume) {
-        chaiNotifier.resume();
-      }
     } else {
-      // Robust fallback if payload was not preserved by OS
-      final learning = container.read(learningHubProvider);
-      if (learning.isPlaying) {
+      final focusState = container.read(timeTrackingProvider);
+      if (focusState.isRunning) {
         if (actionId == NotificationService.actionPause) {
-          container.read(learningHubProvider.notifier).pause();
+          container.read(timeTrackingProvider.notifier).pauseSession();
         }
-      } else if (learning.currentElapsedSeconds > 0) {
+      } else if (focusState.isPaused) {
         if (actionId == NotificationService.actionResume) {
-          container.read(learningHubProvider.notifier).play();
-        }
-      } else {
-        final focusState = container.read(timeTrackingProvider);
-        if (focusState.isRunning) {
-          if (actionId == NotificationService.actionPause) {
-            container.read(timeTrackingProvider.notifier).pauseSession();
-          }
-        } else if (focusState.isPaused) {
-          if (actionId == NotificationService.actionResume) {
-            container.read(timeTrackingProvider.notifier).resumeSession();
-          }
+          container.read(timeTrackingProvider.notifier).resumeSession();
         }
       }
     }

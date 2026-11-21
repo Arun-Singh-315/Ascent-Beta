@@ -1,6 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/core/medicine/medicine_service.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -17,15 +16,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _IdleTracking extends TimeTrackingNotifier {
   @override
   TimeTrackingState build() => const TimeTrackingState();
-}
-
-class _IdleLearning extends LearningHubNotifier {
-  @override
-  LearningHubState build() => const LearningHubState(
-    courses: [],
-    activeCourseId: '',
-    activeLectureId: 0,
-  );
 }
 
 void main() {
@@ -45,7 +35,6 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         medicineServiceProvider.overrideWithValue(medicine),
         timeTrackingProvider.overrideWith(_IdleTracking.new),
-        learningHubProvider.overrideWith(_IdleLearning.new),
       ],
     );
     await medicine.addMedicine(

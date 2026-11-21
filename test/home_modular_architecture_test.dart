@@ -11,9 +11,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/features/challenge/challenge_providers.dart';
 
 import 'package:drift/drift.dart';
 
@@ -73,26 +71,16 @@ void main() {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        allChallengesProvider.overrideWith((ref) => Stream.value([])),
         sharedPreferencesProvider.overrideWithValue(prefs),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1500)),
         dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
-        todayWalkDistanceStreamProvider.overrideWith(
-          (ref) => Stream.value(2400.0),
-        ),
         todaySpendingStreamProvider.overrideWith((ref) => Stream.value(350.0)),
         overallBudgetStreamProvider.overrideWith((ref) => Stream.value(null)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         allMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider.overrideWith(
-          (ref) => Stream.value(null),
-        ),
-        todayMomentumCommitmentsStreamProvider.overrideWith(
-          (ref) => Stream.value([]),
-        ),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         thoughtCategoriesStreamProvider.overrideWith(
           (ref) => Stream.value(ThoughtDao.builtInCategories),
@@ -153,24 +141,6 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(seconds: 1));
     });
-
-    testWidgets(
-      'QuickModulesNavHub renders Medicine, Hydration and Chai Break',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestableWidget(const Scaffold(body: QuickModulesNavHub())),
-        );
-
-        await tester.pump();
-        expect(find.text('Hydration'), findsOneWidget);
-        expect(find.text('250'), findsOneWidget);
-        expect(find.text('Medicine'), findsOneWidget);
-        expect(find.text('Pause'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(seconds: 1));
-      },
-    );
 
     testWidgets(
       'Home header assistant dynamically reflects customized identity',

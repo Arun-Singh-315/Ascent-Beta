@@ -130,12 +130,6 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                     compact: true,
                     onPressed: () => context.push(AscentRoutes.createPlan),
                   ),
-                  AscentButton.secondary(
-                    key: const ValueKey('plans_study_hub'),
-                    label: 'Study Hub',
-                    icon: Icons.school_outlined,
-                    onPressed: () => context.push(AscentRoutes.studyPlan),
-                  ),
                 ],
               ),
             ),

@@ -21,23 +21,11 @@ const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
     icon: Icons.auto_awesome_rounded,
     route: '/ai-assistant',
   ),
-  'promises': HomeShortcutItem(
-    id: 'promises',
-    label: 'Commitments',
-    icon: Icons.bookmark_added_rounded,
-    route: '/promises',
-  ),
   'plans': HomeShortcutItem(
     id: 'plans',
     label: 'Plans',
     icon: Icons.event_repeat_rounded,
     route: '/plans',
-  ),
-  'study-plan': HomeShortcutItem(
-    id: 'study-plan',
-    label: 'Study',
-    icon: Icons.school_rounded,
-    route: '/study-plan',
   ),
   'today': HomeShortcutItem(
     id: 'today',
@@ -56,12 +44,6 @@ const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
     label: 'Mindspace',
     icon: Icons.lightbulb_rounded,
     route: '/thought-wall',
-  ),
-  'learning': HomeShortcutItem(
-    id: 'learning',
-    label: 'Growth',
-    icon: Icons.school_rounded,
-    route: '/learning',
   ),
   'reminders': HomeShortcutItem(
     id: 'reminders',
@@ -98,30 +80,6 @@ const Map<String, HomeShortcutItem> kRegisteredShortcuts = {
     label: 'Water',
     icon: Icons.water_drop_rounded,
     route: '/hydration',
-  ),
-  'walk': HomeShortcutItem(
-    id: 'walk',
-    label: 'Move',
-    icon: Icons.directions_walk_rounded,
-    route: '/walk',
-  ),
-  'chai-break': HomeShortcutItem(
-    id: 'chai-break',
-    label: 'Chai',
-    icon: Icons.coffee_rounded,
-    route: '/chai-break',
-  ),
-  'momentum': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Momentum',
-    icon: Icons.flag_rounded,
-    route: '/momentum',
-  ),
-  'challenge': HomeShortcutItem(
-    id: 'momentum',
-    label: 'Momentum',
-    icon: Icons.flag_rounded,
-    route: '/momentum',
   ),
   'vault': HomeShortcutItem(
     id: 'vault',

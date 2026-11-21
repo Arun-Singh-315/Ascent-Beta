@@ -27,7 +27,7 @@ void main() {
       await tester.pumpWidget(
         buildTestApp(
           const HomeShortcutPanel(
-            shortcuts: ['today', 'learning', 'thought-wall', 'vault'],
+            shortcuts: ['today', 'focus', 'thought-wall', 'vault'],
           ),
         ),
       );
@@ -41,7 +41,7 @@ void main() {
 
       // Contains shortcut items
       expect(find.byKey(const ValueKey('shortcut_today')), findsOneWidget);
-      expect(find.byKey(const ValueKey('shortcut_learning')), findsOneWidget);
+      expect(find.byKey(const ValueKey('shortcut_focus')), findsOneWidget);
       expect(
         find.byKey(const ValueKey('shortcut_thought-wall')),
         findsOneWidget,

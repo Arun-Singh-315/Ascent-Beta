@@ -9,7 +9,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
-import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../thought_category_action.dart';
 import 'board_logic.dart';
@@ -400,13 +399,9 @@ Future<void> toggleThoughtDone(
 Future<bool> unlockPrivateThought(
   WidgetRef ref,
   Thought thought, {
-  String reason = 'Unlock private commitment',
+  String reason = 'Unlock private note',
 }) async {
-  final unlocked = await ref
+  return ref
       .read(vaultSecurityServiceProvider)
       .authenticateBiometrics(reason: reason);
-  if (unlocked) {
-    ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
-  }
-  return unlocked;
 }

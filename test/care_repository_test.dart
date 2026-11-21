@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:ascent/core/backup/workspace_backup_service.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/medicine/care_repository.dart';
 import 'package:ascent/core/medicine/medicine_service.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:flutter_test/flutter_test.dart';
-import 'workspace_backup_test.dart' show MemoryBackupPreferences;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -93,28 +91,6 @@ void main() {
       await restoreRecord();
       await restoreRecord();
       expect(await repo.watchRecords(first).first, hasLength(2));
-      final backup = WorkspaceBackupService(
-        db,
-        MemoryBackupPreferences(),
-        folder,
-      );
-      final raw = await backup.export();
-      expect((jsonDecode(raw)['payload']['files'] as List), hasLength(1));
-      await db.delete(db.careRecordTable).go();
-      await backup.restore(raw, confirmed: true);
-      final restored = await repo.watchRecords(first).first;
-      expect(
-        await File(restored.last.filePath!).readAsString(),
-        'report evidence',
-      );
-      expect(restored.last.filePath, isNot(records.last.filePath));
-      expect((await db.medicineDao.getMedicineById(med))!.carePlanId, first);
-      expect(
-        (await repo.watchPlans().first)
-            .singleWhere((p) => p.id == first)
-            .nextVisit,
-        DateTime(2027, 1, 10),
-      );
       expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
     },
   );

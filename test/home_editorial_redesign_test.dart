@@ -219,8 +219,8 @@ void main() {
       );
       await settle(tester);
       expect(find.text('Water'), findsOneWidget);
-      expect(find.text('Move'), findsOneWidget);
-      await tester.tap(find.text('Move'));
+      expect(find.text('Care'), findsOneWidget);
+      await tester.tap(find.text('Care'));
       await settle(tester);
       await capture(tester, key, 'home-life-shelf');
       expect(

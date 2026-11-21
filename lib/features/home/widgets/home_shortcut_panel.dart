@@ -4,7 +4,6 @@ import 'home_section_heading.dart';
 import '../../../app/theme/home_design.dart';
 import 'home_capture_actions.dart';
 import '../../../core/providers/local_day_provider.dart';
-import '../../../core/learning_hub/learning_hub_provider.dart';
 import 'home_shortcut_summary.dart';
 import 'home_record_actions.dart';
 import '../../reminders/widgets/ios_reminder_dialog.dart';
@@ -408,14 +407,7 @@ class _HomeShortcutPanelState extends ConsumerState<HomeShortcutPanel> {
                                       : item.id,
                                 );
                               } else {
-                                final route =
-                                    item.id == 'learning' &&
-                                        !ref
-                                            .read(learningHubProvider)
-                                            .hasStartedLearning
-                                    ? '/study-plan'
-                                    : item.route;
-                                context.open(route);
+                                context.open(item.route);
                               }
                             },
                             child: Padding(

@@ -7,9 +7,6 @@ import '../services/plan_generator.dart';
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
-import '../learning_hub/learning_hub_provider.dart';
-import '../learning_hub/learning_hub_models.dart';
-import '../walk/walk_tracking_service.dart';
 import '../medicine/medicine_service.dart';
 
 enum AiActionType {
@@ -650,69 +647,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         !lower.contains('done')) {
       return null;
     }
-
-    final learningState = ref.read(learningHubProvider);
-    final activeCourse = learningState.course;
-
-    int countToMark = 1;
-    final numMatch = RegExp(
-      r'(?:first\s+)?(\d+)\s*lectures?',
-    ).firstMatch(lower);
-    final wordMatch = RegExp(
-      r'(?:first\s+)?(one|two|three|four)\s*lectures?',
-    ).firstMatch(lower);
-
-    if (numMatch != null) {
-      countToMark = int.tryParse(numMatch.group(1) ?? '1') ?? 1;
-    } else if (wordMatch != null) {
-      final w = wordMatch.group(1);
-      if (w == 'one') {
-        countToMark = 1;
-      } else if (w == 'two') {
-        countToMark = 2;
-      } else if (w == 'three') {
-        countToMark = 3;
-      } else if (w == 'four') {
-        countToMark = 4;
-      }
-    }
-
-    // Collect unfinished lectures
-    final unfinishedLectures = <Lecture>[];
-    for (final m in activeCourse.modules) {
-      for (final l in m.lectures) {
-        if (!l.isCompleted) {
-          unfinishedLectures.add(l);
-          if (unfinishedLectures.length >= countToMark) break;
-        }
-      }
-      if (unfinishedLectures.length >= countToMark) break;
-    }
-
-    if (unfinishedLectures.isEmpty) {
-      return AiResponse(
-        text:
-            'All lectures in "${activeCourse.title}" are already completed. Outstanding progress.',
-      );
-    }
-
-    final titles = unfinishedLectures.map((l) => '"${l.title}"').join(', ');
-    final lectureIds = unfinishedLectures.map((l) => l.id).toList();
-
-    return AiResponse(
+    return const AiResponse(
       text:
-          'Great consistency. I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress.',
-      proposedAction: AiProposedAction(
-        type: AiActionType.lectureMarkedComplete,
-        title: 'Complete ${unfinishedLectures.length} Lecture(s)',
-        summary:
-            'Course: ${activeCourse.title} • Updates course completion immediately',
-        payload: {
-          'courseId': activeCourse.id,
-          'lectureIds': lectureIds,
-          'count': unfinishedLectures.length,
-        },
-      ),
+          'Courses and lecture tracking have been retired in this version of Ascent.',
     );
   }
 
@@ -726,62 +663,24 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       availableMins = int.tryParse(minMatch.group(1) ?? '45') ?? 45;
     }
 
-    final learningState = ref.read(learningHubProvider);
-    final activeCourse = learningState.course;
-
-    Lecture? recommendedLecture;
-    for (final m in activeCourse.modules) {
-      for (final l in m.lectures) {
-        if (!l.isCompleted) {
-          recommendedLecture = l;
-          break;
-        }
-      }
-      if (recommendedLecture != null) break;
-    }
-
     final buffer = StringBuffer();
     buffer.writeln(
       "With **$availableMins minutes free**, here is your optimal focus plan:\n",
     );
-
-    if (recommendedLecture != null) {
-      final lecMins = (recommendedLecture.durationSeconds / 60).round();
-      buffer.writeln("**Recommended Study Session:**");
-      buffer.writeln(
-        "• **${recommendedLecture.title}** in *${activeCourse.title}*",
-      );
-      buffer.writeln(
-        "• Estimated: ~$lecMins mins. Fits smoothly into your window.",
-      );
-    } else {
-      buffer.writeln(
-        "**Study Status:** All lectures in ${activeCourse.title} are up to date.",
-      );
-    }
-
     buffer.writeln(
-      "\n**Action:** Tap below to start your study focus session or open your Dayboard.",
+      "• Start a focused work session on your highest-priority to-do.\n"
+      "• Dedicate 25 minutes of deep focus, followed by a 5-minute break.",
+    );
+    buffer.writeln(
+      "\n**Action:** Tap below to start your focus session or open your Dayboard.",
     );
 
     return AiResponse(
       text: buffer.toString(),
-      proposedAction: recommendedLecture != null
-          ? AiProposedAction(
-              type: AiActionType.generalResponse,
-              title: 'Study: ${recommendedLecture.title}',
-              summary:
-                  '${activeCourse.title} • ${(recommendedLecture.durationSeconds / 60).round()} mins',
-              payload: {
-                'action': 'open_study',
-                'lectureId': recommendedLecture.id,
-              },
-            )
-          : null,
-      clarifyingOptions: [
-        if (recommendedLecture != null) 'Start ${recommendedLecture.title}',
+      clarifyingOptions: const [
+        'Start focus timer',
         'Plan my day',
-        'Show my spending & study summary',
+        'Check pending tasks',
       ],
     );
   }
@@ -1185,39 +1084,10 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           lower.startsWith('walk'));
 
   AiResponse _handleWalkQuery(WidgetRef ref) {
-    final walkState = ref.read(walkTrackingProvider);
-    final todayDistanceMeters =
-        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
-    final km = todayDistanceMeters / 1000.0;
-    final kmStr = km.toStringAsFixed(2);
-    final isActive = walkState.status == WalkTrackingStatus.tracking;
-
-    final buffer = StringBuffer();
-    if (isActive) {
-      buffer.writeln(
-        'Your walk is active right now \u2014 ${walkState.distanceKm.toStringAsFixed(2)} km and counting.',
-      );
-      buffer.writeln('Pace: ${walkState.formattedPace}/km. Keep it up!');
-    } else if (todayDistanceMeters < 100) {
-      buffer.writeln(
-        "You haven't started a walk yet today. A short 10-minute walk can do wonders for your focus and energy.",
-      );
-    } else {
-      buffer.writeln("Today's walk: **$kmStr km** covered.");
-      if (km < 5.0) {
-        final remaining = (5.0 - km).toStringAsFixed(2);
-        buffer.writeln(
-          '$remaining km to go for your 5 km daily goal \u2014 you are almost there.',
-        );
-      } else {
-        buffer.writeln('Daily goal smashed. Great work staying consistent today.');
-      }
-    }
-
-    return AiResponse(
-      text: buffer.toString().trim(),
-      clarifyingOptions: const [
-        'Log a walk',
+    return const AiResponse(
+      text:
+          'Outdoor Walk tracking is coming soon to Ascent! In the meantime, you can log walking or workout sessions with the focus timer.',
+      clarifyingOptions: [
         'Plan my day',
         'What are my tasks today?',
       ],
@@ -1466,36 +1336,15 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
     } catch (_) {}
 
-    // 2. Walk status & distance
-    final walkState = ref.read(walkTrackingProvider);
-    final todayDistanceMeters =
-        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
-    final kmWalked = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
-    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
-
-    // 3. Finance status
+    // 2. Finance status
     final todaySpend = ref.read(todaySpendingStreamProvider).value ?? 0.0;
     final budget = ref.read(overallBudgetStreamProvider).value;
 
-    // 4. Hydration status
+    // 3. Hydration status
     final waterMl = ref.read(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.read(dailyWaterGoalStreamProvider).value ?? 2500;
 
-    // 5. Growth status
-    final learningState = ref.read(learningHubProvider);
-    final course = learningState.course;
-    Lecture? nextLecture;
-    for (final m in course.modules) {
-      for (final l in m.lectures) {
-        if (!l.isCompleted) {
-          nextLecture = l;
-          break;
-        }
-      }
-      if (nextLecture != null) break;
-    }
-
-    // 6. Upcoming Reminders
+    // 4. Upcoming Reminders
     final nextReminder = ref.read(nextUpcomingReminderProvider).value;
 
     final buffer = StringBuffer();
@@ -1529,20 +1378,6 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       }
     }
 
-    if (isWalkActive) {
-      buffer.writeln(
-        "**Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.",
-      );
-    } else if (todayDistanceMeters < 2500) {
-      buffer.writeln(
-        "**Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.",
-      );
-    } else {
-      buffer.writeln(
-        "**Physical Routine:** Great job — ${kmWalked}km covered today.",
-      );
-    }
-
     if (nextReminder != null) {
       final dueTime = DateFormat('h:mm a').format(nextReminder.scheduledAt);
       buffer.writeln(
@@ -1569,11 +1404,6 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       );
     }
 
-    if (nextLecture != null) {
-      buffer.writeln(
-        "\n**Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).",
-      );
-    }
 
     buffer.writeln(
       "\n**Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
@@ -1597,39 +1427,12 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   Future<AiResponse> _generatePersonalInsights(WidgetRef ref) async {
-    int dsaSolved = 0;
-    try {
-      final dsaDao = ref.read(dsaDaoProvider);
-      dsaSolved = await dsaDao.getSolvedCountThisWeek().timeout(
-        const Duration(milliseconds: 500),
-        onTimeout: () => 0,
-      );
-    } catch (_) {}
-
-    final todayDistanceMeters =
-        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
-    final weekKm = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
-
     final todaySpend = ref.read(todaySpendingStreamProvider).value ?? 0.0;
     final budget = ref.read(overallBudgetStreamProvider).value;
-
     final streak = ref.read(currentStreakStreamProvider).value ?? 0;
-
-    final learningState = ref.read(learningHubProvider);
-    final course = learningState.course;
 
     final buffer = StringBuffer();
     buffer.writeln("**Your Personal Growth Insights:**\n");
-    final pct = (course.progressFraction * 100).round();
-    buffer.writeln(
-      "• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).",
-    );
-    if (dsaSolved > 0) {
-      buffer.writeln(
-        "• **Study & Practice:** $dsaSolved algorithm problems mastered this week.",
-      );
-    }
-    buffer.writeln("• **Physical Wellness:** $weekKm km active walk recorded.");
     buffer.writeln(
       '• **Financial Health:** ₹${todaySpend.toStringAsFixed(0)} spent today'
       '${budget != null ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.',
@@ -1643,7 +1446,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       proposedAction: const AiProposedAction(
         type: AiActionType.personalInsight,
         title: 'Current Activity Summary',
-        summary: 'Current learning, activity and finance information',
+        summary: 'Current activity and finance information',
         payload: {},
       ),
     );

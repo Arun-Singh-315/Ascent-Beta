@@ -3,7 +3,6 @@ import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
 import 'riya_life_intents.dart';
-import 'riya_learning_intents.dart';
 import 'riya_session_reads.dart';
 import 'riya_money_intents.dart';
 import 'riya_medicine_intents.dart';
@@ -14,7 +13,6 @@ class RiyaWorkspaceIntents {
   final AppDatabase db;
   final DateTime Function() clock;
   late final _life = RiyaLifeIntents(clock);
-  late final _learning = RiyaLearningIntents(db);
   late final _sessions = RiyaSessionIntents(clock);
   late final _money = RiyaMoneyIntents(clock);
   late final _medicine = RiyaMedicineIntents(db, clock);
@@ -38,11 +36,9 @@ class RiyaWorkspaceIntents {
     _life.cancel();
     _selectedType = null;
     _selectedId = null;
-    _learning.remember(result);
   }
 
   void remember(String type, int id) {
-    _learning.clearSelection();
     if (type == 'medicine') {
       _medicine.remember(id);
       _money.clearSelection();
@@ -73,7 +69,6 @@ class RiyaWorkspaceIntents {
 
   void cancel() {
     _life.cancel();
-    _learning.cancel();
     _sessions.cancel();
     _money.cancel();
     _medicine.cancel();
@@ -100,30 +95,9 @@ class RiyaWorkspaceIntents {
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
-    // An explicitly selected Learning record owns its generic edit follow-up.
-    // Other domain resolvers may otherwise claim a shared field such as title.
-    if (_learning.hasSelection &&
-        RegExp(
-          r'^(?:edit that$|rename that to |(?:edit|change|update) that (?:name|title|duration|policy) to |(?:name|title|duration|policy) to )',
-        ).hasMatch(lower)) {
-      final followup = await _learning.resolve(prompt);
-      if (followup != null) {
-        _medicine.cancel();
-        _money.cancel();
-        _sessions.cancel();
-        _life.cancel();
-        newCommand();
-        _listDomain = null;
-        _listScope = null;
-        _selectedType = null;
-        _selectedId = null;
-        return followup;
-      }
-    }
     final medicine = await _medicine.resolve(prompt);
     if (medicine != null) {
-      _learning.cancel();
-      _money.cancel();
+        _money.cancel();
       _sessions.cancel();
       newCommand();
       _listDomain = null;
@@ -136,8 +110,7 @@ class RiyaWorkspaceIntents {
     _medicine.clearSelection();
     final money = _money.resolve(prompt);
     if (money != null) {
-      _learning.cancel();
-      _sessions.cancel();
+        _sessions.cancel();
       newCommand();
       _listDomain = null;
       _listScope = null;
@@ -150,8 +123,7 @@ class RiyaWorkspaceIntents {
     _money.clearSelection();
     final session = _sessions.resolve(prompt);
     if (session != null) {
-      _learning.cancel();
-      newCommand();
+        newCommand();
       _listDomain = null;
       _listScope = null;
       _offset = 0;
@@ -163,18 +135,6 @@ class RiyaWorkspaceIntents {
     // A different request ends the history follow-up context. Bare dates must
     // belong to the most recent list or pending action.
     _sessions.cancel();
-    final learning = await _learning.resolve(prompt);
-    if (learning != null) {
-      newCommand();
-      _listDomain = null;
-      _listScope = null;
-      _offset = 0;
-      _life.clearSelection();
-      _selectedType = null;
-      _selectedId = null;
-      return learning;
-    }
-    _learning.clearSelection();
     final life = _life.resolve(prompt);
     if (life != null) {
       newCommand();

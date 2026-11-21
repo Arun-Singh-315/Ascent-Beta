@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
-import '../../features/promises/providers/promise_providers.dart';
 
 const historyModules = {
   'tasks': 'Tasks',
@@ -53,9 +52,6 @@ final historyEventsProvider = StreamProvider.autoDispose<List<HistoryEvent>>((
   ref,
 ) {
   final db = ref.watch(databaseProvider);
-  final unlocked = ref.watch(unlockedPromiseIdsProvider);
-  final privateIds = ref.watch(privatePromiseIdsProvider);
-  final privacyReady = ref.watch(allPromisesStreamProvider).hasValue;
   return db
       .customSelect(
         "SELECT * FROM history_events e WHERE NOT (e.module='tasks' AND EXISTS (SELECT 1 FROM medicine_logs m WHERE CAST(m.linked_task_id AS TEXT)=e.entity_id)) ORDER BY occurred_at DESC, rowid DESC",
@@ -63,15 +59,9 @@ final historyEventsProvider = StreamProvider.autoDispose<List<HistoryEvent>>((
       )
       .watch()
       .map(
-        (rows) => rows.map((row) => db.historyEventTable.map(row.data)).where((
-          event,
-        ) {
-          final private =
-              event.isPrivate ||
-              (event.privacyThoughtId != null &&
-                  (!privacyReady ||
-                      privateIds.contains(event.privacyThoughtId)));
-          return !private || unlocked.contains(event.privacyThoughtId);
-        }).toList(),
+        (rows) => rows
+            .map((row) => db.historyEventTable.map(row.data))
+            .where((event) => !event.isPrivate)
+            .toList(),
       );
 });

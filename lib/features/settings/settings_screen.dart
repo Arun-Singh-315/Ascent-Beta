@@ -5,7 +5,6 @@ import '../../core/security/app_lock_provider.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,10 +21,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
-import '../../core/providers/time_tracking_provider.dart';
-import '../../core/streak/study_streak_provider.dart';
 import '../../features/home/widgets/day_one_tutorial_card.dart';
-import '../../core/database/dev_database_seeder.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -42,23 +38,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
-  List<String> _targetCompanies = [];
-  DateTime? _interviewDate;
   DateTime? _dateOfBirth;
-  int _weeklyHours = 10;
-  String _studyWindow = 'morning';
   bool _profileLoaded = false;
 
   // Collapsible section visibility states to keep UI calm & decluttered
-  bool _expandGpsTelemetry = false;
   bool _expandDataStorage = false;
   bool _expandHelpGuides = false;
 
   // Live Permission & System Access States
   bool _notificationsAllowed = false;
   bool _alarmsAllowed = false;
-  bool _locationAllowed = false;
-  bool _locationServiceOn = true;
 
   @override
   void dispose() {
@@ -93,12 +82,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       try {
         notif = await NotificationService.instance.areNotificationsEnabled();
       } catch (_) {}
-      LocationPermission locPerm = LocationPermission.denied;
-      bool locService = true;
-      try {
-        locPerm = await Geolocator.checkPermission();
-        locService = await Geolocator.isLocationServiceEnabled();
-      } catch (_) {}
 
       bool alarmReady = notif;
       try {
@@ -109,10 +92,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       if (mounted) {
         setState(() {
           _notificationsAllowed = notif;
-          _locationAllowed =
-              locPerm == LocationPermission.always ||
-              locPerm == LocationPermission.whileInUse;
-          _locationServiceOn = locService;
           _alarmsAllowed = alarmReady;
         });
       }
@@ -147,43 +126,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
   }
 
-  Future<void> _openLocationSettings() async {
-    HapticFeedback.lightImpact();
-    try {
-      await Geolocator.openLocationSettings();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Open device Location Settings to enable GPS.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _requestNotificationAccess() async {
     HapticFeedback.lightImpact();
     try {
       await NotificationService.instance.requestPermissions();
       await NotificationService.instance.requestExactAlarmsPermission();
-    } catch (_) {}
-    await _checkAllPermissions();
-  }
-
-  Future<void> _requestLocationAccess() async {
-    HapticFeedback.lightImpact();
-    try {
-      final perm = await Geolocator.requestPermission();
-      if (perm == LocationPermission.deniedForever) {
-        await _openSystemAppSettings();
-      } else {
-        final service = await Geolocator.isLocationServiceEnabled();
-        if (!service) {
-          await _openLocationSettings();
-        }
-      }
     } catch (_) {}
     await _checkAllPermissions();
   }
@@ -203,16 +150,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _profileLoaded = true;
     _nameController.text = profile.name;
     _roleController.text = profile.targetRole;
-    _interviewDate = profile.interviewDate;
     _dateOfBirth = profile.dateOfBirth;
-    _weeklyHours = profile.weeklyHoursAvailable;
-    _studyWindow = profile.preferredStudyWindow;
-    try {
-      final decoded = jsonDecode(profile.targetCompanies) as List<dynamic>;
-      _targetCompanies = decoded.map((e) => e.toString()).toList();
-    } catch (_) {
-      _targetCompanies = [];
-    }
   }
 
   bool _isSaving = false;
@@ -231,11 +169,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           id: drift.Value(current?.id ?? 1),
           name: drift.Value(_nameController.text.trim()),
           targetRole: drift.Value(_roleController.text.trim()),
-          targetCompanies: drift.Value(jsonEncode(_targetCompanies)),
-          interviewDate: drift.Value(_interviewDate),
+          targetCompanies: drift.Value(current?.targetCompanies ?? '[]'),
+          interviewDate: drift.Value(current?.interviewDate),
           dateOfBirth: drift.Value(_dateOfBirth),
-          weeklyHoursAvailable: drift.Value(_weeklyHours),
-          preferredStudyWindow: drift.Value(_studyWindow),
+          weeklyHoursAvailable: drift.Value(current?.weeklyHoursAvailable ?? 10),
+          preferredStudyWindow: drift.Value(current?.preferredStudyWindow ?? 'morning'),
           onboardingComplete: const drift.Value(true),
           updatedAt: drift.Value(DateTime.now()),
         ),
@@ -273,46 +211,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       }
     } finally {
       _isSaving = false;
-    }
-  }
-
-  Future<void> _seed20DaysTestData() async {
-    HapticFeedback.mediumImpact();
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Seeding 20 days of test data...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-      final db = ref.read(databaseProvider);
-      await DevDatabaseSeeder.seed20DaysData(db);
-      ref.invalidate(userProfileStreamProvider);
-      ref.invalidate(todayActivitiesProvider);
-      ref.invalidate(allRemindersProvider);
-      ref.invalidate(todayWaterMlStreamProvider);
-      ref.invalidate(todayMedicineLogsStreamProvider);
-      ref.invalidate(activeMedicinesStreamProvider);
-      ref.invalidate(todayWalkDistanceStreamProvider);
-      ref.invalidate(recentThoughtsStreamProvider);
-      ref.invalidate(studyStreakProvider);
-      ref.invalidate(activeMomentumChallengeStreamProvider);
-      ref.invalidate(todayMomentumCommitmentsStreamProvider);
-      if (mounted) {
-        messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Populated 20 days of medicine, hydration, walks, thoughts & history!'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        messenger.showSnackBar(
-          SnackBar(content: Text('Failed to seed data: $e')),
-        );
-      }
     }
   }
 
@@ -413,173 +311,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
-  void _showGpsBatteryGuide(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: AppPalette.transparent,
-      builder: (ctx) {
-        final g = ctx.glass;
-        return Container(
-          padding: const EdgeInsets.all(AppSpace.s20),
-          decoration: BoxDecoration(
-            color: g.bg,
-            borderRadius: const BorderRadius.vertical(
-              top: AppGeometry.radiusr24,
-            ),
-            border: Border(
-              top: BorderSide(color: g.edge, width: AppBorderScale.w1point5),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: g.edge,
-                    borderRadius: AppGeometry.roundedr2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  AppCard(
-                    padding: const EdgeInsets.all(AppSpace.s10),
-                    nightDecoration: BoxDecoration(
-                      color: g.sageSoft,
-                      borderRadius: AppGeometry.roundedr12,
-                      border: Border.all(color: g.sage.withValues(alpha: 0.3)),
-                    ),
-                    child: Icon(
-                      Icons.battery_saver_rounded,
-                      color: g.sage,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Background Walk Tracking Setup',
-                          style: AscentTextStyles.headlineMedium
-                              .copyWith(color: g.ink)
-                              .merge(AppTypeRoles.typeRole30),
-                        ),
-                        Text(
-                          'Prevent Android from killing GPS when locked',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: g.inkMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _guideStep(
-                number: '1',
-                title: 'Open Android App Settings',
-                description:
-                    'Long press Ascent icon on home screen > App info (or go to Phone Settings > Apps > Ascent).',
-              ),
-              const SizedBox(height: 12),
-              _guideStep(
-                number: '2',
-                title: 'Set Battery to "Unrestricted"',
-                description:
-                    'Under Battery or App Battery Usage, change setting to "Unrestricted" for uninterrupted route GPS.',
-              ),
-              const SizedBox(height: 12),
-              _guideStep(
-                number: '3',
-                title: 'Allow Location While Using App',
-                description:
-                    'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  AscentButton.outlined(
-                    label: 'Open Phone App Settings',
-                    icon: Icons.open_in_new_rounded,
-                    compact: true,
-                    expanded: false,
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      _openSystemAppSettings();
-                    },
-                  ),
-                  AscentButton.outlined(
-                    label: 'Understood, Got it! 👍',
-                    compact: true,
-                    expanded: false,
-                    onPressed: () => Navigator.of(ctx).pop(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _guideStep({
-    required String number,
-    required String title,
-    required String description,
-  }) {
-    final g = context.glass;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 12,
-          backgroundColor: g.sageSoft,
-          child: Text(
-            number,
-            style: AppTypeRoles.typeRole7.copyWith(color: g.sage),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AscentTextStyles.labelMedium
-                    .copyWith(color: g.ink)
-                    .merge(AppTypeRoles.typeRole9),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: AscentTextStyles.bodySmall.copyWith(
-                  color: g.inkMuted,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildPermissionsSection() {
     final g = context.glass;
     return Column(
@@ -602,7 +333,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Manage essential OS permissions so background timers, walk tracking, and reminder alarms run reliably without interruption.',
+                'Manage essential OS permissions so background timers and reminder alarms run reliably without interruption.',
                 style: AscentTextStyles.bodySmall.copyWith(
                   color: g.inkMuted,
                   height: 1.35,
@@ -651,25 +382,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 onAction: _requestAlarmAccess,
               ),
 
-              _Divider(color: g.line),
-
-              // 3. Location & GPS
-              _buildPermissionTile(
-                icon: Icons.location_on_outlined,
-                iconColor: g.sage,
-                iconBg: g.sageSoft,
-                title: 'GPS Walk Tracking',
-                subtitle:
-                    'Outdoor walking routes, live step count & distance tracking',
-                isGranted: _locationAllowed && _locationServiceOn,
-                grantedLabel: 'Active',
-                neededLabel: !_locationServiceOn ? 'GPS Off' : 'Needed',
-                actionLabel: !_locationServiceOn
-                    ? 'Turn On GPS'
-                    : 'Allow Location',
-                onAction: _requestLocationAccess,
-              ),
-
               const SizedBox(height: 14),
               _Divider(color: g.line),
               const SizedBox(height: 12),
@@ -684,48 +396,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Android battery savers kill background GPS & timers when phone is locked. Tap below to jump directly to Ascent\'s App Info, grant permissions, and set Battery to "Unrestricted".',
+                'Android battery savers kill background timers and alarms when phone is locked. Tap below to jump directly to Ascent\'s App Info, grant permissions, and set Battery to "Unrestricted".',
                 style: AscentTextStyles.bodySmall.copyWith(
                   color: g.inkMuted,
                   height: 1.35,
                 ),
               ),
               const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final stack = constraints.maxWidth < 360;
-                  final btn1 = AscentButton.outlined(
-                    label: 'App Info & Battery',
-                    icon: Icons.open_in_new_rounded,
-                    compact: true,
-                    expanded: stack,
-                    onPressed: _openSystemAppSettings,
-                  );
-                  final btn2 = AscentButton.outlined(
-                    label: 'Location Settings',
-                    icon: Icons.location_on_outlined,
-                    compact: true,
-                    expanded: stack,
-                    onPressed: _openLocationSettings,
-                  );
-                  if (stack) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        btn1,
-                        const SizedBox(height: AppSpace.s8),
-                        btn2,
-                      ],
-                    );
-                  }
-                  return Row(
-                    children: [
-                      Expanded(child: btn1),
-                      const SizedBox(width: AppSpace.s8),
-                      Expanded(child: btn2),
-                    ],
-                  );
-                },
+              AscentButton.outlined(
+                label: 'App Info & Battery',
+                icon: Icons.open_in_new_rounded,
+                compact: true,
+                expanded: false,
+                onPressed: _openSystemAppSettings,
               ),
             ],
           ),
@@ -1519,144 +1202,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
-            // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
             _SectionHeader(
-              title: 'System Access & Storage',
+              title: 'Data & Maintenance',
               dotColor: g.inkMuted,
             ),
 
-            // ── Collapsible 2: Walk & Background Telemetry ───────────────────
-            _CollapsibleSettingsCard(
-              icon: Icons.directions_walk_rounded,
-              iconTint: g.sage,
-              title: 'Walk & GPS Telemetry',
-              subtitle: 'Background GPS & battery optimization setup',
-              isExpanded: _expandGpsTelemetry,
-              onToggle: () =>
-                  setState(() => _expandGpsTelemetry = !_expandGpsTelemetry),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Background Walk Tracking',
-                    style: AscentTextStyles.labelMedium
-                        .copyWith(color: g.ink)
-                        .merge(AppTypeRoles.typeRole8),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Allows Ascent to record accurate GPS routes, steps, and distance while your device is locked in your pocket.',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: g.inkMuted,
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: AppSpace.s8,
-                    runSpacing: AppSpace.s8,
-                    children: [
-                      AscentButton.outlined(
-                        label: 'View Battery Guide',
-                        icon: Icons.battery_saver_rounded,
-                        compact: true,
-                        expanded: false,
-                        onPressed: () => _showGpsBatteryGuide(context),
-                      ),
-                      AscentButton.outlined(
-                        label: 'App Info & Battery',
-                        icon: Icons.open_in_new_rounded,
-                        compact: true,
-                        expanded: false,
-                        onPressed: _openSystemAppSettings,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Collapsible 4: Data & Storage ────────────────────────────────
+            // ── Collapsible: Data & Storage ────────────────────────────────
             _CollapsibleSettingsCard(
               icon: Icons.inventory_2_outlined,
               iconTint: g.amber,
               title: 'Data & Storage Management',
-              subtitle: 'JSON backup export, database restore & wipe',
+              subtitle: 'Database reset & fresh start',
               isExpanded: _expandDataStorage,
               onToggle: () =>
                   setState(() => _expandDataStorage = !_expandDataStorage),
               child: Column(
                 children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: AppTag(
-                      padding: const EdgeInsets.all(AppSpace.s8),
-                      nightDecoration: BoxDecoration(
-                        color: g.slateSoft,
-                        borderRadius: AppGeometry.roundedr10,
-                      ),
-                      child: Icon(
-                        Icons.download_rounded,
-                        color: g.slate,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      'Save or restore a backup',
-                      style: AscentTextStyles.labelMedium
-                          .copyWith(color: g.ink)
-                          .merge(AppTypeRoles.typeRole8),
-                    ),
-                    subtitle: Text(
-                      'Records, settings and resume files',
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: g.inkMuted,
-                    ),
-                    onTap: () => context.push('/backup'),
-                  ),
-                  _Divider(color: g.line),
-                  ListTile(
-                    key: const ValueKey('settings_seed_20_days_data'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: AppTag(
-                      padding: const EdgeInsets.all(AppSpace.s8),
-                      nightDecoration: BoxDecoration(
-                        color: g.claySoft,
-                        borderRadius: AppGeometry.roundedr10,
-                      ),
-                      child: Icon(
-                        Icons.auto_fix_high_rounded,
-                        color: g.clay,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      'Fill 20 Days Fake Data',
-                      style: AscentTextStyles.labelMedium
-                          .copyWith(color: g.ink)
-                          .merge(AppTypeRoles.typeRole8),
-                    ),
-                    subtitle: Text(
-                      'Populate 20 days of medicine, water, walks, tasks, thoughts & history',
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.play_arrow_rounded,
-                      size: 18,
-                      color: g.clay,
-                    ),
-                    onTap: _seed20DaysTestData,
-                  ),
-                  _Divider(color: g.line),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: AppTag(
