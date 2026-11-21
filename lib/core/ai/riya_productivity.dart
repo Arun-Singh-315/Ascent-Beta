@@ -1,218 +1,19 @@
 import 'ai_service.dart';
 import '../database/app_database.dart';
-import '../../features/promises/models/promise_model.dart';
-import '../../features/promises/services/promise_intent_parser.dart';
-import '../../features/promises/services/promise_repository.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
 
-const riyaPromiseCapabilities = [
-  RiyaCapability('promises.list', 'Your Promises', '/promises', {
-    'offset': RiyaValue.offset,
-  }),
-  RiyaCapability(
-    'promises.read',
-    'Selected Promise',
-    '/promises',
-    {'id': RiyaValue.integer},
-    required: ['id'],
-  ),
-  RiyaCapability(
-    'promises.create',
-    'Create a Promise',
-    '/promises',
-    {'text': RiyaValue.text},
-    required: ['text'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.edit',
-    'Edit this Promise',
-    '/promises',
-    {
-      'id': RiyaValue.integer,
-      'title': RiyaValue.text,
-      'expectedTitle': RiyaValue.text,
-    },
-    required: ['id', 'title'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.reschedule',
-    'Change Promise start day',
-    '/promises',
-    {
-      'id': RiyaValue.integer,
-      'day': RiyaValue.date,
-      'expectedTitle': RiyaValue.text,
-    },
-    required: ['id', 'day'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.delete',
-    'Delete Promise',
-    '/promises',
-    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
-    required: ['id'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.pause',
-    'Pause Promise',
-    '/promises',
-    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
-    required: ['id'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.resume',
-    'Resume Promise',
-    '/promises',
-    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
-    required: ['id'],
-    write: true,
-  ),
-  RiyaCapability(
-    'promises.checkin',
-    'Check in Promise',
-    '/promises',
-    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
-    required: ['id'],
-    write: true,
-  ),
-];
+const riyaPromiseCapabilities = <RiyaCapability>[];
 
-/// Database changes share the executor's transaction and receipt. OS effects
-/// are deferred until after commit and retried through RiyaAlertEffects.
 class RiyaPromiseActions {
   RiyaPromiseActions(this.db, this.clock);
   final AppDatabase db;
   final DateTime Function() clock;
-  late final repo = PromiseRepository(
-    db,
-    clock: clock,
-    cancelNotification: (_) async {},
-    scheduleNotification: (_, _, _, _) async => true,
-  );
 
   Future<RiyaResult> run(RiyaCommand command) async {
-    await repo.initialize();
-    final a = command.arguments;
-    if (command.id == 'promises.list') {
-      final all = await repo.getActivePromises();
-      all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      final offset = a['offset'] as int? ?? 0;
-      final page = all.skip(offset).take(3).toList();
-      return RiyaResult(
-        page.isEmpty
-            ? 'No active Promises here. Want to make one?'
-            : 'Here are your active Promises.',
-        '/promises',
-        records: [
-          for (final p in page) {'type': 'promises', 'id': p.id},
-        ],
-        options: [if (all.length > offset + 3) 'More promises', 'New promise'],
-      );
-    }
-    if (command.id == 'promises.create') {
-      final raw = a['text'] as String;
-      final p = PromiseIntentParser.parse(
-        raw.replaceAll(RegExp(r'\broz\b', caseSensitive: false), 'every day'),
-        now: clock(),
-      );
-      final saved = await repo.createPromise(
-        title: p.title,
-        intention: raw,
-        category: p.category,
-        trackingType: p.trackingType,
-        targetValue: p.targetValue,
-        unit: p.unit,
-        frequencyPerWeek: p.frequencyPerWeek,
-        targetDate: p.targetDate,
-        schedule: p.schedule,
-        isPrivate: p.isPrivate,
-        reminderTime: p.reminderTime,
-        reminderEnabled: p.reminderTime != null,
-        reminderDays: p.reminderDays,
-      );
-      return RiyaResult(
-        'Promise created. One small step at a time.',
-        '/promises',
-        entityType: 'promises',
-        entityId: saved.id,
-        promiseEffectIds: saved.reminderEnabled ? [saved.id] : const [],
-      );
-    }
-    final p = await repo.getPromiseById(a['id'] as int);
-    if (p == null) {
-      throw StateError(
-        'This Promise is no longer available. Show Promises to choose again.',
-      );
-    }
-    if (p.isPrivate && command.id != 'promises.read') {
-      throw StateError('Open Commitments to manage this private commitment.');
-    }
-    if (a['expectedTitle'] != null && a['expectedTitle'] != p.title) {
-      throw StateError('This Promise changed. Choose it again before saving.');
-    }
-    switch (command.id) {
-      case 'promises.read':
-        break;
-      case 'promises.edit':
-        await repo.updatePromise(p.copyWith(title: a['title'] as String));
-      case 'promises.reschedule':
-        final day = promiseDay(DateTime.parse(a['day'] as String));
-        await repo.updatePromise(
-          p.copyWith(
-            schedule: (p.schedule ?? PromiseSchedule(startDate: day)).copyWith(
-              startDate: day,
-            ),
-          ),
-        );
-      case 'promises.delete':
-        await repo.deletePromise(p.id);
-      case 'promises.pause':
-        await repo.setPromiseStatus(p.id, PromiseStatus.paused);
-      case 'promises.resume':
-        await repo.setPromiseStatus(p.id, PromiseStatus.active);
-      case 'promises.checkin':
-        if (p.trackingType != PromiseTrackingType.completion &&
-            p.trackingType != PromiseTrackingType.frequency) {
-          throw StateError(
-            'Use Track on this Promise card to record its time or progress.',
-          );
-        }
-        if (!p.canActAt(clock())) {
-          throw StateError(
-            'This Promise is not due, is paused, or is already checked in.',
-          );
-        }
-        await repo.recordProgress(
-          promiseId: p.id,
-          eventType: p.trackingType == PromiseTrackingType.frequency
-              ? PromiseEventType.frequencyCheckIn
-              : PromiseEventType.completion,
-        );
-      default:
-        throw UnsupportedError('Unsupported Promise action');
-    }
-    final verb = command.id.split('.').last;
-    return RiyaResult(
-      switch (verb) {
-        'read' => 'Here is your Promise.',
-        'edit' => 'Promise updated.',
-        'delete' => 'Promise deleted. Your other Promises are still here.',
-        'pause' => 'Promise paused.',
-        'resume' => 'Promise resumed.',
-        'reschedule' => 'Promise start day updated.',
-        _ => 'Check-in saved.',
-      },
-      '/promises',
-      entityType: 'promises',
-      entityId: p.id,
-      promiseEffectIds: verb == 'read' ? const [] : [p.id],
-      options: verb == 'delete' ? ['Show promises', 'New promise'] : const [],
+    return const RiyaResult(
+      'Commitments & Promises are coming soon to Ascent!',
+      '/home',
     );
   }
 }
@@ -299,37 +100,7 @@ class RiyaProductivityIntents {
     final explicit = RegExp(
       r'^(show|list|open|create|add|new|delete|remove|edit|rename|change|reschedule|complete|pause|resume|mark|save)\b',
     ).hasMatch(lower);
-    if (_promiseStep == 1 && !explicit) {
-      if (lower == 'cancel' || lower == 'band karo') {
-        cancel();
-        return const RiyaResolution(message: 'Cancelled. Promise nahi banaya.');
-      }
-      _promiseTarget = text;
-      final time = PromiseIntentParser.extractTime(lower);
-      if (time != null || lower.contains('no reminder') || lower.contains('remind')) {
-        return _finishPromiseCreate(_promiseTitle!, _promiseTarget!, time);
-      }
-      _promiseStep = 2;
-      return RiyaResolution(
-        message:
-            'Reminder kis time set karun? (Jaise subah 8 baje, shaam 8 baje, ya No reminder)',
-        options: const ['8:00 AM', '8:00 PM', 'No reminder', 'Cancel'],
-      );
-    }
-    if (_promiseStep == 2 && !explicit) {
-      if (lower == 'cancel' || lower == 'band karo') {
-        cancel();
-        return const RiyaResolution(message: 'Cancelled. Promise nahi banaya.');
-      }
-      String? reminder;
-      if (!lower.contains('no') &&
-          !lower.contains('nahi') &&
-          !lower.contains('skip') &&
-          !lower.contains('mat')) {
-        reminder = PromiseIntentParser.extractTime(lower) ?? '08:00';
-      }
-      return _finishPromiseCreate(_promiseTitle!, _promiseTarget ?? '', reminder);
-    }
+
     if (_createType != null && !explicit) {
       final type = _createType!;
       _createType = null;
@@ -451,26 +222,10 @@ class RiyaProductivityIntents {
 
   RiyaResolution _create(String type, String text) {
     if (type == 'promises') {
-      final lower = text.toLowerCase();
-      if (!_hasTimeline(text)) {
-        _promiseTitle = text;
-        _promiseStep = 1;
-        return RiyaResolution(
-          message:
-              '“$text” — Yeh kab tak karna hai? (Target date ya frequency batao — jaise Daily / Roz, 30 days, ya koi date)',
-          options: const [
-            'Daily / Roz',
-            'Next 30 days',
-            'Next week',
-            'No deadline',
-            'Cancel',
-          ],
-        );
-      }
-      final reminder = lower.contains('remind')
-          ? PromiseIntentParser.extractTime(lower)
-          : null;
-      return _finishPromiseCreate(text, '', reminder);
+      return const RiyaResolution(
+        message: 'Commitments & Promises are coming soon to Ascent!',
+        options: ['Add a task instead'],
+      );
     }
     final parsed = LocalDeterministicAiEngine().tryParseActivityOrTask(
       'add a task to $text',
@@ -488,80 +243,6 @@ class RiyaProductivityIntents {
         if (parsed?['reminderTime'] != null)
           'reminderTime': parsed!['reminderTime'],
       }),
-    );
-  }
-
-  bool _hasTimeline(String text) {
-    final lower = text.toLowerCase();
-    if (RegExp(
-      r'\b(every day|daily|roz|har din|har roz|each day|weekday|workday|weekend|once|twice)\b',
-    ).hasMatch(lower)) {
-      return true;
-    }
-    if (RegExp(
-      r'\b(\d+)\s*(times?|days?|din)\s*(a|per)\s*week\b',
-    ).hasMatch(lower)) {
-      return true;
-    }
-    if (RegExp(
-      r'\b(\d+)\s*(mins?|minutes?|hours?|hrs?)\b',
-    ).hasMatch(lower)) {
-      return true;
-    }
-    if (RegExp(
-      r'\b(no deadline|kabhi bhi|whenever|no target|forever)\b',
-    ).hasMatch(lower)) {
-      return true;
-    }
-    if (PromiseIntentParser.extractTargetDate(lower, now: clock()) != null) {
-      return true;
-    }
-    return false;
-  }
-
-  RiyaResolution _finishPromiseCreate(
-    String title,
-    String target,
-    String? reminder,
-  ) {
-    _promiseStep = 0;
-    _promiseTitle = null;
-    _promiseTarget = null;
-
-    var combined = title.trim();
-    final lowerTarget = target.toLowerCase();
-    if (lowerTarget.isNotEmpty &&
-        !lowerTarget.contains('no deadline') &&
-        !lowerTarget.contains('kabhi bhi')) {
-      if (lowerTarget.contains('daily') ||
-          lowerTarget.contains('roz') ||
-          lowerTarget.contains('every day')) {
-        if (!combined.toLowerCase().contains('every day') &&
-            !combined.toLowerCase().contains('daily') &&
-            !combined.toLowerCase().contains('roz')) {
-          combined = '$combined every day';
-        }
-      } else {
-        if (!combined.toLowerCase().contains(target.toLowerCase())) {
-          combined = '$combined by $target';
-        }
-      }
-    }
-    if (reminder != null && reminder.isNotEmpty) {
-      if (!combined.toLowerCase().contains(reminder.toLowerCase())) {
-        combined = '$combined reminder at $reminder';
-      }
-    } else if (lowerTarget.contains('no reminder')) {
-      combined = '$combined no reminder';
-    }
-
-    PromiseIntentParser.parse(
-      combined.replaceAll(RegExp(r'\broz\b', caseSensitive: false), 'every day'),
-      now: clock(),
-    );
-
-    return RiyaResolution(
-      command: RiyaCommand('promises.create', {'text': combined}),
     );
   }
 
@@ -590,22 +271,12 @@ class RiyaProductivityIntents {
     String? value,
   ) async {
     verb = verb.toLowerCase();
-    String? title;
     if (type == 'promises') {
-      final promise = await PromiseRepository(
-        db,
-        clock: clock,
-      ).getPromiseById(id);
-      if (promise?.isPrivate == true) {
-        return const RiyaResolution(
-          message: 'This is a private Promise. Open Commitments to manage it.',
-          options: ['Open promises'],
-        );
-      }
-      title = promise?.title;
-    } else {
-      title = (await db.taskDao.getTaskById(id))?.title;
+      return const RiyaResolution(
+        message: 'Commitments & Promises are coming soon to Ascent!',
+      );
     }
+    final title = (await db.taskDao.getTaskById(id))?.title;
     if (title == null) {
       return const RiyaResolution(
         message:

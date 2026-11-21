@@ -36,10 +36,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
-import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
-import '../../promises/providers/promise_providers.dart';
-import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
 import '../../thought_wall/thought_wall_appearance_sheet.dart';
 import '../../thought_wall/board/board_actions.dart';
@@ -632,19 +629,6 @@ class _ThoughtWallHomePreviewState
                       ? (thought.mood == 'win' ? g.sage : g.slate)
                       : getThoughtMoodColor(thought.mood);
 
-                  final privatePromiseIds = ref.watch(
-                    privatePromiseIdsProvider,
-                  );
-                  final unlockedPromiseIds = ref.watch(
-                    unlockedPromiseIdsProvider,
-                  );
-                  final isPrivatePromise =
-                      thought.mood == 'promise' &&
-                      privatePromiseIds.contains(thought.id);
-                  final isPromiseLocked =
-                      isPrivatePromise &&
-                      !unlockedPromiseIds.contains(thought.id);
-
                   final cardStyle = appearance.style;
                   final homeCardRadius = switch (cardStyle) {
                     ThoughtCardStyle.soft => BorderRadius.circular(16),
@@ -694,23 +678,8 @@ class _ThoughtWallHomePreviewState
                         bottom: AppSpace.s10,
                       ),
                       child: AppTapArea(
-                        onTap: () async {
+                        onTap: () {
                           HapticFeedback.selectionClick();
-                          if (isPromiseLocked) {
-                            final security = ref.read(
-                              vaultSecurityServiceProvider,
-                            );
-                            final unlocked = await security
-                                .authenticateBiometrics(
-                                  reason: 'Unlock private commitment',
-                                );
-                            if (unlocked) {
-                              ref
-                                  .read(unlockedPromiseIdsProvider.notifier)
-                                  .unlock(thought.id);
-                            }
-                            return;
-                          }
                           context.open('/thought-wall?thought=${thought.id}');
                         },
                         child: Container(
@@ -769,120 +738,16 @@ class _ThoughtWallHomePreviewState
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                              ] else if (thought.mood == 'promise') ...[
-                                Center(
-                                  child: Tooltip(
-                                    message:
-                                        isPrivatePromise && !isPromiseLocked
-                                        ? 'Tap to lock commitment'
-                                        : '',
-                                    child: InkWell(
-                                      key: ValueKey(
-                                        'promise_top_middle_wrapper_${thought.id}',
-                                      ),
-                                      onTap:
-                                          isPrivatePromise && !isPromiseLocked
-                                          ? () {
-                                              HapticFeedback.lightImpact();
-                                              ref
-                                                  .read(
-                                                    unlockedPromiseIdsProvider
-                                                        .notifier,
-                                                  )
-                                                  .lock(thought.id);
-                                            }
-                                          : null,
-                                      borderRadius: AppGeometry.roundedr12,
-                                      child: Container(
-                                        margin: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpace.s10,
-                                          vertical: AppSpace.s4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: bubbleAccentColor.withValues(
-                                            alpha: .12,
-                                          ),
-                                          borderRadius: AppGeometry.roundedr12,
-                                          border: Border.all(
-                                            color: bubbleAccentColor.withValues(
-                                              alpha: 0.28,
-                                            ),
-                                            width: AppBorderScale.w1point0,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              isPrivatePromise
-                                                  ? (isPromiseLocked
-                                                        ? Icons.lock_rounded
-                                                        : Icons
-                                                              .lock_open_rounded)
-                                                  : Icons.handshake_rounded,
-                                              size: 12,
-                                              color: bubbleAccentColor,
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              isPrivatePromise
-                                                  ? (isPromiseLocked
-                                                        ? 'PRIVATE PROMISE'
-                                                        : 'UNLOCKED • TAP TO LOCK')
-                                                  : 'PROMISE',
-                                              style: AscentTextStyles
-                                                  .homeCaption
-                                                  .copyWith(
-                                                    color: bubbleAccentColor,
-                                                    fontWeight: FontWeight.w700,
-                                                    letterSpacing: 1.2,
-                                                  )
-                                                  .merge(
-                                                    AppTypeRoles.typeRole65,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
                               ],
 
-                              if (isPromiseLocked) ...[
-                                const SizedBox(height: 8),
-                                LockedCommitmentTile(
-                                  label: 'Private commitment',
-                                  onTap: () async {
-                                    final security = ref.read(
-                                      vaultSecurityServiceProvider,
-                                    );
-                                    final unlocked = await security
-                                        .authenticateBiometrics(
-                                          reason: 'Unlock private commitment',
-                                        );
-                                    if (unlocked) {
-                                      ref
-                                          .read(
-                                            unlockedPromiseIdsProvider.notifier,
-                                          )
-                                          .unlock(thought.id);
-                                    }
-                                  },
-                                ),
-                              ] else ...[
-                                if (thought.mood != 'promise' &&
-                                    thought.promptQuestion != null &&
-                                    thought.promptQuestion!.trim().isNotEmpty &&
-                                    thought.promptQuestion!
-                                            .trim()
-                                            .toLowerCase() !=
-                                        thought.content
-                                            .trim()
-                                            .toLowerCase()) ...[
+                              if (thought.promptQuestion != null &&
+                                  thought.promptQuestion!.trim().isNotEmpty &&
+                                  thought.promptQuestion!
+                                          .trim()
+                                          .toLowerCase() !=
+                                      thought.content
+                                          .trim()
+                                          .toLowerCase()) ...[
                                   Text(
                                     thought.promptQuestion!,
                                     style: AscentTextStyles.bodySmall.copyWith(
@@ -900,8 +765,7 @@ class _ThoughtWallHomePreviewState
                                     color: thoughtTextColor,
                                   ),
                                 ),
-                              ],
-                              if (isDraftSource) ...[
+                                if (isDraftSource) ...[
                                 const SizedBox(height: 8),
                                 Divider(color: g.line),
                                 const SizedBox(height: 6),
@@ -980,25 +844,7 @@ class _ThoughtWallHomePreviewState
                                       size: 17,
                                       color: g.ink,
                                     ),
-                                    onPressed: () async {
-                                      if (isPromiseLocked) {
-                                        final security = ref.read(
-                                          vaultSecurityServiceProvider,
-                                        );
-                                        final unlocked = await security
-                                            .authenticateBiometrics(
-                                              reason:
-                                                  'Unlock private commitment before editing',
-                                            );
-                                        if (!unlocked) return;
-                                        ref
-                                            .read(
-                                              unlockedPromiseIdsProvider
-                                                  .notifier,
-                                            )
-                                            .unlock(thought.id);
-                                      }
-                                      if (!context.mounted) return;
+                                    onPressed: () {
                                       DropThoughtSheet.show(
                                         context,
                                         existingThought: thought,
@@ -1147,14 +993,7 @@ class _ThoughtWallHomePreviewState
         : recent.where((t) => !t.isCompleted).firstOrNull;
     final bool allDone = latestRaw != null && activeThought == null;
     final latest = activeThought;
-    final privateIds = ref.watch(privatePromiseIdsProvider);
-    final unlocked = ref.watch(unlockedPromiseIdsProvider);
-    final locked =
-        latest != null &&
-        latest.mood == 'promise' &&
-        !unlocked.contains(latest.id) &&
-        (privateIds.contains(latest.id) ||
-            !ref.watch(allPromisesStreamProvider).hasValue);
+    const locked = false;
 
     return SectionCard(
       key: const ValueKey('home_mind_space_card'),

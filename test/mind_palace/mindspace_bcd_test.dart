@@ -3,7 +3,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/voice_input.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
@@ -53,7 +52,6 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
-        privatePromiseIdsProvider.overrideWith((ref) => <int>{}),
         voiceInputProvider.overrideWithValue(voice),
       ],
     );

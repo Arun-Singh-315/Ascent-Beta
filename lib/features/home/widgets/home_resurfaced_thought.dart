@@ -10,7 +10,6 @@ import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/local_day_provider.dart';
-import '../../promises/providers/promise_providers.dart';
 import '../../thought_wall/board/board_logic.dart';
 
 /// One open thought from 3–60 days ago, a different one each day, so Home
@@ -18,8 +17,6 @@ import '../../thought_wall/board/board_logic.dart';
 final resurfacedThoughtProvider = FutureProvider<Thought?>((ref) async {
   final today = ref.watch(localDayProvider);
   final db = ref.watch(databaseProvider);
-  final private = ref.watch(privatePromiseIdsProvider);
-  final unlocked = ref.watch(unlockedPromiseIdsProvider);
   final from = today.subtract(const Duration(days: 60));
   final to = today.subtract(const Duration(days: 3));
   final rows =
@@ -36,9 +33,7 @@ final resurfacedThoughtProvider = FutureProvider<Thought?>((ref) async {
           .get();
   final candidates = rows
       .where(
-        (t) =>
-            !isPrivateLocked(t, private, unlocked) &&
-            displayContent(t.content).trim().length >= 8,
+        (t) => displayContent(t.content).trim().length >= 8,
       )
       .toList();
   if (candidates.isEmpty) return null;

@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/learning_hub/default_course_data.dart';
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 
 void main() {
   late AppDatabase db;
@@ -46,24 +44,6 @@ void main() {
         expect(emptyLogs, isEmpty);
       },
     );
-  });
-
-  group('Learning Hub Hero Model Tests', () {
-    test('Spring Boot course initializes with 4 modules and 37 lectures', () {
-      final defaultCourse = buildDefaultSpringBootCourse();
-      final state = LearningHubState(
-        courses: [defaultCourse],
-        activeCourseId: defaultCourse.id,
-        activeLectureId: 1,
-      );
-      final course = state.course;
-
-      expect(course.title, 'Spring Boot Mastery: From Basics to Production');
-      expect(course.modules.length, 4);
-      expect(course.totalLectures, 37);
-      expect(course.completedLectures, 0);
-      expect(course.progressPercent, 0);
-    });
   });
 
   group('Back Navigation Double-Tap Logic Tests', () {

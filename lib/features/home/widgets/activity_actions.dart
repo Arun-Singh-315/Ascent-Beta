@@ -1,10 +1,8 @@
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_detail_sheet.dart';
 import 'package:ascent/features/plans/widgets/plan_protection_dialog.dart';
-import 'package:ascent/features/study_plan/lecture_focus_player_sheet.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
 import 'package:ascent/shared/widgets/ascent_action_menu.dart';
 import 'package:ascent/shared/widgets/ascent_dialog.dart';
@@ -17,43 +15,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 bool removesActivityFromTodayOnly(TodayActivityItem activity) =>
-    activity.sourceType == 'lecture' || activity.linkedTaskId == null;
-
-bool selectActivityLecture(WidgetRef ref, TodayActivityItem activity) {
-  final courseId = activity.learningCourseId;
-  final lectureId = activity.learningLectureId;
-  if (courseId == null || lectureId == null) return false;
-  final state = ref.read(learningHubProvider);
-  if (!state.courses.any(
-    (c) =>
-        c.id == courseId &&
-        c.modules.any((m) => m.lectures.any((l) => l.id == lectureId)),
-  )) {
-    return false;
-  }
-  final notifier = ref.read(learningHubProvider.notifier);
-  if (state.activeCourseId != courseId) notifier.switchCourse(courseId);
-  if (ref.read(learningHubProvider).activeLectureId != lectureId) {
-    notifier.selectLecture(lectureId, autoPlay: false);
-  }
-  return true;
-}
-
-void openActivityLecture(
-  BuildContext context,
-  WidgetRef ref,
-  TodayActivityItem activity,
-) {
-  if (selectActivityLecture(ref, activity)) {
-    LectureFocusPlayerSheet.show(context);
-  } else {
-    AscentSnackBar.error(
-      context,
-      message:
-          'This lecture is no longer available. Choose another in Learning.',
-    );
-  }
-}
+    activity.linkedTaskId == null;
 
 /// Completes a Home activity with an Undo snackbar. Shared with the Now card.
 Future<void> completeActivityWithUndo(
@@ -61,7 +23,7 @@ Future<void> completeActivityWithUndo(
   WidgetRef ref,
   TodayActivityItem activity,
 ) async {
-  if (activity.linkedTaskId == null || activity.sourceType == 'lecture') return;
+  if (activity.linkedTaskId == null) return;
 
   if (activity.isScheduledInFuture) {
     AscentSnackBar.show(
@@ -123,14 +85,12 @@ Future<void> showActivityActions(
   TodayActivityItem activity,
 ) async {
   final isDone = activity.status == TodayActivityStatus.done;
-  final isLecture = activity.sourceType == 'lecture';
   final action = await showAscentActionMenu<String>(
     context: context,
     title: activity.title,
     actions: [
       const AscentAction('view', 'View details', Icons.open_in_new_rounded),
       if (!isDone &&
-          !isLecture &&
           activity.linkedTaskId != null &&
           activity.kind == ActivityKind.todo &&
           (activity.targetMinutes ?? 0) <= 0)
@@ -139,7 +99,7 @@ Future<void> showActivityActions(
           'Mark as done',
           Icons.check_circle_outline_rounded,
         ),
-      if (!isDone && activity.linkedTaskId != null && !isLecture)
+      if (!isDone && activity.linkedTaskId != null)
         AscentAction(
           'star',
           activity.priority == 'high' ? 'Remove star' : 'Mark important',
@@ -147,13 +107,13 @@ Future<void> showActivityActions(
               ? Icons.star_rounded
               : Icons.star_border_rounded,
         ),
-      if (activity.linkedTaskId != null && !isDone && !isLecture)
+      if (activity.linkedTaskId != null && !isDone)
         const AscentAction(
           'tomorrow',
           'Move to tomorrow',
           Icons.next_plan_outlined,
         ),
-      if (!isLecture && activity.linkedTaskId != null && !isDone)
+      if (activity.linkedTaskId != null && !isDone)
         const AscentAction('edit', 'Edit activity', Icons.edit_outlined),
       AscentAction(
         'delete',
@@ -167,11 +127,7 @@ Future<void> showActivityActions(
   );
   if (!context.mounted || action == null) return;
   if (action == 'view') {
-    if (isLecture) {
-      openActivityLecture(context, ref, activity);
-    } else {
-      showActivityDetailDialog(context, ref, activity);
-    }
+    showActivityDetailDialog(context, ref, activity);
     return;
   }
   if (action == 'done') {
@@ -266,8 +222,7 @@ Future<void> showActivityActions(
             : 'Deleted “${removed.title}”',
         onUndo: () async {
           try {
-            if (removed.linkedTaskId != null &&
-                removed.sourceType != 'lecture') {
+            if (removed.linkedTaskId != null) {
               if (!await dao.restoreDeletedTask(removed.linkedTaskId!)) {
                 throw StateError('Restore unavailable');
               }
@@ -347,12 +302,6 @@ String formatActivitySubtitleText(TodayActivityItem act) {
       return '✓ Done at ${formatActivityTimestamp(act.completedAt!)}$createdStr';
     }
     return '✓ Completed$createdStr';
-  }
-  if (act.sourceType == 'lecture') {
-    if (act.status == TodayActivityStatus.inProgress) {
-      return 'Lecture in progress';
-    }
-    return 'Lecture$createdStr';
   }
   if (act.kind == ActivityKind.todo && (act.targetMinutes ?? 0) <= 0) {
     final p = (act.priority != null && act.priority!.isNotEmpty)

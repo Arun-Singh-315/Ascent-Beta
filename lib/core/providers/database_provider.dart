@@ -2,7 +2,6 @@ import 'local_day_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
-import '../services/promise_service.dart';
 import '../medicine/medicine_service.dart';
 import '../services/plan_service.dart';
 import '../services/home_capture_service.dart';
@@ -19,10 +18,6 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(db.close);
   return db;
 });
-
-final promiseServiceProvider = Provider<PromiseService>(
-  (ref) => PromiseService(ref.watch(databaseProvider)),
-);
 
 // ---------------------------------------------------------------------------
 // DAO providers

@@ -1,12 +1,11 @@
 import 'package:ascent/app/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
 import '../plans/widgets/home_plans_preview.dart';
-import 'widgets/home_module_row.dart';
 import 'widgets/home_content_transition.dart';
 import 'widgets/home_quick_expense_card.dart';
 import 'widgets/home_reveal.dart';
 import '../../core/providers/local_day_provider.dart';
-import 'widgets/home_promise_section.dart';
+import 'widgets/home_coming_soon_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../app/theme/surface_tokens.dart';
@@ -15,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
@@ -32,20 +30,17 @@ import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_now_card.dart';
 import 'widgets/home_ask_bar.dart';
-import '../promises/providers/promise_providers.dart';
 import 'widgets/home_feed_entrance.dart';
 import 'widgets/home_glance_card.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
-import 'widgets/learning_hub_card.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/smart_catch_up_banner.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import '../challenge/integration/challenge_proof_sync.dart';
 
 /// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
@@ -203,7 +198,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     });
     final layout = ref.watch(homeLayoutProvider);
     ref.watch(localHourProvider);
-    ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
     ref.listen<StudyStreakStatus?>(streakCelebrationEventProvider, (
@@ -271,13 +265,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ref.invalidate(userProfileStreamProvider);
                         ref.invalidate(todayFocusTaskProvider);
                         ref.invalidate(currentStreakStreamProvider);
-                        ref.invalidate(learningHubProvider);
-                        ref.invalidate(nextUpcomingInterviewProvider);
                         ref.invalidate(recentThoughtsStreamProvider);
                         ref.invalidate(latestHomeThoughtProvider);
                         ref.invalidate(todayActivitiesProvider);
-                        ref.invalidate(activeMomentumChallengeStreamProvider);
-                        ref.invalidate(todayMomentumCommitmentsStreamProvider);
                         ref.invalidate(studyStreakProvider);
                         ref.invalidate(allRemindersProvider);
                         ref.invalidate(dismissedTodayReminderIdsProvider);
@@ -396,6 +386,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               onAction: () => context.open('/you'),
                             ),
 
+                          // Upcoming features preview card
+                          const HomeComingSoonCard(),
+
                           // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
                           SizedBox(
                             height:
@@ -468,23 +461,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       child: HomeReveal(child: HomeContentTransition(child: child)),
     );
     if (!_heavierModulesReady) return modules;
-    // Growth cards earn their place: Learning once a course is started,
-    // Commitments once there is one. Empty cards would turn Home into a wall
-    // of "nothing yet" (CLAUDE.md §5.1); both stay one tap away in You.
-    final learningStarted = ref.watch(
-      learningHubProvider.select((s) => s.hasStartedLearning),
-    );
-    final hasPromises =
-        (ref.watch(activePromisesStreamProvider).value ?? const []).isNotEmpty;
-    final growthModules = <Widget>[
-      if (layout.visible.contains('learning') && learningStarted)
-        const LearningHubCard(),
-      if (layout.visible.contains('promises') && hasPromises)
-        const HomePromiseSection(),
-    ];
-    if (growthModules.isNotEmpty) {
-      modules.add(spaced(HomeModuleGroup(children: growthModules)));
-    }
     if (layout.visible.contains('checkin') &&
         ref.watch(localHourProvider) >= 17) {
       modules.add(spaced(const DailyCheckInCard()));

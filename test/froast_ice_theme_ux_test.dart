@@ -30,7 +30,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
@@ -82,13 +81,6 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
         studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-        allChallengesProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider.overrideWith(
-          (ref) => Stream.value(null),
-        ),
-        todayMomentumCommitmentsStreamProvider.overrideWith(
-          (ref) => Stream.value([]),
-        ),
         if (thoughts != null)
           recentThoughtsStreamProvider.overrideWith(
             (ref) => Stream.value(thoughts),

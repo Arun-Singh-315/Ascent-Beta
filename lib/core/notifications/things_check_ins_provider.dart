@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import '../security/app_lock_provider.dart';
-import '../../features/promises/providers/promise_providers.dart';
 import 'notification_service.dart';
 import 'things_check_in.dart';
 
@@ -30,10 +29,7 @@ final thingsCheckInsProvider = Provider<void>((ref) {
         if (disposed) break;
         final enabled = ref.read(thingsCheckInsEnabledProvider);
         final lock = ref.read(appLockProvider);
-        final promises = ref.read(allPromisesStreamProvider);
-        if (!enabled ||
-            (lock.isEnabled && !lock.allowNotifications) ||
-            !promises.hasValue) {
+        if (!enabled || (lock.isEnabled && !lock.allowNotifications)) {
           continue;
         }
         final tasks = await db.select(db.taskTable).get();
@@ -43,7 +39,7 @@ final thingsCheckInsProvider = Provider<void>((ref) {
           now: DateTime.now(),
           tasks: tasks,
           reminders: reminders,
-          privateThoughtIds: ref.read(privatePromiseIdsProvider),
+          privateThoughtIds: const <int>{},
           redact: lock.isEnabled && lock.redactNotificationContent,
           horizonDays: 7,
         );
@@ -147,7 +143,6 @@ final thingsCheckInsProvider = Provider<void>((ref) {
       .listen((_) => refresh());
   ref.listen(thingsCheckInsEnabledProvider, (_, _) => refresh());
   ref.listen(appLockProvider, (_, _) => refresh());
-  ref.listen(allPromisesStreamProvider, (_, _) => refresh());
   final lifecycle = AppLifecycleListener(onResume: refresh);
   refresh();
   ref.onDispose(() {

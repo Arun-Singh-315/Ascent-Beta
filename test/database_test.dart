@@ -4,7 +4,6 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/database/tables/enums.dart';
-import 'package:ascent/core/services/promise_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -18,23 +17,6 @@ void main() {
   });
 
   group('Database & DAOs Tests', () {
-    test('Promises persist without creating Todos or reminder rows', () async {
-      final scheduled = <DateTime>[];
-      final service = PromiseService(
-        db,
-        clock: () => DateTime(2026, 10, 24, 8),
-        cancelNotification: (_) async {},
-        scheduleNotification: (id, title, at) async {
-          scheduled.add(at);
-        },
-      );
-      final id = await service.create(content: 'Finish course');
-      expect((await db.thoughtDao.getThoughtById(id))!.mood, 'promise');
-      expect(await db.select(db.taskTable).get(), isEmpty);
-      expect(await db.select(db.reminderTable).get(), isEmpty);
-      expect(scheduled.map((at) => at.hour), [10, 14, 18, 21]);
-    });
-
     test('Can insert and retrieve UserProfile', () async {
       final profileId = await db.userProfileDao.upsertProfile(
         UserProfileTableCompanion.insert(

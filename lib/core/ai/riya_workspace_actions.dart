@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../../features/thought_wall/thought_actions.dart';
-import '../services/promise_service.dart';
 import 'riya_capabilities.dart';
 import 'riya_money_actions.dart';
 
@@ -184,34 +183,6 @@ const riyaWorkspaceCapabilities = <RiyaCapability>[
     required: ['id'],
     write: true,
   ),
-  RiyaCapability(
-    'learning.list',
-    'Read courses and learning progress',
-    '/learning',
-    {},
-  ),
-  RiyaCapability(
-    'learning.complete',
-    'Complete an eligible lecture',
-    '/learning',
-    {'courseId': RiyaValue.text, 'lectureId': RiyaValue.integer},
-    required: ['courseId', 'lectureId'],
-    write: true,
-  ),
-  RiyaCapability(
-    'learning.pause',
-    'Pause Learning',
-    '/learning',
-    {},
-    write: true,
-  ),
-  RiyaCapability(
-    'learning.resume',
-    'Resume Learning',
-    '/learning',
-    {},
-    write: true,
-  ),
   RiyaCapability('home.layout', 'Read Home layout', '/home', {}),
   RiyaCapability(
     'home.visibility',
@@ -243,7 +214,7 @@ class RiyaWorkspaceActions {
 
   Future<RiyaResult> run(RiyaCommand cmd) async {
     final a = cmd.arguments, route = cmd.capability.route;
-    if (cmd.id.startsWith('learning.') || cmd.id.startsWith('home.')) {
+    if (cmd.id.startsWith('home.')) {
       if (external == null) {
         throw StateError('This action needs the active workspace');
       }
@@ -306,18 +277,11 @@ class RiyaWorkspaceActions {
         );
       case 'thoughts.edit':
         final note = (await _notes([a['id']])).single;
-        if (note.mood == 'promise') {
-          await PromiseService(
-            db,
-            scheduleNotification: (_, _, _) async {},
-          ).update(thoughtId: note.id, content: a['content']);
-        } else {
-          await db.thoughtDao.updateThought(
-            note
-                .toCompanion(true)
-                .copyWith(content: Value((a['content'] as String).trim())),
-          );
-        }
+        await db.thoughtDao.updateThought(
+          note
+              .toCompanion(true)
+              .copyWith(content: Value((a['content'] as String).trim())),
+        );
         final saved = await db.thoughtDao.getThoughtById(note.id);
         if (saved?.content != (a['content'] as String).trim()) {
           throw StateError('Thought edit could not be verified');

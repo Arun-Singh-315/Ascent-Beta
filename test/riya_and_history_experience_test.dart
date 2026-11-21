@@ -102,7 +102,7 @@ void main() {
       expect(find.byType(HistoryScreen), findsOneWidget);
       expect(find.text('Focus & Tasks'), findsOneWidget);
       expect(find.text('Habits & Health'), findsOneWidget);
-      expect(find.text('Mind & Promises'), findsOneWidget);
+      expect(find.text('Mind & Notes'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(const SizedBox());

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
-import '../learning_hub/learning_hub_provider.dart';
 import '../streak/study_streak_provider.dart';
 import 'database_provider.dart';
 import 'settings_provider.dart';
@@ -322,36 +321,6 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     int? categoryId,
     bool autoStart = true,
   }) async {
-    if (taskId != null) {
-      final task = await ref.read(taskDaoProvider).getTaskById(taskId);
-      if (task?.learningCourseId != null && task?.learningLectureId != null) {
-        final learning = ref.read(learningHubProvider.notifier);
-        await learning.ready;
-        final state = ref.read(learningHubProvider);
-        if (!state.courses.any(
-          (c) =>
-              c.id == task!.learningCourseId &&
-              c.modules.any(
-                (m) => m.lectures.any((l) => l.id == task.learningLectureId),
-              ),
-        )) {
-          throw StateError(
-            'This linked lecture no longer exists. Open Learning to review it',
-          );
-        }
-        if (this.state.isRunning && this.state.activeSession != null) {
-          await ref
-              .read(timeSessionDaoProvider)
-              .pauseSession(this.state.activeSession!.id);
-        }
-        if (state.activeCourseId != task!.learningCourseId) {
-          learning.switchCourse(task.learningCourseId!);
-        }
-        learning.selectLecture(task.learningLectureId!, autoPlay: autoStart);
-        await learning.settled;
-        return;
-      }
-    }
     final dao = ref.read(timeSessionDaoProvider);
 
     // 1. If current session is running, pause it and flush elapsed duration immediately
@@ -653,16 +622,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
     ),
   );
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
-  final activeCourseId = ref.watch(
-    learningHubProvider.select((s) => s.activeCourseId),
-  );
-  final activeLectureId = ref.watch(
-    learningHubProvider.select((s) => s.activeLectureId),
-  );
-  final isLecturePlaying = ref.watch(
-    learningHubProvider.select((s) => s.isPlaying),
-  );
-  final courses = ref.watch(learningHubProvider.select((s) => s.courses));
 
   final medicineLogs =
       ref.watch(todayMedicineLogsStreamProvider).value ?? <MedicineLog>[];
@@ -701,7 +660,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
         continue;
       }
 
-      if (task.learningCourseId != null) continue;
       final occ = await planDao.getOccurrenceByTaskId(task.id);
       if (occ != null) {
         if (occ.outcome == 'skipped') continue;
@@ -920,59 +878,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       );
     }
 
-    // A lecture is projected once, with a course-scoped identity and genuine
-    // engagement. It remains in the catalog when dismissed from Today.
-    for (final course in courses) {
-      for (final lec in course.modules.expand((m) => m.lectures)) {
-        final related = sessions
-            .where(
-              (s) =>
-                  s.learningCourseId == course.id &&
-                  s.learningLectureId == lec.id &&
-                  s.activityRefType == 'lecture',
-            )
-            .toList();
-        final planned = lec.plannedDate;
-        final plannedToday =
-            planned != null &&
-            planned.year == today.year &&
-            planned.month == today.month &&
-            planned.day == today.day;
-        if (!lec.isCompleted && !plannedToday && related.isEmpty) continue;
-        final active = activeCourseId == course.id && activeLectureId == lec.id;
-        final linkedTask = tasks
-            .where(
-              (t) =>
-                  t.learningCourseId == course.id &&
-                  t.learningLectureId == lec.id,
-            )
-            .firstOrNull;
-        items.add(
-          TodayActivityItem(
-            id: 'lecture_${Uri.encodeComponent(course.id)}_${lec.id}',
-            title: '${course.title}: ${lec.title}',
-            sourceType: 'lecture',
-            learningCourseId: course.id,
-            learningLectureId: lec.id,
-            status: lec.isCompleted
-                ? TodayActivityStatus.done
-                : active && isLecturePlaying
-                ? TodayActivityStatus.inProgress
-                : related.isNotEmpty
-                ? TodayActivityStatus.paused
-                : TodayActivityStatus.notStarted,
-            elapsedSecondsToday: 0,
-            linkedTaskId: linkedTask?.id,
-            categoryTag: 'Study',
-            kind: ActivityKind.duration,
-            targetMinutes: null,
-            plannedDate: planned ?? lec.lastPlayedAt,
-            createdAt: linkedTask?.createdAt ?? planned,
-            completedAt: lec.isCompleted ? lec.lastPlayedAt : null,
-          ),
-        );
-      }
-    }
 
     // 2.7 Filter out any activities that the user explicitly removed/dismissed for today
     items.removeWhere((item) => dismissedIds.contains(item.id));
@@ -1104,18 +1009,6 @@ Future<void> deleteTodayActivity(
       .read(dismissedTodayActivityIdsProvider.notifier)
       .dismissActivityId(activity.id);
 
-  // Dismissing a lecture never deletes its task, catalog, or timer history.
-  if (activity.sourceType == 'lecture' || activity.id.startsWith('lecture_')) {
-    final learning = ref.read(learningHubProvider);
-    final matches = activity.learningCourseId == null
-        ? activity.id == 'lecture_${learning.activeLectureId}'
-        : activity.learningCourseId == learning.activeCourseId &&
-              activity.learningLectureId == learning.activeLectureId;
-    if (matches && learning.isPlaying) {
-      ref.read(learningHubProvider.notifier).pause();
-    }
-    return;
-  }
 
   // 3. If linked to a task, cascade delete
   if (activity.linkedTaskId != null) {

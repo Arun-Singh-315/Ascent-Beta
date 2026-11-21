@@ -588,8 +588,6 @@ List<TodayActivityItem> _prioritizeActivities(
 String _activityType(TodayActivityItem item) =>
     item.sourceType == 'medicine' || item.categoryTag == 'Medicine'
     ? 'medicine'
-    : item.sourceType == 'lecture'
-    ? 'lectures'
     : item.kind != ActivityKind.todo || (item.targetMinutes ?? 0) > 0
     ? 'timers'
     : 'todos';

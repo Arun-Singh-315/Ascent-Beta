@@ -5,9 +5,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_actions.dart';
-import 'package:ascent/features/study_plan/lecture_focus_player_sheet.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
-import 'package:ascent/features/today/add_lecture_activity_sheet.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:ascent/shared/widgets/ascent_sheet.dart';
 import 'package:ascent/shared/widgets/ascent_snack_bar.dart';
@@ -187,9 +185,7 @@ void showActivityDetailDialog(
               ),
             ),
           ],
-          if (!isDone &&
-              activity.linkedTaskId != null &&
-              activity.sourceType != 'lecture') ...[
+          if (!isDone && activity.linkedTaskId != null) ...[
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -262,23 +258,6 @@ void showActivityDetailDialog(
               ],
             ),
           ],
-          if (!isDone &&
-              activity.linkedTaskId != null &&
-              activity.sourceType != 'lecture' &&
-              (activity.targetMinutes ?? 0) > 0)
-            TextButton.icon(
-              icon: const Icon(Icons.school_outlined),
-              label: const Text('Send to lecture'),
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                final task = await ref
-                    .read(taskDaoProvider)
-                    .getTaskById(activity.linkedTaskId!);
-                if (context.mounted && task != null) {
-                  await AddLectureActivitySheet.sendTask(context, ref, task);
-                }
-              },
-            ),
           TextButton.icon(
             icon: const Icon(Icons.history_rounded, size: 18),
             label: const Text('History'),
@@ -362,22 +341,16 @@ void showActivityDetailDialog(
                           final isTimedItem =
                               activity.kind == ActivityKind.duration ||
                               (activity.targetMinutes != null &&
-                                  activity.targetMinutes! > 0) ||
-                              activity.sourceType == 'lecture';
+                                  activity.targetMinutes! > 0);
                           if (isTimedItem) {
-                            if (activity.sourceType == 'lecture') {
-                              if (!selectActivityLecture(ref, activity)) return;
-                              LectureFocusPlayerSheet.show(context);
-                            } else {
-                              await ref
-                                  .read(timeTrackingProvider.notifier)
-                                  .switchToTask(
-                                    title: activity.title,
-                                    taskId: activity.linkedTaskId,
-                                    sourceType: activity.sourceType,
-                                    autoStart: true,
-                                  );
-                            }
+                            await ref
+                                .read(timeTrackingProvider.notifier)
+                                .switchToTask(
+                                  title: activity.title,
+                                  taskId: activity.linkedTaskId,
+                                  sourceType: activity.sourceType,
+                                  autoStart: true,
+                                );
                             return;
                           }
                           if (activity.linkedTaskId != null) {
@@ -408,8 +381,7 @@ void showActivityDetailDialog(
                         child: Text(
                           (activity.kind == ActivityKind.duration ||
                                   (activity.targetMinutes != null &&
-                                      activity.targetMinutes! > 0) ||
-                                  activity.sourceType == 'lecture')
+                                      activity.targetMinutes! > 0))
                               ? 'Start Focus'
                               : 'Mark Done',
                         ),

@@ -1,12 +1,10 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
@@ -20,15 +18,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _IdleTracking extends TimeTrackingNotifier {
   @override
   TimeTrackingState build() => const TimeTrackingState();
-}
-
-class _IdleLearning extends LearningHubNotifier {
-  @override
-  LearningHubState build() => const LearningHubState(
-    courses: [],
-    activeCourseId: '',
-    activeLectureId: 0,
-  );
 }
 
 void main() {
@@ -49,7 +38,6 @@ void main() {
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
           timeTrackingProvider.overrideWith(_IdleTracking.new),
-          learningHubProvider.overrideWith(_IdleLearning.new),
         ],
         child: MaterialApp(
           theme: dark ? AscentTheme.dark() : AscentTheme.light(),
@@ -221,21 +209,4 @@ void main() {
 skip: true, // Known bug: Done feedback overflows at 2.0x text
 );
   }
-
-  testWidgets('Empty health summary uses words and keeps hydration quick add', (
-    tester,
-  ) async {
-    await tester.pumpWidget(app(const QuickModulesNavHub()));
-    await flush(tester);
-    expect(find.text('No doses scheduled'), findsOneWidget);
-    expect(find.byKey(const ValueKey('medicine_progress_bar')), findsNothing);
-    expect(
-      find.byKey(const ValueKey('hydration_progress_bar')),
-      findsOneWidget,
-    );
-    expect(find.text('250'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpAndSettle();
-  });
 }

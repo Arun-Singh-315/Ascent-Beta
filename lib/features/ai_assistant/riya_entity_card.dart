@@ -5,12 +5,6 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/glass_surface.dart';
-import '../promises/models/promise_model.dart';
-import '../promises/providers/promise_providers.dart';
-import '../promises/widgets/promise_detail_sheet.dart';
-import '../promises/widgets/promise_session_sheet.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 final _taskCardProvider = StreamProvider.autoDispose.family<Task?, int>((
   ref,
@@ -21,14 +15,6 @@ final _taskCardProvider = StreamProvider.autoDispose.family<Task?, int>((
     db.taskTable,
   )..where((t) => t.id.equals(id))).watchSingleOrNull();
 });
-final _promiseCardProvider = StreamProvider.autoDispose
-    .family<PromiseModel?, int>((ref, id) {
-      final db = ref.watch(databaseProvider);
-      final repo = ref.watch(promiseRepositoryProvider);
-      return (db.select(db.thoughtTable)..where((t) => t.id.equals(id)))
-          .watchSingleOrNull()
-          .asyncMap((_) => repo.getPromiseById(id));
-    });
 
 /// Cards keep identity, not a stale copy of the record. Old messages reflect
 /// edits/deletions and never offer actions on a record that has disappeared.
@@ -47,114 +33,11 @@ class RiyaEntityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (type == 'promises') {
-      return ref
-          .watch(_promiseCardProvider(id))
-          .when(
-            loading: () => _pane(context, 'Loading Promise…'),
-            error: (_, _) => _pane(
-              context,
-              'Could not load this Promise. Reopen the list to retry.',
-            ),
-            data: (p) {
-              if (p == null) {
-                return _pane(
-                  context,
-                  'Promise no longer available',
-                  removed: true,
-                );
-              }
-              if (p.isPrivate) {
-                return _pane(
-                  context,
-                  'Private Promise',
-                  actions: [
-                    TextButton(
-                      onPressed: () => context.push('/promises'),
-                      child: const Text('Open Commitments'),
-                    ),
-                  ],
-                );
-              }
-              final targetDateStr = p.targetDate != null
-                  ? DateFormat('d MMM yyyy').format(p.targetDate!)
-                  : null;
-              final reminderStr =
-                  p.reminderEnabled && p.reminderTime != null ? p.reminderTime : null;
-              return _pane(
-                context,
-                p.title,
-                targetDate: targetDateStr,
-                reminder: reminderStr,
-                category: p.category,
-                subtitle:
-                    '${p.schedule?.summary ?? 'Once'} · ${p.isDoneToday ? 'Done today' : p.status.name}',
-                actions: [
-                  if (p.isActive && !p.isDoneToday)
-                    TextButton(
-                      onPressed: busy
-                          ? null
-                          : () {
-                              if (p.trackingType ==
-                                  PromiseTrackingType.duration) {
-                                PromiseSessionSheet.show(context, p);
-                              } else if (p.trackingType ==
-                                      PromiseTrackingType.completion ||
-                                  p.trackingType ==
-                                      PromiseTrackingType.frequency) {
-                                onCommand('Check in promise #$id');
-                              } else {
-                                PromiseDetailSheet.show(context, p);
-                              }
-                            },
-                      child: Text(
-                        p.trackingType == PromiseTrackingType.completion ||
-                                p.trackingType == PromiseTrackingType.frequency
-                            ? 'Check in'
-                            : 'Track',
-                      ),
-                    ),
-                  TextButton(
-                    onPressed: busy
-                        ? null
-                        : () => onCommand('Edit promise #$id'),
-                    child: const Text('Edit'),
-                  ),
-                  TextButton(
-                    onPressed: busy
-                        ? null
-                        : () => onCommand('Reschedule promise #$id'),
-                    child: const Text('Day'),
-                  ),
-                  PopupMenuButton<String>(
-                    enabled: !busy,
-                    tooltip: 'More Promise actions',
-                    onSelected: (action) {
-                      if (action == 'details') {
-                        PromiseDetailSheet.show(context, p);
-                      } else {
-                        onCommand(action);
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'details',
-                        child: Text('Schedule & details'),
-                      ),
-                      PopupMenuItem(
-                        value:
-                            '${p.isPaused ? 'Resume' : 'Pause'} promise #$id',
-                        child: Text(p.isPaused ? 'Resume' : 'Pause'),
-                      ),
-                      PopupMenuItem(
-                        value: 'Delete promise #$id',
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          );
+      return _pane(
+        context,
+        'Commitments / Promises are coming soon to Ascent!',
+        subtitle: 'Coming Soon',
+      );
     }
     return ref
         .watch(_taskCardProvider(id))

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/local_day_provider.dart';
-import '../features/promises/providers/promise_providers.dart';
 
 /// One app-wide clock and privacy boundary, independent of the current tab.
 class WorkspaceLifecycle extends ConsumerStatefulWidget {
@@ -45,9 +44,8 @@ class _WorkspaceLifecycleState extends ConsumerState<WorkspaceLifecycle>
     if (state == AppLifecycleState.resumed) {
       ref.read(localClockProvider.notifier).refresh();
       _schedule();
-    } else {
-      ref.read(unlockedPromiseIdsProvider.notifier).lockAll();
     }
+
     setState(() => _obscured = state != AppLifecycleState.resumed);
   }
 

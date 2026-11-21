@@ -6,10 +6,8 @@ import '../streak/study_streak_provider.dart';
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
   'streak': 'Study streak',
-  'promises': 'Commitments',
   'reminders': 'Upcoming reminders',
   'today': 'Today',
-  'learning': 'Growth',
   'life': 'Daily rhythm',
   'mind': 'Mindspace',
   'money': 'Quick expense',
@@ -19,24 +17,17 @@ const homeSections = <String, String>{
 const homeTools = <String, String>{
   'medicine': 'Medicine',
   'hydration': 'Water',
-  'walk': 'Move',
-  'momentum': 'Momentum',
-  'chai-break': 'Chai',
 };
 const homeShortcutRoutes = <String, String>{
   'assistant': 'Assistant',
-  'promises': 'Commitments',
+  'plans': 'Plans',
   'today': 'Today',
   'thought-wall': 'Mindspace',
-  'learning': 'Growth',
   'reminders': 'Reminders',
   'money': 'Money',
   'focus': 'Focus',
   'medicine': 'Medicine',
   'hydration': 'Water',
-  'walk': 'Move',
-  'chai-break': 'Chai',
-  'momentum': 'Momentum',
   'vault': 'Vault',
 };
 
@@ -59,17 +50,14 @@ class HomeLayout {
     order: [
       'mind',
       'today',
-      'promises',
       ...homeSections.keys.where(
-        (id) => id != 'mind' && id != 'today' && id != 'promises',
+        (id) => id != 'mind' && id != 'today',
       ),
     ],
     visible: {
-      'promises',
       'streak',
       'reminders',
       'today',
-      'learning',
       'life',
       'mind',
       'vault',

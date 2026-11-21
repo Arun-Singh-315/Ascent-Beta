@@ -6,12 +6,9 @@ import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import '../../core/ai/riya_conversation_provider.dart';
-import '../../features/promises/models/promise_model.dart';
-import '../../features/promises/services/promise_intent_parser.dart';
 import 'riya_entity_card.dart';
 import 'riya_plan_cards.dart';
 import 'dart:convert';
-import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,13 +26,11 @@ import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/app_composer.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../core/ai/riya_learning_actions.dart';
 import '../../core/services/home_capture_service.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
-import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/database/app_database.dart';
@@ -428,8 +423,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   String _reviewCopy(RiyaCommand command) {
     final a = command.arguments;
     if (command.id == 'promises.create') {
-      final p = PromiseIntentParser.parse(a['text'] as String);
-      return '“${p.title}”\n${p.schedule?.summary ?? 'Once'} · ${p.trackingType.name == 'duration' ? '${p.targetValue.toInt()} minutes' : 'Check-in'}\n${p.reminderTime == null ? 'No reminder. You can add one later.' : 'Reminder: ${p.reminderTime}'}';
+      return '“${a['title'] ?? a['text'] ?? 'New Commitment'}”\n(Commitments are coming soon to Ascent)';
     }
     if (command.id.endsWith('.delete')) {
       return 'Delete “${a['expectedTitle'] ?? 'the selected item'}”?${command.id.startsWith('tasks.') ? '\nLinked reminders and records will also be removed.' : '\nIts progress history will also be removed.'}';
@@ -700,37 +694,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       }
       return RiyaResult('Home visibility verified.', '/home');
     }
-    final notifier = ref.read(learningHubProvider.notifier);
-    if (riyaLearningCapabilities.any((c) => c.id == command.id)) {
-      return RiyaLearningActions(
-        notifier,
-        () => ref.read(learningHubProvider),
-        DateTime.now,
-        db: ref.read(databaseProvider),
-      ).verify(command);
-    }
-    await notifier.ready;
-    final state = ref.read(learningHubProvider);
-    if (command.id == 'learning.complete') {
-      final course = state.courses
-          .where((c) => c.id == command.arguments['courseId'])
-          .firstOrNull;
-      if (course?.modules
-              .expand((m) => m.lectures)
-              .any(
-                (l) => l.id == command.arguments['lectureId'] && l.isCompleted,
-              ) !=
-          true) {
-        return null;
-      }
-      return const RiyaResult('Lecture completion verified.', '/learning');
-    }
-    if (command.id == 'learning.pause' && !state.isPlaying) {
-      return const RiyaResult('Learning pause verified.', '/learning');
-    }
-    if (command.id == 'learning.resume' && state.isPlaying) {
-      return const RiyaResult('Learning resume verified.', '/learning');
-    }
     return null;
   }
 
@@ -758,49 +721,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         '/home',
       );
     }
-    final notifier = ref.read(learningHubProvider.notifier);
-    if (riyaLearningCapabilities.any((c) => c.id == command.id)) {
-      return RiyaLearningActions(
-        notifier,
-        () => ref.read(learningHubProvider),
-        DateTime.now,
-        db: ref.read(databaseProvider),
-      ).run(command);
-    }
-    await notifier.ready;
-    final state = ref.read(learningHubProvider);
-    switch (command.id) {
-      case 'learning.list':
-        return RiyaResult(
-          'Learning:\n${state.courses.take(3).map((c) => '${c.title} (${c.id}): ${c.completedLectures}/${c.totalLectures} completed').join('\n')}${state.courses.length > 3 ? '\nOpen Learning for all courses.' : ''}',
-          '/learning',
-        );
-      case 'learning.complete':
-        final completed = await notifier.markLectureCompleted(
-          args['lectureId'],
-          courseId: args['courseId'],
-        );
-        if (!completed) {
-          throw StateError(
-            'The study target has not been met, or progress could not be saved',
-          );
-        }
-        return const RiyaResult('Lecture completion saved.', '/learning');
-      case 'learning.pause':
-        notifier.pause();
-        return const RiyaResult('Learning paused.', '/learning');
-      case 'learning.resume':
-        notifier.play();
-        if (!ref.read(learningHubProvider).isPlaying) {
-          throw StateError('Select a lecture first');
-        }
-        return const RiyaResult(
-          'Learning resumed. Study time is tracked; external video watching is not verified.',
-          '/learning',
-        );
-      default:
-        throw UnsupportedError('Unsupported workspace action');
-    }
+    throw UnsupportedError('Unsupported workspace action');
   }
 
   @override
@@ -1776,15 +1697,6 @@ class _ConversationMessageBubbleState
                       builder: (context) {
                         final isDark =
                             Theme.of(context).brightness == Brightness.dark;
-                        final rawText =
-                            (actionData?['pendingCommand']?['arguments']?['text']
-                                as String?) ??
-                            '';
-                        final proposal =
-                            msg.actionType == 'promises.create' &&
-                                rawText.isNotEmpty
-                            ? PromiseIntentParser.parse(rawText)
-                            : null;
                         final taskTitle = msg.actionType == 'tasks.create'
                             ? (actionData?['pendingCommand']?['arguments']?['title']
                                   as String?)
@@ -1854,8 +1766,7 @@ class _ConversationMessageBubbleState
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                proposal?.title ??
-                                    taskTitle ??
+                                taskTitle ??
                                     (actionData?['title'] as String? ??
                                         'Review'),
                                 style: TextStyle(
@@ -1865,109 +1776,7 @@ class _ConversationMessageBubbleState
                                   height: 1.25,
                                 ),
                               ),
-                              if (proposal != null) ...[
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: context.glass.fill.withValues(
-                                      alpha: isDark ? 0.25 : 0.45,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: context.glass.line,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.event_outlined,
-                                            size: 14,
-                                            color: accentColor,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              proposal.targetDate != null
-                                                  ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
-                                                  : (proposal
-                                                                .schedule
-                                                                ?.summary !=
-                                                            null
-                                                        ? 'Schedule: ${proposal.schedule!.summary}'
-                                                        : 'Schedule: Every day (Daily)'),
-                                              style: TextStyle(
-                                                color: context.glass.ink,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.timer_outlined,
-                                            size: 14,
-                                            color: accentColor,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              proposal.trackingType ==
-                                                      PromiseTrackingType
-                                                          .duration
-                                                  ? '${proposal.targetValue.toInt()} minutes per session'
-                                                  : (proposal.trackingType ==
-                                                            PromiseTrackingType
-                                                                .frequency
-                                                        ? '${proposal.frequencyPerWeek} times a week'
-                                                        : 'Daily check-in commitment'),
-                                              style: TextStyle(
-                                                color:
-                                                    context.glass.inkSecondary,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.notifications_active_outlined,
-                                            size: 14,
-                                            color: accentColor,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: Text(
-                                              proposal.reminderTime != null
-                                                  ? 'Reminder: ${proposal.reminderTime}'
-                                                  : 'No reminder',
-                                              style: TextStyle(
-                                                color:
-                                                    context.glass.inkSecondary,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ] else if (taskDate != null) ...[
+                              if (taskDate != null) ...[
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [

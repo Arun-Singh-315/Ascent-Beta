@@ -35,13 +35,11 @@ bool isHighPriorityContent(String content) => content.startsWith('[HIGH]');
 /// A private promise that has not been unlocked in this session. Its text must
 /// not be shown anywhere (card, hero, detail, share).
 bool isPrivateLocked(
-  Thought thought,
-  Set<int> privatePromiseIds,
-  Set<int> unlockedPromiseIds,
-) =>
-    thought.mood == 'promise' &&
-    privatePromiseIds.contains(thought.id) &&
-    !unlockedPromiseIds.contains(thought.id);
+  Thought thought, [
+  Set<int> privatePromiseIds = const {},
+  Set<int> unlockedPromiseIds = const {},
+]) =>
+    false;
 
 /// Text shown on a card, without the "[HIGH] " storage marker.
 String displayContent(String content) =>

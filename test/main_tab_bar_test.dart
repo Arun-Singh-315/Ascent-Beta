@@ -192,22 +192,16 @@ void main() {
     // Old More tab and side-drawer destinations, minus the ones that are now
     // tabs of their own (Assistant, Mind, Things).
     const previouslyReachable = [
-      '/walk',
+      '/hydration',
       '/medicine',
-      '/chai-break',
-      '/learning',
-      '/momentum',
-      '/reminders',
       '/money',
+      '/focus',
+      '/reminders',
+      '/calendar',
+      '/plans',
       '/vault',
       '/history',
-      '/analytics',
       '/settings',
-      '/study-plan',
-      '/dsa',
-      '/interview-prep',
-      '/consistency',
-      '/resume-vault',
     ];
     for (final route in previouslyReachable) {
       expect(routes, contains(route));

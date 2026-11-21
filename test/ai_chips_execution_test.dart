@@ -29,7 +29,7 @@ void main() {
 
 
     testWidgets(
-      'Engine: "Start chai break" routes to mindful reset with Open chai option',
+      'Engine: "spent ₹150 on coffee" returns proposed expense action',
       (tester) async {
         late WidgetRef capturedRef;
         await tester.pumpWidget(
@@ -52,52 +52,13 @@ void main() {
 
         final engine = LocalDeterministicAiEngine();
         final response = await engine.processUserPrompt(
-          'Start chai break',
+          'spent ₹150 on coffee',
           capturedRef,
         );
 
-        expect(
-          response.text.contains('mindful reset') ||
-              response.text.contains('brewing guide'),
-          isTrue,
-        );
-        expect(response.clarifyingOptions, contains('Open chai'));
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 100));
-      },
-    );
-
-    testWidgets(
-      'Engine: "Check my walk status" returns encouraging walk summary',
-      (tester) async {
-        late WidgetRef capturedRef;
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: MaterialApp(
-              home: Consumer(
-                builder: (context, ref, _) {
-                  capturedRef = ref;
-                  return const SizedBox();
-                },
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        final engine = LocalDeterministicAiEngine();
-        final response = await engine.processUserPrompt(
-          'Check my walk status',
-          capturedRef,
-        );
-
-        expect(response.text.toLowerCase().contains('walk'), isTrue);
-        expect(response.clarifyingOptions, contains('Log a walk'));
+        expect(response.proposedAction, isNotNull);
+        expect(response.proposedAction!.type, AiActionType.expenseLogged);
+        expect(response.text.contains('150'), isTrue);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(milliseconds: 100));

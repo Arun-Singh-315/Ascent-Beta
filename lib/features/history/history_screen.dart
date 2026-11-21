@@ -1,6 +1,3 @@
-import '../vault/providers/vault_providers.dart';
-import '../promises/providers/promise_providers.dart';
-import '../promises/models/promise_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,24 +23,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   String? _module;
   DateTimeRange? _range;
   int _limit = 60;
-  AppLifecycleListener? _lifecycle;
-  UnlockedPromiseIdsNotifier? _unlocked;
-
   String _getDomainForModule(String module) {
     final mod = historyModule(module);
     switch (mod) {
       case 'tasks':
       case 'focus':
-      case 'learning':
         return 'focus_tasks';
       case 'hydration':
-      case 'walks':
       case 'routines':
       case 'medicines':
-      case 'breaks':
         return 'health_rhythm';
       case 'thoughts':
-      case 'promises':
       case 'money':
       case 'vault':
         return 'mind_promises';
@@ -59,62 +49,20 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         return 'Task';
       case 'focus':
         return 'Focus';
-      case 'learning':
-        return 'Learning';
       case 'hydration':
         return 'Water';
-      case 'walks':
-        return 'Walk';
       case 'routines':
         return 'Routine';
       case 'medicines':
         return 'Medicine';
-      case 'breaks':
-        return 'Break';
       case 'thoughts':
         return 'Thought';
-      case 'promises':
-        return 'Promise';
       case 'money':
         return 'Money';
       case 'vault':
         return 'Vault';
       default:
         return historyModules[mod] ?? 'Activity';
-    }
-  }
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _unlocked ??= ref.read(unlockedPromiseIdsProvider.notifier);
-    _lifecycle ??= AppLifecycleListener(onInactive: () => _unlocked?.lockAll());
-  }
-
-  @override
-  void dispose() {
-    _lifecycle?.dispose();
-    _unlocked?.lockAllSoon();
-    super.dispose();
-  }
-
-  Future<void> _togglePrivacy() async {
-    if (ref.read(unlockedPromiseIdsProvider).isNotEmpty) {
-      _unlocked?.lockAll();
-      return;
-    }
-    final allowed = await ref
-        .read(vaultSecurityServiceProvider)
-        .authenticateBiometrics(reason: 'Unlock private history');
-    if (!allowed || !mounted) return;
-    final rows = await ref
-        .read(databaseProvider)
-        .customSelect(
-          'SELECT DISTINCT privacy_thought_id FROM history_events WHERE is_private=1 AND privacy_thought_id IS NOT NULL',
-        )
-        .get();
-    if (!mounted) return;
-    for (final row in rows) {
-      _unlocked?.unlock(row.read<int>('privacy_thought_id'));
     }
   }
 
@@ -233,28 +181,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   );
                 },
               ),
-            if (event.module == 'promises' && event.action == 'archived')
-              TextButton.icon(
-                icon: const Icon(Icons.unarchive_outlined),
-                label: const Text('Restore promise'),
-                onPressed: () async {
-                  final id = int.tryParse(event.entityId);
-                  if (id == null) return;
-                  try {
-                    await ref
-                        .read(promiseRepositoryProvider)
-                        .setPromiseStatus(id, PromiseStatus.active);
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  } catch (_) {
-                    if (ctx.mounted) {
-                      AscentSnackBar.error(
-                        ctx,
-                        message: 'Could not restore this promise.',
-                      );
-                    }
-                  }
-                },
-              ),
             TextButton.icon(
               icon: const Icon(Icons.timeline_rounded),
               label: const Text('This item’s history'),
@@ -308,18 +234,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       subtitle: 'Your activity, kept in one place',
       backgroundColor: context.bgSurface,
       actions: [
-        IconButton(
-          tooltip: ref.watch(unlockedPromiseIdsProvider).isEmpty
-              ? 'Unlock private history'
-              : 'Lock private history',
-          icon: Icon(
-            ref.watch(unlockedPromiseIdsProvider).isEmpty
-                ? Icons.lock_outline_rounded
-                : Icons.lock_open_rounded,
-          ),
-          onPressed: _togglePrivacy,
-        ),
-
         if (widget.entity != null)
           IconButton(
             tooltip: 'All history',
@@ -351,7 +265,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     AscentSegment(value: 'all', label: 'All'),
                     AscentSegment(value: 'focus_tasks', label: 'Focus & Tasks'),
                     AscentSegment(value: 'health_rhythm', label: 'Habits & Health'),
-                    AscentSegment(value: 'mind_promises', label: 'Mind & Promises'),
+                    AscentSegment(value: 'mind_promises', label: 'Mind & Notes'),
                   ],
                   selected: _domainCategory,
                   onChanged: (v) => setState(() {

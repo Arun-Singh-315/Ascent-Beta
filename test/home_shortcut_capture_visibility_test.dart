@@ -10,7 +10,6 @@ import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/features/money/add_transaction_sheet.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
 import 'package:ascent/features/thought_wall/drop_thought_sheet.dart';
-import 'package:ascent/features/promises/widgets/promise_chat_composer.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -173,7 +172,6 @@ void main() {
   for (final entry in [
     ('Activity', AddActivitySheet),
     ('Thought', DropThoughtSheet),
-    ('Commitment', PromiseChatComposer),
   ]) {
     testWidgets('${entry.$1} opens from Home with an opaque surface', (
       tester,

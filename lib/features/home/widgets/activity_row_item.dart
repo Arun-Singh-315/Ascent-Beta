@@ -28,7 +28,6 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../today/add_activity_sheet.dart';
@@ -38,7 +37,7 @@ import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/undo_snackbar.dart';
 
 bool _removesFromTodayOnly(TodayActivityItem activity) =>
-    activity.sourceType == 'lecture' || activity.linkedTaskId == null;
+    activity.linkedTaskId == null;
 
 /// Redesigned task row matching Ascent Home Redesign:
 /// - 44dp hit area circular checkbox
@@ -74,16 +73,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   bool _completing = false;
   TodayActivityItem get activity => widget.activity;
 
-  void _openActivityLecture(
-    BuildContext context,
-    WidgetRef ref,
-    TodayActivityItem activity,
-  ) =>
-      openActivityLecture(context, ref, activity);
-
-  bool _selectLecture(WidgetRef ref, TodayActivityItem activity) =>
-      selectActivityLecture(ref, activity);
-
   void _showActivityDetailDialog(
     BuildContext context,
     WidgetRef ref,
@@ -105,8 +94,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   // Both are Undo-first; nothing asks for confirmation.
   // ---------------------------------------------------------------------------
 
-  bool get _canComplete =>
-      activity.linkedTaskId != null && activity.sourceType != 'lecture';
+  bool get _canComplete => activity.linkedTaskId != null;
 
   bool get _canReschedule =>
       _canComplete &&
@@ -286,8 +274,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             : 'Deleted “${removed.title}”',
         onUndo: () async {
           try {
-            if (removed.linkedTaskId != null &&
-                removed.sourceType != 'lecture') {
+            if (removed.linkedTaskId != null) {
               final restored = await taskDao.restoreDeletedTask(
                 removed.linkedTaskId!,
               );
@@ -362,11 +349,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
-    final isLecture = activity.sourceType == 'lecture';
-    final isTimed =
-        (activity.kind == ActivityKind.duration ||
-            (activity.targetMinutes != null && activity.targetMinutes! > 0)) &&
-        !isLecture;
+    final isTimed = activity.kind == ActivityKind.duration ||
+        (activity.targetMinutes != null && activity.targetMinutes! > 0);
     final dueCheckIn = activity.linkedTaskId != null
         ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
         : null;
@@ -468,9 +452,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     child: Material(
                       color: AppPalette.transparent,
                       child: AppTapArea(
-                        onTap: isLecture
-                            ? null
-                            : () async {
+                        onTap: () async {
                                 if (isDone) {
                                   // Once completed, it cannot be undone or brought to active (one way only).
                                   AscentSnackBar.show(
@@ -594,40 +576,23 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                       color: g.inkMuted,
                                     ),
                                   )
-                                : (isLecture
+                                : (isTimed
                                       ? Icon(
-                                          isRunning
-                                              ? Icons.headphones_rounded
-                                              : Icons.school_outlined,
-                                          size: 14,
+                                          Icons.timer_outlined,
+                                          size: 13,
                                           color: isRunning
                                               ? g.clay
                                               : (isPaused
                                                     ? (g.frozen
-                                                          ? FrozenPalette.action
+                                                          ? FrozenPalette
+                                                                .action
                                                           : (g.merlot
                                                                 ? MerlotPalette
                                                                       .antiqueGold
                                                                 : g.clay))
                                                     : g.inkMuted),
                                         )
-                                      : (isTimed
-                                            ? Icon(
-                                                Icons.timer_outlined,
-                                                size: 13,
-                                                color: isRunning
-                                                    ? g.clay
-                                                    : (isPaused
-                                                          ? (g.frozen
-                                                                ? FrozenPalette
-                                                                      .action
-                                                                : (g.merlot
-                                                                      ? MerlotPalette
-                                                                            .antiqueGold
-                                                                      : g.clay))
-                                                          : g.inkMuted),
-                                              )
-                                            : null)),
+                                      : null),
                           ),
                         ),
                       ),
@@ -639,9 +604,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
                   Expanded(
                     child: AppTapArea(
-                      onTap: isLecture
-                          ? () => _openActivityLecture(context, ref, activity)
-                          : isDone
+                      onTap: isDone
                           ? null
                           : () async {
                               HapticFeedback.lightImpact();
@@ -689,18 +652,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                           Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              if (isLecture) ...[
-                                Text(
-                                  _subtitleText(activity),
-                                  style: AscentTextStyles.interfaceSupporting
-                                      .copyWith(
-                                        color: isRunning ? g.clay : g.inkMuted,
-                                        fontWeight: isRunning
-                                            ? FontWeight.w600
-                                            : FontWeight.w400,
-                                      ),
-                                ),
-                              ] else if (isRunning) ...[
+                              if (isRunning) ...[
                                 Text(
                                   _runningTimerText(activity),
                                   style: AppTypography.jetBrainsMono12W600109(
@@ -797,24 +749,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   const SizedBox(width: 8),
 
                   // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
-                  if (isLecture) ...[
-                    IconButton(
-                      tooltip: 'Open lecture',
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        _openActivityLecture(context, ref, activity);
-                      },
-                      icon: Icon(
-                        Icons.open_in_new_rounded,
-                        color: g.clay,
-                        size: 20,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 44,
-                        minHeight: 44,
-                      ),
-                    ),
-                  ] else if (isDone) ...[
+                  if (isDone) ...[
                     const SizedBox(width: 8),
                   ] else if (activity.kind == ActivityKind.todo &&
                       !isTimed) ...[
@@ -857,13 +792,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         child: AppTapArea(
                           onTap: () async {
                             HapticFeedback.lightImpact();
-                            if (activity.sourceType == 'lecture') {
-                              if (!_selectLecture(ref, activity)) return;
-                              ref
-                                  .read(learningHubProvider.notifier)
-                                  .togglePlayPause();
-                              return;
-                            }
                             if (isRunning) {
                               ref
                                   .read(timeTrackingProvider.notifier)
@@ -984,11 +912,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     final visualDone = done || _completing;
     final running = activity.status == TodayActivityStatus.inProgress;
     final paused = activity.status == TodayActivityStatus.paused;
-    final lecture = activity.sourceType == 'lecture';
-    final timed =
-        !lecture &&
-        (activity.kind != ActivityKind.todo ||
-            (activity.targetMinutes ?? 0) > 0);
+    final timed = activity.kind != ActivityKind.todo ||
+        (activity.targetMinutes ?? 0) > 0;
 
     // When it was created is noise on a to-do row (CLAUDE.md §5.2: one meta
     // line of time · duration · category).
@@ -1010,7 +935,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           ].join(' · ')
         : [
             if (activity.sourceType == 'medicine') 'Medicine',
-            if (lecture) (running ? 'Lecture in progress' : 'Lecture'),
             ?timeLabel,
             if (timed && (activity.targetMinutes ?? 0) > 0)
               '${activity.targetMinutes} min',
@@ -1113,13 +1037,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
 
     Widget buildLeadingTarget() {
       Widget content;
-      if (lecture) {
-        content = Icon(
-          Icons.school_outlined,
-          size: 20,
-          color: running ? SharedControlColors.actionBlue : g.inkMuted,
-        );
-      } else if (timed) {
+      if (timed) {
         content = Icon(
           running ? Icons.timer_rounded : Icons.timer_outlined,
           size: 20,
@@ -1293,35 +1211,27 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         if (_timerActionBusy) return;
                         setState(() => _timerActionBusy = true);
                         try {
-                          if (lecture) {
-                            if (_selectLecture(ref, activity)) {
-                              ref
-                                  .read(learningHubProvider.notifier)
-                                  .togglePlayPause();
-                            }
+                          final tracker =
+                              ref.read(timeTrackingProvider.notifier);
+                          if (running) {
+                            final session = ref
+                                .read(timeTrackingProvider)
+                                .activeSession;
+                            final matches = session != null &&
+                                (activity.linkedSessionId != null
+                                    ? session.id == activity.linkedSessionId
+                                    : activity.linkedTaskId != null &&
+                                        session.linkedTaskId ==
+                                            activity.linkedTaskId);
+                            if (!matches) throw StateError('Timer changed');
+                            await tracker.pauseSession();
                           } else {
-                            final tracker =
-                                ref.read(timeTrackingProvider.notifier);
-                            if (running) {
-                              final session = ref
-                                  .read(timeTrackingProvider)
-                                  .activeSession;
-                              final matches = session != null &&
-                                  (activity.linkedSessionId != null
-                                      ? session.id == activity.linkedSessionId
-                                      : activity.linkedTaskId != null &&
-                                          session.linkedTaskId ==
-                                              activity.linkedTaskId);
-                              if (!matches) throw StateError('Timer changed');
-                              await tracker.pauseSession();
-                            } else {
-                              await tracker.switchToTask(
-                                title: activity.title,
-                                taskId: activity.linkedTaskId,
-                                sourceType: activity.sourceType,
-                                autoStart: true,
-                              );
-                            }
+                            await tracker.switchToTask(
+                              title: activity.title,
+                              taskId: activity.linkedTaskId,
+                              sourceType: activity.sourceType,
+                              autoStart: true,
+                            );
                           }
                         } catch (_) {
                           if (context.mounted) {
@@ -1338,23 +1248,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     ),
                   ),
                 ))
-        : null;
-
-    final Widget? lectureAction = (lecture && !done)
-        ? IconButton(
-            key: ValueKey('activity_lecture_open_${activity.id}'),
-            tooltip: 'Open in Learning Hub',
-            icon: Icon(
-              Icons.open_in_new_rounded,
-              size: 18,
-              color: g.clay,
-            ),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _openActivityLecture(context, ref, activity);
-            },
-            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          )
         : null;
 
     final Widget? scheduledBadge = (!timed && activity.isScheduledInFuture)
@@ -1436,9 +1329,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => lecture
-                ? _openActivityLecture(context, ref, activity)
-                : _showActivityDetailDialog(context, ref, activity),
+            onTap: () => _showActivityDetailDialog(context, ref, activity),
             onLongPress: () => showActivityActions(context, ref, activity),
             child: Container(
               decoration: BoxDecoration(
@@ -1464,13 +1355,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             Text(
                               activity.title,
                               key: ValueKey('activity_title_${activity.id}'),
-                              maxLines: lecture
-                                  ? 1
-                                  : (accessibleTitle
-                                        ? null
-                                        : (widget.featured ? 4 : 2)),
+                              maxLines: accessibleTitle
+                                  ? null
+                                  : (widget.featured ? 4 : 2),
                               overflow: TextOverflow.ellipsis,
-                              softWrap: !lecture,
+                              softWrap: true,
                               style: TextStyle(
                                 color: visualDone ? g.inkMuted : g.ink,
                                 fontSize: widget.featured
@@ -1551,10 +1440,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             ),
                           ),
                         ),
-                      ],
-                      if (lectureAction != null) ...[
-                        const SizedBox(width: 4),
-                        lectureAction,
                       ],
                       InkResponse(
                         radius: 16,

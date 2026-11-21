@@ -5,7 +5,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/history/history_screen.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/shared/widgets/ascent_segmented_control.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +76,6 @@ void main() {
             databaseProvider.overrideWithValue(db),
             timeTrackingProvider.overrideWith(_MockTimeNotifier.new),
             sharedPreferencesProvider.overrideWithValue(prefs),
-            allPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
             historyEventsProvider.overrideWith((ref) => Stream.value(entries)),
           ],
           child: MaterialApp(

@@ -32,7 +32,6 @@ import '../../../shared/widgets/ascent_segmented_control.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/message_composer.dart';
-import '../../promises/providers/promise_providers.dart';
 import '../drop_thought_sheet.dart';
 import '../thought_action_ui.dart';
 import '../thought_category_action.dart';
@@ -79,7 +78,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   final _scroll = ScrollController();
   NoteDraftBinding? _draft;
   Timer? _dayTimer;
-  UnlockedPromiseIdsNotifier? _unlockedNotifier;
 
   final Set<int> _selected = <int>{};
   bool _selecting = false;
@@ -264,12 +262,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _unlockedNotifier = ref.read(unlockedPromiseIdsProvider.notifier);
-  }
-
-  @override
   void didUpdateWidget(covariant ThoughtBoardScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialThoughtId != widget.initialThoughtId) _openFromHome();
@@ -282,9 +274,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
       ref.read(localClockProvider.notifier).refresh();
       setState(() {});
       _scheduleDayChange();
-    } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _unlockedNotifier?.lockAll();
     }
   }
 
@@ -316,7 +305,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     _focus.dispose();
     _search.dispose();
     _scroll.dispose();
-    _unlockedNotifier?.lockAllSoon();
     super.dispose();
   }
 
@@ -464,13 +452,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
 
   // Actions -----------------------------------------------------------------
 
-  bool _anyLocked(List<Thought> picked) => picked.any(
-    (t) => isPrivateLocked(
-      t,
-      ref.read(privatePromiseIdsProvider),
-      ref.read(unlockedPromiseIdsProvider),
-    ),
-  );
+  bool _anyLocked(List<Thought> picked) => false;
 
   Future<void> _toggleItem(Thought t, int itemIndex) async {
     final dao = ref.read(thoughtDaoProvider);
@@ -731,11 +713,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
           'Card style',
           Icons.auto_awesome_outlined,
         ),
-        const AscentAction(
-          'promises',
-          'Your promises',
-          Icons.handshake_outlined,
-        ),
         if (space != null)
           AscentAction(
             'open_space',
@@ -748,8 +725,6 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     switch (choice) {
       case 'space':
         await _newSpace();
-      case 'promises':
-        context.push('/promises');
       case 'open_space':
         _openSpace(space!);
       case 'background':
@@ -932,11 +907,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
     String? note,
   }) {
     return _Entry('c_$id', (context) {
-      final locked = isPrivateLocked(
-        t,
-        ref.watch(privatePromiseIdsProvider),
-        ref.watch(unlockedPromiseIdsProvider),
-      );
+      final locked = false;
       final card = PalaceCard(
         key: ValueKey('palace_card_$id'),
         thought: t,

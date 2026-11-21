@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:drift/drift.dart' as d;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,17 +7,6 @@ import 'package:ascent/core/services/home_capture_service.dart';
 import 'package:ascent/core/notifications/reminder_alert_sync.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/ai/riya_alert_effects.dart';
-import 'package:ascent/core/backup/workspace_backup_service.dart';
-
-class _Prefs implements BackupPreferences {
-  Map<String, Object> values = {};
-  @override
-  Map<String, Object> snapshot() => values;
-  @override
-  Future<void> replace(Map<String, Object> next) async {
-    values = next;
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -323,39 +311,6 @@ void main() {
         ))!.alertSyncPending,
         isFalse,
       );
-    },
-  );
-  test(
-    'watch stream reacts to task completion and backup restores check-in links',
-    () async {
-      final plan = await schedule(await note());
-      final docs = await Directory.systemTemp.createTemp('home-plan-backup');
-      try {
-        final backup = WorkspaceBackupService(db, _Prefs(), docs);
-        final raw = await backup.export();
-        final updates = service.watchPlans().asBroadcastStream();
-        expect(await updates.first, hasLength(1));
-        final changed = updates
-            .firstWhere((rows) => rows.isEmpty)
-            .timeout(const Duration(seconds: 2));
-        await db.taskDao.markComplete(plan.task!.id);
-        expect(await changed, isEmpty);
-        await backup.restore(raw, confirmed: true);
-        expect(await service.plans(), hasLength(1));
-        expect(
-          (await service.plans()).single.checkIn!.linkedTaskId,
-          plan.task!.id,
-        );
-        expect(
-          await schedule(
-            (await db.thoughtDao.getThoughtById(plan.task!.linkedThoughtId!))!,
-          ),
-          isA<HomePlan>(),
-        );
-        expect(await db.select(db.taskTable).get(), hasLength(1));
-      } finally {
-        await docs.delete(recursive: true);
-      }
     },
   );
   test(

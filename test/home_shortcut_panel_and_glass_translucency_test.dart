@@ -59,13 +59,13 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        buildTestApp(const HomeShortcutPanel(shortcuts: ['today', 'learning'])),
+        buildTestApp(const HomeShortcutPanel(shortcuts: ['today', 'money'])),
       );
       await tester.pumpAndSettle();
 
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Growth'), findsOneWidget);
+      expect(find.text('Money'), findsOneWidget);
       expect(find.text('Mind Space'), findsNothing);
       expect(find.text('Vault'), findsNothing);
     });
@@ -76,7 +76,7 @@ void main() {
       await tester.pumpWidget(
         buildTestApp(
           const HomeShortcutPanel(
-            shortcuts: ['today', 'learning', 'money', 'focus', 'walk'],
+            shortcuts: ['today', 'plans', 'money', 'focus', 'walk'],
           ),
         ),
       );
@@ -84,7 +84,7 @@ void main() {
 
       expect(find.byKey(const ValueKey('home_shortcut_panel')), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Growth'), findsOneWidget);
+      expect(find.text('Plans'), findsOneWidget);
       expect(find.text('Money'), findsOneWidget);
       expect(find.text('Focus'), findsOneWidget);
       expect(find.text('Walk'), findsNothing);
@@ -125,12 +125,12 @@ void main() {
         await tester.pumpWidget(
           buildTestApp(
             const HomeShortcutPanel(
-              shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
+              shortcuts: ['today', 'thought-wall', 'reminders', 'money'],
               badgeCounts: {
                 'today': 5,
                 'thought-wall': 3,
                 'reminders': 0,
-                'promises': 12,
+                'money': 12,
               },
             ),
           ),
@@ -140,7 +140,7 @@ void main() {
         for (final (id, count) in [
           ('today', '5'),
           ('thought-wall', '3'),
-          ('promises', '12'),
+          ('money', '12'),
           ('reminders', '0'),
         ]) {
           final badge = find.byKey(ValueKey('shortcut_badge_$id'));
@@ -184,12 +184,12 @@ void main() {
       await tester.pumpWidget(
         buildTestApp(
           const HomeShortcutPanel(
-            shortcuts: ['today', 'thought-wall', 'reminders', 'promises'],
+            shortcuts: ['today', 'thought-wall', 'reminders', 'money'],
             badgeCounts: {
               'today': 24,
               'thought-wall': 18,
               'reminders': 9,
-              'promises': 150,
+              'money': 150,
             },
           ),
           width: 320,
