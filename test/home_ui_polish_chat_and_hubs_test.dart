@@ -4,7 +4,6 @@ import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -12,11 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
-  @override
-  TimeTrackingState build() => const TimeTrackingState();
-}
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;

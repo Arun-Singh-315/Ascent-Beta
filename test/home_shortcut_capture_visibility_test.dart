@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
@@ -15,7 +13,6 @@ import 'package:ascent/features/thought_wall/drop_thought_sheet.dart';
 import 'package:ascent/features/promises/widgets/promise_chat_composer.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -100,27 +97,6 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Future<void> capture(WidgetTester tester, GlobalKey key, String name) async {
-    await tester.runAsync(() async {
-      final pic =
-          await (key.currentContext!.findRenderObject()
-                  as RenderRepaintBoundary)
-              .toImage(pixelRatio: 2);
-      final bytes = await pic.toByteData(format: ui.ImageByteFormat.png);
-      await Directory(
-        '/tmp/ascent-shortcut-visibility',
-      ).create(recursive: true);
-      await File(
-        '/tmp/ascent-shortcut-visibility/$name.png',
-      ).writeAsBytes(bytes!.buffer.asUint8List());
-      pic.dispose();
-    });
-  }
-
-  for (final dark in [false, true]) {
-    for (final scale in [1.0, 2.0]) {
-    }
-  }
   testWidgets(
     'All shortcut choices remain selectable and saving Money persists only preferences',
     (tester) async {

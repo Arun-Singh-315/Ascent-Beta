@@ -56,7 +56,9 @@ class HomeGlanceCard extends ConsumerWidget {
         detail: water == 0
             ? 'First glass'
             : 'of ${(goal / 1000).toStringAsFixed(1)} L',
-        progress: goal <= 0 ? null : (water / goal).clamp(0, 1).toDouble(),
+        progress: water <= 0 || goal <= 0
+            ? null
+            : (water / goal).clamp(0, 1).toDouble(),
         route: '/hydration',
       ),
       _Tile(
@@ -137,13 +139,15 @@ class HomeGlanceCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpace.s8,
               children: [
                 Text(
                   'Your day',
                   style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
                 ),
-                const Spacer(),
                 Text(
                   DateFormat('EEE d MMM').format(DateTime.now()),
                   style: AscentTextStyles.caption.copyWith(color: g.inkMuted),

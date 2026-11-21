@@ -501,6 +501,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             _isCalendarView
                 ? Icons.view_agenda_rounded
                 : Icons.calendar_month_rounded,
+            key: const ValueKey('calendar_toggle_button'),
           ),
           onPressed: () {
             HapticFeedback.selectionClick();

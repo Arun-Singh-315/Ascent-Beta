@@ -10,7 +10,7 @@ import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/daily_briefing_card.dart';
 import 'package:ascent/features/today/add_activity_sheet.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
-import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
+import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/shared/widgets/thought_excerpt.dart';
 import 'package:drift/drift.dart' as drift;
@@ -193,7 +193,7 @@ void main() {
       );
       await tap(find.text('Open daily check-in'));
       await tap(find.text('Capture a thought').last);
-      await until(find.byType(ThoughtWallScreen));
+      await until(find.byType(ThoughtBoardScreen));
       await tester.pump(const Duration(milliseconds: 700));
       expect(tester.takeException(), isNull);
       ascentRouter.go('/home');

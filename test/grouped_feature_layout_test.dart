@@ -29,12 +29,6 @@ void main() {
     await GoogleFonts.pendingFonts();
   });
 
-  for (final dark in [false, true]) {
-    for (final scale in [1.0, 2.0]) {
-      for (final feature in ['Medicines', 'Reminders', 'Money']) {
-      }
-    }
-  }
   testWidgets(
     'empty reminders explain denied notification permission at 320px with large text',
     (tester) async {

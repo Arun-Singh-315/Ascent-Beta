@@ -58,7 +58,14 @@ void main() {
               currentStreakStreamProvider.overrideWith(
                 (ref) => Stream.value(14),
               ),
-              homeWeatherProvider.overrideWith((ref) => Future.value(null)),
+              homeWeatherProvider.overrideWith(
+                (ref) => Future.value({
+                  'current': {
+                    'temperature_2m': 22,
+                    'weather_code': 0,
+                  },
+                }),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(),
@@ -155,7 +162,14 @@ void main() {
               currentStreakStreamProvider.overrideWith(
                 (ref) => Stream.value(14),
               ),
-              homeWeatherProvider.overrideWith((ref) => Future.value(null)),
+              homeWeatherProvider.overrideWith(
+                (ref) => Future.value({
+                  'current': {
+                    'temperature_2m': 22,
+                    'weather_code': 0,
+                  },
+                }),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(),
@@ -216,7 +230,14 @@ void main() {
               currentStreakStreamProvider.overrideWith(
                 (ref) => Stream.value(21),
               ),
-              homeWeatherProvider.overrideWith((ref) => Future.value(null)),
+              homeWeatherProvider.overrideWith(
+                (ref) => Future.value({
+                  'current': {
+                    'temperature_2m': 22,
+                    'weather_code': 0,
+                  },
+                }),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(),

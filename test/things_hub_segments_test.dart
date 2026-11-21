@@ -164,7 +164,7 @@ void main() {
       tab: 'done',
       today: [_item('Finished it', status: TodayActivityStatus.done)],
     );
-    expect(find.text('Completed (1)'), findsOneWidget);
+    expect(find.text('Completed · 1'), findsOneWidget);
     expect(find.text('Finished it'), findsOneWidget, reason: 'done expands');
     await unmount(tester);
 
@@ -181,7 +181,7 @@ void main() {
         _item('Already done', status: TodayActivityStatus.done),
       ],
     );
-    expect(find.text('Completed (1)'), findsOneWidget);
+    expect(find.text('Completed · 1'), findsOneWidget);
     expect(find.text('Already done'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('things_completed_toggle')));
     await settle(tester);

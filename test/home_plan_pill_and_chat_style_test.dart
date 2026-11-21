@@ -219,17 +219,12 @@ void main() {
 
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
         expect(scaffold.floatingActionButton, isNull);
-        // The assistant card is the last Home section (CLAUDE.md §5.1).
-        await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('home_assistant_button')),
-          300,
-          scrollable: find.byType(Scrollable).first,
-        );
+        // Ask Riya sits near the top of the Home feed.
         expect(
-          find.byKey(const ValueKey('home_assistant_button')),
+          find.byKey(const ValueKey('home_ask_bar')),
           findsOneWidget,
         );
-        expect(find.text('Ask Riya'), findsOneWidget);
+        expect(find.textContaining('Ask Riya'), findsOneWidget);
 
         // Tear down cleanly
         await tester.pumpWidget(const SizedBox());

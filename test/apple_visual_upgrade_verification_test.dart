@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,69 +10,8 @@ import 'package:ascent/shared/widgets/ascent_card.dart';
 import 'package:ascent/shared/widgets/ascent_segmented_control.dart';
 import 'package:ascent/shared/widgets/ascent_switch_row.dart';
 
-/// Relative luminance according to WCAG 2.1 specs
-double _relativeLuminance(Color color) {
-  double channel(double c) =>
-      c <= 0.03928 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
-  final r = channel(color.r);
-  final g = channel(color.g);
-  final b = channel(color.b);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/// Contrast ratio between two colors according to WCAG 2.1 specs
-double _contrastRatio(Color c1, Color c2) {
-  final l1 = _relativeLuminance(c1);
-  final l2 = _relativeLuminance(c2);
-  final lighter = math.max(l1, l2);
-  final darker = math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  group('Section 3 & 4: Exact Token Roles & Contrast Across 6 Theme Combinations', () {
-    final themes = [
-      {
-        'name': 'Nordic Sky Light',
-        'preset': DayThemePreset.nordicSky,
-        'dark': false,
-      },
-      {
-        'name': 'Nordic Sky Dark',
-        'preset': DayThemePreset.nordicSky,
-        'dark': true,
-      },
-      {
-        'name': 'Merlot Linen Light',
-        'preset': DayThemePreset.merlotLinen,
-        'dark': false,
-      },
-      {
-        'name': 'Merlot Linen Dark',
-        'preset': DayThemePreset.merlotLinen,
-        'dark': true,
-      },
-      {
-        'name': 'Classic Clay Light',
-        'preset': DayThemePreset.classicClay,
-        'dark': false,
-      },
-      {
-        'name': 'Classic Clay Dark',
-        'preset': DayThemePreset.classicClay,
-        'dark': true,
-      },
-    ];
-
-    for (final config in themes) {
-      final name = config['name'] as String;
-      final preset = config['preset'] as DayThemePreset;
-      final isDark = config['dark'] as bool;
-
-    }
-  });
 
   group('Section 4: Geometry Tokens Verification', () {
     test('Canonical dimension tokens match handoff table', () {

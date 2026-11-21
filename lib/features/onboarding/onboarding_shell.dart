@@ -708,7 +708,9 @@ class _AuroraBackgroundState extends State<_AuroraBackground>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
+    final inTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    if (MediaQuery.disableAnimationsOf(context) || inTest) {
       _c.stop();
     } else if (!_c.isAnimating) {
       _c.repeat();

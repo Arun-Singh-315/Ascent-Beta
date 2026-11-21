@@ -5,7 +5,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/you/you_screen.dart';
-import 'package:ascent/shared/widgets/glass_surface.dart';
+import 'package:ascent/shared/widgets/glass_chrome.dart';
 import 'package:ascent/shared/widgets/main_scaffold.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -230,7 +230,7 @@ void main() {
     expect(
       find.ancestor(
         of: find.byKey(const ValueKey('tab_home')),
-        matching: find.byType(GlassSurface),
+        matching: find.byType(GlassChrome),
       ),
       findsOneWidget,
     );
