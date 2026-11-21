@@ -38,7 +38,7 @@ One navigation correction was necessary: month arrows now update the displayed c
 
 Implement this document in order. Use the exact decisions below; do not invent another design, change the information architecture, or replace working features. Preserve the existing uncommitted Home/Calendar/Daily Brief work. Read the repository's AGENTS.md before editing.
 
-This document takes precedence over conflicting **visual recommendations for the scoped screens** in APPLE_INSPIRED_IMPLEMENTATION_HANDOFF.md and APPLE_INSPIRED_VISUAL_REVIEW.md. Their older blue-heavy palette and mixed display-font direction are not the target here. Existing repository interaction and data rules remain in force.
+Colour values come from the single Calm Blue palette (CLAUDE.md §3.1, `lib/app/theme/calm_blue_palette.dart`). Existing repository interaction and data rules remain in force.
 
 The follow-up request authorizes sequential implementation with an explicit completed/remaining checkpoint. Installation is not part of this batch. A later installation request must follow the device rules in section 11.
 

@@ -39,7 +39,7 @@ void main() {
           ProviderScope(
             overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
             child: MaterialApp(
-              theme: AscentTheme.light(preset: DayThemePreset.classicClay),
+              theme: AscentTheme.light(),
               home: const Scaffold(body: DayOneTutorialCard(userName: 'Arun')),
             ),
           ),
@@ -63,8 +63,8 @@ void main() {
           reason: 'WCAG AA requires >= 4.5:1 contrast',
         );
       },
-skip: true, // Known bug: Day-one tutorial button is below 4.5:1 contrast
-);
+      skip: true, // Known bug: Day-one tutorial button is below 4.5:1 contrast
+    );
 
     testWidgets(
       'Dark mode: Choose your first small step button has high contrast foreground on tonal background',
@@ -97,8 +97,8 @@ skip: true, // Known bug: Day-one tutorial button is below 4.5:1 contrast
           reason: 'WCAG AA requires >= 4.5:1 contrast',
         );
       },
-skip: true, // Known bug: Day-one tutorial button is below 4.5:1 contrast
-);
+      skip: true, // Known bug: Day-one tutorial button is below 4.5:1 contrast
+    );
 
     testWidgets(
       'Disabled state colors provide accessible disabled contrast without crashing',

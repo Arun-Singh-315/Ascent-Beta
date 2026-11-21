@@ -61,30 +61,33 @@ The user must never think *"I'll fill this in later."* Every rule below serves t
 
 The look is **iOS system design**: grouped backgrounds, clean white/graphite cards, one blue action color, hairline separators, large titles, generous whitespace, restrained color. **Premium = restraint + precision + motion**, not more gradients.
 
-### 3.1 Color roles (default preset)
+### 3.1 Color roles: one palette, Calm Blue
 
-Every color is a semantic role. The theme presets in Settings (`DayThemePreset`) may change role *values*, but every preset must define every role in light and dark, and widgets only ever use roles.
+Ascent has **exactly one palette, Calm Blue** (`lib/app/theme/calm_blue_palette.dart`), mirrored for light and dark. There are no theme presets. Never add a second palette, a preset picker or per-screen colour overrides (`Theme(data: …)` wrappers that swap colours). Widgets only ever use roles. When a palette, preset or theme variant is retired, delete its files, enum values, providers, pickers, tests and docs in the same change.
+
+Calm means easy on the eyes: muted, slightly desaturated blues, deep-navy ink by day and soft off-white ink by night (never pure white on pure black), no glossy gradients, glows, sparkles or neon. Body text ≥ 7:1, secondary and hint text ≥ 4.5:1 on its surface.
 
 | Role | Light | Dark | Use |
 |---|---|---|---|
-| `canvas` | `#F2F2F7` | `#000000` | Page background (grouped). Pure black is allowed **only** as the dark canvas. |
-| `surface` | `#FFFFFF` | `#1C1C1E` | Cards, grouped list cells |
-| `surfaceElevated` | `#FFFFFF` | `#2C2C2E` | Sheets, dialogs, menus, popovers (opaque) |
-| `surfaceRecessed` | `#E9E9EE` | `#2C2C2E` | Inputs, segmented tracks, empty-state tiles |
-| `separator` | `#C6C6C8` @ 60% | `#38383A` | 1 px hairlines |
-| `label` | `#1D1D1F` | `#F5F5F7` | Primary text |
-| `labelSecondary` | `#6E6E73` | `#AEAEB2` | Secondary text |
-| `labelTertiary` | `#8E8E93` | `#8E8E93` | Hints, placeholders, timestamps |
-| `action` | `#007AFF` | `#0A84FF` | Links, active icons, focus, selection, primary buttons |
+| `canvas` | `#F2F5F9` | `#0B0E13` | Page background (grouped) |
+| `surface` | `#FFFFFF` | `#161B23` | Cards, grouped list cells |
+| `surfaceElevated` | `#FFFFFF` | `#1E242E` | Sheets, dialogs, menus, popovers (opaque) |
+| `surfaceRecessed` | `#E8EDF3` | `#1E242E` | Inputs, segmented tracks, empty-state tiles |
+| `separator` | `#D6DEE8` | `#2B323D` | 1 px hairlines |
+| `label` | `#1A2332` | `#E4E9F0` | Primary text |
+| `labelSecondary` | `#4A5668` | `#A9B4C2` | Secondary text |
+| `labelTertiary` | `#66738A` | `#8995A6` | Hints, placeholders, timestamps |
+| `action` | `#2F68C8` | `#8EB1EC` | Links, active icons, focus, selection |
+| `actionFill` | `#2F68C8` | `#3A66B8` | Filled primary buttons (white label) |
 | `onAction` | `#FFFFFF` | `#FFFFFF` | Text on filled action |
-| `actionTint` | `#E5F0FF` | `#0A2A4D` | Tonal buttons, selected chips, user chat bubble |
-| `success` | `#34C759` | `#30D158` | Completion, switches on |
-| `warning` | `#FF9500` | `#FF9F0A` | Due soon, streak flame |
-| `danger` | `#FF3B30` | `#FF453A` | Overdue, destructive |
-| `star` | `#FFCC00` | `#FFD60A` | Importance star only |
+| `actionTint` | `#E6EEF9` | `#1B2A42` | Tonal buttons, selected chips, user chat bubble |
+| `success` | `#2E8B57` | `#5DBB84` | Completion, switches on |
+| `warning` | `#B7731F` | `#E0A458` | Due soon, streak flame |
+| `danger` | `#C6443A` | `#E8776D` | Overdue, destructive |
+| `star` | `#D9A514` | `#E6C35A` | Importance star only |
 
 Pillar tints (small icon tiles, charts, header accents only — never full-screen fills):
-Plan `#007AFF`, Think `#AF52DE`, Live/health `#FF2D55`, water `#32ADE6`, money `#34C759`, Grow `#FF9500`, Assistant gradient `#5E5CE6 → #BF5AF2 → #FF6482`.
+Plan = `action`, Think `#AF52DE`, Live/health `#FF2D55`, water `#3A9CC9`, money `#3A9A63`, Grow `#FF9500`, Assistant gradient `#5E5CE6 → #BF5AF2 → #FF6482`.
 
 Rules: one filled `action` button per screen region. Color carries meaning; it is never decoration. No 2 px outlines; all borders are 1 px `separator`.
 

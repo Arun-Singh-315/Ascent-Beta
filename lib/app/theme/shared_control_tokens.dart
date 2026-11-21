@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 
-/// Centralized shared control colors across all three presets (Nordic Sky, Merlot Linen, Classic Clay)
-/// as specified in Section 3.2 of the visual upgrade handoff.
+import 'calm_blue_palette.dart';
+
+/// Shared control colours (switches, disabled, error, success, warning),
+/// resolved from [CalmBluePalette].
 class SharedControlColors {
   SharedControlColors._();
 
   // Semantic controls: blue = action/selection, red = overdue/destructive,
   // grey = structure/disabled. Importance is a user-selected blue star.
-  static const actionBlue = Color(0xFF006FE6);
-  static const actionBlueDark = Color(0xFF64ACFF);
+  static const actionBlue = CalmBluePalette.action;
+  static const actionBlueDark = CalmBluePalette.darkAction;
   // Blue ink on a tinted action surface needs more contrast than an accent dot.
-  static const actionBlueInkLight = Color(0xFF005AC8);
-  static const dueRed = Color(0xFFD92D20);
-  static const dueRedDark = Color(0xFFFF6961);
-  static const neutralFillLight = Color(0xFFF2F2F7);
-  static const neutralFillDark = Color(0xFF2C2C2E);
-  static const labelLight = Color(0xFF1C1C1E);
-  static const labelDark = Color(0xFFF5F5F7);
+  static const actionBlueInkLight = CalmBluePalette.actionTintInk;
+  static const dueRed = CalmBluePalette.danger;
+  static const dueRedDark = CalmBluePalette.darkDanger;
+  static const neutralFillLight = CalmBluePalette.recessed;
+  static const neutralFillDark = CalmBluePalette.darkRecessed;
+  static const labelLight = CalmBluePalette.label;
+  static const labelDark = CalmBluePalette.darkLabel;
 
   // ── Switch colors ─────────────────────────────────────────────────────────
-  static const Color switchTrackOn = actionBlue;
+  static const Color switchTrackOn = CalmBluePalette.success;
   static const Color switchThumb = Color(0xFFFFFFFF);
-  static const Color switchTrackOffLight = Color(0xFFE5E5EA);
-  static const Color switchTrackOffDark = Color(0xFF39393D);
+  static const Color switchTrackOffLight = CalmBluePalette.recessed;
+  static const Color switchTrackOffDark = CalmBluePalette.darkSeparator;
 
   // ── Disabled control colors ───────────────────────────────────────────────
   static const Color disabledBgLight = Color(0xFFE5E7EB);
@@ -31,27 +33,27 @@ class SharedControlColors {
   static const Color disabledFgDark = Color(0xFFA7ABB3);
 
   // ── Error / danger ink & soft bg ──────────────────────────────────────────
-  static const Color errorInkLight = Color(0xFFB42318);
-  static const Color errorInkDark = Color(0xFFFFB4AB);
-  static const Color errorSoftBgLight = Color(0xFFFEE4E2);
-  static const Color errorSoftBgDark = Color(0xFF4A2525);
+  static const Color errorInkLight = CalmBluePalette.danger;
+  static const Color errorInkDark = CalmBluePalette.darkDanger;
+  static const Color errorSoftBgLight = CalmBluePalette.dangerTint;
+  static const Color errorSoftBgDark = CalmBluePalette.darkDangerTint;
 
   // ── Filled destructive action ─────────────────────────────────────────────
-  static const Color filledDestructiveBg = Color(0xFFB42318);
+  static const Color filledDestructiveBg = CalmBluePalette.danger;
   static const Color filledDestructiveFg = Color(0xFFFFFFFF);
   static const Color filledDestructivePressed = Color(0xFF912018);
 
   // ── Success ink & soft bg ─────────────────────────────────────────────────
-  static const Color successInkLight = Color(0xFF166534);
-  static const Color successInkDark = Color(0xFF86EFAC);
-  static const Color successSoftBgLight = Color(0xFFE8F5EC);
-  static const Color successSoftBgDark = Color(0xFF173426);
+  static const Color successInkLight = CalmBluePalette.success;
+  static const Color successInkDark = CalmBluePalette.darkSuccess;
+  static const Color successSoftBgLight = CalmBluePalette.successTint;
+  static const Color successSoftBgDark = CalmBluePalette.darkSuccessTint;
 
   // ── Warning ink & soft bg ─────────────────────────────────────────────────
-  static const Color warningInkLight = Color(0xFF854D0E);
-  static const Color warningInkDark = Color(0xFFFDE68A);
-  static const Color warningSoftBgLight = Color(0xFFFFF3CD);
-  static const Color warningSoftBgDark = Color(0xFF3B301B);
+  static const Color warningInkLight = CalmBluePalette.warning;
+  static const Color warningInkDark = CalmBluePalette.darkWarning;
+  static const Color warningSoftBgLight = CalmBluePalette.warningTint;
+  static const Color warningSoftBgDark = CalmBluePalette.darkWarningTint;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   static Color errorSoftBg(bool isDark) =>
@@ -74,11 +76,13 @@ class SharedControlColors {
 class PillarTints {
   PillarTints._();
 
-  static const plan = Color(0xFF007AFF);
+  static const plan = CalmBluePalette.action;
   static const think = Color(0xFFAF52DE);
   static const live = Color(0xFFFF2D55);
-  static const water = Color(0xFF32ADE6);
-  static const money = Color(0xFF34C759);
+  static const water = Color(0xFF3A9CC9);
+  static const waterDark = Color(0xFF6BBCE0);
+  static const money = Color(0xFF3A9A63);
+  static const moneyDark = Color(0xFF62C08A);
   static const grow = Color(0xFFFF9500);
   static const assistant = Color(0xFF5E5CE6);
   static const neutral = Color(0xFF8E8E93);

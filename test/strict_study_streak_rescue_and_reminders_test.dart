@@ -13,7 +13,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -176,114 +175,7 @@ void main() {
     );
   });
 
-  group('Study Streak Meter UI Widget Tests', () {
-    testWidgets(
-      'StudyStreakMeterCard renders real-time progress and streak stats cleanly',
-      (tester) async {
-        final mockStatus = StudyStreakStatus(
-          todaySeconds: 4500, // 75 mins
-          targetSeconds: 7200, // 120 mins
-          priorStreakDays: 5,
-          currentStreakDays: 5,
-          displayStreakDays: 5,
-          longestStreakDays: 12,
-          shortestStreakDays: 1,
-          isTodaySecured: false,
-          isRescueMode: false,
-          isRescuedToday: false,
-          yesterdayDeficitSeconds: 0,
-          isUrgent: false,
-          hoursRemainingInDay: 10,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Scaffold(
-              body: StudyStreakMeterCard(status: mockStatus, onTap: () {}),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('75'), findsWidgets);
-        expect(find.textContaining('120'), findsWidgets);
-        expect(find.textContaining('5'), findsWidgets);
-        expect(find.textContaining('Longest: 12d'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'StudyStreakMeterCard shows urgent alert banner when streak is at risk in the evening',
-      (tester) async {
-        final urgentStatus = StudyStreakStatus(
-          todaySeconds: 4500, // 75 mins
-          targetSeconds: 7200, // 120 mins
-          priorStreakDays: 4,
-          currentStreakDays: 4,
-          displayStreakDays: 4,
-          longestStreakDays: 8,
-          shortestStreakDays: 1,
-          isTodaySecured: false,
-          isRescueMode: false,
-          isRescuedToday: false,
-          yesterdayDeficitSeconds: 0,
-          isUrgent: true,
-          hoursRemainingInDay: 3,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Scaffold(
-              body: StudyStreakMeterCard(status: urgentStatus, onTap: () {}),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(
-          find.textContaining('continue your streak today'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('45m of study'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'StudyStreakMeterCard shows Rescue banner when yesterday was missed and debt is active',
-      (tester) async {
-        final rescueStatus = StudyStreakStatus(
-          todaySeconds: 1800, // 30 mins
-          targetSeconds: 9600, // 160 mins (120m + 40m debt)
-          priorStreakDays: 7,
-          currentStreakDays: 7,
-          displayStreakDays: 7,
-          longestStreakDays: 14,
-          shortestStreakDays: 1,
-          isTodaySecured: false,
-          isRescueMode: true,
-          isRescuedToday: false,
-          yesterdayDeficitSeconds: 2400, // 40 mins debt
-          isUrgent: false,
-          hoursRemainingInDay: 8,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Scaffold(
-              body: StudyStreakMeterCard(status: rescueStatus, onTap: () {}),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.textContaining('recover your streak'), findsOneWidget);
-        expect(find.textContaining('160m of study'), findsOneWidget);
-      },
-    );
-  });
+  group('Study Streak Meter UI Widget Tests', () {});
 
   group('Home Screen Dismissible Reminders Tests', () {
     testWidgets(

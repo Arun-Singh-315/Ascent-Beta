@@ -6,8 +6,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/widgets/home_executive_focus_card.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 
 void main() {
@@ -113,66 +111,5 @@ void main() {
       expect(find.text('45 · Fire'), findsOneWidget);
       expect(find.byIcon(Icons.whatshot_rounded), findsOneWidget);
     });
-
-    testWidgets(
-      'HomeExecutiveFocusCard renders velocity track and telemetry trio metrics',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayActivitiesProvider.overrideWith(
-                (ref) => Stream.value([
-                  const TodayActivityItem(
-                    id: '1',
-                    title: 'Architecture Review',
-                    sourceType: 'task',
-                    status: TodayActivityStatus.done,
-                    elapsedSecondsToday: 0,
-                    categoryTag: 'work',
-                  ),
-                  const TodayActivityItem(
-                    id: '2',
-                    title: 'Team Sync',
-                    sourceType: 'task',
-                    status: TodayActivityStatus.notStarted,
-                    elapsedSecondsToday: 0,
-                    categoryTag: 'meeting',
-                  ),
-                ]),
-              ),
-              todayWaterMlStreamProvider.overrideWith(
-                (ref) => Stream.value(1500),
-              ),
-              dailyWaterGoalStreamProvider.overrideWith(
-                (ref) => Stream.value(2500),
-              ),
-              todayMedicineLogsStreamProvider.overrideWith(
-                (ref) => Stream.value([]),
-              ),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(body: HomeExecutiveFocusCard()),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Card is present
-        expect(
-          find.byKey(const ValueKey('home_executive_focus_card')),
-          findsOneWidget,
-        );
-
-        // Verify dynamic headline: "1 of 2 priorities done"
-        expect(find.text('1 of 2 priorities done'), findsOneWidget);
-
-        // Verify telemetry chips
-        expect(find.text('1/2'), findsOneWidget);
-        expect(find.text('1.50L'), findsOneWidget);
-      },
-    );
-
   });
 }

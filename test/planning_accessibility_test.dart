@@ -85,7 +85,7 @@ void main() {
   for (final theme in [
     ('light', AscentTheme.light()),
     ('dark', AscentTheme.dark()),
-    ('frozen', AscentTheme.light(preset: DayThemePreset.nordicSky)),
+    ('frozen', AscentTheme.light()),
   ]) {
     testWidgets('editor and item settings fit 320px at 2x in ${theme.$1}', (
       t,
@@ -239,7 +239,7 @@ void main() {
       await mount(
         t,
         PlanCollectionDetail(id: id),
-        AscentTheme.light(preset: DayThemePreset.nordicSky),
+        AscentTheme.light(),
         width: 390,
         scale: 1,
       );

@@ -61,7 +61,7 @@ void main() {
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
-          theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
+          theme: AscentTheme.dark(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -162,7 +162,7 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp.router(
-            theme: AscentTheme.dark(preset: DayThemePreset.merlotLinen),
+            theme: AscentTheme.dark(),
             routerConfig: router,
           ),
         ),

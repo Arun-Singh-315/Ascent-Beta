@@ -21,7 +21,6 @@ class AppConstants {
   static const Duration snackBarDuration = Duration(seconds: 4);
 
   // ── SharedPreferences Storage Keys ──────────────────────────────────────────
-  static const String keyDayThemePreset = 'day_theme_preset';
   static const String keyThemeMode = 'theme_mode';
   static const String keyAssistantIdentityName = 'assistant_identity_name';
   static const String keyHomeChallengeId = 'home_challenge_id';
@@ -34,17 +33,21 @@ class AppConstants {
   // ── Notification Channel IDs & Names ─────────────────────────────────────────
   static const String channelRemindersId = 'ascent_reminders';
   static const String channelRemindersName = 'Ascent Reminders';
-  static const String channelRemindersDesc = 'Scheduled notifications for tasks, routines, and life check-ins';
+  static const String channelRemindersDesc =
+      'Scheduled notifications for tasks, routines, and life check-ins';
 
   static const String channelAlarmsId = 'ascent_alarms';
   static const String channelAlarmsName = 'Ascent Alarms';
-  static const String channelAlarmsDesc = 'High-priority ringing alarms for critical reminders and timers';
+  static const String channelAlarmsDesc =
+      'High-priority ringing alarms for critical reminders and timers';
 
   static const String channelLearningId = 'ascent_learning';
   static const String channelLearningName = 'Ascent Growth';
-  static const String channelLearningDesc = 'Ongoing study timers and lecture tracking notifications';
+  static const String channelLearningDesc =
+      'Ongoing study timers and lecture tracking notifications';
 
   static const String channelChaiBreakId = 'ascent_chai_break';
   static const String channelChaiBreakName = 'Ascent Pause';
-  static const String channelChaiBreakDesc = 'Break sanctuary timer and ambient soundscape player controls';
+  static const String channelChaiBreakDesc =
+      'Break sanctuary timer and ambient soundscape player controls';
 }

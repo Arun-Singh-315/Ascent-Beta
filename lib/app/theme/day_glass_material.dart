@@ -4,7 +4,7 @@ import '../../core/providers/settings_provider.dart';
 import 'glass_theme.dart';
 
 /// Shared daylight material: a smoked canvas beneath bright, frosted panes.
-/// Text and action colors continue to come from the selected brand palette.
+/// Text and action colours come from [AscentGlass] (Calm Blue).
 class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
   const DayGlassMaterial({
     required this.canvas,
@@ -24,9 +24,7 @@ class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
       GlassTranslucencyPreset.highContrast => (.96, .90, 16.0),
     };
     return DayGlassMaterial(
-      canvas: glass.frozen
-          ? glass.bg
-          : Color.alphaBlend(glass.ink.withValues(alpha: .025), glass.bg),
+      canvas: glass.bg,
       topOpacity: top,
       bottomOpacity: bottom,
       blur: blur,

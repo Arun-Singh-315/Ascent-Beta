@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'color_tokens.dart';
 import 'dimension_tokens.dart';
 import 'glass_theme.dart';
-import 'frozen_palette.dart';
-import 'merlot_palette.dart';
+import 'calm_blue_palette.dart';
 
 enum AppSurfaceRole {
   card,
@@ -63,20 +62,20 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
   double get minTapTarget => AscentDimensions.minTouchTarget;
   static const day = AppSurfaces(
     outlined: true,
-    ink: Color(0xFF0F172A),
-    mutedText: Color(0xFF64748B),
-    accent: Color(0xFFA4523A),
-    greenAction: AscentColors.accentPrimary,
-    cardFill: Colors.white,
-    cardBorderColor: Color(0xFFE2E8F0),
-    pillBorderColor: Color(0xFFCBD5E1),
-    dividerColor: Color(0xFFE2E8F0),
-    tintFill: Color(0xFFFDF4F0),
-    tintBorder: Color(0xFFF5D0C3),
-    onAccent: Colors.white,
+    ink: CalmBluePalette.label,
+    mutedText: CalmBluePalette.labelTertiary,
+    accent: CalmBluePalette.action,
+    greenAction: CalmBluePalette.action,
+    cardFill: CalmBluePalette.surface,
+    cardBorderColor: CalmBluePalette.separator,
+    pillBorderColor: CalmBluePalette.separator,
+    dividerColor: CalmBluePalette.separator,
+    tintFill: CalmBluePalette.actionTint,
+    tintBorder: CalmBluePalette.separator,
+    onAccent: CalmBluePalette.onAction,
     cardBorderWidth: 1.0,
     pillBorderWidth: 1.0,
-    shadow: Color.fromRGBO(15, 23, 42, 0.08),
+    shadow: CalmBluePalette.shadow,
     blur: 0,
   );
 
@@ -94,105 +93,6 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     tintBorder: AscentGlass.light.clay.withValues(alpha: .25),
     shadow: AscentGlass.light.shadow,
     blur: 0,
-  );
-
-  static const nordicSky = AppSurfaces(
-    outlined: true,
-    ink: FrozenPalette.ink,
-    mutedText: FrozenPalette.mutedInk,
-    accent: FrozenPalette.action,
-    greenAction: FrozenPalette.success,
-    cardFill: Color.fromRGBO(243, 247, 251, 0.78),
-    cardBorderColor: FrozenPalette.line,
-    pillBorderColor: FrozenPalette.lineSubtle,
-    dividerColor: FrozenPalette.lineSubtle,
-    tintFill: FrozenPalette.pillSoft,
-    tintBorder: FrozenPalette.lineSubtle,
-    onAccent: Colors.white,
-    cardBorderWidth: 1.0,
-    pillBorderWidth: 0.75,
-    shadow: Color.fromRGBO(20, 50, 80, 0.08),
-    blur: 16,
-  );
-
-  static final legacyNordicSky = night.copyWith(
-    ink: AscentGlass.nordicSky.ink,
-    mutedText: AscentGlass.nordicSky.inkMuted,
-    accent: AscentGlass.nordicSky.clay,
-    greenAction: FrozenPalette.success,
-    cardFill: AscentGlass.nordicSky.fill,
-    cardBorderColor: AscentGlass.nordicSky.edge,
-    pillBorderColor: AscentGlass.nordicSky.edge,
-    dividerColor: AscentGlass.nordicSky.line,
-    tintFill: AscentGlass.nordicSky.claySoft,
-    tintBorder: AscentGlass.nordicSky.edge,
-    shadow: AscentGlass.nordicSky.shadow,
-    blur: 12,
-  );
-
-  static final legacyNordicSkyDark = night.copyWith(
-    ink: AscentGlass.nordicSkyDark.ink,
-    mutedText: AscentGlass.nordicSkyDark.inkMuted,
-    accent: AscentGlass.nordicSkyDark.clay,
-    greenAction: FrozenPalette.darkSuccess,
-    cardFill: AscentGlass.nordicSkyDark.fill,
-    cardBorderColor: AscentGlass.nordicSkyDark.edge,
-    pillBorderColor: AscentGlass.nordicSkyDark.edge,
-    dividerColor: AscentGlass.nordicSkyDark.line,
-    tintFill: AscentGlass.nordicSkyDark.claySoft,
-    tintBorder: AscentGlass.nordicSkyDark.edge,
-    shadow: AscentGlass.nordicSkyDark.shadow,
-    blur: 12,
-  );
-
-  static const merlotLinen = AppSurfaces(
-    outlined: true,
-    ink: MerlotPalette.ink,
-    mutedText: MerlotPalette.mutedInk,
-    accent: MerlotPalette.action,
-    greenAction: MerlotPalette.success,
-    cardFill: MerlotPalette.surface,
-    cardBorderColor: MerlotPalette.line,
-    pillBorderColor: MerlotPalette.lineSubtle,
-    dividerColor: MerlotPalette.lineSubtle,
-    tintFill: MerlotPalette.pillSoft,
-    tintBorder: MerlotPalette.lineSubtle,
-    onAccent: Colors.white,
-    cardBorderWidth: 0.75,
-    pillBorderWidth: 0.75,
-    shadow: MerlotPalette.shadowAmbient,
-    blur: 0,
-  );
-
-  static final legacyMerlotLinen = night.copyWith(
-    ink: AscentGlass.merlotLinenLight.ink,
-    mutedText: AscentGlass.merlotLinenLight.inkMuted,
-    accent: AscentGlass.merlotLinenLight.clay,
-    greenAction: MerlotPalette.success,
-    cardFill: AscentGlass.merlotLinenLight.fill,
-    cardBorderColor: AscentGlass.merlotLinenLight.edge,
-    pillBorderColor: AscentGlass.merlotLinenLight.edge,
-    dividerColor: AscentGlass.merlotLinenLight.line,
-    tintFill: AscentGlass.merlotLinenLight.claySoft,
-    tintBorder: AscentGlass.merlotLinenLight.edge,
-    shadow: AscentGlass.merlotLinenLight.shadow,
-    blur: 12,
-  );
-
-  static final legacyMerlotLinenDark = night.copyWith(
-    onAccent: MerlotPalette.darkCanvas,
-    ink: AscentGlass.merlotLinenDark.ink,
-    mutedText: AscentGlass.merlotLinenDark.inkMuted,
-    accent: AscentGlass.merlotLinenDark.clay,
-    greenAction: MerlotPalette.darkSuccess,
-    cardFill: AscentGlass.merlotLinenDark.fill,
-    cardBorderColor: AscentGlass.merlotLinenDark.edge,
-    pillBorderColor: AscentGlass.merlotLinenDark.edge,
-    dividerColor: AscentGlass.merlotLinenDark.line,
-    tintFill: AscentGlass.merlotLinenDark.claySoft,
-    tintBorder: AscentGlass.merlotLinenDark.edge,
-    shadow: AscentGlass.merlotLinenDark.shadow,
-    blur: 12,
   );
 
   static final night = AppSurfaces(
@@ -267,19 +167,19 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
       color: night?.gradient != null
           ? null
           : (primary
-              ? accent
-              : role == AppSurfaceRole.tag
-                  ? tintFill
-                  : cardFill),
+                ? accent
+                : role == AppSurfaceRole.tag
+                ? tintFill
+                : cardFill),
       gradient: night?.gradient,
       borderRadius: night?.shape == BoxShape.circle ? null : r,
       shape: night?.shape ?? BoxShape.rectangle,
       border: primary
           ? null
           : role == AppSurfaceRole.tag
-              ? Border.all(color: tintBorder, width: pillBorderWidth)
-              : (night?.border ??
-                  (role == AppSurfaceRole.pill ? pillBorder : cardBorder)),
+          ? Border.all(color: tintBorder, width: pillBorderWidth)
+          : (night?.border ??
+                (role == AppSurfaceRole.pill ? pillBorder : cardBorder)),
       boxShadow: night?.boxShadow,
     );
   }

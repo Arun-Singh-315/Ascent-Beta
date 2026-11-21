@@ -38,9 +38,7 @@ class NoteListButton extends StatelessWidget {
       return;
     }
     final before = text.substring(0, start);
-    final separator = before.isEmpty || before.endsWith('\n')
-        ? ''
-        : '\n';
+    final separator = before.isEmpty || before.endsWith('\n') ? '' : '\n';
     final marker = '$separator• ';
     controller.value = TextEditingValue(
       text: text.replaceRange(start, end, marker),
@@ -311,13 +309,7 @@ class InlineListAddButton extends StatelessWidget {
           onLongPress: () => showHelperDialog(context),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Icon(
-              icon,
-              size: 22,
-              color: enabled
-                  ? (context.isDark && g.merlot ? g.inkSecondary : g.clay)
-                  : g.inkMuted,
-            ),
+            child: Icon(icon, size: 22, color: enabled ? g.clay : g.inkMuted),
           ),
         ),
       ),

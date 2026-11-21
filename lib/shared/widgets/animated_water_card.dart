@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
 import '../../core/providers/database_provider.dart';
 import 'ascent_card.dart';
 
@@ -361,26 +359,12 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final cardBg = isDark
-        ? g.fill
-        : (g.merlot
-              ? MerlotPalette.pillSoft
-              : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
-    final borderColor = isDark
-        ? g.edge
-        : (g.merlot
-              ? MerlotPalette.lineSubtle
-              : (g.frozen
-                    ? FrozenPalette.lineSubtle
-                    : const Color(0xFFD2E3F1)));
+    final cardBg = isDark ? g.fill : ((const Color(0xFFF0F7FB)));
+    final borderColor = isDark ? g.edge : ((const Color(0xFFD2E3F1)));
     final iconBg = isDark
         ? context.waterAccent.withValues(alpha: 0.18)
-        : (g.merlot
-              ? MerlotPalette.tint
-              : const Color(0xFFE0EFF8));
-    final iconColor = isDark
-        ? context.waterAccent
-        : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
+        : (const Color(0xFFE0EFF8));
+    final iconColor = isDark ? context.waterAccent : (const Color(0xFF0284C7));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -399,17 +383,12 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: borderColor,
-              width: (g.merlot || g.frozen) ? 0.75 : 1.0,
-            ),
+            border: Border.all(color: borderColor, width: 1.0),
             boxShadow: [
               BoxShadow(
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.2)
-                    : (g.merlot
-                          ? MerlotPalette.shadowAmbient
-                          : const Color.fromRGBO(2, 132, 199, 0.04)),
+                    : (const Color.fromRGBO(2, 132, 199, 0.04)),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),

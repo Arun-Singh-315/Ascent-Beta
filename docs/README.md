@@ -8,8 +8,6 @@ Current planning and contributor references. Monochrome Home/Calendar handoff ad
 - [Mind Space implementation](MIND_SPACE_IMPLEMENTATION.md): current behavior, capability boundaries and verification evidence.
 - [Application architecture](APP_ARCHITECTURE.md): current storage, state, services and navigation boundaries.
 - [Design system](DESIGN_SYSTEM.md): maps each CLAUDE.md rule to its code and lists migration gaps.
-- [Apple-inspired implementation handoff](APPLE_INSPIRED_IMPLEMENTATION_HANDOFF.md): exact visual upgrade requirements, component contracts, screen scope, and acceptance checks. Specification only; implementation is not yet complete.
-- [Apple-inspired visual review](APPLE_INSPIRED_VISUAL_REVIEW.md): research, current-code findings, and rationale supporting the handoff.
 - [Component catalog](COMPONENT_CATALOG.md): reusable widgets present in the active app.
 - [Feature inventory](FEATURE_INVENTORY.md): active screens and entry points.
 - [Android releases](../releases/README.md): package/version metadata and retained artifacts.

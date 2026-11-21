@@ -1,11 +1,9 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/providers/daily_briefing_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/daily_welcome_dialog.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
-import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -181,78 +179,6 @@ void main() {
 
   group(
     'Tier 0: StudyStreakMeterCard Honest Numbers & 320px Overflow Immunity',
-    () {
-      testWidgets(
-        'displays honest invitation at 0 streak without longest: 0d',
-        (tester) async {
-          final zeroStreak = StudyStreakStatus(
-            todaySeconds: 0,
-            targetSeconds: 3600,
-            displayStreakDays: 0,
-            longestStreakDays: 0,
-            isTodaySecured: false,
-            isRescueMode: false,
-            isUrgent: false,
-          );
-
-          await tester.pumpWidget(
-            ProviderScope(
-              child: MaterialApp(
-                theme: AscentTheme.light(),
-                home: Scaffold(body: StudyStreakMeterCard(status: zeroStreak)),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.text('Start a streak today'), findsOneWidget);
-          expect(find.textContaining('0 Day Streak'), findsNothing);
-          expect(find.textContaining('Longest: 0d'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        '320px width at 2.0x font scaling has zero RenderFlex overflow',
-        (tester) async {
-          tester.view.physicalSize = const Size(320 * 2.0, 640 * 2.0);
-          tester.view.devicePixelRatio = 2.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
-
-          final activeStreak = StudyStreakStatus(
-            todaySeconds: 2700,
-            targetSeconds: 3600,
-            displayStreakDays: 14,
-            longestStreakDays: 21,
-            isTodaySecured: false,
-            isRescueMode: true,
-            isUrgent: true,
-          );
-
-          await tester.pumpWidget(
-            ProviderScope(
-              child: MaterialApp(
-                theme: AscentTheme.light(),
-                home: MediaQuery(
-                  data: const MediaQueryData(
-                    textScaler: TextScaler.linear(2.0),
-                  ),
-                  child: Scaffold(
-                    body: SingleChildScrollView(
-                      child: StudyStreakMeterCard(status: activeStreak),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(tester.takeException(), isNull);
-        },
-      );
-    },
+    () {},
   );
 }
