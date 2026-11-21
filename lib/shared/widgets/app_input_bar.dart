@@ -23,6 +23,7 @@ class AppInputBar extends StatelessWidget {
     this.singleLine = false,
     this.onMic,
     this.listening = false,
+    this.glass = false,
   });
 
   final TextEditingController controller;
@@ -49,6 +50,9 @@ class AppInputBar extends StatelessWidget {
   final VoidCallback? onMic;
   final bool listening;
 
+  /// Docked over scrolling content (e.g. Reminders): glass chrome.
+  final bool glass;
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -65,6 +69,7 @@ class AppInputBar extends StatelessWidget {
       onMic: onMic,
       listening: listening,
       trailing: extraAction,
+      glass: glass,
       leading: leadingIcon == null || checklist
           ? null
           : SizedBox(

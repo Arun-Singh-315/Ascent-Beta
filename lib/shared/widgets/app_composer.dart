@@ -52,6 +52,7 @@ class AppComposer extends StatelessWidget {
           sendKey: const ValueKey('chat_send_button'),
           sendTooltip: 'Send message',
           inputFormatters: const [],
+          glass: true,
           leading: onPlusPressed == null
               ? null
               : SizedBox(

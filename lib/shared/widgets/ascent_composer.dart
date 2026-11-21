@@ -6,6 +6,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../utils/smart_list_input_formatter.dart';
+import 'glass_chrome.dart';
 import 'note_list_button.dart';
 
 /// The one capture and chat input (CLAUDE.md §2.3, §6.5).
@@ -44,6 +45,7 @@ class AscentComposer extends StatefulWidget {
     this.micKey = const ValueKey('composer_mic'),
     this.sendTooltip = 'Send',
     this.inputFormatters,
+    this.glass = false,
   });
 
   final TextEditingController controller;
@@ -72,6 +74,9 @@ class AscentComposer extends StatefulWidget {
   final Key micKey;
   final String sendTooltip;
   final List<TextInputFormatter>? inputFormatters;
+
+  /// Docked over scrolling content: render the field as glass chrome.
+  final bool glass;
 
   /// Starts a checklist line ("☐ ") at the caret, or continues the list.
   static void insertChecklistItem(TextEditingController controller) {
@@ -150,6 +155,10 @@ class _AscentComposerState extends State<AscentComposer> {
     widget.onSend(widget.controller.text);
   }
 
+  Widget _maybeGlass(Widget field) => widget.glass
+      ? GlassChrome(borderRadius: BorderRadius.circular(24), child: field)
+      : field;
+
   void _checklist() {
     HapticFeedback.selectionClick();
     AscentComposer.insertChecklistItem(widget.controller);
@@ -185,110 +194,118 @@ class _AscentComposerState extends State<AscentComposer> {
                 onTap: () {
                   if (!_focus.hasFocus) _focus.requestFocus();
                 },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  constraints: const BoxConstraints(minHeight: 56),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s4,
-                    vertical: AppSpace.s4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: g.recessed,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: focused ? g.actionInk : g.line),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (widget.leading != null)
-                        widget.leading!
-                      else if (widget.checklist)
-                        _RoundIcon(
-                          key: const ValueKey('composer_checklist'),
-                          icon: Icons.checklist_rounded,
-                          tooltip: 'Add a checklist item',
-                          color: g.inkSecondary,
-                          onPressed: widget.busy ? null : _checklist,
-                        )
-                      else
-                        const SizedBox(width: AppSpace.s12),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s12,
-                          ),
-                          child: TextField(
-                            key: widget.fieldKey ?? _fieldKey,
-                            controller: widget.controller,
-                            focusNode: _focus,
-                            autofocus: widget.autofocus,
-                            minLines: 1,
-                            maxLines: widget.submitOnEnter
-                                ? 1
-                                : widget.maxLines,
-                            keyboardType: widget.submitOnEnter
-                                ? TextInputType.text
-                                : TextInputType.multiline,
-                            textInputAction: widget.submitOnEnter
-                                ? TextInputAction.done
-                                : TextInputAction.newline,
-                            textCapitalization: TextCapitalization.sentences,
-                            inputFormatters:
-                                widget.inputFormatters ??
-                                const [SmartListInputFormatter()],
-                            onChanged: widget.onChanged,
-                            onSubmitted: widget.submitOnEnter
-                                ? (_) => _send()
-                                : null,
-                            cursorColor: g.actionInk,
-                            style: AscentTextStyles.interfaceBody.copyWith(
-                              color: g.ink,
-                              height: 1.3,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: widget.hint,
-                              hintStyle: AscentTextStyles.interfaceBody
-                                  .copyWith(color: g.inkMuted),
-                              hintMaxLines: 1,
-                              isDense: true,
-                              filled: false,
-                              contentPadding: EdgeInsets.zero,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                            ),
-                          ),
-                        ),
+                child: _maybeGlass(
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    constraints: const BoxConstraints(minHeight: 56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s4,
+                      vertical: AppSpace.s4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: widget.glass ? Colors.transparent : g.recessed,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: focused
+                            ? g.actionInk
+                            : (widget.glass ? Colors.transparent : g.line),
                       ),
-                      ?widget.trailing,
-                      if (showMic)
-                        _RoundIcon(
-                          key: widget.micKey,
-                          icon: widget.listening
-                              ? Icons.stop_rounded
-                              : Icons.mic_none_rounded,
-                          tooltip: widget.listening
-                              ? 'Stop dictation'
-                              : 'Dictate',
-                          color: widget.listening ? g.tonalFg : g.inkSecondary,
-                          fill: widget.listening ? g.tonalBg : null,
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            widget.onMic!();
-                          },
-                        )
-                      else
-                        _SendButton(
-                          key: widget.sendKey,
-                          tooltip: widget.sendTooltip,
-                          visible: _canSend || widget.busy,
-                          busy: widget.busy,
-                          onPressed: _canSend ? _send : null,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (widget.leading != null)
+                          widget.leading!
+                        else if (widget.checklist)
+                          _RoundIcon(
+                            key: const ValueKey('composer_checklist'),
+                            icon: Icons.checklist_rounded,
+                            tooltip: 'Add a checklist item',
+                            color: g.inkSecondary,
+                            onPressed: widget.busy ? null : _checklist,
+                          )
+                        else
+                          const SizedBox(width: AppSpace.s12),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpace.s12,
+                            ),
+                            child: TextField(
+                              key: widget.fieldKey ?? _fieldKey,
+                              controller: widget.controller,
+                              focusNode: _focus,
+                              autofocus: widget.autofocus,
+                              minLines: 1,
+                              maxLines: widget.submitOnEnter
+                                  ? 1
+                                  : widget.maxLines,
+                              keyboardType: widget.submitOnEnter
+                                  ? TextInputType.text
+                                  : TextInputType.multiline,
+                              textInputAction: widget.submitOnEnter
+                                  ? TextInputAction.done
+                                  : TextInputAction.newline,
+                              textCapitalization: TextCapitalization.sentences,
+                              inputFormatters:
+                                  widget.inputFormatters ??
+                                  const [SmartListInputFormatter()],
+                              onChanged: widget.onChanged,
+                              onSubmitted: widget.submitOnEnter
+                                  ? (_) => _send()
+                                  : null,
+                              cursorColor: g.actionInk,
+                              style: AscentTextStyles.interfaceBody.copyWith(
+                                color: g.ink,
+                                height: 1.3,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: widget.hint,
+                                hintStyle: AscentTextStyles.interfaceBody
+                                    .copyWith(color: g.inkMuted),
+                                hintMaxLines: 1,
+                                isDense: true,
+                                filled: false,
+                                contentPadding: EdgeInsets.zero,
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                              ),
+                            ),
+                          ),
                         ),
-                    ],
+                        ?widget.trailing,
+                        if (showMic)
+                          _RoundIcon(
+                            key: widget.micKey,
+                            icon: widget.listening
+                                ? Icons.stop_rounded
+                                : Icons.mic_none_rounded,
+                            tooltip: widget.listening
+                                ? 'Stop dictation'
+                                : 'Dictate',
+                            color: widget.listening
+                                ? g.tonalFg
+                                : g.inkSecondary,
+                            fill: widget.listening ? g.tonalBg : null,
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              widget.onMic!();
+                            },
+                          )
+                        else
+                          _SendButton(
+                            key: widget.sendKey,
+                            tooltip: widget.sendTooltip,
+                            visible: _canSend || widget.busy,
+                            busy: widget.busy,
+                            onPressed: _canSend ? _send : null,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
