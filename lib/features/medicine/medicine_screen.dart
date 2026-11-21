@@ -4,6 +4,7 @@ import 'care_plans_view.dart';
 import 'dose_history_screen.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/history_action.dart';
 import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
@@ -15,12 +16,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
+import 'medicine_quick_add_sheet.dart';
 
 class MedicineScreen extends ConsumerStatefulWidget {
   const MedicineScreen({super.key});
@@ -78,8 +81,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     if (_updating.contains(log.id)) return;
     setState(() => _updating.add(log.id));
     try {
-      await ref.read(medicineServiceProvider).toggleDose(log.id, !log.isTaken);
+      final service = ref.read(medicineServiceProvider);
+      await service.toggleDose(log.id, !log.isTaken);
       HapticFeedback.selectionClick();
+      if (!log.isTaken && mounted) {
+        showUndoSnackbar(
+          context,
+          message: 'Dose taken',
+          onUndo: () => service.toggleDose(log.id, false),
+        );
+      }
     } catch (_) {
       if (mounted) {
         AscentSnackBar.error(
@@ -411,8 +422,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         _careContext(medicine),
         const SizedBox(height: 2),
         Text(
-          medicine.dosage,
-          style: TextStyle(color: g.inkSecondary, fontSize: 13),
+          '${MedicineService.formatTimeSlot(log.timeSlot)} · ${medicine.dosage}',
+          style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
         ),
       ],
     );
@@ -799,7 +810,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         label: 'Add Medicine',
         icon: Icons.add_rounded,
         expanded: false,
-        onPressed: () => showMedicineEditor(context),
+        onPressed: () => showMedicineQuickAdd(context),
       ),
     ],
   );
@@ -816,7 +827,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         const HistoryAction(module: 'medicines'),
         IconButton(
           tooltip: 'Add Medicine',
-          onPressed: () => showMedicineEditor(context),
+          onPressed: () => showMedicineQuickAdd(context),
           icon: const Icon(Icons.add_rounded),
         ),
       ],
@@ -923,14 +934,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                                   for (final slot
                                       in logs
                                           .where((l) => l.isTaken == _showTaken)
-                                          .map((l) => l.timeSlot)
+                                          .map((l) => partOfDay(l.timeSlot))
                                           .toSet())
                                     Builder(
                                       builder: (context) {
                                         final slotLogs = logs
                                             .where(
                                               (l) =>
-                                                  l.timeSlot == slot &&
+                                                  partOfDay(l.timeSlot) ==
+                                                      slot &&
                                                   l.isTaken == _showTaken,
                                             )
                                             .toList();
@@ -965,8 +977,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                                                           width: 6,
                                                         ),
                                                         Text(
-                                                          MedicineService.formatTimeSlot(
-                                                            slot,
+                                                          slot,
+                                                          key: ValueKey(
+                                                            'dose_group_$slot',
                                                           ),
                                                           style: TextStyle(
                                                             fontSize: 13.5,
@@ -1072,4 +1085,14 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       ),
     );
   }
+}
+
+/// "Morning", "Afternoon", "Evening" or "Night" for an "HH:mm" slot, so the
+/// day reads in a few calm groups instead of one card per clock time.
+String partOfDay(String slot) {
+  final h = int.tryParse(slot.split(':').first) ?? 0;
+  if (h >= 5 && h < 12) return 'Morning';
+  if (h >= 12 && h < 17) return 'Afternoon';
+  if (h >= 17 && h < 21) return 'Evening';
+  return 'Night';
 }
