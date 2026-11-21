@@ -189,6 +189,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       }
     } catch (_) {}
 
+    // Offline or not set up: show nothing rather than an error (§7).
+    final showWeather =
+        current != null || (weatherState.isLoading && !weatherState.hasError);
     final String tempStr;
     final String descStr;
     final IconData weatherIcon;
@@ -230,7 +233,8 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         runSpacing: 8,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          // 1. Floating Weather & Temperature Pill
+          // 1. Floating Weather & Temperature Pill (hidden when offline)
+          if (showWeather)
           Material(
             color: Colors.transparent,
             child: InkWell(

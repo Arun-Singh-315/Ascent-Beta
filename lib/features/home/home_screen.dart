@@ -32,6 +32,7 @@ import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_assistant_hero_card.dart';
 import 'widgets/home_now_card.dart';
+import '../promises/providers/promise_providers.dart';
 import 'widgets/home_feed_entrance.dart';
 import 'widgets/home_compact_header.dart';
 import 'widgets/home_shortcut_panel.dart';
@@ -463,9 +464,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       child: HomeReveal(child: HomeContentTransition(child: child)),
     );
     if (!_heavierModulesReady) return modules;
+    // Growth cards earn their place: Learning once a course is started,
+    // Commitments once there is one. Empty cards would turn Home into a wall
+    // of "nothing yet" (CLAUDE.md §5.1); both stay one tap away in You.
+    final learningStarted = ref.watch(
+      learningHubProvider.select((s) => s.hasStartedLearning),
+    );
+    final hasPromises =
+        (ref.watch(activePromisesStreamProvider).value ?? const []).isNotEmpty;
     final growthModules = <Widget>[
-      if (layout.visible.contains('learning')) const LearningHubCard(),
-      if (layout.visible.contains('promises')) const HomePromiseSection(),
+      if (layout.visible.contains('learning') && learningStarted)
+        const LearningHubCard(),
+      if (layout.visible.contains('promises') && hasPromises)
+        const HomePromiseSection(),
     ];
     if (growthModules.isNotEmpty) {
       modules.add(spaced(HomeModuleGroup(children: growthModules)));

@@ -972,9 +972,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         (activity.kind != ActivityKind.todo ||
             (activity.targetMinutes ?? 0) > 0);
 
-    final String? createdLabel = activity.createdAt != null
-        ? 'Created ${_formatActivityTimestamp(activity.createdAt!)}'
-        : null;
+    // When it was created is noise on a to-do row (CLAUDE.md §5.2: one meta
+    // line of time · duration · category).
+    const String? createdLabel = null;
     final String? finishedLabel = (visualDone && activity.completedAt != null)
         ? 'Finished ${_formatActivityTimestamp(activity.completedAt!)}'
         : null;
