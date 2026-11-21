@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../core/providers/settings_provider.dart';
 import 'glass_theme.dart';
 
-/// Shared daylight material: a smoked canvas beneath bright, frosted panes.
+/// Shared daylight card material: solid white cards on the plain canvas.
 /// Text and action colours come from [AscentGlass] (Calm Blue).
 class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
   const DayGlassMaterial({
@@ -14,23 +13,16 @@ class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
     required this.shadow,
   });
 
-  factory DayGlassMaterial.from(
-    AscentGlass glass,
-    GlassTranslucencyPreset preset,
-  ) {
-    final (top, bottom, blur) = switch (preset) {
-      GlassTranslucencyPreset.subtleFrosted => (.62, .38, 24.0),
-      GlassTranslucencyPreset.balancedLiquid => (.76, .50, 20.0),
-      GlassTranslucencyPreset.highContrast => (.96, .90, 16.0),
-    };
-    return DayGlassMaterial(
-      canvas: glass.bg,
-      topOpacity: top,
-      bottomOpacity: bottom,
-      blur: blur,
-      shadow: glass.shadow.withValues(alpha: .13),
-    );
-  }
+  /// Light-mode cards are solid white with a soft shadow (CLAUDE.md §3.3).
+  /// Translucent "frosted" cards were removed: glass is for persistent
+  /// chrome only (§3.4), and frosted panes read grey and glossy.
+  factory DayGlassMaterial.from(AscentGlass glass) => DayGlassMaterial(
+    canvas: glass.bg,
+    topOpacity: 1,
+    bottomOpacity: 1,
+    blur: 0,
+    shadow: Colors.black.withValues(alpha: .05),
+  );
 
   final Color canvas;
   final double topOpacity, bottomOpacity, blur;
@@ -46,15 +38,12 @@ class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
         ],
       );
 
-  Border get rim => Border.all(color: Colors.white.withValues(alpha: .70));
+  /// No rim: light cards have no outline (§3.3).
+  Border get rim => Border.all(color: Colors.transparent, width: 0);
 
+  /// Soft card shadow: y 2, blur 12, black at 5% (§3.3).
   List<BoxShadow> get shadows => [
-    BoxShadow(color: shadow, blurRadius: 26, offset: const Offset(0, 9)),
-    BoxShadow(
-      color: shadow.withValues(alpha: .04),
-      blurRadius: 3,
-      offset: const Offset(0, 1),
-    ),
+    BoxShadow(color: shadow, blurRadius: 12, offset: const Offset(0, 2)),
   ];
 
   @override

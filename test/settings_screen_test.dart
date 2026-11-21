@@ -24,6 +24,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Settings'), findsOneWidget);
-    expect(find.text('Appearance & Theme'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
   });
 }

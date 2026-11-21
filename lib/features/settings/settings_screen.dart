@@ -821,7 +821,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Widget build(BuildContext context) {
     final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final translucencyPreset = ref.watch(glassTranslucencyPresetProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -862,61 +862,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           ),
           children: [
             // ── Section 1: Appearance & Theme (Always Visible at Top) ────────
-            _SectionHeader(title: 'Appearance & Theme', dotColor: g.clay),
+            _SectionHeader(title: 'Appearance', dotColor: g.clay),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Glass Translucency',
-                          style: AscentTextStyles.labelMedium
-                              .copyWith(color: g.ink)
-                              .merge(AppTypeRoles.typeRole2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          translucencyPreset ==
-                                  GlassTranslucencyPreset.subtleFrosted
-                              ? 'Subtle Frosted'
-                              : translucencyPreset ==
-                                    GlassTranslucencyPreset.highContrast
-                              ? 'High Contrast'
-                              : 'Balanced Liquid (Default)',
-                          textAlign: TextAlign.end,
-                          style: AscentTextStyles.captionMedium
-                              .copyWith(color: g.clay)
-                              .merge(AppTypeRoles.typeRole8),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Light or dark',
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole2),
                   ),
                   const SizedBox(height: 12),
-                  AscentSegmentedControl<GlassTranslucencyPreset>(
+                  AscentSegmentedControl<ThemeMode>(
+                    key: const ValueKey('settings_theme_mode'),
                     segments: const [
-                      AscentSegment(
-                        value: GlassTranslucencyPreset.subtleFrosted,
-                        label: 'Subtle',
-                      ),
-                      AscentSegment(
-                        value: GlassTranslucencyPreset.balancedLiquid,
-                        label: 'Balanced',
-                      ),
-                      AscentSegment(
-                        value: GlassTranslucencyPreset.highContrast,
-                        label: 'Contrast',
-                      ),
+                      AscentSegment(value: ThemeMode.system, label: 'Auto'),
+                      AscentSegment(value: ThemeMode.light, label: 'Light'),
+                      AscentSegment(value: ThemeMode.dark, label: 'Dark'),
                     ],
-                    selected: translucencyPreset,
+                    selected: themeMode,
                     onChanged: (value) => ref
-                        .read(glassTranslucencyPresetProvider.notifier)
-                        .setPreset(value),
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(value),
                   ),
                 ],
               ),

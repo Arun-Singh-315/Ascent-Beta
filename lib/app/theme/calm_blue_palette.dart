@@ -22,7 +22,7 @@ abstract final class CalmBluePalette {
   static const separator = Color(0xFFD6DEE8);
   static const label = Color(0xFF1A2332);
   static const labelSecondary = Color(0xFF4A5668);
-  static const labelTertiary = Color(0xFF66738A);
+  static const labelTertiary = Color(0xFF5B677C);
   static const action = Color(0xFF2F68C8);
   static const actionPressed = Color(0xFF2756A8);
   static const actionTint = Color(0xFFE6EEF9);

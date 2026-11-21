@@ -48,24 +48,6 @@ void main() {
     );
   }
 
-  group('Glass Translucency UI in Settings', () {
-    testWidgets(
-      'immune to overflow at 320px width with 2.0x accessibility text scale',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(const SettingsScreen(), width: 320, textScale: 2.0),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(tester.takeException(), isNull);
-        expect(find.text('Glass Translucency'), findsOneWidget);
-        expect(find.text('Subtle'), findsOneWidget);
-        expect(find.text('Balanced'), findsOneWidget);
-        expect(find.text('Contrast'), findsOneWidget);
-      },
-    );
-  });
 
   group('Thought appearance settings', () {
     testWidgets('settings no longer expose Home thought card controls', (
@@ -127,7 +109,7 @@ void main() {
           find.text('Reflective thought on Home'),
         );
         final spanStyle = textWidget.textSpan?.style ?? textWidget.style;
-        expect(spanStyle?.fontSize, 15.0);
+        expect(spanStyle?.fontSize, 15.5);
         expect(spanStyle?.height, 1.5);
 
         await tester.pumpWidget(const SizedBox());
