@@ -93,6 +93,8 @@ void main() {
     expect(m.durationDays, 5);
     expect(m.instructions, 'After food');
     expect(m.purpose, 'Fever and pain');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('pick a suggestion: its usual schedule is filled in', (
@@ -116,6 +118,8 @@ void main() {
       find.byKey(const ValueKey('medicine_food_FoodTiming.empty')),
     );
     expect(selected, isNotNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('quick add fits 320 px at 2.0x text', (tester) async {
@@ -132,5 +136,7 @@ void main() {
     );
     await tester.pump();
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 1));
   });
 }

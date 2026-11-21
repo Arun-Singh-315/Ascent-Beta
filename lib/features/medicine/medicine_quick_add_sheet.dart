@@ -13,6 +13,8 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/undo_snackbar.dart';
+import '../../shared/widgets/ascent_dialog.dart';
+import 'care_forms.dart';
 import 'medicine_editor_sheet.dart';
 
 /// Quick add: type a medicine (or the whole prescription line) and the rest
@@ -35,6 +37,11 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
   final _text = TextEditingController();
   final _name = TextEditingController();
   final _strength = TextEditingController();
+  final _stock = TextEditingController();
+
+  /// Who the medicine is for. "Me" keeps it outside any care plan.
+  String _person = 'Me';
+  final List<String> _extraPeople = [];
   MedicineDraft? _draft;
   bool _picked = false;
   bool _saving = false;
@@ -53,6 +60,7 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
     _text.dispose();
     _name.dispose();
     _strength.dispose();
+    _stock.dispose();
     super.dispose();
   }
 
@@ -97,8 +105,21 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
       AscentSnackBar.error(context, message: 'Add the medicine’s name.');
       return;
     }
+    final stock = _stock.text.trim().isEmpty
+        ? null
+        : int.tryParse(_stock.text.trim());
+    if (_stock.text.trim().isNotEmpty && stock == null) {
+      AscentSnackBar.error(context, message: 'Stock must be a whole number.');
+      return;
+    }
     setState(() => _saving = true);
     final service = ref.read(medicineServiceProvider);
+    int? carePlanId;
+    try {
+      carePlanId = await _planFor(_person);
+    } catch (_) {
+      carePlanId = null;
+    }
     final now = (widget.clock ?? DateTime.now)();
     try {
       final id = await service.addMedicine(
@@ -110,6 +131,8 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
         instructions: d.food == FoodTiming.any ? '' : d.food.label,
         type: d.form,
         purpose: d.purpose,
+        carePlanId: carePlanId,
+        stockCount: stock,
       );
       if (!mounted) return;
       HapticFeedback.lightImpact();
@@ -131,10 +154,49 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
     }
   }
 
+  /// The care plan that holds [person]'s medicines, created when needed.
+  Future<int?> _planFor(String person) async {
+    if (person == 'Me') return null;
+    final plans = await ref.read(careRepositoryProvider).watchPlans().first;
+    final existing = plans
+        .where((p) => !p.isArchived && p.person == person)
+        .firstOrNull;
+    if (existing != null) return existing.id;
+    return ref
+        .read(careRepositoryProvider)
+        .savePlan(
+          title: 'Medicines for $person',
+          person: person,
+          clinician: '',
+          notes: '',
+        );
+  }
+
+  Future<void> _addPerson() async {
+    final name = await showAscentFrostedDialog<String>(
+      context: context,
+      builder: (_) => const _PersonDialog(),
+    );
+    if (name == null || name.trim().isEmpty || !mounted) return;
+    setState(() {
+      if (!_extraPeople.contains(name.trim())) _extraPeople.add(name.trim());
+      _person = name.trim();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final d = _draft;
+    final people = <String>{
+      'Me',
+      ...?ref
+          .watch(carePlansProvider)
+          .value
+          ?.where((p) => !p.isArchived && p.person != 'My care')
+          .map((p) => p.person),
+      ..._extraPeople,
+    }.toList();
     final suggestions = _picked
         ? const <KnownMedicine>[]
         : searchKnownMedicines(_text.text);
@@ -314,7 +376,7 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
               (f) => _set((x) => x.copyWith(food: f)),
               'medicine_food',
             ),
-            label('For'),
+            label('How long'),
             chips<int>(
               _days,
               _days.contains(d.days) ? d.days : -1,
@@ -332,6 +394,33 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
                   ),
                 ),
               ),
+            label('Who it’s for'),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final p in people)
+                  AppChip(
+                    key: ValueKey('medicine_person_$p'),
+                    label: p,
+                    isSelected: _person == p,
+                    onTap: () => setState(() => _person = p),
+                  ),
+                AppChip(
+                  key: const ValueKey('medicine_person_add'),
+                  label: 'Someone else',
+                  icon: Icons.add_rounded,
+                  onTap: _addPerson,
+                ),
+              ],
+            ),
+            label('How many do you have? (optional)'),
+            AppTextField(
+              key: const ValueKey('medicine_quick_stock'),
+              controller: _stock,
+              keyboardType: TextInputType.number,
+              hintText: d.form == 'syrup' ? 'e.g. 100 (ml)' : 'e.g. 15',
+            ),
             const SizedBox(height: AppSpace.s16),
             Text(
               d.known != null
@@ -352,4 +441,56 @@ class _MedicineQuickAddSheetState extends ConsumerState<MedicineQuickAddSheet> {
       ),
     );
   }
+}
+
+class _PersonDialog extends StatefulWidget {
+  const _PersonDialog();
+  @override
+  State<_PersonDialog> createState() => _PersonDialogState();
+}
+
+class _PersonDialogState extends State<_PersonDialog> {
+  final _c = TextEditingController();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AscentDialog(
+    title: 'Who is it for?',
+    contentWidget: AppTextField(
+      key: const ValueKey('medicine_person_name'),
+      controller: _c,
+      autofocus: true,
+      hintText: 'e.g. Mum',
+      textCapitalization: TextCapitalization.words,
+      onChanged: (_) => setState(() {}),
+      onSubmitted: (v) {
+        if (v.trim().isNotEmpty) Navigator.pop(context, v.trim());
+      },
+    ),
+    actions: [
+      Wrap(
+        alignment: WrapAlignment.end,
+        spacing: AppSpace.s8,
+        children: [
+          AscentButton.secondary(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AscentButton.tonal(
+            key: const ValueKey('medicine_person_save'),
+            label: 'Add',
+            compact: true,
+            onPressed: _c.text.trim().isEmpty
+                ? null
+                : () => Navigator.pop(context, _c.text.trim()),
+          ),
+        ],
+      ),
+    ],
+  );
 }

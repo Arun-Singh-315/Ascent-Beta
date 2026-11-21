@@ -138,8 +138,15 @@ class MedicineService {
     String type = 'tablet',
     int? carePlanId,
     String purpose = '',
+    int? stockCount,
+    int unitsPerDose = 1,
   }) async {
     _validate(name, dosage, scheduledTimes, durationDays, instructions, type);
+    if ((stockCount != null && (stockCount < 0 || stockCount > 100000)) ||
+        unitsPerDose < 1 ||
+        unitsPerDose > 100) {
+      throw ArgumentError('Use a stock of 0–100000 and 1–100 per dose');
+    }
     final times = [...scheduledTimes]..sort();
     final id = await db.transaction(() async {
       await _validateCare(carePlanId, purpose);
@@ -154,6 +161,8 @@ class MedicineService {
           startDate: DateTime(startDate.year, startDate.month, startDate.day),
           instructions: Value(instructions),
           type: Value(type),
+          stockCount: Value(stockCount),
+          unitsPerDose: Value(unitsPerDose),
         ),
       );
       await _generate(
@@ -306,6 +315,24 @@ class MedicineService {
       }
     });
     await _alerts();
+  }
+
+  /// Sets how many are on hand (e.g. after buying a new strip). Null stops
+  /// tracking.
+  Future<void> setStock(int medicineId, int? count, {int? unitsPerDose}) async {
+    if ((count != null && (count < 0 || count > 100000)) ||
+        (unitsPerDose != null && (unitsPerDose < 1 || unitsPerDose > 100))) {
+      throw ArgumentError('Use a stock of 0–100000 and 1–100 per dose');
+    }
+    await (db.update(db.medicineTable)..where((m) => m.id.equals(medicineId)))
+        .write(
+          MedicineTableCompanion(
+            stockCount: Value(count),
+            unitsPerDose: unitsPerDose == null
+                ? const Value.absent()
+                : Value(unitsPerDose),
+          ),
+        );
   }
 
   Future<void> toggleDose(int logId, bool taken) async {

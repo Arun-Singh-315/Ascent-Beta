@@ -16,10 +16,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/surface_tokens.dart';
+import '../../shared/widgets/app_text_field.dart';
+import '../../shared/widgets/ascent_dialog.dart';
+import '../../core/medicine/refill.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/app_chip.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
@@ -37,6 +42,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
   int _view = 0;
   bool get _showMedicines => _view == 1;
   bool _showTaken = false;
+
+  /// Show only one person's medicines; null shows everyone.
+  String? _person;
   Timer? _dayTimer;
 
   @override
@@ -105,7 +113,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
 
   Future<void> _snoozeDose(MedicineLog log, Duration duration) async {
     try {
-      await ref.read(medicineServiceProvider).snoozeDose(log.id, duration: duration);
+      await ref
+          .read(medicineServiceProvider)
+          .snoozeDose(log.id, duration: duration);
       HapticFeedback.lightImpact();
       if (mounted) {
         AscentSnackBar.show(
@@ -165,7 +175,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     if (_updating.contains(log.id)) return;
     setState(() => _updating.add(log.id));
     try {
-      await ref.read(medicineServiceProvider).skipDose(log.id, reason: selectedReason);
+      await ref
+          .read(medicineServiceProvider)
+          .skipDose(log.id, reason: selectedReason);
       HapticFeedback.mediumImpact();
       if (mounted) {
         AscentSnackBar.show(
@@ -176,7 +188,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       }
     } catch (_) {
       if (mounted) {
-        AscentSnackBar.error(context, message: 'Could not skip dose. Try again.');
+        AscentSnackBar.error(
+          context,
+          message: 'Could not skip dose. Try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _updating.remove(log.id));
@@ -333,14 +348,21 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                   if (overdueCount > 0) ...[
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: g.coral.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline_rounded, size: 14, color: g.coral),
+                          Icon(
+                            Icons.info_outline_rounded,
+                            size: 14,
+                            color: g.coral,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -391,7 +413,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
-        '${plan.person} · ${plan.title}',
+        plan.title == 'Medicines for ${plan.person}'
+            ? 'For ${plan.person}'
+            : '${plan.person} · ${plan.title}',
         style: TextStyle(
           color: context.glass.inkMuted,
           fontSize: 12,
@@ -529,6 +553,121 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     );
   }
 
+  /// Stock line: how much is left, how long it lasts, restock and refill.
+  Widget _stock(Medicine medicine) {
+    final g = context.glass;
+    final info = refillInfo(medicine, DateTime.now());
+    Future<void> setCount({required bool add}) async {
+      final n = await showAscentFrostedDialog<int>(
+        context: context,
+        builder: (_) => _StockDialog(
+          title: add ? 'How many did you get?' : 'How many do you have?',
+          unit: medicine.type,
+        ),
+      );
+      if (n == null || !mounted) return;
+      final service = ref.read(medicineServiceProvider);
+      final before = medicine.stockCount;
+      await service.setStock(medicine.id, add ? (before ?? 0) + n : n);
+      if (!mounted) return;
+      showUndoSnackbar(
+        context,
+        message: add ? 'Restocked $n' : 'Tracking stock',
+        onUndo: () => service.setStock(medicine.id, before),
+      );
+    }
+
+    if (info == null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpace.s8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: AscentButton.ghost(
+            key: ValueKey('medicine_track_stock_${medicine.id}'),
+            label: 'Track stock',
+            icon: Icons.inventory_2_outlined,
+            compact: true,
+            onPressed: () => setCount(add: false),
+          ),
+        ),
+      );
+    }
+    final unit = medicine.type == 'syrup' ? 'ml' : '${medicine.type}s';
+    final line = info.coversCourse
+        ? '${info.left} $unit left · enough for this course'
+        : info.daysLeft == 0
+        ? 'Out of stock · refill today'
+        : '${info.left} $unit left · lasts ${info.daysLeft} day${info.daysLeft == 1 ? '' : 's'} (until ${DateFormat.E().format(info.runsOut)})';
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 16,
+                color: info.low ? g.coral : g.inkSecondary,
+              ),
+              const SizedBox(width: AppSpace.s8),
+              Expanded(
+                child: Text(
+                  line,
+                  key: ValueKey('medicine_stock_${medicine.id}'),
+                  style: AscentTextStyles.caption.copyWith(
+                    color: info.low ? g.coral : g.inkSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s8),
+          Wrap(
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              AscentButton.secondary(
+                key: ValueKey('medicine_restock_${medicine.id}'),
+                label: 'Restock',
+                icon: Icons.add_rounded,
+                onPressed: () => setCount(add: true),
+              ),
+              if (info.low)
+                AscentButton.tonal(
+                  key: ValueKey('medicine_refill_${medicine.id}'),
+                  label: 'Remind me to refill',
+                  icon: Icons.alarm_add_rounded,
+                  compact: true,
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(medicineServiceProvider)
+                          .scheduleRefillReminder(medicine);
+                      if (mounted) {
+                        AscentSnackBar.show(
+                          context,
+                          message: 'Refill reminder set for ${medicine.name}',
+                          icon: Icons.notifications_active_rounded,
+                        );
+                      }
+                    } catch (_) {
+                      if (mounted) {
+                        AscentSnackBar.error(
+                          context,
+                          message: 'Could not set the refill reminder',
+                        );
+                      }
+                    }
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _medicine(Medicine medicine) {
     final g = context.glass;
     final now = DateTime.now();
@@ -639,21 +778,34 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               color: g.actionInk,
               backgroundColor: g.track,
             ),
-            if (medicine.isActive && medicine.durationDays - day <= 3 && medicine.durationDays - day >= 0) ...[
+            if (medicine.isActive) _stock(medicine),
+            if (medicine.isActive &&
+                medicine.durationDays - day <= 3 &&
+                medicine.durationDays - day >= 0) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: g.amberSoft.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: g.amber.withValues(alpha: 0.3), width: 1),
+                  border: Border.all(
+                    color: g.amber.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.inventory_2_outlined, size: 16, color: g.amber),
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 16,
+                          color: g.amber,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -677,17 +829,23 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                       expanded: false,
                       onPressed: () async {
                         try {
-                          await ref.read(medicineServiceProvider).scheduleRefillReminder(medicine);
+                          await ref
+                              .read(medicineServiceProvider)
+                              .scheduleRefillReminder(medicine);
                           if (mounted) {
                             AscentSnackBar.show(
                               context,
-                              message: 'Refill reminder scheduled for ${medicine.name}',
+                              message:
+                                  'Refill reminder scheduled for ${medicine.name}',
                               icon: Icons.notifications_active_rounded,
                             );
                           }
                         } catch (_) {
                           if (mounted) {
-                            AscentSnackBar.error(context, message: 'Could not schedule refill reminder');
+                            AscentSnackBar.error(
+                              context,
+                              message: 'Could not schedule refill reminder',
+                            );
                           }
                         }
                       },
@@ -839,7 +997,23 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
             child: const Text('Could not load medicines. Tap to retry.'),
           ),
         ),
-        data: (medicines) {
+        data: (allMedicines) {
+          // Whose medicine is it? Medicines without a care plan are "Me".
+          final plans = {
+            for (final p in ref.watch(carePlansProvider).value ?? const [])
+              p.id: p,
+          };
+          String personOf(Medicine m) {
+            final who = plans[m.carePlanId]?.person;
+            return who == null || who == 'My care' ? 'Me' : who;
+          }
+
+          final people = {for (final m in allMedicines) personOf(m)}.toList()
+            ..sort((a, b) => a == 'Me' ? -1 : (b == 'Me' ? 1 : a.compareTo(b)));
+          final person = people.contains(_person) ? _person : null;
+          final medicines = person == null
+              ? allMedicines
+              : allMedicines.where((m) => personOf(m) == person).toList();
           final byId = {
             for (final medicine in medicines) medicine.id: medicine,
           };
@@ -875,6 +1049,32 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                   onChanged: (view) => setState(() => _view = view),
                 ),
               ),
+              if (people.length > 1 && _view != 2)
+                SizedBox(
+                  height: 52,
+                  child: ListView(
+                    key: const ValueKey('medicine_people'),
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpace.s16,
+                      AppSpace.s8,
+                      AppSpace.s16,
+                      0,
+                    ),
+                    children: [
+                      for (final p in [null, ...people]) ...[
+                        AppChip(
+                          key: ValueKey('medicine_filter_${p ?? 'everyone'}'),
+                          label: p ?? 'Everyone',
+                          isSelected: person == p,
+                          onTap: () => setState(() => _person = p),
+                        ),
+                        const SizedBox(width: AppSpace.s8),
+                      ],
+                    ],
+                  ),
+                ),
               Expanded(
                 child: _view == 2
                     ? const CarePlansView()
@@ -1095,4 +1295,65 @@ String partOfDay(String slot) {
   if (h >= 12 && h < 17) return 'Afternoon';
   if (h >= 17 && h < 21) return 'Evening';
   return 'Night';
+}
+
+/// Asks for a whole number of units (tablets, ml…).
+class _StockDialog extends StatefulWidget {
+  const _StockDialog({required this.title, required this.unit});
+  final String title;
+  final String unit;
+
+  @override
+  State<_StockDialog> createState() => _StockDialogState();
+}
+
+class _StockDialogState extends State<_StockDialog> {
+  final _c = TextEditingController();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  int? get _value {
+    final n = int.tryParse(_c.text.trim());
+    return n == null || n < 0 || n > 100000 ? null : n;
+  }
+
+  @override
+  Widget build(BuildContext context) => AscentDialog(
+    title: widget.title,
+    contentWidget: AppTextField(
+      key: const ValueKey('medicine_stock_field'),
+      controller: _c,
+      autofocus: true,
+      keyboardType: TextInputType.number,
+      hintText: widget.unit == 'syrup' ? 'e.g. 100 ml' : 'e.g. 15',
+      onChanged: (_) => setState(() {}),
+      onSubmitted: (_) {
+        if (_value != null) Navigator.pop(context, _value);
+      },
+    ),
+    actions: [
+      Wrap(
+        alignment: WrapAlignment.end,
+        spacing: AppSpace.s8,
+        children: [
+          AscentButton.secondary(
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AscentButton.tonal(
+            key: const ValueKey('medicine_stock_save'),
+            label: 'Save',
+            compact: true,
+            onPressed: _value == null
+                ? null
+                : () => Navigator.pop(context, _value),
+          ),
+        ],
+      ),
+    ],
+  );
 }

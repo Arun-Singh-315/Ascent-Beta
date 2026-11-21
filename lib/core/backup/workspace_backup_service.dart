@@ -406,6 +406,19 @@ class WorkspaceBackupService {
       }
       payload['schema'] = 25;
     }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 25 &&
+        db.schemaVersion >= 26 &&
+        payload['tables'] is Map) {
+      // Schema 26 added refill tracking; older medicines track no stock.
+      for (final row in (payload['tables'] as Map)['medicines'] as List? ?? []) {
+        final m = row as Map;
+        m.putIfAbsent('stock_count', () => null);
+        m.putIfAbsent('units_per_dose', () => 1);
+      }
+      payload['schema'] = 26;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {

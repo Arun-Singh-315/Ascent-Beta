@@ -87,6 +87,19 @@ class MedicineDao extends DatabaseAccessor<AppDatabase>
         takenAt: Value(taken ? DateTime.now() : null),
       ),
     );
+    // Refill tracking: a taken dose uses stock, un-taking gives it back.
+    final med = await (select(
+      medicineTable,
+    )..where((m) => m.id.equals(log.medicineId))).getSingleOrNull();
+    final stock = med?.stockCount;
+    if (med != null && stock != null) {
+      final change = taken ? -med.unitsPerDose : med.unitsPerDose;
+      await (update(medicineTable)..where((m) => m.id.equals(med.id))).write(
+        MedicineTableCompanion(
+          stockCount: Value((stock + change).clamp(0, 100000)),
+        ),
+      );
+    }
     if (log.linkedTaskId != null) {
       if (!await db.taskDao.syncCompletionFromMedicineDose(
         log.linkedTaskId!,
