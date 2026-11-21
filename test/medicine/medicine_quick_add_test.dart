@@ -75,7 +75,7 @@ void main() {
     await tester.pump();
     expect(
       find.text(
-        'Usual timing for Dolo 650 filled in. Follow your doctor’s prescription and change anything here.',
+        'Usual timing for Dolo 650 filled in. Follow your doctor’s prescription. Change anything here.',
       ),
       findsOneWidget,
     );

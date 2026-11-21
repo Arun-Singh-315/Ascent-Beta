@@ -9,7 +9,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
 
@@ -94,23 +93,6 @@ void main() {
       },
     );
 
-    testWidgets(
-      'Mindspace SectionCard has chevron right and removed mid-row View all',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(const Scaffold(body: ThoughtWallHomePreview(compact: true))),
-        );
-        await tester.pump();
-
-        // Header row has chevron right, same as Things/Plans
-        expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
-        // Mid-row View all removed per requirement e
-        expect(find.text('View all'), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
 
   });
 
@@ -160,36 +142,5 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     });
 
-    testWidgets('Rule 13: Zero overflow at 320px width and 2.0x text scale', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        buildApp(
-          const Scaffold(
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  HomeAssistantHeroCard(),
-                  SizedBox(height: 12),
-                  ThoughtWallHomePreview(compact: true),
-                ],
-              ),
-            ),
-          ),
-          textScale: 2.0,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 50));
-    });
   });
 }

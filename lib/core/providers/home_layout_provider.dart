@@ -103,18 +103,12 @@ class HomeLayout {
     final savedOrder = (json['order'] as List).cast<dynamic>();
     final isExistingWithoutVault = !savedOrder.contains('vault');
     final parsedVisible = known(json['visible'], homeSections).toSet();
-    final isExistingWithoutPromises = !savedOrder.contains('promises');
     var visible = parsedVisible;
     // Migrate older active layouts without overriding explicit hidden choices
     // or turning an intentionally empty Home back into a populated one.
     if (parsedVisible.isNotEmpty) {
       if (isExistingWithoutVault) visible = {...visible, 'vault'};
-      if (isExistingWithoutPromises) visible = {...visible, 'promises'};
     }
-
-    final orderedSections = order.contains('promises')
-        ? order
-        : ['promises', ...order];
 
     final rawShortcuts = json['shortcuts'];
     final parsedShortcuts = (rawShortcuts == null)
@@ -123,8 +117,8 @@ class HomeLayout {
 
     return HomeLayout(
       order: [
-        ...orderedSections,
-        ...homeSections.keys.where((id) => !orderedSections.contains(id)),
+        ...order,
+        ...homeSections.keys.where((id) => !order.contains(id)),
       ],
       visible: visible,
       tools: known(json['tools'], homeTools).toSet(),

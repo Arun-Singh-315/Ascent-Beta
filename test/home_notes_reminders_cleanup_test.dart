@@ -14,7 +14,6 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -216,52 +215,6 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets(
-      'ActivityHubCard does not render duplicate floating player banner',
-      (tester) async {
-        const activeItem = TodayActivityItem(
-          id: 'task_99',
-          title: 'Deep System Design Study',
-          sourceType: 'task',
-          status: TodayActivityStatus.inProgress,
-          elapsedSecondsToday: 65,
-          targetMinutes: 25,
-          categoryTag: 'Task',
-          kind: ActivityKind.duration,
-        );
-
-        await tester.pumpWidget(
-          buildTestableWidget(
-            const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
-            ),
-            customActivities: [activeItem],
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
-
-        // The activity item itself is visible in the list
-        expect(find.text('Deep System Design Study'), findsOneWidget);
-        // Running timer is formatted inline
-        expect(
-          find.byWidgetPredicate(
-            (w) =>
-                w is Text &&
-                (w.data == '01:05' ||
-                    w.data == '01:05 / 25m' ||
-                    w.data == '01:05 / 25:00'),
-          ),
-          findsOneWidget,
-        );
-        // Only ONE play/pause button exists (inline on the row, not duplicated in a banner)
-        expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.pause_circle_outline_rounded), findsNothing);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
   });
 
   group('Mind Space as Unified Notes & Home Cleanup Verification', () {

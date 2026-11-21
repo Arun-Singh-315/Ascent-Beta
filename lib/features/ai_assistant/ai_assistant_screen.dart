@@ -1,6 +1,9 @@
 import '../../app/theme/chat_palette.dart';
 import '../../core/services/voice_input.dart';
 import 'assistant_suggestions.dart';
+import '../../app/theme/brand_palette.dart';
+import '../../core/utils/human_time.dart';
+import '../../shared/widgets/ascent_backdrop.dart';
 import '../../app/theme/text_styles.dart';
 import 'package:ascent/app/app_navigation.dart';
 import 'dart:async';
@@ -1462,7 +1465,8 @@ class _ConversationMessageBubbleState
         ? (msg.actionType?.startsWith('promises.') == true
               ? 'Here are your Promises.'
               : 'Here are your Todos. Choose a card below.')
-        : msg.message;
+        // Older replies were saved with raw timestamps; show them plainly.
+        : (isUser ? msg.message : _RiyaRecordCard.humanise(msg.message));
 
     Widget bubbleContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1936,109 +1940,20 @@ class _ConversationMessageBubbleState
                 actionData['executionStatus'] == 'verified' &&
                 actionData['title'] != null) ...[
               const SizedBox(height: 6),
-              Builder(
-                builder: (context) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ChatPalette.of(context).surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: ChatPalette.of(context).separator,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          actionData['write'] == true
-                              ? Icons.check_circle_rounded
-                              : Icons.info_outline_rounded,
-                          size: 15,
-                          color: context.glass.sage,
-                        ),
-                        const SizedBox(width: 7),
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                actionData['title'].toString(),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: ChatPalette.of(context).label,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (actionData['summary'] != null)
-                                Text(
-                                  actionData['summary'].toString(),
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: ChatPalette.of(
-                                      context,
-                                    ).labelSecondary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            if (msg.actionType ==
-                                AiActionType.lectureMarkedComplete.name) {
-                              onOpenCourse();
-                            } else {
-                              onOpenHub();
-                            }
-                          },
-                          borderRadius: AscentRadii.borderSm,
-                          child: Container(
-                            constraints: const BoxConstraints(
-                              minWidth: AscentDimensions.minTouchTarget,
-                              minHeight: AscentDimensions.minTouchTarget,
-                            ),
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(AscentSpacing.sm),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  msg.actionType ==
-                                          AiActionType
-                                              .lectureMarkedComplete
-                                              .name
-                                      ? 'Open Course'
-                                      : 'View',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.glass.sage,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 9,
-                                  color: context.glass.sage,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
+              _RiyaRecordCard(
+                actionData: actionData,
+                buttonLabel:
+                    msg.actionType == AiActionType.lectureMarkedComplete.name
+                    ? 'Open course'
+                    : 'View',
+                onOpen: () {
+                  HapticFeedback.lightImpact();
+                  if (msg.actionType ==
+                      AiActionType.lectureMarkedComplete.name) {
+                    onOpenCourse();
+                  } else {
+                    onOpenHub();
+                  }
                 },
               ),
             ],
@@ -2343,9 +2258,132 @@ class _AtmosphericChatBackground extends StatelessWidget {
     required this.accentColor,
   });
 
-  /// Plain chat canvas: no glows or colour washes.
+  /// Soft blue backdrop with a faint doodle, like a chat wallpaper.
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: (isDark ? ChatPalette.dark : ChatPalette.light).canvas,
-  );
+  Widget build(BuildContext context) =>
+      const AscentBackdrop(tone: BackdropTone.riya, child: SizedBox.expand());
 }
+
+/// What Riya just did, as a clear record card: a ring icon for the kind of
+/// record, a readable title and summary (dates in plain words), and a View
+/// button. Replaces the small grey capsule.
+class _RiyaRecordCard extends StatelessWidget {
+  const _RiyaRecordCard({
+    required this.actionData,
+    required this.buttonLabel,
+    required this.onOpen,
+  });
+  final Map<String, dynamic> actionData;
+  final String buttonLabel;
+  final VoidCallback onOpen;
+
+  static final _stamp = RegExp(
+    r'(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(:\d{2}(\.\d+)?)?Z?',
+  );
+
+  /// Any timestamp left in a reply reads as "tomorrow at 7:00 PM", and the
+  /// old internal "not been verified" note is dropped.
+  static String humanise(String text) => text
+      .replaceAllMapped(_stamp, (m) {
+        final at = DateTime.tryParse('${m.group(1)} ${m.group(2)}');
+        return at == null ? m.group(0)! : humanWhen(at);
+      })
+      .replaceAll(' Device alert scheduling has not been verified.', '')
+      .trim();
+
+  @override
+  Widget build(BuildContext context) {
+    final chat = ChatPalette.of(context);
+    final g = context.glass;
+    final type = '${actionData['entityType'] ?? ''}';
+    final (IconData icon, String tintId) = switch (type) {
+      'reminders' => (Icons.notifications_active_outlined, 'things'),
+      'water' || 'hydration' => (Icons.water_drop_outlined, 'hydration'),
+      'money' || 'transactions' => (
+        Icons.account_balance_wallet_outlined,
+        'money',
+      ),
+      'medicine' => (Icons.medication_outlined, 'medicine'),
+      'thoughts' => (Icons.lightbulb_outline_rounded, 'mind'),
+      'focus' || 'sessions' => (Icons.timer_outlined, 'focus'),
+      _ => (
+        actionData['write'] == true
+            ? Icons.check_rounded
+            : Icons.info_outline_rounded,
+        'assistant',
+      ),
+    };
+    final tint = BrandPalette.pillarTint(tintId, dark: g.isDark);
+    final summary = actionData['summary'] == null
+        ? null
+        : humanise(actionData['summary'].toString());
+    return Container(
+      key: const ValueKey('riya_record_card'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: chat.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tint.withValues(alpha: .35)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: tint.withValues(alpha: g.isDark ? .12 : .07),
+              border: Border.all(
+                color: tint.withValues(alpha: .6),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(icon, size: 20, color: tint),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  actionData['title'].toString(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AscentTextStyles.listRowTitle.copyWith(
+                    color: chat.label,
+                  ),
+                ),
+                if (summary != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AscentTextStyles.caption.copyWith(
+                      color: chat.labelSecondary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            key: const ValueKey('riya_record_open'),
+            onPressed: onOpen,
+            style: TextButton.styleFrom(
+              backgroundColor: tint.withValues(alpha: g.isDark ? .16 : .10),
+              foregroundColor: tint,
+              minimumSize: const Size(64, 44),
+              shape: const StadiumBorder(),
+            ),
+            child: Text(buttonLabel),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

@@ -77,7 +77,7 @@ class PillarTints {
   PillarTints._();
 
   static const plan = CalmBluePalette.action;
-  static const think = Color(0xFFAF52DE);
+  static const think = Color(0xFF2F8F8A);
   static const live = Color(0xFFFF2D55);
   static const water = Color(0xFF3A9CC9);
   static const waterDark = Color(0xFF6BBCE0);

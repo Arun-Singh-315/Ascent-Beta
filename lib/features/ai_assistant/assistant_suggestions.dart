@@ -61,7 +61,8 @@ IconData assistantSuggestionIcon(String title) {
   if (t.contains('remind')) return Icons.notifications_none_rounded;
   if (t.contains('study')) return Icons.school_outlined;
   if (t.contains('find') || t.contains('wrote')) return Icons.search_rounded;
-  if (t.contains('task') || t.contains('agenda'))
+  if (t.contains('task') || t.contains('agenda')) {
     return Icons.checklist_rounded;
+  }
   return Icons.wb_sunny_outlined;
 }

@@ -79,4 +79,62 @@ abstract final class CalmBluePalette {
   static const darkSkyEveningLight = Color(0xFF3B2E34);
   static const darkSkyNight = Color(0xFF192440);
   static const darkSkyNightLight = Color(0xFF272542);
+
+  // ── Backdrops (top → bottom), one identity per screen ────────────────
+  // Home: soft Apple blue.
+  static const backdropLight = [
+    Color(0xFFDDE9FB),
+    Color(0xFFEDF3FD),
+    Color(0xFFF7F9FD),
+  ];
+  static const backdropDark = [
+    Color(0xFF0E1A33),
+    Color(0xFF0C1425),
+    Color(0xFF0A0E16),
+  ];
+  static const cloudBlue = Color(0xFF8DB7F5);
+  static const cloudLilac = Color(0xFFC7B8F2);
+
+  // Mindspace: soft teal-blue mist by day, deep sea by night (no purple).
+  static const mindLight = [
+    Color(0xFFE3F1F1),
+    Color(0xFFEEF6F7),
+    Color(0xFFF8FBFC),
+  ];
+  static const mindDark = [
+    Color(0xFF0C1C1F),
+    Color(0xFF0B1518),
+    Color(0xFF080D10),
+  ];
+  static const mindCloudA = Color(0xFF8FD3CC);
+  static const mindCloudB = Color(0xFF9CC3EE);
+  static const mindDoodleLight = Color(0x1A2F8F8A);
+  static const mindDoodleDark = Color(0x1A6CCBC3);
+
+  // Riya: indigo to rose by day, indigo night after dark.
+  static const riyaLight = [
+    Color(0xFFE9EBFC),
+    Color(0xFFF3EFFB),
+    Color(0xFFFCF6F8),
+  ];
+  static const riyaDark = [
+    Color(0xFF111735),
+    Color(0xFF16122E),
+    Color(0xFF0E0B19),
+  ];
+  static const riyaCloudA = Color(0xFF9C9AF0);
+  static const riyaCloudB = Color(0xFFF0A9C0);
+  static const riyaDoodleLight = Color(0x175E5CE6);
+  static const riyaDoodleDark = Color(0x1AA9A7FF);
+
+  /// Doodle ink for the Home tone (unused by default).
+  static const doodleLight = Color(0x142F68C8);
+  static const doodleDark = Color(0x14A9C4F2);
+
+  // ── iOS glass cards ───────────────────────────────────────────────────────
+  static const glassFillLight = Color(0xB8FFFFFF);
+  static const glassFillDark = Color(0x8C1A2234);
+  static const glassRimLight = Color(0xCCFFFFFF);
+  static const glassRimDark = Color(0x1FFFFFFF);
+  static const glassShadow = Color(0x142F4F86);
 }

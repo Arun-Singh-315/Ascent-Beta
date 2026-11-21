@@ -68,7 +68,7 @@ void main() {
       final thought = makeThought(
         id: 2,
         content:
-            'This is a long reflection explaining multiple thoughts, plans, and daily observations across multiple lines to verify that it expands naturally.',
+            'This is a long reflection explaining multiple thoughts, plans, and daily observations across multiple lines to verify that it expands naturally.\n\nIt expands to the full maxWidth of the container.',
       );
 
       await tester.pumpWidget(

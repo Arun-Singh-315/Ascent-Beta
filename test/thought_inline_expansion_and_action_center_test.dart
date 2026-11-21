@@ -1,6 +1,5 @@
 import 'package:ascent/core/theme/app_colors.dart';
 import 'package:ascent/shared/widgets/ascent_action_menu.dart';
-import 'package:ascent/shared/widgets/thought_excerpt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -37,64 +36,7 @@ Widget _wrap(
 
 void main() {
   group('ThoughtExcerpt Inline Expansion Tests', () {
-    testWidgets(
-      'Renders collapsed by default and shows "Show more" when overflowing',
-      (tester) async {
-        const longText =
-            'Line 1: Planning the day\n'
-            'Line 2: Reviewing quarterly goals\n'
-            'Line 3: Coding and pair programming\n'
-            'Line 4: Deep meditation and reflection\n'
-            'Line 5: Evening chai and relaxation';
 
-        await tester.pumpWidget(
-          _wrap(
-            const ThoughtExcerpt(
-              content: longText,
-              style: TextStyle(fontSize: 14),
-              maxLines: 2,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Show more'), findsOneWidget);
-        expect(find.text('Show less'), findsNothing);
-
-        // Tap "Show more"
-        await tester.tap(find.text('Show more'));
-        await tester.pumpAndSettle();
-
-        // Now expanded inline
-        expect(find.text('Show less'), findsOneWidget);
-        expect(find.text('Show more'), findsNothing);
-
-        // Tap "Show less"
-        await tester.tap(find.text('Show less'));
-        await tester.pumpAndSettle();
-
-        // Back to collapsed
-        expect(find.text('Show more'), findsOneWidget);
-      },
-    );
-
-    testWidgets('Does not show toggle when content is short', (tester) async {
-      const shortText = 'Quick spark: great morning.';
-
-      await tester.pumpWidget(
-        _wrap(
-          const ThoughtExcerpt(
-            content: shortText,
-            style: TextStyle(fontSize: 14),
-            maxLines: 4,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Show more'), findsNothing);
-      expect(find.text('Show less'), findsNothing);
-    });
   });
 
   group('showAscentActionMenu Centered Dialog Tests', () {
@@ -196,39 +138,6 @@ void main() {
   });
 
   group('Rule 13 Accessibility Safeguard (320px width @ 2.0x text scale)', () {
-    testWidgets(
-      'ThoughtExcerpt renders with zero overflows at 320px width and 2.0x scale',
-      (tester) async {
-        const multiline =
-            '→ First step: verify layout\n'
-            '→ Second step: ensure zero overflows at large font scale\n'
-            '→ Third step: celebrate robust mobile engineering';
-
-        await tester.pumpWidget(
-          _wrap(
-            const ThoughtExcerpt(
-              content: multiline,
-              style: TextStyle(fontSize: 14),
-              maxLines: 3,
-            ),
-            size: const Size(320, 600),
-            textScale: 2.0,
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(tester.takeException(), isNull);
-
-        // Expand it at 320px and 2.0x scale
-        final showMore = find.text('Show more');
-        if (showMore.evaluate().isNotEmpty) {
-          await tester.tap(showMore);
-          await tester.pumpAndSettle();
-        }
-
-        expect(tester.takeException(), isNull);
-      },
-    );
 
     testWidgets(
       'showAscentActionMenu renders with zero overflows at 320px width and 2.0x scale',

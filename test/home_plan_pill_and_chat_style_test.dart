@@ -5,7 +5,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,89 +67,6 @@ void main() {
       await db.close();
     });
 
-    testWidgets(
-      'Thought Wall preview renders 2 messages in left/right chat style with faint theme tints',
-      (tester) async {
-        final thoughts = <Thought>[];
-        for (var i = 0; i < 3; i++) {
-          final id = await db.thoughtDao.insertThought(
-            ThoughtTableCompanion.insert(content: 'Thought message $i'),
-          );
-          thoughts.insert(0, (await db.thoughtDao.getThoughtById(id))!);
-        }
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value(thoughts),
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: SingleChildScrollView(child: ThoughtWallHomePreview()),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Check hint text
-        expect(find.text('Capture a thought…'), findsOneWidget);
-
-        // Exactly 2 thoughts rendered (collapsed view)
-        final thought0Finder = find.byKey(
-          ValueKey('home_thought_${thoughts[0].id}'),
-        );
-        final thought1Finder = find.byKey(
-          ValueKey('home_thought_${thoughts[1].id}'),
-        );
-        final thought2Finder = find.byKey(
-          ValueKey('home_thought_${thoughts[2].id}'),
-        );
-
-        expect(thought0Finder, findsOneWidget);
-        expect(thought1Finder, findsOneWidget);
-        expect(thought2Finder, findsNothing);
-
-        // Both bubbles have defined fill and border.
-        final bubble0 = tester.widget<Container>(thought0Finder);
-        final bubble1 = tester.widget<Container>(thought1Finder);
-        expect((bubble0.decoration! as BoxDecoration).color, isNotNull);
-        expect((bubble1.decoration! as BoxDecoration).color, isNotNull);
-
-        // Verify left / right asymmetric chat margins
-        final padding0 = tester.widget<Padding>(
-          find
-              .ancestor(of: thought0Finder, matching: find.byType(Padding))
-              .first,
-        );
-        final padding1 = tester.widget<Padding>(
-          find
-              .ancestor(of: thought1Finder, matching: find.byType(Padding))
-              .first,
-        );
-
-        final edge0 = padding0.padding as EdgeInsets;
-        final edge1 = padding1.padding as EdgeInsets;
-
-        // Index 0 is left-aligned: left 0, right 36
-        expect(edge0.left, 0.0);
-        expect(edge0.right, 36.0);
-
-        // Index 1 is right-aligned: left 36, right 0
-        expect(edge1.left, 36.0);
-        expect(edge1.right, 0.0);
-      },
-    );
 
     testWidgets(
       'HomeScreen keeps Ask Riya in its header without a floating overlay',

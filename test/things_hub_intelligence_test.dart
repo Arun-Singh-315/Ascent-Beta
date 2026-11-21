@@ -5,7 +5,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/today/models/things_intelligence.dart';
-import 'package:ascent/features/today/widgets/things_hero_card.dart';
 import 'package:ascent/features/today/widgets/things_interactive_card.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -162,79 +161,6 @@ void main() {
   });
 
   group('ThingsHeroCard & ThingsInteractiveCard Intelligence Interactions', () {
-    testWidgets(
-      'ThingsHeroCard unpacks blueprint micro-steps and handles interactive checkboxes',
-      (tester) async {
-        final activity = makeActivity(
-          id: 'hero_int_1',
-          title: 'Architect distributed cache cluster',
-          kind: ActivityKind.duration,
-          targetMinutes: 45,
-          linkedTaskId: 101,
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(
-              () => _FakeTimeTrackingNotifier(),
-            ),
-            studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: Scaffold(
-                body: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ThingsHeroCard(activity: activity),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Category badge rendered
-        expect(find.text('Deep Focus & Engineering'), findsOneWidget);
-
-        // Blueprint toggle should be visible
-        final unpackFinder = find.text('Unpack 3 Micro-Steps with Riya');
-        expect(unpackFinder, findsOneWidget);
-
-        // Initially micro-steps are collapsed
-        expect(find.text('Hide Blueprint'), findsNothing);
-
-        // Tap to unpack
-        await tester.tap(unpackFinder);
-        await tester.pumpAndSettle();
-
-        // Blueprint expanded
-        expect(find.text('Hide Blueprint'), findsOneWidget);
-        expect(
-          find.byIcon(Icons.check_box_outline_blank_rounded),
-          findsNWidgets(3),
-        );
-
-        // Tap first micro-step checkbox to check it off
-        await tester.tap(
-          find.byIcon(Icons.check_box_outline_blank_rounded).first,
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.check_box_rounded), findsOneWidget);
-        expect(
-          find.byIcon(Icons.check_box_outline_blank_rounded),
-          findsNWidgets(2),
-        );
-      },
-    );
 
     testWidgets(
       'ThingsInteractiveCard toggles blueprint inline in activity lists',

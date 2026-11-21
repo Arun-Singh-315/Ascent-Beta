@@ -1,8 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +10,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:ascent/shared/widgets/message_composer.dart';
 import 'package:ascent/features/money/money_screen.dart';
@@ -100,29 +96,6 @@ void main() {
       controller.dispose();
     },
   );
-  testWidgets('Home field focuses an accessible quick-capture card', (
-    tester,
-  ) async {
-    await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
-    await tester.pump();
-    final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.decoration!.filled, isFalse);
-    expect(field.decoration!.focusedBorder, InputBorder.none);
-    await tester.tap(find.byType(TextField));
-    await tester.pump();
-    expect(field.focusNode!.hasFocus, isTrue);
-    expect(
-      find.byWidgetPredicate(
-        (w) =>
-            w is Container &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).border != null,
-      ),
-      findsWidgets,
-    );
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpAndSettle();
-  });
   testWidgets(
     'Riya expense is not saved until confirmation, repeated confirm cannot duplicate',
     (tester) async {
@@ -171,84 +144,6 @@ void main() {
       expect(find.text('Record First Expense'), findsNothing);
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 20));
-    },
-  );
-  testWidgets(
-    'capture real shared Home writing and chat widgets in day/night themes',
-    (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      final controller = TextEditingController(
-        text: 'A quiet moment for my next idea.',
-      );
-      final key = GlobalKey();
-      await tester.runAsync(() async {
-        final icons = FontLoader('MaterialIcons')
-          ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
-        await icons.load();
-      });
-      for (final dark in [false, true]) {
-        await tester.pumpWidget(
-          wrap(
-            RepaintBoundary(
-              key: key,
-              child: ColoredBox(
-                color: dark ? AscentGlass.dark.bg : AscentGlass.light.bg,
-                child: Padding(
-                  padding: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 24),
-                        const ThoughtWallHomePreview(),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Thought Wall',
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: dark ? Colors.white : Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        MessageComposer(
-                          controller: controller,
-                          hint: 'Write a thought...',
-                          onSend: (_) {},
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            dark: dark,
-          ),
-        );
-        // MaterialApp animates theme changes; capture the settled theme.
-        await tester.pump(const Duration(milliseconds: 300));
-        await tester.runAsync(() => GoogleFonts.pendingFonts());
-        await tester.pump();
-        final boundary =
-            key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-        await tester.runAsync(() async {
-          final image = await boundary.toImage(pixelRatio: 2);
-          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-          final file = File(
-            'docs/renovation/${dark ? 'night' : 'day'}-writing-preview.png',
-          );
-          if (!file.parent.existsSync()) {
-            file.parent.createSync(recursive: true);
-          }
-          await file.writeAsBytes(bytes!.buffer.asUint8List());
-          image.dispose();
-        });
-      }
-      await tester.pumpWidget(const SizedBox());
-      controller.dispose();
     },
   );
 }

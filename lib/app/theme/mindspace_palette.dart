@@ -8,7 +8,7 @@ abstract final class MindspacePalette {
   /// glyph and space dot, so each space keeps one colour.
   static const _huesLight = [
     Color(0xFF4F7BC9),
-    Color(0xFF8063C4),
+    Color(0xFF4F6F9E),
     Color(0xFFC0607F),
     Color(0xFF2F8F8A),
     Color(0xFFB7792A),
@@ -16,7 +16,7 @@ abstract final class MindspacePalette {
   ];
   static const _huesDark = [
     Color(0xFF8EB1EC),
-    Color(0xFFB59CF0),
+    Color(0xFF9DB6DC),
     Color(0xFFEB9AB6),
     Color(0xFF6CCBC3),
     Color(0xFFE2B26A),
@@ -28,14 +28,12 @@ abstract final class MindspacePalette {
 
   /// Named hues for moods.
   static Color blue(bool dark) => hue(0, dark: dark);
+  /// Slate blue (was violet; the app avoids purple).
   static Color violet(bool dark) => hue(1, dark: dark);
   static Color rose(bool dark) => hue(2, dark: dark);
   static Color amber(bool dark) => hue(4, dark: dark);
   static Color sage(bool dark) => hue(5, dark: dark);
 
-  /// Bubble fill: the hue washed softly into the card surface.
-  static Color bubbleFill(Color hue, Color surface, {required bool dark}) =>
-      Color.alphaBlend(hue.withValues(alpha: dark ? .08 : .06), surface);
 
   /// Thought card paper fill.
   static const cardPaperLight = Color(0xFFF7F5F0);

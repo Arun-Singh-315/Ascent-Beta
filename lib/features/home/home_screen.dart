@@ -1,8 +1,6 @@
 import 'package:ascent/app/app_navigation.dart';
 import '../../core/theme/app_colors.dart';
-import '../plans/widgets/home_plans_preview.dart';
 import 'widgets/home_content_transition.dart';
-import 'widgets/home_quick_expense_card.dart';
 import 'widgets/home_reveal.dart';
 import '../../core/providers/local_day_provider.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -21,19 +19,16 @@ import 'widgets/home_unlock_next_card.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import 'widgets/activity_hub_card.dart';
-import 'widgets/home_day_design.dart';
-import 'widgets/home_life_shelf.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_now_card.dart';
 import 'widgets/home_ask_bar.dart';
+import 'widgets/home_feed_cards.dart';
+import 'home_customization_sheet.dart';
+import '../../shared/widgets/ascent_backdrop.dart';
 import 'widgets/home_feed_entrance.dart';
-import 'widgets/home_glance_card.dart';
 import 'widgets/home_compact_header.dart';
-import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
-import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
 
@@ -144,16 +139,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final layout = ref.watch(homeLayoutProvider);
     ref.watch(localHourProvider);
 
-    final unlocked = ref.watch(unlockedFeaturesProvider);
-    bool on(AscentFeature f) => unlocked.contains(f);
-
     final c = context.c;
 
     return Scaffold(
       backgroundColor: c.bg,
       extendBody: true,
       body: SafeArea(
-        child: HomeDayBackground(
+        child: AscentBackdrop(
           child: Stack(
             children: [
               Positioned.fill(
@@ -233,67 +225,21 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             child: HomeNowCard(),
                           ),
 
-                          // Your day at a glance: one tile per feature.
+                          // Hero feed (CLAUDE.md §5.1): Things and Mind are
+                          // live summaries with inline input; Life tiles
+                          // follow. Each feature appears once.
                           const HomeFeedEntrance(
                             index: 1,
-                            child: HomeGlanceCard(),
+                            child: HomeThingsCard(),
                           ),
-
-                          // 3. Quick tools row
-                          HomeFeedEntrance(
-                            index: 1,
-                            child: HomeShortcutPanel(
-                              shortcuts: [
-                                for (final id in layout.shortcuts)
-                                  if (featureForRoute('/$id') == null ||
-                                      on(featureForRoute('/$id')!))
-                                    id,
-                              ],
-                              showReminders: layout.visible.contains(
-                                'reminders',
-                              ),
-                            ),
+                          const HomeFeedEntrance(
+                            index: 2,
+                            child: HomeMindCard(),
                           ),
-
-                          // 4. Today timeline (Things), capped at 4 rows
-                          if (layout.visible.contains('today') &&
-                              on(AscentFeature.things))
-                            HomeFeedEntrance(
-                              index: 2,
-                              child: ActivityHubCard(
-                                previewLimit: layout.compact.contains('today')
-                                    ? 3
-                                    : 4,
-                              ),
-                            ),
-
-                          // 5. Mind preview with inline capture
-                          if (layout.visible.contains('mind') &&
-                              on(AscentFeature.mind))
-                            const HomeFeedEntrance(
-                              index: 3,
-                              child: ThoughtWallHomePreview(
-                                previewLimit: 2,
-                                compact: true,
-                              ),
-                            ),
-
-                          // 6. Life shelf
-                          if (layout.visible.contains('life') &&
-                              layout.tools.isNotEmpty &&
-                              on(AscentFeature.care))
-                            const HomeFeedEntrance(
-                              index: 4,
-                              child: HomeLifeShelf(),
-                            ),
-
-                          // Plans only get their own card when Things is
-                          // hidden, because Things already has a Plans tab.
-                          if (!layout.visible.contains('today') &&
-                              on(AscentFeature.things))
-                            const HomePlansPreview(
-                              key: ValueKey('home_plans_big_card'),
-                            ),
+                          const HomeFeedEntrance(
+                            index: 3,
+                            child: HomeLifeTiles(),
+                          ),
 
                           PlanningNotificationHandler(
                             uri: widget.notificationUri,
@@ -321,6 +267,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
 
                           // Suggests the next feature; comes and goes.
                           const HomeUnlockNextCard(),
+
+                          Center(
+                            child: TextButton.icon(
+                              key: const ValueKey('home_customize'),
+                              onPressed: () => showHomeCustomization(context),
+                              icon: const Icon(Icons.tune_rounded, size: 18),
+                              label: const Text('Customize Home'),
+                            ),
+                          ),
 
                           // Scroll bottom padding = bottom nav height (64) + safe-area inset + 16
                           SizedBox(
@@ -403,10 +358,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         unlocked.contains(AscentFeature.vault) &&
         !layout.shortcuts.contains('vault')) {
       modules.add(spaced(const VaultHomePreview()));
-    }
-    if (layout.visible.contains('money') &&
-        unlocked.contains(AscentFeature.money)) {
-      modules.add(spaced(const HomeQuickExpenseCard()));
     }
     return modules;
   }

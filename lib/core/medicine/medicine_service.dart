@@ -55,6 +55,19 @@ class MedicineService {
     }
   }
 
+  /// "Dolo 650 (medicine) (650 mg tablet) — 8:00 AM" → "Dolo 650".
+  /// Dose tasks keep their generated title for reminders; lists show this.
+  static String displayName(String taskTitle) {
+    final i = taskTitle.indexOf(' (medicine)');
+    return (i > 0 ? taskTitle.substring(0, i) : taskTitle).trim();
+  }
+
+  /// "Dolo 650 (medicine) (650 mg tablet · 1) — 8:00 AM" → "650 mg tablet · 1".
+  static String? displayDosage(String taskTitle) {
+    final m = RegExp(r'\(medicine\) \((.+)\) — ').firstMatch(taskTitle);
+    return m?.group(1);
+  }
+
   String _bounded(String text) =>
       text.length <= 300 ? text : '${text.substring(0, 297)}…';
   Future<void> _alerts() async {

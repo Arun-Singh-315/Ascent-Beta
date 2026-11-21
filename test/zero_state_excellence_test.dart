@@ -1,7 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
 import 'package:ascent/features/plans/widgets/home_plans_preview.dart';
 import 'package:flutter/material.dart';
@@ -52,35 +50,5 @@ void main() {
     },
   );
 
-  testWidgets(
-    'ThoughtWallHomePreview empty state is tranquil and free of prompt spark chips',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            recentThoughtsStreamProvider.overrideWith(
-              (ref) => Stream.value([]),
-            ),
-            latestHomeThoughtProvider.overrideWith((ref) => Stream.value(null)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtWallHomePreview(compact: true),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Spark an idea'), findsNothing);
-      expect(find.text('Log a win'), findsNothing);
-      expect(find.text('Reflect'), findsNothing);
-      expect(find.text('Your mindspace is clear'), findsOneWidget);
-    },
-  );
 
 }

@@ -4,13 +4,13 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/thought_wall/board/thought_board_screen.dart';
 import 'package:ascent/features/thought_wall/board/board_background.dart';
+import 'package:ascent/shared/widgets/ascent_backdrop.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/app/theme/mindspace_palette.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -90,17 +90,15 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('the board sits on the plain app canvas', (tester) async {
+  testWidgets('the board sits on the doodle backdrop', (tester) async {
     await pump(tester);
-    final box = tester.widget<ColoredBox>(
-      find
-          .descendant(
-            of: find.byType(BoardBackground),
-            matching: find.byType(ColoredBox),
-          )
-          .first,
+    final backdrop = tester.widget<AscentBackdrop>(
+      find.descendant(
+        of: find.byType(BoardBackground),
+        matching: find.byType(AscentBackdrop),
+      ),
     );
-    expect(box.color, AscentGlass.light.bg);
+    expect(backdrop.doodle, isTrue);
     await unmount(tester);
   });
 

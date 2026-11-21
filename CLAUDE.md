@@ -87,7 +87,7 @@ Calm means easy on the eyes: muted, slightly desaturated blues, deep-navy ink by
 | `star` | `#D9A514` | `#E6C35A` | Importance star only |
 
 Pillar tints (small icon tiles, charts, header accents only — never full-screen fills):
-Plan = `action`, Think `#AF52DE`, Live/health `#FF2D55`, water `#3A9CC9`, money `#3A9A63`, Grow `#FF9500`, Assistant gradient `#5E5CE6 → #BF5AF2 → #FF6482`.
+Plan = `action`, Think `#2F8F8A` teal (no purple anywhere; the user dislikes it), Live/health `#FF2D55`, water `#3A9CC9`, money `#3A9A63`, Grow `#FF9500`, Assistant gradient `#5E5CE6 → #BF5AF2 → #FF6482`.
 
 Rules: one filled `action` button per screen region. Color carries meaning; it is never decoration. No 2 px outlines; all borders are 1 px `separator`.
 

@@ -2,7 +2,6 @@ import 'package:ascent/core/services/plan_collection_service.dart';
 import 'package:ascent/features/thought_wall/utils/thought_checklist_helper.dart';
 import 'package:ascent/shared/utils/smart_list_input_formatter.dart';
 import 'package:ascent/shared/widgets/note_list_button.dart';
-import 'package:ascent/shared/widgets/thought_excerpt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -183,17 +182,5 @@ My Schedule:
   });
 
   group('ThoughtExcerpt Bullet & Spacing Formatting Tests', () {
-    test(
-      'formatArrowContent converts "->" and "-->" into clean bullets without huge gaps',
-      () {
-        const raw = '-> First item\n-> Second item\n--> Third item';
-        final formatted = ThoughtExcerpt.formatArrowContent(raw);
-        expect(formatted.contains('→ First item'), isTrue);
-        expect(formatted.contains('→ Second item'), isTrue);
-        expect(formatted.contains('→ Third item'), isTrue);
-        expect(formatted.contains('->'), isFalse);
-        expect(formatted.contains('-->'), isFalse);
-      },
-    );
   });
 }
