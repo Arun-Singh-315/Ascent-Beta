@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Four starter prompts for an empty chat, matched to the time of day
 /// (CLAUDE.md §5.4). Each is something the assistant can do offline.
 List<String> assistantSuggestions(DateTime now) {
@@ -45,4 +47,21 @@ String assistantGreeting(DateTime now) {
       ? 'evening'
       : 'night';
   return 'How can I help this $part?';
+}
+
+/// A small glyph for a suggestion tile, from the words it uses.
+IconData assistantSuggestionIcon(String title) {
+  final t = title.toLowerCase();
+  if (t.contains('water')) return Icons.water_drop_outlined;
+  if (t.contains('timer') || t.contains('focus')) return Icons.timer_outlined;
+  if (t.contains('meal')) return Icons.restaurant_outlined;
+  if (t.contains('spend') || t.contains('money')) {
+    return Icons.account_balance_wallet_outlined;
+  }
+  if (t.contains('remind')) return Icons.notifications_none_rounded;
+  if (t.contains('study')) return Icons.school_outlined;
+  if (t.contains('find') || t.contains('wrote')) return Icons.search_rounded;
+  if (t.contains('task') || t.contains('agenda'))
+    return Icons.checklist_rounded;
+  return Icons.wb_sunny_outlined;
 }
