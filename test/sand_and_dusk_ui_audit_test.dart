@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ascent/core/theme/app_colors.dart';
 import 'package:ascent/shared/widgets/app_text_field.dart';
 import 'package:ascent/shared/widgets/section_card.dart';
 import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
@@ -31,7 +30,14 @@ void main() {
         expect(find.byType(TextField), findsOneWidget);
         final textField = tester.widget<TextField>(find.byType(TextField));
         expect(textField.decoration?.filled, isTrue);
-        expect(textField.decoration?.fillColor, AppColors.light.surfaceAlt);
+        // No fill: the field takes the colour of what it sits on.
+        expect(textField.decoration?.fillColor, Colors.transparent);
+        expect(
+          (textField.decoration?.enabledBorder as OutlineInputBorder?)
+              ?.borderSide
+              .width,
+          1.0,
+        );
         expect(textField.decoration?.prefixIcon, isNotNull);
         expect(textField.decoration?.hintText, 'What should we call you?');
       },
