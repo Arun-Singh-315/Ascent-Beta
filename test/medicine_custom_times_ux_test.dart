@@ -7,6 +7,7 @@ import 'package:ascent/core/medicine/medicine_service.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/medicine/medicine_screen.dart';
+import 'package:ascent/features/medicine/medicine_time_dialog.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -115,7 +116,7 @@ void main() {
     await t.enterText(
       find
           .descendant(
-            of: find.byType(AlertDialog),
+            of: find.byType(MedicineTimeDialog),
             matching: find.byType(TextFormField),
           )
           .first,
@@ -124,7 +125,7 @@ void main() {
     await t.enterText(
       find
           .descendant(
-            of: find.byType(AlertDialog),
+            of: find.byType(MedicineTimeDialog),
             matching: find.byType(TextFormField),
           )
           .last,

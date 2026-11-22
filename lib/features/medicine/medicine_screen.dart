@@ -32,6 +32,8 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
 import 'medicine_quick_add_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:ascent/shared/widgets/ascent_progress_ring.dart';
 
 class MedicineScreen extends ConsumerStatefulWidget {
   const MedicineScreen({super.key});
@@ -142,35 +144,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       'Feeling recovered',
       'Other',
     ];
-    final selectedReason = await showDialog<String>(
+    final selectedReason = await showAscentActionMenu<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Skip dose for ${medicine.name}?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Select a clinical or personal reason to log why this dose was skipped:',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            for (final r in reasons)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(r, style: const TextStyle(fontSize: 13)),
-                onTap: () => Navigator.pop(ctx, r),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
+      title: 'Skip dose for ${medicine.name}?',
+      actions: [
+        for (final r in reasons)
+          AscentAction(r, r, Icons.do_not_disturb_on_outlined),
+      ],
     );
 
     if (selectedReason == null || !mounted) return;
@@ -202,24 +182,14 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
   }
 
   Future<void> _delete(Medicine medicine) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Remove ${medicine.name}?'),
-        content: const Text(
+      title: 'Remove ${medicine.name}?',
+      content:
           'This removes the medicine, dose history, and linked reminders and tasks. You can undo immediately afterwards. Archive the schedule if you want to keep its history long term.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep medicine'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep medicine',
+      isDestructive: true,
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -265,7 +235,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       text,
       style: Theme.of(
         context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     ),
   );
 
@@ -316,11 +286,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            CircularProgressIndicator(
+                            AscentProgressRing(
                               value: logs.isEmpty ? 0 : taken / logs.length,
                               strokeWidth: 4,
                               color: g.actionInk,
-                              backgroundColor: g.track,
+                              trackColor: g.track,
                             ),
                             Icon(
                               taken == logs.length && logs.isNotEmpty
@@ -490,7 +460,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         Text(
           medicine.name,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             fontSize: 17,
             color: g.ink,
           ),
@@ -810,7 +780,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               medicine.name,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: g.ink,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.3,
               ),
             ),
@@ -1043,7 +1013,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         'No medicines added',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: context.glass.ink,
         ),
       ),
@@ -1080,7 +1050,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         ),
       ],
       body: medicines.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ListSkeleton(),
         error: (_, _) => Center(
           child: TextButton(
             onPressed: () => ref.invalidate(allMedicinesStreamProvider),

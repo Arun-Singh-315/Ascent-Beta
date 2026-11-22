@@ -10,6 +10,9 @@ import 'core/notifications/reminder_alert_sync.dart';
 import 'core/ai/riya_alert_effects.dart';
 import 'core/database/app_database.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
+import 'core/cloud/cloud_gateway.dart';
+import 'core/cloud/cloud_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,8 +49,27 @@ Future<void> main() async {
   }
   await touchLastOpened(prefs);
 
+  // Online features (CLAUDE.md §7) exist only when a Supabase project is
+  // configured at build time; otherwise the app is fully offline.
+  CloudGateway cloud = const OfflineCloudGateway();
+  const cloudConfig = CloudConfig.fromEnvironment;
+  if (cloudConfig.isConfigured) {
+    try {
+      await Supabase.initialize(
+        url: cloudConfig.url,
+        publishableKey: cloudConfig.anonKey,
+      );
+      cloud = SupabaseCloudGateway(Supabase.instance.client);
+    } catch (e) {
+      debugPrint('Cloud unavailable, staying offline: $e');
+    }
+  }
+
   final container = ProviderContainer(
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      cloudGatewayProvider.overrideWithValue(cloud),
+    ],
   );
 
   // Daily automatic backup, after start-up so it never slows the first frame.

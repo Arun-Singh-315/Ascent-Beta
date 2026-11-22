@@ -5,6 +5,7 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../providers/vault_providers.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 class VaultLockView extends ConsumerStatefulWidget {
   const VaultLockView({
@@ -140,7 +141,7 @@ class _VaultLockViewState extends ConsumerState<VaultLockView> {
     final g = context.glass;
 
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CupertinoActivityIndicator());
     }
 
     final headline = _isSettingUpPin
@@ -181,7 +182,7 @@ class _VaultLockViewState extends ConsumerState<VaultLockView> {
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),

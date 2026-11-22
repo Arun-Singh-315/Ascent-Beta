@@ -238,17 +238,20 @@ class AscentDialog extends StatelessWidget {
         horizontal: AscentDimensions.spaceXxl,
         vertical: AscentDimensions.spaceXxl,
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: g.elevated,
+      // A Material (not a decorated box) so list tiles and ink inside dialog
+      // content paint correctly.
+      child: Material(
+        color: g.elevated,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
+          side: BorderSide(
             color: g.line,
             width: AscentDimensions.contentOutlineWidth,
           ),
         ),
-        padding: const EdgeInsets.all(AscentDimensions.spaceXl),
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AscentDimensions.spaceXl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

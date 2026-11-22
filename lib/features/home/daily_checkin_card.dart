@@ -13,6 +13,8 @@ import '../../core/services/note_draft_binding.dart';
 import 'widgets/home_outline_surface.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import '../money/add_transaction_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 
 class DailyCheckInCard extends ConsumerStatefulWidget {
   const DailyCheckInCard({super.key});
@@ -46,11 +48,8 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
     var settings = ref.read(dailyCheckInProvider);
     var saving = false;
     String? error;
-    await showModalBottomSheet(
+    await showAscentSheet(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
       isDismissible: false,
       enableDrag: false,
       builder: (context) => StatefulBuilder(
@@ -98,14 +97,14 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
                     onChanged: (v) =>
                         update(() => settings = settings.copyWith(weekly: v)),
                   ),
-                  DropdownButtonFormField<int>(
-                    initialValue: settings.afterHour,
-                    decoration: const InputDecoration(labelText: 'Show after'),
-                    items: List.generate(
+                  AscentSelectField<int>(
+                    label: 'Show after',
+                    value: settings.afterHour,
+                    options: List.generate(
                       24,
-                      (hour) => DropdownMenuItem(
-                        value: hour,
-                        child: Text('${hour.toString().padLeft(2, '0')}:00'),
+                      (hour) => AscentSelectOption(
+                        hour,
+                        '${hour.toString().padLeft(2, '0')}:00',
                       ),
                     ),
                     onChanged: saving

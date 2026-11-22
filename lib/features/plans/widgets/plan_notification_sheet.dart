@@ -8,6 +8,8 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../planning_providers.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 final _alertOccurrenceProvider = StreamProvider.autoDispose
     .family<Map<String, dynamic>?, (String, int?)>((ref, key) {
@@ -41,11 +43,8 @@ Future<bool> showPlanNotificationSheet(
   int? reminderId,
   DateTime? expectedAt,
 }) async =>
-    await showModalBottomSheet<bool>(
+    await showAscentSheet<bool>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
       builder: (_) => PlanNotificationSheet(
         occurrenceId: occurrenceId,
         reminderId: reminderId,
@@ -159,7 +158,7 @@ class _NotificationState extends ConsumerState<PlanNotificationSheet> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpace.s20),
           child: item.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CupertinoActivityIndicator()),
             error: (_, _) => const Text(
               'Could not load this activity. Open Plans in Dayboard.',
             ),

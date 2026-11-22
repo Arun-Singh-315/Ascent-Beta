@@ -9,6 +9,9 @@ import '../../../shared/widgets/app_text_field.dart';
 import '../plan_progress.dart';
 import '../widgets/plan_progress_card.dart';
 import '../planning_providers.dart';
+import 'package:ascent/shared/widgets/ascent_progress_ring.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
 
 class PlanDetailScreen extends ConsumerStatefulWidget {
   const PlanDetailScreen({
@@ -83,25 +86,13 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   }
 
   Future<void> _deletePlan() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Plan'),
-        content: const Text(
+      title: 'Delete Plan',
+      content:
           'Are you sure you want to delete this plan? All scheduled occurrences and reminders will be removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete',
+      isDestructive: true,
     );
 
     if (confirm == true && mounted) {
@@ -225,7 +216,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                     displayTitle,
                     style: TextStyle(
                       fontSize: 26,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                       letterSpacing: -0.5,
                     ),
@@ -268,21 +259,19 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              CircularProgressIndicator(
+                              AscentProgressRing(
                                 value: total > 0 ? (done / total) : 0.0,
                                 strokeWidth: 6,
-                                backgroundColor: isDark
+                                trackColor: isDark
                                     ? const Color(0x25FFFFFF)
                                     : c.surfaceAlt,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  colorScheme.primary,
-                                ),
+                                color: colorScheme.primary,
                               ),
                               Text(
                                 '$done/$total',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: c.textPrimary,
                                 ),
                               ),
@@ -300,7 +289,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                     : 'Good start',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: c.textPrimary,
                                 ),
                               ),
@@ -346,7 +335,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                     'Today · ${dfShort.format(now)}',
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
@@ -387,12 +376,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                         ],
                       );
                     },
-                    loading: () => const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
+                    loading: () => const ListSkeleton(),
                     error: (err, _) => Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text('Error loading items: $err'),
@@ -407,7 +391,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       'Coming up',
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: c.textPrimary,
                       ),
                     ),
@@ -537,7 +521,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
             dfShort.format(date),
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: c.textPrimary,
             ),
           ),

@@ -7,7 +7,7 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/capture/quick_capture_sheet.dart';
+import 'package:ascent/features/capture/capture_sheet.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/shared/widgets/ascent_press_feedback.dart';
 import 'package:ascent/shared/widgets/ascent_sheet.dart';
@@ -295,7 +295,7 @@ void main() {
         app(
           Builder(
             builder: (context) => TextButton(
-              onPressed: () => showQuickCapture(context),
+              onPressed: () => showCaptureSheet(context),
               child: const Text('Capture'),
             ),
           ),
@@ -305,9 +305,9 @@ void main() {
       await flush(t);
       expect(find.byType(AscentSheetHandle), findsOneWidget);
       expect(t.takeException(), isNull);
-      await t.tap(find.byTooltip('Close capture'));
+      await t.tap(find.byKey(const ValueKey('capture_cancel')));
       await flush(t);
-      expect(find.byType(QuickCaptureSheet), findsNothing);
+      expect(find.byType(CaptureSheet), findsNothing);
       expect(await t.runAsync(() => db.select(db.taskTable).get()), isEmpty);
     },
   );

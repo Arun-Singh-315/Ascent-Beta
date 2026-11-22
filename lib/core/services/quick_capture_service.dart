@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import 'activity_entry_service.dart';
+import 'capture_router.dart';
 import 'home_capture_service.dart';
 import 'plan_collection_service.dart';
 
@@ -27,7 +28,7 @@ String captureLabel(CaptureKind kind) => switch (kind) {
   CaptureKind.water => 'Water',
 };
 String captureDestination(CaptureKind kind) => switch (kind) {
-  CaptureKind.todo || CaptureKind.timer => 'Dayboard',
+  CaptureKind.todo || CaptureKind.timer => 'Things',
   CaptureKind.reminder => 'Reminders',
   CaptureKind.thought => 'Mindspace',
   CaptureKind.routine => 'Plans',
@@ -52,8 +53,12 @@ class CaptureDraft {
     this.starred = false,
     this.recurrence = 'daily',
     this.needsClock = false,
+    this.alternative,
   });
   final String key;
+
+  /// A second likely kind when the router was unsure (not persisted).
+  CaptureKind? alternative;
   String title, notes, category, space, recurrence;
   CaptureKind kind;
   DateTime? at, day, end;
@@ -167,40 +172,133 @@ class CaptureDraft {
   }
 }
 
-List<CaptureDraft> parseQuickCapture(String raw, DateTime now) {
+/// Splits [raw] into up to 30 lines and proposes one editable draft per line.
+///
+/// Lines with a prefix ("todo:", "spent", "water", …) keep that kind. Other
+/// lines are routed by [guessCaptureKind]; when the guessed kind is not in
+/// [allowed] (its feature is switched off), the line falls back to a to-do.
+List<CaptureDraft> parseQuickCapture(
+  String raw,
+  DateTime now, {
+  Set<CaptureKind>? allowed,
+}) {
   final lines = PlanItemDraft.parseList(raw);
   if (lines.length > 30) {
     throw ArgumentError('Capture up to 30 items at a time.');
   }
   return [
     for (var index = 0; index < lines.length; index++)
-      _parse(lines[index], now, index),
+      _parse(lines[index], now, index, allowed),
   ];
 }
 
-CaptureDraft _parse(String original, DateTime now, int index) {
+/// One line as a draft with key [index] (the sheet re-parses lines one by
+/// one so a change to one line never moves another).
+CaptureDraft parseCaptureLine(
+  String line,
+  DateTime now,
+  int index, {
+  Set<CaptureKind>? allowed,
+}) => _parse(line, now, index, allowed);
+
+final _bareClock = RegExp(
+  r'\bat\s+(\d{1,2})(?::(\d{2}))?\b(?!\s*(?:am|pm|a\.m|p\.m))',
+  caseSensitive: false,
+);
+
+/// "at 6" with no am/pm means the next 6 o'clock still ahead on that day.
+DateTime? _resolveBareClock(String text, DateTime now, DateTime? day) {
+  final match = _bareClock.firstMatch(text);
+  if (match == null) return null;
+  final hour = int.parse(match[1]!);
+  final minute = int.tryParse(match[2] ?? '0') ?? 0;
+  if (minute > 59) return null;
+  final base = day ?? DateTime(now.year, now.month, now.day);
+  if (hour > 23) return null;
+  if (hour > 12 || hour == 0) {
+    final at = DateTime(base.year, base.month, base.day, hour, minute);
+    return at.isAfter(now)
+        ? at
+        : DateTime(base.year, base.month, base.day + 1, hour, minute);
+  }
+  final morning = hour % 12;
+  for (final h in [morning, morning + 12]) {
+    final at = DateTime(base.year, base.month, base.day, h, minute);
+    if (at.isAfter(now)) return at;
+  }
+  return DateTime(base.year, base.month, base.day + 1, morning, minute);
+}
+
+/// The next half-hour boundary at least 15 minutes from [now].
+DateTime nextFreeSlot(DateTime now) {
+  final soon = now.add(const Duration(minutes: 15));
+  final extra = soon.minute % 30 == 0 && soon.second == 0
+      ? 0
+      : 30 - soon.minute % 30;
+  final slot = DateTime(
+    soon.year,
+    soon.month,
+    soon.day,
+    soon.hour,
+    soon.minute,
+  ).add(Duration(minutes: extra));
+  return slot;
+}
+
+CaptureDraft _parse(
+  String original,
+  DateTime now,
+  int index,
+  Set<CaptureKind>? allowed,
+) {
   var text = original;
   var kind = CaptureKind.todo;
+  CaptureGuess? guess;
   final prefix = RegExp(
-    r'^(todo|to-do|task|reminder|remind me(?: to)?|timer|focus|thought|note|routine|expense|spent|income|earned|water)\s*(?::|\s)\s*',
+    r'^(todo|to-do|task|reminder|remind me(?: to)?|timer|focus|thought|idea|note|routine|expense|spent|income|earned|water)\s*(?::|\s)\s*',
     caseSensitive: false,
   ).firstMatch(text);
-  if (prefix != null) {
-    final label = prefix[1]!.toLowerCase();
+  final label = prefix?[1]!.toLowerCase();
+  // "water the plants" and "spent time with Sam" are not logs: amount
+  // prefixes only count when a number follows.
+  final amountPrefix = const {'water', 'spent', 'earned', 'expense', 'income'};
+  final ignorePrefix =
+      label != null &&
+      amountPrefix.contains(label) &&
+      !RegExp(r'\d').hasMatch(text.substring(prefix!.end));
+  if (prefix != null && !ignorePrefix) {
     text = text.substring(prefix.end).trim();
-    kind = switch (label) {
+    kind = switch (label!) {
       'reminder' || 'remind me' || 'remind me to' => CaptureKind.reminder,
       'timer' || 'focus' => CaptureKind.timer,
-      'thought' || 'note' => CaptureKind.thought,
+      'thought' || 'idea' || 'note' => CaptureKind.thought,
       'routine' => CaptureKind.routine,
       'expense' || 'spent' => CaptureKind.expense,
       'income' || 'earned' => CaptureKind.income,
       'water' => CaptureKind.water,
       _ => CaptureKind.todo,
     };
+    if (allowed != null && !allowed.contains(kind)) {
+      kind = CaptureKind.todo;
+      text = original.trim();
+    }
+  } else {
+    guess = guessCaptureKind(text);
+    if (allowed == null || allowed.contains(guess.kind)) {
+      kind = guess.kind;
+      text = guess.text;
+    } else {
+      guess = null;
+    }
   }
   if (kind == CaptureKind.thought) {
-    return CaptureDraft(key: '$index', kind: kind, title: text);
+    final t = text.trim();
+    return CaptureDraft(
+      key: '$index',
+      kind: kind,
+      title: t.isEmpty ? t : t[0].toUpperCase() + t.substring(1),
+      alternative: guess?.alternative,
+    );
   }
   final proposal = HomeCaptureProposal.parse(text, now);
   final hasClock = RegExp(
@@ -220,12 +318,13 @@ CaptureDraft _parse(String original, DateTime now, int index) {
     kind: kind,
     title: parsed.title,
     at: hasClock ? parsed.at : null,
-    minutes: proposal.minutes ?? 25,
+    minutes: guess?.minutes ?? proposal.minutes ?? 25,
     notes: '',
     recurrence: proposal.recurrenceRule == 'weekdays' ? 'weekdays' : 'daily',
     end: parsed.endDate,
     needsClock:
         hasClock && (parsed.at == null || proposal.needsTimeClarification),
+    alternative: guess?.alternative,
   );
   if (proposal.isRecurring) draft.kind = CaptureKind.routine;
   if (RegExp(
@@ -249,7 +348,7 @@ CaptureDraft _parse(String original, DateTime now, int index) {
     CaptureKind.expense,
     CaptureKind.income,
     CaptureKind.water,
-  ].contains(kind)) {
+  ].contains(draft.kind)) {
     final amount = RegExp(
       r'(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d{1,2})?)',
       caseSensitive: false,
@@ -259,34 +358,117 @@ CaptureDraft _parse(String original, DateTime now, int index) {
       draft.title = text
           .replaceRange(amount.start, amount.end, '')
           .replaceAll(RegExp(r'\b(?:for|ml)\b', caseSensitive: false), '')
+          .replaceAll(RegExp(r'^\s*(?:on|at|in)\b', caseSensitive: false), '')
+          .replaceAll(RegExp(r'\s{2,}'), ' ')
           .trim();
+      if (draft.title.isNotEmpty) {
+        draft.title = draft.title[0].toUpperCase() + draft.title.substring(1);
+      } else {
+        draft.title = draft.kind == CaptureKind.income ? 'Income' : 'Expense';
+      }
     }
-    if (kind == CaptureKind.water) draft.title = 'Water';
+    if (guess?.amount != null) draft.amount = guess!.amount;
+    if (draft.kind == CaptureKind.water) draft.title = 'Water';
     draft.needsClock = false;
     draft.at = null;
+    return draft;
+  }
+  // Smart defaults (CLAUDE.md §1.4): never leave a line blocked on a time.
+  if (draft.needsClock || (draft.at == null && _bareClock.hasMatch(text))) {
+    final resolved = _resolveBareClock(text, now, draft.day);
+    if (resolved != null) {
+      draft
+        ..at = resolved
+        ..needsClock = false
+        ..title = draft.title
+            .replaceAll(
+              RegExp(r'\s*\bat\s+\d{1,2}(?::\d{2})?\b', caseSensitive: false),
+              '',
+            )
+            .trim();
+    }
+  }
+  if (draft.kind == CaptureKind.routine &&
+      draft.at == null &&
+      !draft.needsClock) {
+    final lower = text.toLowerCase();
+    final hour = lower.contains('morning')
+        ? 8
+        : lower.contains('evening')
+        ? 19
+        : lower.contains('night')
+        ? 21
+        : 9;
+    final todayAt = DateTime(now.year, now.month, now.day, hour);
+    draft.at = todayAt.isAfter(now)
+        ? todayAt
+        : todayAt.add(const Duration(days: 1));
+  }
+  if (draft.kind == CaptureKind.routine) {
+    final cleaned = draft.title
+        .replaceAll(
+          RegExp(
+            r'\b(?:every\s+(?:day|morning|evening|night|weekday)s?|daily|on weekdays|weekdays)\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trim();
+    if (cleaned.isNotEmpty) draft.title = cleaned;
+  }
+  final t = draft.title.trimLeft();
+  if (t.isNotEmpty) draft.title = t[0].toUpperCase() + t.substring(1);
+  if (draft.kind == CaptureKind.routine && draft.at != null) {
+    draft.end ??= DateTime(draft.at!.year, draft.at!.month, draft.at!.day + 30);
+  }
+  if (draft.kind == CaptureKind.reminder &&
+      draft.at == null &&
+      !draft.needsClock) {
+    draft.at = draft.day == null
+        ? nextFreeSlot(now)
+        : DateTime(draft.day!.year, draft.day!.month, draft.day!.day, 9);
+    if (!draft.at!.isAfter(now)) draft.at = nextFreeSlot(now);
   }
   return draft;
 }
 
+/// One saved record, so Undo can remove exactly what a capture created.
+typedef CaptureRecord = ({String type, String id});
+
 class CaptureReceipt {
-  const CaptureReceipt(this.items, this.reminderIds);
+  const CaptureReceipt(this.items, this.reminderIds, [this.records = const []]);
   final List<({String title, String destination, String route})> items;
   final List<int> reminderIds;
+
+  /// Created rows by table ('task', 'reminder', 'thought', 'plan',
+  /// 'money', 'water'), in save order.
+  final List<CaptureRecord> records;
   Map<String, Object> toJson() => {
     'items': [
       for (final i in items)
         {'title': i.title, 'destination': i.destination, 'route': i.route},
     ],
     'reminderIds': reminderIds,
+    'records': [
+      for (final r in records) {'type': r.type, 'id': r.id},
+    ],
   };
-  factory CaptureReceipt.fromJson(Map<String, dynamic> j) => CaptureReceipt([
-    for (final i in j['items'] as List)
-      (
-        title: i['title'] as String,
-        destination: i['destination'] as String,
-        route: i['route'] as String,
-      ),
-  ], (j['reminderIds'] as List).cast<int>());
+  factory CaptureReceipt.fromJson(Map<String, dynamic> j) => CaptureReceipt(
+    [
+      for (final i in j['items'] as List)
+        (
+          title: i['title'] as String,
+          destination: i['destination'] as String,
+          route: i['route'] as String,
+        ),
+    ],
+    (j['reminderIds'] as List).cast<int>(),
+    [
+      for (final r in (j['records'] as List?) ?? const [])
+        (type: r['type'] as String, id: r['id'] as String),
+    ],
+  );
 }
 
 /// One reviewed batch, one transaction, one retry-safe receipt. Device alert
@@ -318,6 +500,7 @@ class QuickCaptureService {
     }
     final items = <({String title, String destination, String route})>[];
     final alerts = <int>[];
+    final records = <CaptureRecord>[];
     final today = clock();
     for (final d in drafts) {
       var route = '';
@@ -333,6 +516,7 @@ class QuickCaptureService {
             reminderAt: d.at,
           );
           alerts.addAll(saved.reminderIds);
+          records.add((type: 'task', id: '${saved.taskId}'));
           route = '/today?task=${saved.taskId}';
         case CaptureKind.reminder:
           final id = await db.reminderDao.insertReminder(
@@ -343,6 +527,7 @@ class QuickCaptureService {
             ),
           );
           alerts.add(id);
+          records.add((type: 'reminder', id: '$id'));
           route = '/reminders?reminder=$id';
         case CaptureKind.thought:
           final categories = await db.thoughtDao.watchCategories().first;
@@ -360,12 +545,13 @@ class QuickCaptureService {
               category: Value(d.space),
             ),
           );
+          records.add((type: 'thought', id: '$id'));
           route = '/thought-wall?thought=$id';
         case CaptureKind.routine:
           final before = (await db.select(db.reminderTable).get())
               .map((r) => r.id)
               .toSet();
-          await PlanCollectionService(db, clock: clock).save(
+          final planId = await PlanCollectionService(db, clock: clock).save(
             title: d.title.trim(),
             items: [
               PlanItemDraft(
@@ -383,10 +569,11 @@ class QuickCaptureService {
                 .where((r) => !before.contains(r.id))
                 .map((r) => r.id),
           );
+          records.add((type: 'plan', id: planId));
           route = '/plans';
         case CaptureKind.expense:
         case CaptureKind.income:
-          await db.financeDao.insertTransaction(
+          final moneyId = await db.financeDao.insertTransaction(
             FinanceTransactionTableCompanion.insert(
               title: d.title.trim(),
               amount: d.amount!,
@@ -396,9 +583,14 @@ class QuickCaptureService {
               notes: Value(d.notes.trim().isEmpty ? null : d.notes.trim()),
             ),
           );
+          records.add((type: 'money', id: '$moneyId'));
           route = '/money';
         case CaptureKind.water:
-          await db.waterDao.addWaterForDate(d.amount!.toInt(), d.day ?? today);
+          final waterId = await db.waterDao.addWaterForDate(
+            d.amount!.toInt(),
+            d.day ?? today,
+          );
+          records.add((type: 'water', id: '$waterId'));
           route = '/hydration';
       }
       items.add((
@@ -409,7 +601,7 @@ class QuickCaptureService {
         route: route,
       ));
     }
-    final result = CaptureReceipt(items, alerts);
+    final result = CaptureReceipt(items, alerts, records);
     await db
         .into(db.aiCommandTable)
         .insert(
@@ -421,5 +613,36 @@ class QuickCaptureService {
           ),
         );
     return result;
+  });
+
+  /// Removes exactly the records [receipt] created, in one transaction.
+  /// Tasks take their reminders and sessions with them; already-deleted rows
+  /// are skipped. Returns how many records were removed.
+  Future<int> undo(CaptureReceipt receipt) => db.transaction(() async {
+    var removed = 0;
+    for (final r in receipt.records.reversed) {
+      switch (r.type) {
+        case 'task':
+          removed += await db.taskDao.deleteTask(
+            int.parse(r.id),
+            bypassProtection: true,
+          );
+        case 'reminder':
+          removed += await db.reminderDao.deleteReminder(
+            int.parse(r.id),
+            bypassProtection: true,
+          );
+        case 'thought':
+          removed += await db.thoughtDao.deleteThought(int.parse(r.id));
+        case 'plan':
+          await PlanCollectionService(db, clock: clock).deleteCollection(r.id);
+          removed++;
+        case 'money':
+          removed += await db.financeDao.deleteTransaction(int.parse(r.id));
+        case 'water':
+          removed += await db.waterDao.deleteWater(int.parse(r.id));
+      }
+    }
+    return removed;
   });
 }

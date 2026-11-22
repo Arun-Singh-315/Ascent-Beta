@@ -315,7 +315,7 @@ void main() {
           _item('Thing $i', taskId: i + 1, planned: _day(0)),
       ],
     );
-    expect(find.text('Today · 1000'), findsOneWidget);
+    // Today is grouped by time of day; only the first rows are built.
     expect(find.text('Thing 0'), findsOneWidget);
     expect(find.text('Thing 999'), findsNothing);
     expect(tester.takeException(), isNull);

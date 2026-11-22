@@ -67,7 +67,7 @@ class CareEyebrow extends StatelessWidget {
     style: TextStyle(
       color: context.glass.inkSecondary,
       fontSize: 10.5,
-      fontWeight: FontWeight.w700,
+      fontWeight: FontWeight.w600,
       letterSpacing: 1.6,
       height: 1.5,
     ),
@@ -162,7 +162,7 @@ class CareHero extends StatelessWidget {
                   : compact
                   ? 27
                   : 30,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               letterSpacing: -1.15,
               height: 1.13,
             ),
@@ -262,7 +262,7 @@ class CareSectionHeading extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               letterSpacing: -.35,
             ),
           ),

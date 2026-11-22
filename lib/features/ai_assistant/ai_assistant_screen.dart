@@ -40,6 +40,8 @@ import '../../core/database/app_database.dart';
 import '../../core/services/festival_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
   const AiAssistantScreen({
@@ -51,12 +53,9 @@ class AiAssistantScreen extends ConsumerStatefulWidget {
   final bool compact;
   static Future<void> showFromHome(
     BuildContext context,
-  ) => showModalBottomSheet<void>(
+  ) => showAscentSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
+    framed: false,
     enableDrag: false,
     builder: (context) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -1103,24 +1102,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     String name,
   ) async {
     HapticFeedback.lightImpact();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear chat history?'),
-        content: Text(
+      title: 'Clear chat history?',
+      content:
           'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear history'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Clear history',
     );
     if (confirmed == true && mounted) {
       await ref.read(aiAssistantDaoProvider).clearChatHistory();
@@ -1136,12 +1123,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   ) {
     HapticFeedback.lightImpact();
     final customController = TextEditingController();
-    showModalBottomSheet<void>(
+    showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
@@ -1178,7 +1162,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       'Companion Identity',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: sheetContext.c.textPrimary,
                         letterSpacing: -0.3,
                       ),
@@ -1307,7 +1291,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           name,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: sheetContext.textPrimary,
                           ),
                         ),
@@ -1481,7 +1465,7 @@ class _ConversationMessageBubbleState
               assistantName,
               style: AscentTextStyles.interfaceLabel.copyWith(
                 color: chat.assistantName,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1508,22 +1492,22 @@ class _ConversationMessageBubbleState
                   ),
                   strong: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h1: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h2: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h3: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   listBullet: TextStyle(
@@ -1775,7 +1759,7 @@ class _ConversationMessageBubbleState
                                         fontSize: 10.5,
                                         letterSpacing: 1.0,
                                         color: accentColor,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -1789,7 +1773,7 @@ class _ConversationMessageBubbleState
                                 style: TextStyle(
                                   color: context.glass.ink,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   height: 1.25,
                                 ),
                               ),
@@ -1914,7 +1898,7 @@ class _ConversationMessageBubbleState
                                 : 'Action needs attention',
                             style: TextStyle(
                               color: ChatPalette.of(context).label,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(

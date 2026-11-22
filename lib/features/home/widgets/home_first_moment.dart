@@ -10,6 +10,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
 import '../../../shared/widgets/ascent_segmented_control.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 final firstMomentPendingProvider = NotifierProvider<FirstMomentPending, bool>(
   FirstMomentPending.new,
@@ -169,7 +170,7 @@ class _HomeFirstMomentState extends ConsumerState<HomeFirstMoment> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CupertinoActivityIndicator(radius: 9),
                       )
                     : const Icon(Icons.arrow_upward_rounded),
               ),

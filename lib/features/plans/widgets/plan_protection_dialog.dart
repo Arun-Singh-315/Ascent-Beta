@@ -8,6 +8,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/services/plan_child_protection.dart';
 import '../../../shared/widgets/ascent_button.dart';
 import 'plan_collection_detail.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 /// Shows an owner-aware replacement dialog when a user attempts to delete a protected plan-owned item.
 Future<void> showPlanProtectionDialog(
@@ -38,7 +39,6 @@ Future<void> showPlanProtectionDialog(
   }
   HapticFeedback.mediumImpact();
   final g = context.glass;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
 
   String titleText;
   String messageText;
@@ -66,14 +66,8 @@ Future<void> showPlanProtectionDialog(
     primaryLabel = 'Stop asking for this session';
   }
 
-  return showModalBottomSheet<void>(
+  return showAscentSheet<void>(
     context: context,
-    useRootNavigator: true,
-    useSafeArea: true,
-    backgroundColor: isDark ? g.bg : Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
     builder: (sheetContext) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -103,7 +97,7 @@ Future<void> showPlanProtectionDialog(
                       Text(
                         titleText,
                         style: Theme.of(sheetContext).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         restriction.isRoutine
