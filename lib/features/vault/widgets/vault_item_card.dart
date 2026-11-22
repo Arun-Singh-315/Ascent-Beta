@@ -133,7 +133,7 @@ class _VaultItemCardState extends State<VaultItemCard> {
                           widget.item.title,
                           style: AscentTextStyles.displaySmall.copyWith(
                             color: g.ink,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -226,7 +226,7 @@ class _VaultItemCardState extends State<VaultItemCard> {
                     widget.item.title,
                     style: AscentTextStyles.displaySmall.copyWith(
                       color: g.ink,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -283,7 +283,7 @@ class _VaultItemCardState extends State<VaultItemCard> {
                     widget.item.title,
                     style: AscentTextStyles.displaySmall.copyWith(
                       color: g.ink,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -332,7 +332,7 @@ class _VaultItemCardState extends State<VaultItemCard> {
                     widget.item.title,
                     style: AscentTextStyles.displaySmall.copyWith(
                       color: g.ink,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

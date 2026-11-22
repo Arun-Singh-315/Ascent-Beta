@@ -97,7 +97,7 @@ Future<void> showPlanProtectionDialog(
                       Text(
                         titleText,
                         style: Theme.of(sheetContext).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         restriction.isRoutine

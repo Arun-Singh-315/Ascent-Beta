@@ -5,16 +5,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/shared_control_tokens.dart';
+import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/notifications/reminder_alarm_bridge.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../shared/widgets/ascent_dialog.dart';
-import '../../../shared/widgets/ascent_switch.dart';
-import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import '../../../shared/widgets/app_text_field.dart';
+import '../../../shared/widgets/ascent_action_menu.dart';
+import '../../../shared/widgets/ascent_button.dart';
+import '../../../shared/widgets/ascent_sheet.dart';
+import '../../../shared/widgets/ascent_switch_row.dart';
 
 enum ReminderRepeatSchedule {
   none('Never', Icons.timer_off_outlined),
@@ -27,20 +29,17 @@ enum ReminderRepeatSchedule {
   final IconData icon;
 }
 
-/// iOS-style centered modal dialog for creating and editing reminders.
+/// The reminder create/edit sheet.
 ///
-/// Features:
-/// - Centered layout with smooth backdrop blur.
-/// - Top navigation header with Cancel (left), Title (center), and Add/Save (top-right).
-/// - Top-right action button is never hidden behind the keyboard.
-/// - Inset grouped glass sections for Title, Date/Time/Repeat, and Alarm notifications.
-/// - Defensive keyboard avoidance and tactile haptic feedback.
+/// A bottom sheet (not a centred dialog) so the title field always sits
+/// directly above the keyboard: the sheet lifts by the keyboard inset, its
+/// body scrolls, and the focused field is scrolled into view.
 Future<Reminder?> showIOSReminderDialog(
   BuildContext context, {
   Reminder? existing,
   DateTime? initialDate,
 }) {
-  return showAscentFrostedDialog<Reminder>(
+  return showAscentSheet<Reminder>(
     context: context,
     builder: (ctx) => _IOSReminderDialog(
       existing: existing,
@@ -146,81 +145,18 @@ class _IOSReminderDialogState extends ConsumerState<_IOSReminderDialog> {
     }
   }
 
-  void _showRepeatPicker() {
+  Future<void> _showRepeatPicker() async {
     HapticFeedback.selectionClick();
-    final g = context.glass;
-    showAscentFrostedDialog<void>(
+    FocusScope.of(context).unfocus();
+    final picked = await showAscentActionMenu<ReminderRepeatSchedule>(
       context: context,
-      builder: (dialogCtx) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 360),
-          decoration: BoxDecoration(
-            color: g.elevated,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: g.line,
-              width: 1,
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Text(
-                  'Repeat Schedule',
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              for (final schedule in ReminderRepeatSchedule.values)
-                ListTile(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: Icon(
-                    schedule.icon,
-                    color: _repeatSchedule == schedule
-                        ? SharedControlColors.actionBlue
-                        : g.inkMuted,
-                  ),
-                  title: Text(
-                    schedule.label,
-                    style: TextStyle(
-                      color: _repeatSchedule == schedule
-                          ? SharedControlColors.actionBlue
-                          : g.ink,
-                      fontWeight: _repeatSchedule == schedule
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
-                  ),
-                  trailing: _repeatSchedule == schedule
-                      ? const Icon(
-                          Icons.check_rounded,
-                          color: SharedControlColors.actionBlue,
-                        )
-                      : null,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _repeatSchedule = schedule);
-                    Navigator.pop(dialogCtx);
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
+      title: 'Repeat',
+      actions: [
+        for (final s in ReminderRepeatSchedule.values)
+          AscentAction(s, s.label, s.icon),
+      ],
     );
+    if (picked != null && mounted) setState(() => _repeatSchedule = picked);
   }
 
   Future<void> _save() async {
@@ -318,452 +254,234 @@ class _IOSReminderDialogState extends ConsumerState<_IOSReminderDialog> {
     }
   }
 
+  Future<void> _toggleAlarm(bool val) async {
+    setState(() => _alarmEnabled = val);
+    if (!val) return;
+    try {
+      if (!await NotificationService.instance.areNotificationsEnabled()) {
+        await NotificationService.instance.requestPermissions();
+      }
+      await ReminderAlarmBridge.requestAccess();
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final isDark = g.isDark;
-    final groupFill = isDark
-        ? const Color(0xFF1B1E22)
-        : const Color(0xFFF3F4F6);
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : Colors.black.withValues(alpha: 0.08);
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF121417) : Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Colors.black.withValues(alpha: 0.10),
-                width: 1,
+    final isNew = widget.existing == null;
+    final repeatValue = _repeatSchedule == ReminderRepeatSchedule.none
+        ? 'Never'
+        : _repeatSchedule.label;
+    return SingleChildScrollView(
+      key: const ValueKey('ios_reminder_scroll'),
+      primary: true,
+      physics: const BouncingScrollPhysics(),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s16,
+        0,
+        AppSpace.s16,
+        AppSpace.s24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // iOS sheet header: Cancel · title · Add/Save.
+          Row(
+            children: [
+              AscentButton.ghost(
+                label: 'Cancel',
+                onPressed: () => Navigator.of(context).pop(),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.16),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
+              Expanded(
+                child: Text(
+                  isNew ? 'New reminder' : 'Edit reminder',
+                  textAlign: TextAlign.center,
+                  style: AscentTextStyles.cardTitle.copyWith(color: g.ink),
                 ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // ── iOS Navigation Bar Header ───────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.of(context).pop();
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: const Size(48, 36),
-                          ),
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: g.inkMuted,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          widget.existing == null ? 'New Reminder' : 'Edit Reminder',
-                          style: AscentTextStyles.homeTitle.copyWith(
-                            color: g.ink,
-                            fontSize: 16.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CupertinoActivityIndicator(radius: 10),
-                              )
-                            : ValueListenableBuilder<TextEditingValue>(
-                                valueListenable: _titleController,
-                                builder: (context, value, _) {
-                                  final hasText = value.text.trim().isNotEmpty;
-                                  return TextButton(
-                                    key: const ValueKey('ios_reminder_save_button'),
-                                    onPressed: hasText ? _save : null,
-                                    style: TextButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                                      minimumSize: const Size(48, 36),
-                                    ),
-                                    child: Text(
-                                      widget.existing == null ? 'Add' : 'Save',
-                                      style: TextStyle(
-                                        color: hasText
-                                            ? SharedControlColors.actionBlue
-                                            : g.inkMuted.withValues(alpha: 0.5),
-                                        fontSize: 15.5,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ],
-                    ),
-                  ),
-
-                  const Divider(height: 1, thickness: 0.75),
-
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // ── Group 1: Title Input ───────────────────────────
-                        Container(
-                          decoration: BoxDecoration(
-                            color: groupFill,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: borderColor, width: 0.8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 4,
-                          ),
-                          child: TextField(
-                            key: const ValueKey('ios_reminder_title_field'),
-                            controller: _titleController,
-                            autofocus: widget.existing == null,
-                            style: TextStyle(
-                              color: g.ink,
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Title',
-                              hintStyle: TextStyle(
-                                color: g.inkMuted.withValues(alpha: 0.7),
-                                fontSize: 15.5,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                            ),
-                            onChanged: (_) {
-                              if (_titleError != null) {
-                                setState(() => _titleError = null);
-                              }
-                            },
-                          ),
-                        ),
-
-                        if (_titleError != null) ...[
-                          const SizedBox(height: 6),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 6),
-                            child: Text(
-                              _titleError!,
-                              style: TextStyle(
-                                color: SharedControlColors.dueRed,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-
-                        // ── Group 2: Date, Time & Repeat ───────────────────
-                        Container(
-                          decoration: BoxDecoration(
-                            color: groupFill,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: borderColor, width: 0.8),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            children: [
-                              // Date Row
-                              InkWell(
-                                onTap: _pickDate,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 12,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: SharedControlColors.dueRed
-                                              .withValues(alpha: 0.14),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Icon(
-                                          Icons.calendar_today_rounded,
-                                          size: 16,
-                                          color: SharedControlColors.dueRed,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Date',
-                                        style: TextStyle(
-                                          color: g.ink,
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        DateFormat('EEE, d MMM').format(_scheduledDate),
-                                        style: TextStyle(
-                                          color: SharedControlColors.actionBlue,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.chevron_right_rounded,
-                                        size: 18,
-                                        color: g.inkMuted,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              Divider(
-                                height: 1,
-                                thickness: 0.75,
-                                color: borderColor,
-                                indent: 14,
-                              ),
-
-                              // Time Row
-                              InkWell(
-                                onTap: _pickTime,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 12,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: SharedControlColors.actionBlue
-                                              .withValues(alpha: 0.14),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Icon(
-                                          Icons.access_time_filled_rounded,
-                                          size: 16,
-                                          color: SharedControlColors.actionBlue,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Time',
-                                        style: TextStyle(
-                                          color: g.ink,
-                                          fontSize: 14.5,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        _scheduledTime.format(context),
-                                        style: TextStyle(
-                                          color: SharedControlColors.actionBlue,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.chevron_right_rounded,
-                                        size: 18,
-                                        color: g.inkMuted,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              if (widget.existing == null) ...[
-                                Divider(
-                                  height: 1,
-                                  thickness: 0.75,
-                                  color: borderColor,
-                                  indent: 14,
-                                ),
-
-                                // Repeat Row
-                                InkWell(
-                                  onTap: _showRepeatPicker,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF8E44AD)
-                                                .withValues(alpha: 0.14),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: const Icon(
-                                            Icons.repeat_rounded,
-                                            size: 16,
-                                            color: Color(0xFF8E44AD),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Repeat',
-                                          style: TextStyle(
-                                            color: g.ink,
-                                            fontSize: 14.5,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Text(
-                                          _repeatSchedule.label,
-                                          style: TextStyle(
-                                            color: g.inkMuted,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          Icons.chevron_right_rounded,
-                                          size: 18,
-                                          color: g.inkMuted,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // ── Group 3: Alarm Switch ──────────────────────────
-                        Container(
-                          decoration: BoxDecoration(
-                            color: groupFill,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: borderColor, width: 0.8),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF39C12)
-                                      .withValues(alpha: 0.14),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.alarm_rounded,
-                                  size: 16,
-                                  color: Color(0xFFF39C12),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Ring as an alarm',
-                                      style: TextStyle(
-                                        color: g.ink,
-                                        fontSize: 14.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Persistent ring until acknowledged',
-                                      style: TextStyle(
-                                        color: g.inkMuted,
-                                        fontSize: 11.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              AscentSwitch(
-                                value: _alarmEnabled,
-                                onChanged: _saving
-                                    ? null
-                                    : (val) async {
-                                        HapticFeedback.selectionClick();
-                                        setState(() => _alarmEnabled = val);
-                                        if (val) {
-                                          try {
-                                            if (!await NotificationService
-                                                .instance
-                                                .areNotificationsEnabled()) {
-                                              await NotificationService
-                                                  .instance
-                                                  .requestPermissions();
-                                            }
-                                            await ReminderAlarmBridge
-                                                .requestAccess();
-                                          } catch (_) {}
-                                        }
-                                      },
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        if (_alarmInfo != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            _alarmInfo!,
-                            style: TextStyle(
-                              color: g.inkMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
               ),
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _titleController,
+                builder: (context, value, _) => AscentButton.ghost(
+                  key: const ValueKey('ios_reminder_save_button'),
+                  label: isNew ? 'Add' : 'Save',
+                  loading: _saving,
+                  onPressed: value.text.trim().isNotEmpty && !_saving
+                      ? _save
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s12),
+          AppTextField(
+            key: const ValueKey('ios_reminder_title_field'),
+            controller: _titleController,
+            autofocus: isNew,
+            hintText: 'e.g. Call mom at 6 pm',
+            textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+            onChanged: (_) {
+              if (_titleError != null) setState(() => _titleError = null);
+            },
+          ),
+          if (_titleError != null) ...[
+            const SizedBox(height: AppSpace.s8),
+            Padding(
+              padding: const EdgeInsets.only(left: AppSpace.s4),
+              child: Text(
+                _titleError!,
+                style: AscentTextStyles.caption.copyWith(color: g.errorInk),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpace.s16),
+          _Group(
+            children: [
+              _GroupRow(
+                icon: Icons.calendar_today_outlined,
+                label: 'Date',
+                value: DateFormat('EEE, d MMM').format(_scheduledDate),
+                onTap: _pickDate,
+              ),
+              _GroupRow(
+                icon: Icons.schedule_outlined,
+                label: 'Time',
+                value: _scheduledTime.format(context),
+                onTap: _pickTime,
+              ),
+              if (isNew)
+                _GroupRow(
+                  icon: Icons.repeat_rounded,
+                  label: 'Repeat',
+                  value: repeatValue,
+                  onTap: _showRepeatPicker,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s16),
+          _Group(
+            children: [
+              AscentSwitchRow(
+                title: 'Ring as an alarm',
+                helper: 'Keeps ringing until you stop it',
+                value: _alarmEnabled,
+                enabled: !_saving,
+                onChanged: _toggleAlarm,
+              ),
+            ],
+          ),
+          if (_alarmInfo != null) ...[
+            const SizedBox(height: AppSpace.s8),
+            Text(
+              _alarmInfo!,
+              style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// An inset grouped list: one rounded surface, hairlines between rows.
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: g.surface,
+        borderRadius: AppGeometry.roundedr12,
+        border: Border.all(color: g.line),
+      ),
+      child: ClipRRect(
+        borderRadius: AppGeometry.roundedr12,
+        child: Column(
+          children: [
+            for (final (i, c) in children.indexed) ...[
+              if (i > 0)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: AppSpace.s16 + 30 + AppSpace.s12,
+                  color: g.line,
+                ),
+              c,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GroupRow extends StatelessWidget {
+  const _GroupRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Semantics(
+      button: true,
+      label: '$label, $value',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16,
+              vertical: AppSpace.s10,
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: g.actionInk.withValues(alpha: .12),
+                      borderRadius: AppGeometry.roundedr8,
+                    ),
+                    child: Icon(icon, size: 17, color: g.actionInk),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AscentTextStyles.listRowTitle.copyWith(color: g.ink),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s8),
+                Flexible(
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.end,
+                    overflow: TextOverflow.ellipsis,
+                    style: AscentTextStyles.body.copyWith(
+                      color: g.inkSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpace.s4),
+                Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
+              ],
             ),
           ),
         ),

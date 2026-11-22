@@ -467,7 +467,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                            selected ? FontWeight.w600 : FontWeight.w500,
                         color: selected ? Colors.white : context.textPrimary,
                       ),
                     ),

@@ -129,7 +129,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                 'Today’s Spark',
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                   color: c.textSecondary,
                 ),
@@ -514,7 +514,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: c.textPrimary,
                             letterSpacing: -0.2,
                           ),
@@ -611,7 +611,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                     initial,
                                     style: TextStyle(
                                       fontSize: 16,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                       color: c.accent,
                                     ),
                                   ),
@@ -687,7 +687,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 27,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                       height: 1.2,
                       letterSpacing: -0.5,

@@ -216,7 +216,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                     displayTitle,
                     style: TextStyle(
                       fontSize: 26,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                       letterSpacing: -0.5,
                     ),
@@ -271,7 +271,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                 '$done/$total',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: c.textPrimary,
                                 ),
                               ),
@@ -289,7 +289,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                                     : 'Good start',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: c.textPrimary,
                                 ),
                               ),
@@ -335,7 +335,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                     'Today · ${dfShort.format(now)}',
                     style: TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
@@ -391,7 +391,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
                       'Coming up',
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: c.textPrimary,
                       ),
                     ),
@@ -521,7 +521,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
             dfShort.format(date),
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: c.textPrimary,
             ),
           ),

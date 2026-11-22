@@ -473,7 +473,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                     style: AscentTextStyles.homeTitle.copyWith(
                       color: g.ink,
                       fontSize: 19,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   TextButton.icon(
@@ -500,7 +500,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                         checkmarkColor: g.clay,
                         labelStyle: TextStyle(
                           color: selected ? g.clay : g.inkMuted,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                           fontSize: 12.5,
                         ),
                         onSelected: (_) => setState(() => _selectedCategory = cat),
@@ -626,7 +626,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                       : const Icon(Icons.lock_rounded, size: 18),
                   label: Text(
                     widget.initialItem != null ? 'Update Item' : 'Secure & Save to Vault',
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ),
@@ -702,7 +702,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                   labelStyle: TextStyle(
                     color: _selectedSkin == null ? g.clay : g.inkMuted,
                     fontSize: 11.5,
-                    fontWeight: _selectedSkin == null ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: _selectedSkin == null ? FontWeight.w600 : FontWeight.w500,
                   ),
                   onSelected: (_) => setState(() => _selectedSkin = null),
                 ),
@@ -728,7 +728,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                     labelStyle: TextStyle(
                       color: isSelected ? g.clay : g.inkMuted,
                       fontSize: 11.5,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                     onSelected: (_) => setState(() => _selectedSkin = skin),
                   ),

@@ -330,7 +330,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
                                         style: TextStyle(
                                           color: skin.metallicAccent,
                                           fontSize: 14,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w600,
                                           letterSpacing: 1.4,
                                         ),
                                       ),
@@ -375,7 +375,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
                               style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 letterSpacing: 2.2,
                                 color: Colors.white,
                                 shadows: [
@@ -424,7 +424,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 12.5,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w600,
                                           letterSpacing: 1.2,
                                         ),
                                       ),
@@ -456,7 +456,7 @@ class _CredCardVisualState extends State<CredCardVisual> {
                                         fontFamily: 'monospace',
                                         color: Colors.white,
                                         fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                         letterSpacing: 1.0,
                                       ),
                                     ),
@@ -634,7 +634,7 @@ class _CardBrandBadge extends StatelessWidget {
           'VISA',
           style: TextStyle(
             color: Color(0xFF1A1F71),
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             fontStyle: FontStyle.italic,
             fontSize: 13,
             letterSpacing: 0.5,
@@ -688,7 +688,7 @@ class _CardBrandBadge extends StatelessWidget {
               'RuPay',
               style: TextStyle(
                 color: Color(0xFF0C4688),
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
             ),
@@ -708,7 +708,7 @@ class _CardBrandBadge extends StatelessWidget {
           'AMEX',
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             fontSize: 11,
             letterSpacing: 0.5,
           ),
@@ -729,7 +729,7 @@ class _CardBrandBadge extends StatelessWidget {
         style: const TextStyle(
           color: Colors.white,
           fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );

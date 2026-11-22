@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../capture/capture_button.dart';
 import 'home_day_design.dart';
 
 class HomeCompactHeader extends StatelessWidget {
@@ -50,7 +51,7 @@ class HomeCompactHeader extends StatelessWidget {
                   initial,
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.accent,
                   ),
                 ),
@@ -68,6 +69,7 @@ class HomeCompactHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              const CaptureButton.nav(),
             ],
           ),
         ),

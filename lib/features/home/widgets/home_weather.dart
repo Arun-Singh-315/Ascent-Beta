@@ -356,7 +356,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                               '$tempVal°C',
                               style: TextStyle(
                                 fontSize: 36,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 color: c.textPrimary,
                                 height: 1.1,
                               ),

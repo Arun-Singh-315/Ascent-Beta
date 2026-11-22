@@ -70,7 +70,7 @@ void main() {
 
       final Text titleWidget = tester.widget(titleFinder);
       expect(titleWidget.style?.fontSize, equals(20));
-      expect(titleWidget.style?.fontWeight, equals(FontWeight.w700));
+      expect(titleWidget.style?.fontWeight, equals(FontWeight.w600));
     });
 
     testWidgets(

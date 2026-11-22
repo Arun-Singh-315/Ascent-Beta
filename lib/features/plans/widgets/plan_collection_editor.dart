@@ -373,7 +373,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                     'Set Focus Duration',
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: ctx.textPrimary,
                     ),
                   ),
@@ -731,7 +731,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             'Add multiple items',
                             style: Theme.of(ctx).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: g.ink,
                                 ),
                           ),

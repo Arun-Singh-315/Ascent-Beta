@@ -1161,7 +1161,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       'Companion Identity',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: sheetContext.c.textPrimary,
                         letterSpacing: -0.3,
                       ),
@@ -1290,7 +1290,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           name,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: sheetContext.textPrimary,
                           ),
                         ),
@@ -1464,7 +1464,7 @@ class _ConversationMessageBubbleState
               assistantName,
               style: AscentTextStyles.interfaceLabel.copyWith(
                 color: chat.assistantName,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1491,22 +1491,22 @@ class _ConversationMessageBubbleState
                   ),
                   strong: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h1: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h2: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h3: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   listBullet: TextStyle(
@@ -1755,7 +1755,7 @@ class _ConversationMessageBubbleState
                                         fontSize: 10.5,
                                         letterSpacing: 1.0,
                                         color: accentColor,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -1769,7 +1769,7 @@ class _ConversationMessageBubbleState
                                 style: TextStyle(
                                   color: context.glass.ink,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   height: 1.25,
                                 ),
                               ),
@@ -1894,7 +1894,7 @@ class _ConversationMessageBubbleState
                                 : 'Action needs attention',
                             style: TextStyle(
                               color: ChatPalette.of(context).label,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(

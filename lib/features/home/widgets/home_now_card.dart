@@ -448,7 +448,7 @@ class _NowShell extends StatelessWidget {
                         eyebrow.toUpperCase(),
                         style: AscentTextStyles.caption.copyWith(
                           color: accent,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.6,
                         ),
                       ),

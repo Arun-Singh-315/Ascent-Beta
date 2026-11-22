@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/ascent_backdrop.dart';
 import '../../../shared/widgets/next_step_chips.dart';
 import '../../../core/services/quick_add_parser.dart';
 import 'package:intl/intl.dart';
@@ -47,6 +48,7 @@ import 'palace_card.dart';
 import 'palace_providers.dart';
 import 'thought_lifecycle.dart';
 import 'thought_lines.dart';
+import '../../capture/capture_button.dart';
 
 /// One drawn row of a tab: a header, a card, or a control. Built lazily, so a
 /// tab with thousands of thoughts only builds what is on screen.
@@ -806,45 +808,59 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
 
   Widget _composer() {
     // The board body already ends at the tab bar, so a small gap is enough:
-    // the field sits right above it instead of floating mid-screen.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_nextSteps.isNotEmpty && _inputEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s8),
-              child: NextStepChips(steps: _nextSteps),
-            ),
-          if (_canPaste && _inputEmpty && !_listening && _nextSteps.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s8),
-              child: AppChip(
-                key: const ValueKey('palace_paste'),
-                label: 'Paste as a thought',
-                icon: Icons.content_paste_rounded,
-                onTap: _pasteAsThought,
+    // the field sits right above it instead of floating mid-screen. Thoughts
+    // scroll under a fade into the board's own colour, not a white slab, so
+    // the field reads as part of the screen.
+    final bottom = AscentBackdrop.bottomOf(context, BackdropTone.mind);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [bottom.withValues(alpha: 0), bottom, bottom],
+          stops: const [0, .22, 1],
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, AppSpace.s20, 16, 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_nextSteps.isNotEmpty && _inputEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                child: NextStepChips(steps: _nextSteps),
               ),
+            if (_canPaste && _inputEmpty && !_listening && _nextSteps.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                child: AppChip(
+                  key: const ValueKey('palace_paste'),
+                  label: 'Paste as a thought',
+                  icon: Icons.content_paste_rounded,
+                  onTap: _pasteAsThought,
+                ),
+              ),
+            MessageComposer(
+              quiet: true,
+              glass: false,
+              controller: _input,
+              focusNode: _focus,
+              hint: 'e.g. Idea for the weekend trip',
+              busy: _saving,
+              // Taller, Gemini-like field: two lines visible before typing.
+              minHeight: 76,
+              minLines: 2,
+              onMic: _toggleVoice,
+              listening: _listening,
+              onSend: (_) {
+                if (_listening) _voice?.stop();
+                _send();
+              },
             ),
-          MessageComposer(
-            quiet: true,
-            controller: _input,
-            focusNode: _focus,
-            hint: 'e.g. Idea for the weekend trip',
-            busy: _saving,
-            // Taller, Gemini-like field: two lines visible before typing.
-            minHeight: 76,
-            minLines: 2,
-            onMic: _toggleVoice,
-            listening: _listening,
-            onSend: (_) {
-              if (_listening) _voice?.stop();
-              _send();
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -869,7 +885,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   overflow: TextOverflow.ellipsis,
                   style: AscentTextStyles.listRowTitle.copyWith(
                     color: g.ink,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -879,7 +895,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   '$count',
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
@@ -1452,7 +1468,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                       '${d.day}',
                       style: AscentTextStyles.bodyMedium.copyWith(
                         color: g.ink,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Container(
@@ -1795,6 +1811,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   ),
                 ]
               : [
+                  const CaptureButton.nav(),
                   IconButton(
                     key: const ValueKey('palace_search_toggle'),
                     tooltip: _searching ? 'Close search' : 'Search',

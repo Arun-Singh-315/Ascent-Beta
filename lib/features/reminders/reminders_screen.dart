@@ -1,6 +1,7 @@
 import 'package:ascent/app/app_navigation.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../calendar/calendar_event_sheet.dart';
+import '../calendar/multi_day_todo_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
@@ -72,6 +73,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   DateTime _selectedCalendarDate = DateTime.now();
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isMonthExpanded = false;
+
+  /// Multi-day selection: tap several days, then add one to-do to all.
+  bool _multiSelect = false;
+  final Set<DateTime> _multiDays = <DateTime>{};
+  Set<DateTime> _thoughtDays = const {};
 
   void _publishCalendarView() {
     if (widget.calendarOnly) return;
@@ -1318,6 +1324,20 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       _selectedCalendarDate,
     );
 
+    // Mind thoughts sit on the day they were written (or carried on to).
+    final thoughts = widget.thingsOnly
+        ? const <Thought>[]
+        : ref.watch(calendarThoughtsProvider).value ?? const <Thought>[];
+    _thoughtDays = {for (final t in thoughts) calendarDayOf(t)};
+    final selectedDay = DateTime(
+      _selectedCalendarDate.year,
+      _selectedCalendarDate.month,
+      _selectedCalendarDate.day,
+    );
+    final dayThoughts = thoughts
+        .where((t) => calendarDayOf(t) == selectedDay)
+        .toList();
+
     final neutral = MonochromeSurfaces.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1347,6 +1367,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     color: g.inkSecondary,
                   ),
                 ),
+                const SizedBox(height: 4),
+                _multiSelectBar(g),
               ],
               const SizedBox(height: 12),
               LayoutBuilder(
@@ -1429,6 +1451,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       '${dayTasks.length} task${dayTasks.length == 1 ? '' : 's'}',
                       if (dayActivities.isNotEmpty)
                         '${dayActivities.length} activit${dayActivities.length == 1 ? 'y' : 'ies'}',
+                      if (dayThoughts.isNotEmpty)
+                        '${dayThoughts.length} thought${dayThoughts.length == 1 ? '' : 's'}',
                     ])
                       Text(
                         count,
@@ -1473,6 +1497,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         if (dayReminders.isEmpty &&
             dayTasks.isEmpty &&
             dayActivities.isEmpty &&
+            dayThoughts.isEmpty &&
             selectedFestival == null)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
@@ -1519,6 +1544,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             _calendarSectionLabel('Things & activities', g),
             for (final activity in dayActivities)
               _buildCalendarActivityTile(activity, g),
+            const SizedBox(height: 12),
+          ],
+          if (dayThoughts.isNotEmpty) ...[
+            _calendarSectionLabel('Thoughts', g),
+            for (final thought in dayThoughts)
+              _buildCalendarThoughtTile(thought, g),
           ],
         ],
       ],
@@ -1876,14 +1907,139 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       key: ValueKey('calendar_day_${day.year}_${day.month}_${day.day}'),
       date: day,
       today: isToday,
-      selected: isSelected,
+      selected: _multiSelect
+          ? _multiDays.contains(DateTime(day.year, day.month, day.day))
+          : isSelected,
       outsideMonth: !isCurrentMonth,
-      hasScheduledItems: hasReminders || hasTasks || hasActivities,
+      hasScheduledItems:
+          hasReminders ||
+          hasTasks ||
+          hasActivities ||
+          _thoughtDays.contains(DateTime(day.year, day.month, day.day)),
       semanticLabel:
           '${DateFormat.yMMMMEEEEd().format(day)}${festival == null ? '' : ', ${festival.name}'}',
       agendaRow: agendaRow,
       compact: widget.calendarOnly && !agendaRow,
-      onTap: () => _selectCalendarDay(day),
+      onTap: () => _multiSelect
+          ? _toggleMultiDay(day)
+          : _selectCalendarDay(day),
+    );
+  }
+
+  void _toggleMultiDay(DateTime day) {
+    HapticFeedback.selectionClick();
+    final d = DateTime(day.year, day.month, day.day);
+    setState(() {
+      if (!_multiDays.remove(d)) _multiDays.add(d);
+    });
+  }
+
+  Future<void> _addToSelectedDays() async {
+    if (_multiDays.isEmpty) return;
+    final added = await showMultiDayTodoSheet(context, _multiDays.toList());
+    if (added == true && mounted) {
+      setState(() {
+        _multiSelect = false;
+        _multiDays.clear();
+      });
+    }
+  }
+
+  Widget _multiSelectBar(AscentGlass g) {
+    if (!_multiSelect) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: AscentButton.ghost(
+          key: const ValueKey('calendar_select_days'),
+          label: 'Select days',
+          icon: Icons.done_all_rounded,
+          compact: true,
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            setState(() {
+              _multiSelect = true;
+              _multiDays
+                ..clear()
+                ..add(
+                  DateTime(
+                    _selectedCalendarDate.year,
+                    _selectedCalendarDate.month,
+                    _selectedCalendarDate.day,
+                  ),
+                );
+            });
+          },
+        ),
+      );
+    }
+    final n = _multiDays.length;
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpace.s8,
+      runSpacing: AppSpace.s4,
+      children: [
+        Text(
+          n == 1 ? '1 day selected' : '$n days selected',
+          key: const ValueKey('calendar_selected_count'),
+          style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
+        ),
+        AscentButton.ghost(
+          label: 'Cancel',
+          compact: true,
+          onPressed: () => setState(() {
+            _multiSelect = false;
+            _multiDays.clear();
+          }),
+        ),
+        AscentButton.primary(
+          key: const ValueKey('calendar_add_to_days'),
+          label: 'Add to-do',
+          icon: Icons.add_rounded,
+          compact: true,
+          onPressed: n == 0 ? null : _addToSelectedDays,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarThoughtTile(Thought thought, AscentGlass g) {
+    final line = thought.content.trim().split('\n').first;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s8),
+      child: InkWell(
+        key: ValueKey('calendar_thought_${thought.id}'),
+        borderRadius: AppGeometry.roundedr12,
+        onTap: () => context.open('/thought-wall?thought=${thought.id}'),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s12,
+            vertical: AppSpace.s12,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: AppGeometry.roundedr12,
+            border: Border.all(color: g.line),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 18,
+                color: g.inkSecondary,
+              ),
+              const SizedBox(width: AppSpace.s12),
+              Expanded(
+                child: Text(
+                  line,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AscentTextStyles.body.copyWith(color: g.ink),
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -349,7 +349,7 @@ class _ThingsInteractiveCardState extends ConsumerState<ThingsInteractiveCard> {
                           'Story Micro-Steps · ${_checkedSteps.length}/${enrichment.microSteps.length}',
                           style: TextStyle(
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: g.ink,
                           ),
                         ),
