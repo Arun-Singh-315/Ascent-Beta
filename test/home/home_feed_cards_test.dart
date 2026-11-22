@@ -122,6 +122,44 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('a saved thought shows as a bubble with when it was', (
+    tester,
+  ) async {
+    final db = await pump(tester);
+    await tester.runAsync(
+      () => db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: 'Buy basil'),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Buy basil'), findsOneWidget);
+    expect(find.text('Just now'), findsWidgets);
+    await unmount(tester);
+  });
+
+  testWidgets('Your day is a bordered card with outlined icons', (
+    tester,
+  ) async {
+    await pump(tester);
+    final box = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('home_day_card')),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    final deco = box.decoration as BoxDecoration;
+    expect(deco.border, isNotNull);
+    expect(deco.gradient, isNull);
+    await unmount(tester);
+  });
+
   testWidgets('locked features have no card', (tester) async {
     await pump(tester, unlocked: ['things']);
     expect(find.byKey(const ValueKey('home_things_card')), findsOneWidget);
