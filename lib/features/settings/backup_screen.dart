@@ -19,6 +19,7 @@ import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
+import 'cloud_backup_section.dart';
 
 /// Backup and restore (CLAUDE.md §7). One tap makes a backup file you can
 /// keep anywhere; a daily one stays on the phone; restoring shows what is
@@ -331,6 +332,8 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               },
             ),
           ]),
+          const SizedBox(height: AppSpace.s16),
+          CloudBackupSection(onRestore: _restore),
           const SizedBox(height: AppSpace.s24),
           Text(
             'On this phone',
