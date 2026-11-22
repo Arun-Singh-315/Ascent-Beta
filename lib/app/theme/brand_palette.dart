@@ -18,7 +18,8 @@ abstract final class BrandPalette {
       'today' ||
       'things' ||
       'reminders' ||
-      'plans' => dark ? CalmBluePalette.darkAction : CalmBluePalette.action,
+      'plans' ||
+      'travel' => dark ? CalmBluePalette.darkAction : CalmBluePalette.action,
       'thought-wall' ||
       'mind' => dark ? const Color(0xFF6CCBC3) : const Color(0xFF2F8F8A),
       'hydration' ||

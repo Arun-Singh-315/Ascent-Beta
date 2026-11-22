@@ -30,6 +30,8 @@ import '../features/vault/vault_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../shared/widgets/feature_guide.dart';
 import '../features/promises/promises_screen.dart';
+import '../features/travel/travel_screen.dart';
+import '../features/travel/trip_screen.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
 
@@ -53,6 +55,8 @@ class AscentRoutes {
   static const settings = '/settings';
   static const backup = '/backup';
   static const promises = '/promises';
+  static const travel = '/travel';
+  static const trip = '/travel/trip';
   static const focus = '/focus';
   static const reminders = '/reminders';
   static const calendar = '/calendar';
@@ -277,6 +281,21 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.promises,
       builder: (context, state) => const PromisesScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.travel,
+      builder: (context, state) => const TravelScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.trip,
+      builder: (context, state) => TripScreen(
+        id: state.uri.queryParameters['id'] ?? '',
+        tab: state.uri.queryParameters['tab'] == 'money'
+            ? TripTab.money
+            : TripTab.plan,
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

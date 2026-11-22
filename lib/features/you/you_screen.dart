@@ -77,6 +77,13 @@ const youGroups = [
       route: '/promises',
     ),
     YouEntry(
+      icon: Icons.luggage_outlined,
+      tint: PillarTints.plan,
+      title: 'Travel',
+      subtitle: 'Trips, places, bills and photos',
+      route: '/travel',
+    ),
+    YouEntry(
       icon: Icons.notifications_none_rounded,
       tint: PillarTints.plan,
       title: 'Reminders',

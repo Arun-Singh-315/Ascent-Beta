@@ -28,21 +28,21 @@ class PromisesScreen extends ConsumerWidget {
     final g = context.glass;
     final all = ref.watch(promisesProvider);
     final active = ref.watch(activePromisesProvider).value ?? const [];
-    return AscentScaffold(
-      title: 'Promises',
-      largeTitle: true,
-      backgroundColor: Colors.transparent,
-      actions: [
-        AscentButton.icon(
-          key: const ValueKey('promises_new'),
-          icon: Icons.add_rounded,
-          tooltip: 'New promise',
-          semanticLabel: 'New promise',
-          onPressed: () => showPromiseSheet(context),
-        ),
-      ],
-      body: AscentBackdrop(
-        child: all.when(
+    return AscentBackdrop(
+      child: AscentScaffold(
+        title: 'Promises',
+        largeTitle: true,
+        backgroundColor: Colors.transparent,
+        actions: [
+          AscentButton.icon(
+            key: const ValueKey('promises_new'),
+            icon: Icons.add_rounded,
+            tooltip: 'New promise',
+            semanticLabel: 'New promise',
+            onPressed: () => showPromiseSheet(context),
+          ),
+        ],
+        body: all.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => EmptyState(
             icon: Icons.cloud_off_rounded,
