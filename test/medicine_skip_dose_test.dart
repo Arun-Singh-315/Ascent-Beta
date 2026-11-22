@@ -130,10 +130,27 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
         }
 
-        // Overdue dose should show Snooze and Skip chips
+        // Overdue doses keep Snooze and Skip in one small menu.
         expect(find.textContaining('Paracetamol'), findsWidgets);
-        expect(find.text('Skip'), findsWidgets);
         expect(tester.takeException(), isNull);
+        final more = find.byTooltip('Snooze or skip');
+        expect(more, findsWidgets);
+        await tester.dragUntilVisible(
+          more.first,
+          find.byKey(const ValueKey(false)),
+          const Offset(0, -200),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(more.first);
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(find.text('Skip this dose'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await tester.tapAt(const Offset(4, 4));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
         await tester.pumpWidget(const SizedBox());
         for (var i = 0; i < 5; i++) {
