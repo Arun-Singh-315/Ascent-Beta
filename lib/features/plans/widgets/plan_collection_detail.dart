@@ -20,9 +20,7 @@ Future<void> showPlanCollectionDetail(
   String id, {
   String? initialAction,
 }) => Navigator.of(context, rootNavigator: true).push<void>(
-  MaterialPageRoute(
-    builder: (_) => PlanDetailScreen(collectionId: id),
-  ),
+  MaterialPageRoute(builder: (_) => PlanDetailScreen(collectionId: id)),
 );
 
 class PlanCollectionDetail extends ConsumerStatefulWidget {
@@ -162,9 +160,6 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                   decoration: InputDecoration(
                     hintText: 'Plan name',
                     counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr12,
-                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpace.s12),
@@ -177,9 +172,6 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                   decoration: InputDecoration(
                     hintText: 'Optional notes',
                     counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr12,
-                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpace.s16),

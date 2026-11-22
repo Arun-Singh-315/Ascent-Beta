@@ -89,14 +89,6 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     horizontal: 16,
                     vertical: 14,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: ctx.divider),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: g.clay, width: 1.5),
-                  ),
                 ),
               ),
             ],
@@ -184,14 +176,6 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: ctx.divider),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: g.clay, width: 1.5),
                   ),
                 ),
               ),
@@ -410,8 +394,8 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                           isGoalMet
                               ? 'Daily Goal Achieved'
                               : (currentMl == 0
-                                  ? 'Record your first sip below'
-                                  : '$remainingMl mL to daily goal'),
+                                    ? 'Record your first sip below'
+                                    : '$remainingMl mL to daily goal'),
                           style: AscentTextStyles.captionMedium.copyWith(
                             color: isGoalMet
                                 ? AppPalette.colorFF10B981

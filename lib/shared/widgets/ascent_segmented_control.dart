@@ -135,19 +135,20 @@ class AscentSegmentedControl<T> extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 48),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               decoration: BoxDecoration(
-                color: pill && active
+                color: (pill || stacked) && active
                     ? activeInk.withValues(alpha: dark ? .18 : .09)
                     : Colors.transparent,
-                borderRadius: pill ? BorderRadius.circular(28) : null,
+                borderRadius: pill
+                    ? BorderRadius.circular(28)
+                    : stacked
+                    ? BorderRadius.circular(12)
+                    : null,
                 border: pill
                     ? null
                     : stacked
-                    ? BorderDirectional(
-                        start: BorderSide(
-                          color: active ? accentColor : Colors.transparent,
-                          width: 3,
-                        ),
-                      )
+                    // Stacked (large text): the chosen option is a soft
+                    // tinted row, never a coloured stripe down the side.
+                    ? null
                     : Border(
                         bottom: BorderSide(
                           color: active ? accentColor : Colors.transparent,

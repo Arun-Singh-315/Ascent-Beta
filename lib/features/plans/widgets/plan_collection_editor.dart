@@ -24,11 +24,10 @@ Future<void> showPlanCollectionEditor(
   PlanItemView? editing,
   List<PlanItemView>? scheduling,
   bool dailyTimes = false,
-}) => Navigator.of(context, rootNavigator: true).push<void>(
-  MaterialPageRoute(
-    builder: (_) => const PlanCreatorScreen(),
-  ),
-);
+}) => Navigator.of(
+  context,
+  rootNavigator: true,
+).push<void>(MaterialPageRoute(builder: (_) => const PlanCreatorScreen()));
 
 class _Item {
   _Item(
@@ -758,14 +757,6 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                     hintStyle: TextStyle(color: g.inkMuted),
                     filled: true,
                     fillColor: g.fill,
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr16,
-                      borderSide: BorderSide(color: g.edge),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr16,
-                      borderSide: BorderSide(color: g.edge),
-                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpace.s16),
@@ -1086,9 +1077,6 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             hintText: 'e.g. Interview preparation',
                             counterText: '',
                             contentPadding: const EdgeInsets.all(AppSpace.s14),
-                            border: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr12,
-                            ),
                           ),
                         ),
                         Padding(

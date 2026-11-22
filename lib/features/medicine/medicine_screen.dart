@@ -7,7 +7,6 @@ import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/history_action.dart';
-import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -21,7 +20,6 @@ import '../../app/theme/surface_tokens.dart';
 import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_action_menu.dart';
-import '../../app/theme/brand_palette.dart';
 import '../../core/medicine/refill.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
@@ -32,6 +30,7 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
 import 'medicine_quick_add_sheet.dart';
+import 'medicine_today.dart';
 
 class MedicineScreen extends ConsumerStatefulWidget {
   const MedicineScreen({super.key});
@@ -44,7 +43,6 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
   final _updating = <int>{};
   int _view = 0;
   bool get _showMedicines => _view == 1;
-  bool _showTaken = false;
 
   /// Show only one person's medicines; null shows everyone.
   String? _person;
@@ -142,35 +140,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       'Feeling recovered',
       'Other',
     ];
-    final selectedReason = await showDialog<String>(
+    final selectedReason = await showAscentActionMenu<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Skip dose for ${medicine.name}?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Select a clinical or personal reason to log why this dose was skipped:',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            for (final r in reasons)
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(r, style: const TextStyle(fontSize: 13)),
-                onTap: () => Navigator.pop(ctx, r),
-              ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
+      title: 'Skip ${medicine.name}? Why?',
+      actions: [
+        for (final r in reasons)
+          AscentAction(r, r, Icons.chevron_right_rounded),
+      ],
     );
 
     if (selectedReason == null || !mounted) return;
@@ -259,152 +235,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     EdgeInsets padding = const EdgeInsets.all(18),
   }) => GlassSurface(radius: 20, padding: padding, child: child);
 
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(top: 24, bottom: 12),
-    child: Text(
-      text,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-    ),
-  );
-
   Widget _tag(String text, {IconData? icon}) => CarePill(text, icon: icon);
-
-  Widget _summary(List<MedicineLog> logs, {required bool hasMedicines}) {
-    final g = context.glass;
-    final taken = logs.where((log) => log.isTaken).length;
-    final now = DateTime.now();
-    final currentTime = DateFormat('HH:mm').format(now);
-    final overdueCount = logs
-        .where((log) => !log.isTaken && log.timeSlot.compareTo(currentTime) < 0)
-        .length;
-    final next = logs
-        .where(
-          (log) => !log.isTaken && log.timeSlot.compareTo(currentTime) >= 0,
-        )
-        .firstOrNull;
-
-    final String heroTitle;
-    if (!hasMedicines) {
-      heroTitle = 'Your Care\nCompanion';
-    } else if (taken == logs.length && logs.isNotEmpty) {
-      heroTitle = 'All caught up!\nRest well 🌿';
-    } else if (overdueCount > 0) {
-      heroTitle = 'A dose is\nwaiting for you';
-    } else {
-      heroTitle = 'One dose\nat a time.';
-    }
-
-    return CareHero(
-      eyebrow: DateFormat('EEEE, MMM d').format(now),
-      title: heroTitle,
-      child: hasMedicines
-          ? Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: g.surface.withValues(alpha: .7),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      SizedBox.square(
-                        dimension: 44,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              value: logs.isEmpty ? 0 : taken / logs.length,
-                              strokeWidth: 4,
-                              color: g.actionInk,
-                              backgroundColor: g.track,
-                            ),
-                            Icon(
-                              taken == logs.length && logs.isNotEmpty
-                                  ? Icons.check_rounded
-                                  : Icons.medication_outlined,
-                              size: 20,
-                              color: g.actionInk,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          logs.isEmpty
-                              ? 'No doses scheduled today'
-                              : '$taken of ${logs.length} doses taken',
-                          style: TextStyle(
-                            color: g.ink,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (overdueCount > 0) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.coral.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            size: 14,
-                            color: g.coral,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              '$overdueCount pending dose${overdueCount == 1 ? '' : 's'} past scheduled time',
-                              style: TextStyle(
-                                color: g.coral,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  if (next != null) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      'Next scheduled dose · ${MedicineService.formatTimeSlot(next.timeSlot)}',
-                      style: TextStyle(
-                        color: g.inkSecondary,
-                        fontSize: 12,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            )
-          : Text(
-              'A little structure for the care that matters.',
-              style: TextStyle(
-                color: g.inkSecondary,
-                fontSize: 14,
-                height: 1.6,
-              ),
-            ),
-    );
-  }
 
   Widget _careContext(Medicine medicine) {
     final plan = ref
@@ -428,198 +259,34 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     );
   }
 
-  /// One part of the day inside the Today card: a coloured side border,
-  /// a small label with the count, then compact dose rows.
-  Widget _doseSection(
-    String slot,
-    List<MedicineLog> slotLogs,
-    Map<int, Medicine> byId,
-  ) {
-    final g = context.glass;
-    final tint = switch (slot) {
-      'Morning' => g.amber,
-      'Afternoon' => g.actionInk,
-      'Evening' => BrandPalette.pillarTint('mind', dark: g.isDark),
-      _ => BrandPalette.pillarTint('assistant', dark: g.isDark),
-    };
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: BorderDirectional(start: BorderSide(color: tint, width: 3)),
-        ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    slot,
-                    key: ValueKey('dose_group_$slot'),
-                    style: AscentTextStyles.listRowTitle.copyWith(color: tint),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
-                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-                  ),
-                ],
-              ),
-              for (var i = 0; i < slotLogs.length; i++)
-                if (byId[slotLogs[i].medicineId] case final m?)
-                  _dose(slotLogs[i], m, isLast: i == slotLogs.length - 1),
-            ],
-          ),
-        ),
-      ),
-    );
+  /// "For Mum" or "Mum · Heart care" under a medicine, when it has a plan.
+  String? _careLine(Medicine medicine) {
+    final plan = ref
+        .watch(carePlansProvider)
+        .value
+        ?.where((p) => p.id == medicine.carePlanId)
+        .firstOrNull;
+    if (plan == null) return null;
+    return plan.title == 'Medicines for ${plan.person}'
+        ? 'For ${plan.person}'
+        : '${plan.person} · ${plan.title}';
   }
 
-  Widget _dose(MedicineLog log, Medicine medicine, {bool isLast = true}) {
-    final g = context.glass;
-    final now = DateTime.now();
-    final currentTime = DateFormat('HH:mm').format(now);
-    final isFuture = !log.isTaken && log.timeSlot.compareTo(currentTime) > 0;
-    final isOverdue = !log.isTaken && log.timeSlot.compareTo(currentTime) < 0;
-
-    final details = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          medicine.name,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
-            color: g.ink,
-          ),
-        ),
-        _careContext(medicine),
-        const SizedBox(height: 2),
-        Text(
-          '${MedicineService.formatTimeSlot(log.timeSlot)} · ${medicine.dosage}',
-          style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
-        ),
+  Future<void> _doseMenu(MedicineLog log, Medicine medicine) async {
+    final choice = await showAscentActionMenu<String>(
+      context: context,
+      title: medicine.name,
+      actions: const [
+        AscentAction('snooze', 'Snooze 30 minutes', Icons.snooze_rounded),
+        AscentAction('skip', 'Skip this dose', Icons.skip_next_rounded),
       ],
     );
-    final Widget action;
-    if (isFuture) {
-      action = GlassChip(
-        label: 'Scheduled',
-        icon: Icons.lock_outline_rounded,
-        tooltip:
-            'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
-        onTap: () {
-          HapticFeedback.lightImpact();
-          AscentSnackBar.show(
-            context,
-            message:
-                'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
-            icon: Icons.schedule_rounded,
-          );
-        },
-      );
-    } else if (log.isTaken) {
-      action = GlassChip(
-        label: _updating.contains(log.id) ? 'Saving…' : 'Taken',
-        tooltip: 'Undo taken dose',
-        success: true,
-        onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
-      );
-    } else {
-      action = Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          GlassChip(
-            label: _updating.contains(log.id) ? 'Saving…' : 'Take',
-            tooltip: 'Mark taken',
-            success: false,
-            onTap: _updating.contains(log.id) ? null : () => _toggleDose(log),
-          ),
-          // Late doses: Snooze and Skip live in one small menu, so each row
-          // stays a single line however many doses there are.
-          if (isOverdue)
-            IconButton(
-              key: ValueKey('medicine_dose_more_${log.id}'),
-              tooltip: 'Snooze or skip',
-              icon: Icon(Icons.more_horiz_rounded, color: g.inkMuted),
-              onPressed: () async {
-                final choice = await showAscentActionMenu<String>(
-                  context: context,
-                  title: medicine.name,
-                  actions: const [
-                    AscentAction(
-                      'snooze',
-                      'Snooze 30 minutes',
-                      Icons.snooze_rounded,
-                    ),
-                    AscentAction(
-                      'skip',
-                      'Skip this dose',
-                      Icons.skip_next_rounded,
-                    ),
-                  ],
-                );
-                if (!mounted) return;
-                if (choice == 'snooze') {
-                  await _snoozeDose(log, const Duration(minutes: 30));
-                } else if (choice == 'skip') {
-                  await _skipDose(log, medicine);
-                }
-              },
-            ),
-        ],
-      );
+    if (!mounted) return;
+    if (choice == 'snooze') {
+      await _snoozeDose(log, const Duration(minutes: 30));
+    } else if (choice == 'skip') {
+      await _skipDose(log, medicine);
     }
-    return Container(
-      key: ValueKey('medicine_dose_${log.id}'),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: g.line)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 300 ||
-                  MediaQuery.textScalerOf(context).scale(14) > 16) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [details, const SizedBox(height: 10), action],
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(child: details),
-                  const SizedBox(width: 12),
-                  action,
-                ],
-              );
-            },
-          ),
-          if (medicine.instructions.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              medicine.instructions,
-              style: TextStyle(color: g.inkMuted, fontSize: 12, height: 1.35),
-            ),
-          ],
-          if (log.isTaken && log.takenAt != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Taken at ${DateFormat.jm().format(log.takenAt!)} · Tap to undo',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: g.inkMuted),
-            ),
-          ],
-        ],
-      ),
-    );
   }
 
   /// Stock line: how much is left, how long it lasts, restock and refill.
@@ -1080,11 +747,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         ),
       ],
       body: medicines.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const SizedBox.shrink(),
         error: (_, _) => Center(
-          child: TextButton(
+          child: AscentButton.ghost(
+            label: 'Couldn’t load medicines. Try again',
             onPressed: () => ref.invalidate(allMedicinesStreamProvider),
-            child: const Text('Could not load medicines. Tap to retry.'),
           ),
         ),
         data: (allMedicines) {
@@ -1172,119 +839,39 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                         key: ValueKey(_showMedicines),
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                         children: [
-                          if (!_showMedicines)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (today.hasValue)
-                                  _summary(
-                                    logs,
-                                    hasMedicines: medicines.isNotEmpty,
-                                  ),
-                                if (today.hasError)
-                                  TextButton(
-                                    onPressed: () => ref.invalidate(
-                                      todayMedicineLogsStreamProvider,
-                                    ),
-                                    child: const Text(
-                                      'Could not load today’s doses. Tap to retry.',
-                                    ),
-                                  ),
-                                if (today.isLoading)
-                                  const LinearProgressIndicator(),
-                                if (logs.isNotEmpty) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 18),
-                                    child: AscentSegmentedControl<bool>(
-                                      selected: _showTaken,
-                                      accented: true,
-                                      segments: [
-                                        AscentSegment(
-                                          value: false,
-                                          label:
-                                              '${logs.where((l) => !l.isTaken).length} pending',
-                                          icon: Icons.schedule_rounded,
-                                        ),
-                                        AscentSegment(
-                                          value: true,
-                                          label:
-                                              '${logs.where((l) => l.isTaken).length} taken',
-                                          icon: Icons.check_rounded,
-                                        ),
-                                      ],
-                                      onChanged: (value) =>
-                                          setState(() => _showTaken = value),
-                                    ),
-                                  ),
-                                  _label(
-                                    _showTaken
-                                        ? 'Taken today'
-                                        : 'Today’s schedule',
-                                  ),
-                                  // All of today's doses in one card,
-                                  // grouped by part of day with a coloured
-                                  // side border, so many medicines stay
-                                  // easy to scan.
-                                  if (logs.any((l) => l.isTaken == _showTaken))
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 12),
-                                      child: CarePanel(
-                                        key: const ValueKey(
-                                          'medicine_today_board',
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            for (final slot
-                                                in logs
-                                                    .where(
-                                                      (l) =>
-                                                          l.isTaken ==
-                                                          _showTaken,
-                                                    )
-                                                    .map(
-                                                      (l) =>
-                                                          partOfDay(l.timeSlot),
-                                                    )
-                                                    .toSet())
-                                              _doseSection(
-                                                slot,
-                                                logs
-                                                    .where(
-                                                      (l) =>
-                                                          partOfDay(
-                                                                l.timeSlot,
-                                                              ) ==
-                                                              slot &&
-                                                          l.isTaken ==
-                                                              _showTaken,
-                                                    )
-                                                    .toList(),
-                                                byId,
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  if (!logs.any((l) => l.isTaken == _showTaken))
-                                    Text(
-                                      _showTaken
-                                          ? 'No doses taken yet today.'
-                                          : 'All scheduled doses taken. Your history is under Taken.',
-                                      style: TextStyle(
-                                        color: context.glass.inkMuted,
-                                      ),
-                                    ),
-                                ],
-                                if (medicines.isEmpty) ...[
-                                  const SizedBox(height: 20),
-                                  Divider(color: context.glass.line, height: 1),
-                                  const SizedBox(height: 20),
-                                  _emptyMedicines(),
-                                ],
+                          if (!_showMedicines) ...[
+                            if (today.hasError)
+                              AscentButton.ghost(
+                                label: 'Couldn’t load today’s doses. Try again',
+                                onPressed: () => ref.invalidate(
+                                  todayMedicineLogsStreamProvider,
+                                ),
+                              ),
+                            if (medicines.isNotEmpty && today.hasValue) ...[
+                              MedicineTodayHero(
+                                logs: logs,
+                                byId: byId,
+                                updating: _updating,
+                                onTake: _toggleDose,
+                                onSnooze: (log) => _snoozeDose(
+                                  log,
+                                  const Duration(minutes: 30),
+                                ),
+                              ),
+                              if (logs.isNotEmpty) ...[
+                                const SizedBox(height: 28),
+                                MedicineDoseList(
+                                  logs: logs,
+                                  byId: byId,
+                                  updating: _updating,
+                                  onToggle: _toggleDose,
+                                  onMore: _doseMenu,
+                                  careLine: _careLine,
+                                ),
                               ],
-                            ),
+                            ],
+                            if (medicines.isEmpty) _emptyMedicines(),
+                          ],
                           if (_showMedicines) ...[
                             CareHero(
                               compact: true,

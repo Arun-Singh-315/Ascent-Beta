@@ -491,23 +491,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           horizontal: AppSpace.s14,
                           vertical: AppSpace.s12,
                         ),
-                        border: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr14,
-                          borderSide: BorderSide(color: context.divider),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr14,
-                          borderSide: BorderSide(
-                            color: context.divider.withValues(alpha: 0.8),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr14,
-                          borderSide: BorderSide(
-                            color: context.accentPrimary,
-                            width: AppBorderScale.w1point5,
-                          ),
-                        ),
                         suffixIcon: widget.existingTask == null
                             ? InlineListAddButton(
                                 controller: _titleController,
@@ -661,9 +644,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s12,
                               vertical: AppSpace.s10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr12,
                             ),
                           ),
                         ),
@@ -864,9 +844,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               fillColor: isDark
                                   ? AppPalette.colorFF201A14
                                   : AppPalette.colorFFF7F6F2,
-                              border: OutlineInputBorder(
-                                borderRadius: AppGeometry.roundedr12,
-                              ),
                               suffixIcon: InlineListAddButton(
                                 controller: _notesController,
                                 focusNode: _notesFocus,

@@ -67,14 +67,11 @@ class RiyaParagraphText extends StatelessWidget {
         final quoteText = block.replaceFirst(RegExp(r'^>\s*'), '');
         blockWidgets.add(
           Container(
-            padding: const EdgeInsets.only(left: 10, top: 4, bottom: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            // A soft tinted block, not a stripe down the side.
             decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: accentColor.withValues(alpha: 0.7),
-                  width: 3,
-                ),
-              ),
+              color: accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               quoteText,
@@ -118,7 +115,11 @@ class RiyaParagraphText extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      child: _buildFormattedText(content, baseStyle, accentColor),
+                      child: _buildFormattedText(
+                        content,
+                        baseStyle,
+                        accentColor,
+                      ),
                     ),
                   ],
                 ),
@@ -148,7 +149,11 @@ class RiyaParagraphText extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      child: _buildFormattedText(content, baseStyle, accentColor),
+                      child: _buildFormattedText(
+                        content,
+                        baseStyle,
+                        accentColor,
+                      ),
                     ),
                   ],
                 ),
@@ -232,7 +237,8 @@ class RiyaParagraphText extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: baseStyle.color?.withValues(alpha: 0.08) ??
+                color:
+                    baseStyle.color?.withValues(alpha: 0.08) ??
                     Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -259,17 +265,9 @@ class RiyaParagraphText extends StatelessWidget {
     }
 
     if (lastIndex < content.length) {
-      spans.add(
-        TextSpan(
-          text: content.substring(lastIndex),
-          style: baseStyle,
-        ),
-      );
+      spans.add(TextSpan(text: content.substring(lastIndex), style: baseStyle));
     }
 
-    return Text.rich(
-      TextSpan(children: spans),
-      style: baseStyle,
-    );
+    return Text.rich(TextSpan(children: spans), style: baseStyle);
   }
 }

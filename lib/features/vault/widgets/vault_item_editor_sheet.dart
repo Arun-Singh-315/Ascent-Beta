@@ -193,7 +193,6 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                   hintStyle: TextStyle(color: g.inkMuted, fontSize: 13),
                   filled: true,
                   fillColor: g.fill.withValues(alpha: 0.3),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: g.line)),
                 ),
               ),
             ],
@@ -803,7 +802,6 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
             labelText: 'Document Type',
             filled: true,
             fillColor: g.fill.withValues(alpha: 0.3),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: g.line)),
           ),
           items: docTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
           onChanged: (val) {
@@ -935,9 +933,6 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
         errorText: errorText,
         filled: true,
         fillColor: g.fill.withValues(alpha: 0.25),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: g.line)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: g.line)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: g.clay, width: 1.5)),
       ),
     );
   }

@@ -251,9 +251,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   labelText: 'Goal Title',
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -265,9 +262,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   prefixText: '₹ ',
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -369,9 +363,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     prefixText: '₹ ',
                     filled: true,
                     fillColor: context.bgBase,
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr12,
-                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -561,9 +552,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   hintText: 'e.g. Emergency Fund, Laptop, Course',
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -575,9 +563,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   prefixText: '₹ ',
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -589,9 +574,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   prefixText: '₹ ',
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                  ),
                 ),
               ),
               const SizedBox(height: 20),

@@ -144,10 +144,6 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
               prefixText: '₹ ',
               filled: true,
               fillColor: context.bgBase,
-              border: OutlineInputBorder(
-                borderRadius: AppGeometry.roundedr12,
-                borderSide: BorderSide(color: context.divider),
-              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -163,10 +159,6 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
               prefixText: '₹ ',
               filled: true,
               fillColor: context.bgBase,
-              border: OutlineInputBorder(
-                borderRadius: AppGeometry.roundedr12,
-                borderSide: BorderSide(color: context.divider),
-              ),
             ),
           ),
           const SizedBox(height: 24),
