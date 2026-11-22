@@ -92,7 +92,11 @@ void main() {
         child: MaterialApp(
           theme: AscentTheme.light(),
           home: Scaffold(
-            body: PlanGeneratorSheet(kind: PlanKind.study, clock: () => now),
+            // Saving uses the real clock, so the sheet must too.
+            body: const PlanGeneratorSheet(
+              kind: PlanKind.study,
+              clock: DateTime.now,
+            ),
           ),
         ),
       ),

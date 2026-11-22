@@ -372,84 +372,103 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       DayPart.anytime => Icons.all_inclusive_rounded,
       DayPart.medicine => Icons.medication_outlined,
     };
-    return SliverToBoxAdapter(
-      key: const ValueKey('things_day_board'),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            border: g.isDark
-                ? Border.all(color: g.line.withValues(alpha: .30))
-                : null,
-            boxShadow: [
-              BoxShadow(
-                color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    // Built lazily: each part is a header plus a SliverList, so a day with
+    // hundreds of things only builds the rows on screen.
+    Widget side(DayPart p, Widget child) => Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: BorderDirectional(
+            start: BorderSide(color: tint(p), width: 3),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 8),
+          child: child,
+        ),
+      ),
+    );
+    return SliverPadding(
+      key: const ValueKey('things_day_board'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      sliver: DecoratedSliver(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: g.isDark
+              ? Border.all(color: g.line.withValues(alpha: .30))
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
+              blurRadius: 12,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        sliver: SliverPadding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          sliver: SliverMainAxisGroup(
+            slivers: [
               for (var i = 0; i < parts.length; i++) ...[
                 if (i > 0)
-                  Divider(
-                    height: 16,
-                    indent: 16,
-                    endIndent: 16,
-                    color: g.line.withValues(alpha: .5),
+                  SliverToBoxAdapter(
+                    child: Divider(
+                      height: 16,
+                      indent: 16,
+                      endIndent: 16,
+                      color: g.line.withValues(alpha: .5),
+                    ),
                   ),
-                Padding(
+                SliverToBoxAdapter(
                   key: ValueKey('things_part_${parts[i].$1.name}'),
-                  padding: const EdgeInsets.fromLTRB(12, 4, 8, 4),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: BorderDirectional(
-                        start: BorderSide(color: tint(parts[i].$1), width: 3),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsetsDirectional.only(start: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Semantics(
-                            header: true,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    icon(parts[i].$1),
-                                    size: 16,
-                                    color: tint(parts[i].$1),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    parts[i].$1.label,
-                                    style: AscentTextStyles.listRowTitle
-                                        .copyWith(color: tint(parts[i].$1)),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${parts[i].$2.length}',
-                                    style: AscentTextStyles.caption.copyWith(
-                                      color: g.inkMuted,
-                                    ),
-                                  ),
-                                ],
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: side(
+                      parts[i].$1,
+                      Semantics(
+                        header: true,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
+                          child: Row(
+                            children: [
+                              Icon(
+                                icon(parts[i].$1),
+                                size: 16,
+                                color: tint(parts[i].$1),
                               ),
-                            ),
+                              const SizedBox(width: 6),
+                              Text(
+                                parts[i].$1.label,
+                                style: AscentTextStyles.listRowTitle.copyWith(
+                                  color: tint(parts[i].$1),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${parts[i].$2.length}',
+                                style: AscentTextStyles.caption.copyWith(
+                                  color: g.inkMuted,
+                                ),
+                              ),
+                            ],
                           ),
-                          for (final item in parts[i].$2) _row(item),
-                        ],
+                        ),
                       ),
                     ),
                   ),
+                ),
+                SliverList.builder(
+                  itemCount: parts[i].$2.length,
+                  itemBuilder: (_, j) {
+                    final rows = parts[i].$2;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: j == rows.length - 1 ? 4 : 0,
+                      ),
+                      child: side(parts[i].$1, _row(rows[j])),
+                    );
+                  },
                 ),
               ],
             ],
