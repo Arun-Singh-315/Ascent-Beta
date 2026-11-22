@@ -10,6 +10,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/providers/settings_provider.dart';
 import 'ascent_snack_bar.dart';
 import 'glass_chrome.dart';
+import 'live_session_bar.dart';
 
 /// The persistent shell around the five main tabs (CLAUDE.md §4):
 /// Home · Things · Assistant (centre) · Mind · You.
@@ -97,16 +98,24 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         backgroundColor: HomeDesign.of(context).canvas,
         extendBody: true,
         body: widget.shell,
-        bottomNavigationBar: _AscentTabBar(
-          currentIndex: widget.shell.currentIndex,
-          tabs: tabs,
-          onTap: (index) {
-            HapticFeedback.selectionClick();
-            widget.shell.goBranch(
-              index,
-              initialLocation: index == widget.shell.currentIndex,
-            );
-          },
+        // A running timer sits right above the tab bar on every tab, so it
+        // never runs out of sight (CLAUDE.md §5.2).
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const LiveSessionBar(),
+            _AscentTabBar(
+              currentIndex: widget.shell.currentIndex,
+              tabs: tabs,
+              onTap: (index) {
+                HapticFeedback.selectionClick();
+                widget.shell.goBranch(
+                  index,
+                  initialLocation: index == widget.shell.currentIndex,
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
