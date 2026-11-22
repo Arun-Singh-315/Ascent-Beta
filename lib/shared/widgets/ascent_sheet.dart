@@ -6,9 +6,13 @@ Future<T?> showAscentSheet<T>({
   required WidgetBuilder builder,
   bool useRootNavigator = true,
   bool framed = true,
+  bool isDismissible = true,
+  bool enableDrag = true,
 }) => showModalBottomSheet<T>(
   context: context,
   useRootNavigator: useRootNavigator,
+  isDismissible: isDismissible,
+  enableDrag: enableDrag,
   isScrollControlled: true,
   useSafeArea: true,
   showDragHandle: false,

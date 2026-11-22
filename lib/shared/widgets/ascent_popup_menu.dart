@@ -237,3 +237,73 @@ class AscentPopupMenuButton<T> extends StatelessWidget {
     );
   }
 }
+
+/// One option of an [AscentSelectField].
+class AscentSelectOption<T> {
+  const AscentSelectOption(this.value, this.label);
+  final T value;
+  final String label;
+}
+
+/// A labelled single-choice field: one input container showing the current
+/// choice, opening an [AscentPopupMenuButton] of [ascentChoiceItem] rows.
+///
+/// Replaces Material `DropdownButton` / `DropdownButtonFormField` in feature
+/// code. A `null` [value] is a valid choice (for "None" style options).
+/// Passing `null` for [onChanged] disables the field.
+class AscentSelectField<T> extends StatelessWidget {
+  const AscentSelectField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final String label;
+  final T value;
+  final List<AscentSelectOption<T>> options;
+  final ValueChanged<T>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final enabled = onChanged != null && options.isNotEmpty;
+    final selected = options.indexWhere((o) => o.value == value);
+    final current = selected >= 0 ? options[selected].label : '–';
+    return AscentPopupMenuButton<int>(
+      enabled: enabled,
+      tooltip: label,
+      constraints: const BoxConstraints(minWidth: 200, maxWidth: 320),
+      onSelected: (i) => onChanged?.call(options[i].value),
+      itemBuilder: (_) => [
+        for (var i = 0; i < options.length; i++)
+          ascentChoiceItem<int>(
+            value: i,
+            label: options[i].label,
+            selected: i == selected,
+          ),
+      ],
+      child: InputDecorator(
+        isEmpty: false,
+        decoration: InputDecoration(
+          labelText: label,
+          enabled: enabled,
+          suffixIcon: Icon(
+            Icons.unfold_more_rounded,
+            size: 20,
+            color: enabled ? g.inkSecondary : g.disabledFg,
+          ),
+        ),
+        child: Text(
+          current,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AscentTextStyles.body.copyWith(
+            color: enabled ? g.ink : g.disabledFg,
+          ),
+        ),
+      ),
+    );
+  }
+}

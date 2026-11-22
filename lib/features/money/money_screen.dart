@@ -24,6 +24,7 @@ import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_transaction_sheet.dart';
 import 'budget_settings_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 class MoneyScreen extends ConsumerStatefulWidget {
   const MoneyScreen({super.key});
@@ -1373,12 +1374,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     ],
                   );
                 },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpace.s24),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                loading: () => const ListSkeleton(),
                 error: (e, _) =>
                     Center(child: Text('Error loading transactions: $e')),
               ),
@@ -1684,7 +1680,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     }).toList(),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const ListSkeleton(),
                 error: (e, _) => Center(child: Text('Error: $e')),
               ),
               const SizedBox(height: 32),
