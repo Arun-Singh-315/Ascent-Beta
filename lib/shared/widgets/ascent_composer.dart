@@ -210,7 +210,10 @@ class _AscentComposerState extends State<AscentComposer> {
                       vertical: AppSpace.s4,
                     ),
                     decoration: BoxDecoration(
-                      color: widget.glass ? Colors.transparent : g.recessed,
+                      // No fill of its own: the field takes the colour of
+                      // whatever it sits on (screen canvas or card), so it
+                      // reads as part of the screen. A hairline marks it.
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
                         color: focused

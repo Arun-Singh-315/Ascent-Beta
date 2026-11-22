@@ -24,17 +24,24 @@ class AscentBackdrop extends StatelessWidget {
   /// Whether this tone draws the doodle pattern.
   bool get doodle => tone != BackdropTone.home;
 
+  /// The colour at the bottom edge of [tone]'s backdrop, so a docked input
+  /// can fade into the screen instead of sitting on a slab of its own.
+  static Color bottomOf(BuildContext context, BackdropTone tone) =>
+      _colors(tone, context.glass.isDark).last;
+
+  static List<Color> _colors(BackdropTone tone, bool dark) => switch (tone) {
+    BackdropTone.home =>
+      dark ? CalmBluePalette.backdropDark : CalmBluePalette.backdropLight,
+    BackdropTone.mind =>
+      dark ? CalmBluePalette.mindDark : CalmBluePalette.mindLight,
+    BackdropTone.riya =>
+      dark ? CalmBluePalette.riyaDark : CalmBluePalette.riyaLight,
+  };
+
   @override
   Widget build(BuildContext context) {
     final dark = context.glass.isDark;
-    final colors = switch (tone) {
-      BackdropTone.home =>
-        dark ? CalmBluePalette.backdropDark : CalmBluePalette.backdropLight,
-      BackdropTone.mind =>
-        dark ? CalmBluePalette.mindDark : CalmBluePalette.mindLight,
-      BackdropTone.riya =>
-        dark ? CalmBluePalette.riyaDark : CalmBluePalette.riyaLight,
-    };
+    final colors = _colors(tone, dark);
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
