@@ -228,14 +228,6 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
         counterText: '',
         filled: true,
         fillColor: context.glass.ink.withValues(alpha: .035),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: context.glass.line),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: context.glass.line),
-        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 12,

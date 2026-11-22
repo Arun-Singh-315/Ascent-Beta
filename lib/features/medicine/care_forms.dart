@@ -172,7 +172,6 @@ class _CareFormState extends ConsumerState<CareForm> {
         counterText: '',
         filled: true,
         fillColor: context.glass.ink.withValues(alpha: .035),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
       ),
     ),
   );

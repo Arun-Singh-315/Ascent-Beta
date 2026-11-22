@@ -29,6 +29,7 @@ import 'add_activity_sheet.dart';
 import 'models/things_sections.dart';
 import 'screens/add_activity_screen.dart';
 import 'things_providers.dart';
+import '../../shared/widgets/group_header.dart';
 import '../capture/capture_button.dart';
 
 /// The planning hero (CLAUDE.md §5.2): Today · Upcoming · Anytime · Routines.
@@ -353,8 +354,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   }
 
   /// Today as one big card: sections by part of the day (and medicine
-  /// together), each marked by a coloured side border, so long lists stay
-  /// readable and you can see at a glance what is where.
+  /// together), each with a tinted icon header and hairlines between, so
+  /// long lists stay readable and you can see at a glance what is where.
   Widget _dayBoard(List<TodayActivityItem> items) {
     final g = context.glass;
     final parts = groupByDayPart(items);
@@ -372,108 +373,67 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       DayPart.anytime => Icons.all_inclusive_rounded,
       DayPart.medicine => Icons.medication_outlined,
     };
-    // Built lazily: each part is a header plus a SliverList, so a day with
-    // hundreds of things only builds the rows on screen.
-    Widget side(DayPart p, Widget child) => Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: BorderDirectional(
-            start: BorderSide(color: tint(p), width: 3),
+    // Flattened so the list builds lazily (1000 things stay smooth): each
+    // entry is a header, a row or a hairline, painted as one card.
+    final entries = <Widget>[];
+    for (var i = 0; i < parts.length; i++) {
+      if (i > 0) {
+        entries.add(
+          Divider(
+            height: 16,
+            indent: 16,
+            endIndent: 16,
+            color: g.line.withValues(alpha: .5),
+          ),
+        );
+      }
+      entries.add(
+        Padding(
+          key: ValueKey('things_part_${parts[i].$1.name}'),
+          padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
+          child: GroupHeader(
+            icon: icon(parts[i].$1),
+            tint: tint(parts[i].$1),
+            title: parts[i].$1.label,
+            count: parts[i].$2.length,
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.only(start: 8),
-          child: child,
-        ),
-      ),
-    );
+      );
+      for (final item in parts[i].$2) {
+        entries.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: _row(item),
+          ),
+        );
+      }
+    }
+    final surface = Theme.of(context).colorScheme.surface;
+    const radius = Radius.circular(22);
     return SliverPadding(
       key: const ValueKey('things_day_board'),
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      sliver: DecoratedSliver(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: g.isDark
-              ? Border.all(color: g.line.withValues(alpha: .30))
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
+      sliver: SliverList.builder(
+        itemCount: entries.length,
+        itemBuilder: (context, i) {
+          final first = i == 0, last = i == entries.length - 1;
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.vertical(
+                top: first ? radius : Radius.zero,
+                bottom: last ? radius : Radius.zero,
+              ),
             ),
-          ],
-        ),
-        sliver: SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          sliver: SliverMainAxisGroup(
-            slivers: [
-              for (var i = 0; i < parts.length; i++) ...[
-                if (i > 0)
-                  SliverToBoxAdapter(
-                    child: Divider(
-                      height: 16,
-                      indent: 16,
-                      endIndent: 16,
-                      color: g.line.withValues(alpha: .5),
-                    ),
-                  ),
-                SliverToBoxAdapter(
-                  key: ValueKey('things_part_${parts[i].$1.name}'),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: side(
-                      parts[i].$1,
-                      Semantics(
-                        header: true,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(4, 6, 4, 2),
-                          child: Row(
-                            children: [
-                              Icon(
-                                icon(parts[i].$1),
-                                size: 16,
-                                color: tint(parts[i].$1),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                parts[i].$1.label,
-                                style: AscentTextStyles.listRowTitle.copyWith(
-                                  color: tint(parts[i].$1),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${parts[i].$2.length}',
-                                style: AscentTextStyles.caption.copyWith(
-                                  color: g.inkMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverList.builder(
-                  itemCount: parts[i].$2.length,
-                  itemBuilder: (_, j) {
-                    final rows = parts[i].$2;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: j == rows.length - 1 ? 4 : 0,
-                      ),
-                      child: side(parts[i].$1, _row(rows[j])),
-                    );
-                  },
-                ),
-              ],
-            ],
-          ),
-        ),
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: first ? 8 : 0,
+                bottom: last ? 8 : 0,
+              ),
+              child: entries[i],
+            ),
+          );
+        },
       ),
     );
   }

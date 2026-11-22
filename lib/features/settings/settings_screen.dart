@@ -174,8 +174,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           targetCompanies: drift.Value(current?.targetCompanies ?? '[]'),
           interviewDate: drift.Value(current?.interviewDate),
           dateOfBirth: drift.Value(_dateOfBirth),
-          weeklyHoursAvailable: drift.Value(current?.weeklyHoursAvailable ?? 10),
-          preferredStudyWindow: drift.Value(current?.preferredStudyWindow ?? 'morning'),
+          weeklyHoursAvailable: drift.Value(
+            current?.weeklyHoursAvailable ?? 10,
+          ),
+          preferredStudyWindow: drift.Value(
+            current?.preferredStudyWindow ?? 'morning',
+          ),
           onboardingComplete: const drift.Value(true),
           updatedAt: drift.Value(DateTime.now()),
         ),
@@ -557,9 +561,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   decoration: InputDecoration(
                     labelText: 'New 4-digit PIN',
                     counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -577,9 +578,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   decoration: InputDecoration(
                     labelText: 'Confirm PIN',
                     counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                 ),
                 if (errorText != null) ...[
@@ -948,27 +946,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         horizontal: AppSpace.s12,
                         vertical: AppSpace.s14,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.controlOutline,
-                          width: AscentDimensions.controlOutlineWidth,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.controlOutline,
-                          width: AscentDimensions.controlOutlineWidth,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.focusRing,
-                          width: AscentDimensions.focusRingWidth,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -1130,27 +1107,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         horizontal: AppSpace.s12,
                         vertical: AppSpace.s14,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.controlOutline,
-                          width: AscentDimensions.controlOutlineWidth,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.controlOutline,
-                          width: AscentDimensions.controlOutlineWidth,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                        borderSide: BorderSide(
-                          color: g.focusRing,
-                          width: AscentDimensions.focusRingWidth,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1198,10 +1154,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
-            _SectionHeader(
-              title: 'Data & Maintenance',
-              dotColor: g.inkMuted,
-            ),
+            _SectionHeader(title: 'Data & Maintenance', dotColor: g.inkMuted),
 
             // ── Collapsible: Data & Storage ────────────────────────────────
             _CollapsibleSettingsCard(
@@ -1545,27 +1498,6 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppSpace.s12,
                     vertical: AppSpace.s14,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(
-                      color: g.controlOutline,
-                      width: AscentDimensions.controlOutlineWidth,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(
-                      color: g.controlOutline,
-                      width: AscentDimensions.controlOutlineWidth,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppGeometry.roundedr12,
-                    borderSide: BorderSide(
-                      color: g.focusRing,
-                      width: AscentDimensions.focusRingWidth,
-                    ),
                   ),
                 ),
                 style: AscentTextStyles.bodyMedium

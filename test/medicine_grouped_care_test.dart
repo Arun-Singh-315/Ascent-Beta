@@ -110,72 +110,72 @@ void main() {
     },
   );
   for (final dark in [false, true]) {
-    testWidgets(
-      'pending and taken care groups retain undo at 320px, dark=$dark',
-      (t) async {
-        t.view.physicalSize = const Size(320, 1000);
-        t.view.devicePixelRatio = 1;
-        addTearDown(t.view.resetPhysicalSize);
-        addTearDown(t.view.resetDevicePixelRatio);
-        // Both actions must be due; the real clock may be before 20:00.
-        await (db.update(db.medicineLogTable)).write(
-          const MedicineLogTableCompanion(timeSlot: drift.Value('00:00')),
-        );
-        Future<void> flush() async {
-          for (var i = 0; i < 6; i++) {
-            await t.runAsync(
-              () => Future<void>.delayed(const Duration(milliseconds: 20)),
-            );
-            await t.pump(const Duration(milliseconds: 100));
-          }
+    testWidgets('dose checks take and undo at 320px, dark=$dark', (t) async {
+      t.view.physicalSize = const Size(320, 1000);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.resetPhysicalSize);
+      addTearDown(t.view.resetDevicePixelRatio);
+      // Both actions must be due; the real clock may be before 20:00.
+      await (db.update(
+        db.medicineLogTable,
+      )).write(const MedicineLogTableCompanion(timeSlot: drift.Value('00:00')));
+      Future<void> flush() async {
+        for (var i = 0; i < 6; i++) {
+          await t.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await t.pump(const Duration(milliseconds: 100));
         }
+      }
 
-        await t.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp(
-              theme: dark ? AscentTheme.dark() : AscentTheme.light(),
-              builder: (context, child) => MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: const TextScaler.linear(2)),
-                child: child!,
-              ),
-              home: const MedicineScreen(),
+      await t.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: dark ? AscentTheme.dark() : AscentTheme.light(),
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: child!,
             ),
+            home: const MedicineScreen(),
           ),
-        );
-        await flush();
-        expect(find.byTooltip('Mark taken'), findsNWidgets(2));
-        await t.ensureVisible(find.byTooltip('Mark taken').first);
-        await t.pumpAndSettle();
-        await t.tap(find.byTooltip('Mark taken').first);
-        await flush();
-        expect(
-          (await t.runAsync(
-            () => db.medicineDao.watchTodayMedicineLogs().first,
-          ))!.where((l) => l.isTaken),
-          hasLength(1),
-        );
-        await t.ensureVisible(find.text('1 taken'));
-        await t.pumpAndSettle();
-        await t.tap(find.text('1 taken'));
-        await flush();
-        expect(find.byTooltip('Undo taken dose'), findsOneWidget);
-        await t.ensureVisible(find.byTooltip('Undo taken dose'));
-        await t.pumpAndSettle();
-        await t.tap(find.byTooltip('Undo taken dose'));
-        await flush();
-        expect(
-          (await t.runAsync(
-            () => db.medicineDao.watchTodayMedicineLogs().first,
-          ))!.every((l) => !l.isTaken),
-          isTrue,
-        );
-        expect(t.takeException(), isNull);
-        await t.pumpWidget(const SizedBox());
-        await t.pump(const Duration(seconds: 2));
-      },
-    );
+        ),
+      );
+      await flush();
+      // Each dose row has a round check: tap to take, tap again to undo.
+      final checks = find.byWidgetPredicate(
+        (w) => '${w.key}'.contains('medicine_dose_check_'),
+      );
+      expect(checks, findsNWidgets(2));
+      await t.ensureVisible(checks.first);
+      await t.pumpAndSettle();
+      await t.tap(checks.first);
+      await flush();
+      expect(
+        (await t.runAsync(
+          () => db.medicineDao.watchTodayMedicineLogs().first,
+        ))!.where((l) => l.isTaken),
+        hasLength(1),
+      );
+      expect(find.bySemanticsLabel(RegExp(r'taken, undo$')), findsOneWidget);
+      final taken = find.byWidgetPredicate(
+        (w) => '${w.key}'.contains('medicine_dose_check_'),
+      );
+      await t.ensureVisible(taken.first);
+      await t.pumpAndSettle();
+      await t.tap(taken.first);
+      await flush();
+      expect(
+        (await t.runAsync(
+          () => db.medicineDao.watchTodayMedicineLogs().first,
+        ))!.every((l) => !l.isTaken),
+        isTrue,
+      );
+      expect(t.takeException(), isNull);
+      await t.pumpWidget(const SizedBox());
+      await t.pump(const Duration(seconds: 2));
+    });
   }
 }

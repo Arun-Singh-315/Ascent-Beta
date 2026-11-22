@@ -88,12 +88,6 @@ abstract final class HomeSurfaceStyle {
     );
   }
 
-  static BoxDecoration rail(BuildContext context) => BoxDecoration(
-    border: BorderDirectional(
-      start: BorderSide(color: HomeDesign.of(context).mindEdge, width: 2),
-    ),
-  );
-
   static BoxDecoration decoration(
     BuildContext context, {
     double radius = 0,
@@ -143,10 +137,7 @@ class HomeBorderSection extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-        child: SizedBox(
-          width: double.infinity,
-          child: child,
-        ),
+        child: SizedBox(width: double.infinity, child: child),
       ),
     );
   }

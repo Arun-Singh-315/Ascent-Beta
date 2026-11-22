@@ -347,14 +347,6 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       filled: true,
       fillColor: context.recessedSurface,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.divider),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: context.divider),
-      ),
     );
     return PopScope(
       canPop: !_saving,

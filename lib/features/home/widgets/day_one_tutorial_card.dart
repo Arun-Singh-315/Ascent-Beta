@@ -237,12 +237,6 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                           counterText: '',
                           filled: true,
                           fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFDCE5F3),
-                            ),
-                          ),
                         ),
                       ),
                       const SizedBox(height: 14),
