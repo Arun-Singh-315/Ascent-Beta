@@ -14,6 +14,7 @@ import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/ascent_dialog.dart';
 import '../../../shared/widgets/ascent_switch.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 enum ReminderRepeatSchedule {
   none('Never', Icons.timer_off_outlined),
@@ -39,9 +40,8 @@ Future<Reminder?> showIOSReminderDialog(
   Reminder? existing,
   DateTime? initialDate,
 }) {
-  return showDialog<Reminder>(
+  return showAscentFrostedDialog<Reminder>(
     context: context,
-    barrierDismissible: true,
     builder: (ctx) => _IOSReminderDialog(
       existing: existing,
       initialDate: initialDate,
@@ -395,7 +395,7 @@ class _IOSReminderDialogState extends ConsumerState<_IOSReminderDialog> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CupertinoActivityIndicator(radius: 10),
                               )
                             : ValueListenableBuilder<TextEditingValue>(
                                 valueListenable: _titleController,

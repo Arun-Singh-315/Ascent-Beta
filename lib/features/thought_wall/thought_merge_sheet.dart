@@ -8,6 +8,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 Future<bool> showThoughtMerge(
   BuildContext context,
@@ -15,14 +16,11 @@ Future<bool> showThoughtMerge(
   List<Thought> thoughts,
 ) async {
   if (thoughts.length < 2) return false;
-  return await showModalBottomSheet<bool>(
+  return await showAscentSheet<bool>(
         context: context,
-        useRootNavigator: true,
-        isScrollControlled: true,
-        useSafeArea: true,
+        framed: false,
         isDismissible: false,
         enableDrag: false,
-        backgroundColor: AppPalette.transparent,
         builder: (_) => _ThoughtMergeSheet(db: db, thoughts: thoughts),
       ) ??
       false;

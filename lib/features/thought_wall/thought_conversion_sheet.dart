@@ -10,6 +10,7 @@ import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../home/widgets/home_schedule_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 Future<bool> showThoughtConversion(
   BuildContext context,
@@ -18,14 +19,11 @@ Future<bool> showThoughtConversion(
   ThoughtConversionMode initial = ThoughtConversionMode.todo,
   bool grouped = false,
 }) async =>
-    await showModalBottomSheet<bool>(
+    await showAscentSheet<bool>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
+      framed: false,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: AppPalette.transparent,
       builder: (_) => ThoughtConversionSheet(
         db: db,
         thoughts: thoughts,

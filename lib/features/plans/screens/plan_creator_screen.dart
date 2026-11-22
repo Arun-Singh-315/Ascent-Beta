@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_text_field.dart';
 import '../planning_providers.dart';
 import 'plan_detail_screen.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 /// A single scheduled placement for a task within the plan creator.
 class _TaskPlacement {
@@ -1438,8 +1439,8 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                 ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                    child: CupertinoActivityIndicator(
+                      radius: 10,
                       color: colorScheme.onPrimary,
                     ),
                   )

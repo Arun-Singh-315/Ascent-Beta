@@ -19,6 +19,8 @@ import '../../../core/theme/app_tokens.dart';
 import 'home_assistant_hero_card.dart';
 import 'home_day_design.dart';
 import 'home_weather.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
 
 class HomeHeader extends ConsumerStatefulWidget {
   const HomeHeader({
@@ -87,28 +89,12 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         ? const CosmicProfileService().getDailyInsight(dob: dob, today: now)
         : null;
 
-    showDialog<void>(
+    showAscentFrostedDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Text(sign.symbol, style: const TextStyle(fontSize: 24)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                '${sign.vedicRashi} (${sign.vedicHindi}) · ${sign.name}',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: c.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
+      builder: (ctx) => AscentDialog(
+        title:
+            '${sign.symbol}  ${sign.vedicRashi} (${sign.vedicHindi}) · ${sign.name}',
+        contentWidget: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -162,9 +148,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AscentButton.tonal(
+              label: 'Close',
+              compact: true,
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
           ),
         ],
       ),

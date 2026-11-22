@@ -16,6 +16,8 @@ import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/history_action.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
 
 /// Apple iPhone Health-inspired Hydration Tracker Screen.
 /// Minimalist, high-performance, informative, zero scroll lag,
@@ -45,23 +47,9 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
       context: context,
       builder: (ctx) {
         final g = ctx.glass;
-        return AlertDialog(
-          backgroundColor: ctx.bgSurfaceElevated,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: ctx.divider.withValues(alpha: 0.8),
-              width: 1,
-            ),
-          ),
-          title: Text(
-            'Daily Water Target',
-            style: AscentTextStyles.cardTitle.copyWith(
-              color: ctx.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Column(
+        return AscentDialog(
+          title: 'Daily Water Target',
+          contentWidget: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -102,31 +90,29 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: ctx.textMuted)),
-            ),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor: g.tonalBg,
-                foregroundColor: g.tonalFg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                AscentButton.outlined(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 10,
+                AscentButton.tonal(
+                  label: 'Save Target',
+                  compact: true,
+                  onPressed: () async {
+                    final newGoal = int.tryParse(_goalController.text.trim());
+                    if (newGoal != null && newGoal > 0) {
+                      HapticFeedback.mediumImpact();
+                      await ref.read(waterDaoProvider).setDailyWaterGoal(newGoal);
+                    }
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  },
                 ),
-              ),
-              onPressed: () async {
-                final newGoal = int.tryParse(_goalController.text.trim());
-                if (newGoal != null && newGoal > 0) {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(waterDaoProvider).setDailyWaterGoal(newGoal);
-                }
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              },
-              child: const Text('Save Target'),
+              ],
             ),
           ],
         );
@@ -140,23 +126,9 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
       context: context,
       builder: (ctx) {
         final g = ctx.glass;
-        return AlertDialog(
-          backgroundColor: ctx.bgSurfaceElevated,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(
-              color: ctx.divider.withValues(alpha: 0.8),
-              width: 1,
-            ),
-          ),
-          title: Text(
-            'Log Custom Amount',
-            style: AscentTextStyles.cardTitle.copyWith(
-              color: ctx.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Column(
+        return AscentDialog(
+          title: 'Log Custom Amount',
+          contentWidget: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -198,31 +170,29 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: TextStyle(color: ctx.textMuted)),
-            ),
-            FilledButton.tonal(
-              style: FilledButton.styleFrom(
-                backgroundColor: g.tonalBg,
-                foregroundColor: g.tonalFg,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                AscentButton.outlined(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: () => Navigator.of(ctx).pop(),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 10,
+                AscentButton.tonal(
+                  label: 'Add Intake',
+                  compact: true,
+                  onPressed: () async {
+                    final amount = int.tryParse(_customMlController.text.trim());
+                    if (amount != null && amount > 0) {
+                      HapticFeedback.mediumImpact();
+                      await ref.read(waterDaoProvider).addWater(amount);
+                    }
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                  },
                 ),
-              ),
-              onPressed: () async {
-                final amount = int.tryParse(_customMlController.text.trim());
-                if (amount != null && amount > 0) {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(waterDaoProvider).addWater(amount);
-                }
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              },
-              child: const Text('Add Intake'),
+              ],
             ),
           ],
         );
@@ -604,12 +574,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
           const SizedBox(height: 8),
 
           logsAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpace.s20),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
+            loading: () => const ListSkeleton(),
             error: (err, _) => Padding(
               padding: const EdgeInsets.all(AppSpace.s16),
               child: Text(

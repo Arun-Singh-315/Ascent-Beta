@@ -14,6 +14,11 @@ import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import '../services/vault_pattern_extractor.dart';
 import 'cred_card_visual.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 
 class VaultItemEditorSheet extends ConsumerStatefulWidget {
   const VaultItemEditorSheet({
@@ -30,12 +35,9 @@ class VaultItemEditorSheet extends ConsumerStatefulWidget {
     VaultItem? item,
     VaultCategory category = VaultCategory.card,
   }) {
-    return showModalBottomSheet<void>(
+    return showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (ctx) => VaultItemEditorSheet(
         initialItem: item,
         initialCategory: item?.category ?? category,
@@ -161,21 +163,14 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
 
   void _showSmartScanDialog() {
     final textController = TextEditingController();
-    showDialog<void>(
+    showAscentFrostedDialog<void>(
       context: context,
       builder: (ctx) {
         final g = ctx.glass;
-        return AlertDialog(
-          backgroundColor: ctx.isDark ? const Color(0xFF1E1E28) : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Icon(Icons.auto_awesome_rounded, color: g.clay, size: 22),
-              const SizedBox(width: AppSpace.s8),
-              Text('Smart Auto-Capture', style: TextStyle(color: g.ink, fontSize: 17, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          content: Column(
+        return AscentDialog(
+          icon: Icons.auto_awesome_rounded,
+          title: 'Smart Auto-Capture',
+          contentWidget: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -199,21 +194,29 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: g.clay),
-              icon: const Icon(Icons.bolt_rounded, size: 18),
-              label: const Text('Extract & Fill'),
-              onPressed: () {
-                final text = textController.text.trim();
-                if (text.isNotEmpty) {
-                  _applyExtractedData(text);
-                }
-                Navigator.of(ctx).pop();
-              },
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                AscentButton.outlined(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+                AscentButton.primary(
+                  label: 'Extract & Fill',
+                  icon: Icons.bolt_rounded,
+                  compact: true,
+                  onPressed: () {
+                    final text = textController.text.trim();
+                    if (text.isNotEmpty) {
+                      _applyExtractedData(text);
+                    }
+                    Navigator.of(ctx).pop();
+                  },
+                ),
+              ],
             ),
           ],
         );
@@ -619,7 +622,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                   ),
                   onPressed: _saving ? null : _save,
                   icon: _saving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      ? const SizedBox(width: 18, height: 18, child: CupertinoActivityIndicator(color: Colors.white, radius: 9))
                       : const Icon(Icons.lock_rounded, size: 18),
                   label: Text(
                     widget.initialItem != null ? 'Update Item' : 'Secure & Save to Vault',
@@ -797,18 +800,11 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
     const docTypes = ['Passport', 'Aadhaar', 'PAN Card', 'Driving License', 'Voter ID', 'National ID'];
     return Column(
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: docTypes.contains(_selectedIdType) ? _selectedIdType : docTypes.first,
-          decoration: InputDecoration(
-            labelText: 'Document Type',
-            filled: true,
-            fillColor: g.fill.withValues(alpha: 0.3),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: g.line)),
-          ),
-          items: docTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
-          onChanged: (val) {
-            if (val != null) setState(() => _selectedIdType = val);
-          },
+        AscentSelectField<String>(
+          label: 'Document Type',
+          value: docTypes.contains(_selectedIdType) ? _selectedIdType : docTypes.first,
+          options: [for (final type in docTypes) AscentSelectOption(type, type)],
+          onChanged: (val) => setState(() => _selectedIdType = val),
         ),
         const SizedBox(height: AppSpace.s12),
         _buildTextField(

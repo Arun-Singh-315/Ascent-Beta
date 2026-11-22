@@ -26,6 +26,8 @@ import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'package:go_router/go_router.dart';
 import 'add_activity_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
 
 enum _TaskBoardTab { today, others, completed }
 
@@ -596,14 +598,8 @@ class _TaskItemTile extends ConsumerWidget {
           }
           return false;
         } else {
-          final confirmed = await showModalBottomSheet<bool>(
+          final confirmed = await showAscentSheet<bool>(
             context: context,
-            useRootNavigator: true,
-            useSafeArea: true,
-            backgroundColor: context.bgSurface,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr20),
-            ),
             builder: (ctx) => SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpace.s20),
@@ -1110,7 +1106,7 @@ class _TaskItemTile extends ConsumerWidget {
         task.estimatedMinutes != null && task.estimatedMinutes! > 0;
     final isDone = task.actualCompletedDate != null;
     final g = context.glass;
-    showDialog(
+    showAscentFrostedDialog<void>(
       context: context,
       builder: (ctx) {
         return Dialog(

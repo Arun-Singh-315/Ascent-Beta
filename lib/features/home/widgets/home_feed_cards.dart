@@ -20,6 +20,7 @@ import 'activity_actions.dart';
 import 'activity_composer.dart';
 import '../../hydration/hydration_pace.dart';
 import '../../thought_wall/board/board_logic.dart' show displayContent;
+import 'package:ascent/shared/widgets/ascent_progress_ring.dart';
 
 /// Home's hero cards, in feed order (CLAUDE.md §5.1): Things and Mind are
 /// live summaries with their own inline input (see, add, leave), then one
@@ -76,12 +77,11 @@ class HomeThingsCard extends ConsumerWidget {
         trailing: SizedBox(
           width: 30,
           height: 30,
-          child: CircularProgressIndicator(
+          child: AscentProgressRing(
             value: progress,
             strokeWidth: 3.5,
-            strokeCap: StrokeCap.round,
             color: progress == 1 ? g.successInk : tint,
-            backgroundColor: tint.withValues(alpha: .16),
+            trackColor: tint.withValues(alpha: .16),
           ),
         ),
       ),

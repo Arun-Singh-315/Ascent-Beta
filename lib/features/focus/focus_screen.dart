@@ -22,6 +22,7 @@ import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/live_session_bar.dart';
 import '../today/add_activity_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
@@ -473,12 +474,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
 
           // Task List
           todayTasks.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpace.s20),
-                child: CircularProgressIndicator(),
-              ),
-            ),
+            loading: () => const ListSkeleton(),
             error: (_, _) => const SizedBox.shrink(),
             data: (tasks) {
               if (tasks.isEmpty) {

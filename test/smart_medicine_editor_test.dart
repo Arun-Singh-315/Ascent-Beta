@@ -9,6 +9,7 @@ import 'package:ascent/features/medicine/medicine_editor_sheet.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -194,7 +195,7 @@ void main() {
         find.byKey(const ValueKey('medicine_purpose')),
         'Purpose from my prescription',
       );
-      await t.tap(find.byType(DropdownButtonFormField<int>));
+      await t.tap(find.byType(AscentSelectField<int?>));
       await t.pumpAndSettle();
       await t.tap(find.text('Recovery care').last);
       await t.pumpAndSettle();

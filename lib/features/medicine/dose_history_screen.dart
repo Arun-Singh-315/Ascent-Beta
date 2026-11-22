@@ -7,6 +7,7 @@ import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'care_design.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 final _doseHistoryProvider = StreamProvider.family<List<MedicineLog>, int>(
   (ref, id) => ref.watch(medicineDaoProvider).watchLogsForMedicine(id),
@@ -23,7 +24,7 @@ class DoseHistoryScreen extends ConsumerWidget {
     body: ref
         .watch(_doseHistoryProvider(medicine.id))
         .when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const ListSkeleton(),
           error: (_, _) => Center(
             child: TextButton(
               onPressed: () =>

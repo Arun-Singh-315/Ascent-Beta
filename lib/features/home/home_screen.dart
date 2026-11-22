@@ -31,6 +31,7 @@ import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 /// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
@@ -180,7 +181,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         }
                       });
                       return const Center(
-                        child: CircularProgressIndicator(
+                        child: CupertinoActivityIndicator(
                           key: ValueKey('blockage_profile_indicator'),
                         ),
                       );

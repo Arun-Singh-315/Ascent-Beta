@@ -20,6 +20,7 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_star_button.dart';
 import '../../shared/widgets/schedule_picker.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 const _draftKey = 'ascent_quick_capture_draft_v1';
 
@@ -1548,13 +1549,13 @@ class _QuickCaptureSheetState extends ConsumerState<QuickCaptureSheet> {
                 _progress(),
                 Expanded(
                   child: _loading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center(child: CupertinoActivityIndicator())
                       : _saving && _receipt == null
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const CircularProgressIndicator(),
+                              const CupertinoActivityIndicator(),
                               const SizedBox(height: 16),
                               Text(
                                 'Putting your things in place…',

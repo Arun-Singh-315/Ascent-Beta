@@ -176,3 +176,39 @@ class StatsStripSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// Skeleton for a loading list: [rows] row-shaped shimmer blocks.
+///
+/// Use in place of a centred spinner while list content loads (§6.2).
+/// Clips rather than overflows when its area is short.
+class ListSkeleton extends StatelessWidget {
+  const ListSkeleton({
+    super.key,
+    this.rows = 3,
+    this.rowHeight = 56,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  final int rows;
+  final double rowHeight;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    // Never-scrolling viewport: clips instead of overflowing when the
+    // loading area is shorter than the skeleton (small phones, large text).
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < rows; i++) ...[
+            SkeletonShimmer.card(height: rowHeight, radius: 12),
+            if (i < rows - 1) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}

@@ -14,6 +14,9 @@ import '../../../core/services/plan_collection_service.dart';
 import '../planning_providers.dart';
 import 'plan_collection_editor.dart';
 import '../screens/plan_detail_screen.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 Future<void> showPlanCollectionDetail(
   BuildContext context,
@@ -100,7 +103,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
     final g = context.glass;
     final name = TextEditingController(text: plan.title),
         notes = TextEditingController(text: plan.description);
-    final result = await showDialog<bool>(
+    final result = await showAscentFrostedDialog<bool>(
       context: context,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
@@ -239,12 +242,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
           .getOccurrencesForPlan(item.definitionId!);
       if (!mounted) return;
       final g = context.glass;
-      await showModalBottomSheet<void>(
+      await showAscentSheet<void>(
         context: context,
-        useRootNavigator: true,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
+        framed: false,
         builder: (ctx) => Container(
           height: MediaQuery.sizeOf(ctx).height * .75,
           padding: const EdgeInsets.all(AppSpace.s16),
@@ -409,11 +409,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
           .where((c) => c.id != item.collectionId && c.status == 'active')
           .toList();
       final g = context.glass;
-      final id = await showModalBottomSheet<String>(
+      final id = await showAscentSheet<String>(
         context: context,
-        useRootNavigator: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
+        framed: false,
         builder: (ctx) => Container(
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
@@ -727,7 +725,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
               Expanded(
                 child: Center(
                   child: plans.isLoading
-                      ? const CircularProgressIndicator()
+                      ? const CupertinoActivityIndicator()
                       : const Text('This plan is no longer available.'),
                 ),
               )
@@ -1092,12 +1090,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                     ),
                     items.when(
                       loading: () => const SliverToBoxAdapter(
-                        child: Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(AppSpace.s24),
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
+                        child: ListSkeleton(),
                       ),
                       error: (e, _) => SliverToBoxAdapter(
                         child: Center(

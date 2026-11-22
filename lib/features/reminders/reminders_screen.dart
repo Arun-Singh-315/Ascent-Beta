@@ -41,6 +41,8 @@ import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:go_router/go_router.dart';
 import '../plans/widgets/plan_detail_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({
@@ -436,7 +438,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             if (sources.any((source) => source.isLoading))
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
-                child: LinearProgressIndicator(),
+                child: CupertinoActivityIndicator(),
               ),
             if (sources.any((source) => source.hasError))
               TextButton.icon(
@@ -883,7 +885,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             ],
           );
         },
-        loading: () => Center(child: CircularProgressIndicator(color: g.clay)),
+        loading: () => const ListSkeleton(),
         error: (err, stack) => Center(
           child: Text('Error: $err', style: TextStyle(color: g.inkMuted)),
         ),
