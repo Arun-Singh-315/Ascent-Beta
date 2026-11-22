@@ -89,36 +89,14 @@ void main() {
     expect(find.byKey(const ValueKey('home_mind_card')), findsOneWidget);
     expect(find.text('Thing 1'), findsOneWidget);
     expect(find.text('2 left · 1 done'), findsOneWidget);
-    expect(find.byKey(const ValueKey('activity_quick_input')), findsOneWidget);
-    expect(find.byKey(const ValueKey('home_mind_field')), findsOneWidget);
+    // New items come in through the Capture card; no inputs here.
+    expect(find.byKey(const ValueKey('activity_quick_input')), findsNothing);
+    expect(find.byKey(const ValueKey('home_mind_field')), findsNothing);
+    expect(find.byKey(const ValueKey('home_mind_empty')), findsOneWidget);
     expect(find.byKey(const ValueKey('home_day_card')), findsOneWidget);
     for (final k in ['water', 'medicine', 'money', 'focus']) {
       expect(find.byKey(ValueKey('home_bento_$k')), findsOneWidget);
     }
-    await unmount(tester);
-  });
-
-  testWidgets('a thought saves from Home in one step', (tester) async {
-    final db = await pump(tester);
-    await tester.enterText(
-      find
-          .descendant(
-            of: find.byKey(const ValueKey('home_mind_field')),
-            matching: find.byType(EditableText),
-          )
-          .first,
-      'Call the plumber',
-    );
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('home_mind_send')));
-    for (var i = 0; i < 4; i++) {
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 20)),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    final rows = await tester.runAsync(() => db.select(db.thoughtTable).get());
-    expect(rows!.single.content, 'Call the plumber');
     await unmount(tester);
   });
 
@@ -139,6 +117,29 @@ void main() {
     }
     expect(find.text('Buy basil'), findsOneWidget);
     expect(find.text('Just now'), findsWidgets);
+    await unmount(tester);
+  });
+
+  testWidgets('a checklist thought shows ticks, not raw markdown', (
+    tester,
+  ) async {
+    final db = await pump(tester);
+    await tester.runAsync(
+      () => db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: '- [x] Lemon tea\n- [ ] Study 45m\n- [ ] Walk',
+        ),
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Lemon tea'), findsOneWidget);
+    expect(find.textContaining('[x]'), findsNothing);
+    expect(find.textContaining('1/3 done'), findsOneWidget);
     await unmount(tester);
   });
 

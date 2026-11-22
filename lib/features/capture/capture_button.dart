@@ -5,30 +5,19 @@ import 'capture_sheet.dart';
 
 /// The global capture entry (CLAUDE.md §1.5, §4).
 ///
-/// Home shows it as the floating + ([CaptureButton.fab]). Things and Mind,
-/// which already have their own composers at the bottom and top, show it in
-/// the nav bar ([CaptureButton.nav]) so nothing overlaps.
+/// A nav-bar button on Things and Mind, and in Home's compact header once
+/// the Home capture card has scrolled away. Nothing floats over content.
 class CaptureButton extends StatelessWidget {
-  const CaptureButton.fab({super.key}) : _fab = true;
-  const CaptureButton.nav({super.key}) : _fab = false;
-  final bool _fab;
+  const CaptureButton.nav({super.key});
 
   static const label = 'Capture anything';
 
   @override
-  Widget build(BuildContext context) => _fab
-      ? AscentButton.fab(
-          key: const ValueKey('capture_fab'),
-          icon: Icons.add_rounded,
-          tooltip: label,
-          semanticLabel: label,
-          onPressed: () => showCaptureSheet(context),
-        )
-      : AscentButton.icon(
-          key: const ValueKey('capture_nav'),
-          icon: Icons.bolt_rounded,
-          tooltip: label,
-          semanticLabel: label,
-          onPressed: () => showCaptureSheet(context),
-        );
+  Widget build(BuildContext context) => AscentButton.icon(
+    key: const ValueKey('capture_nav'),
+    icon: Icons.bolt_rounded,
+    tooltip: label,
+    semanticLabel: label,
+    onPressed: () => showCaptureSheet(context),
+  );
 }
