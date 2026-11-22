@@ -1,5 +1,4 @@
 import '../../core/notifications/notification_service.dart';
-import 'package:drift/drift.dart' show Variable;
 import '../../core/notifications/reminder_alert_sync.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,34 +11,36 @@ final planCollectionServiceProvider = Provider<PlanCollectionService>(
 
 final planCollectionsProvider =
     StreamProvider.autoDispose<List<PlanCollectionView>>((ref) async* {
-  final service = ref.watch(planCollectionServiceProvider);
-  await service.importLegacy();
-  yield* service.watchCollections();
-});
+      final service = ref.watch(planCollectionServiceProvider);
+      await service.importLegacy();
+      yield* service.watchCollections();
+    });
 
-final planItemsProvider =
-    StreamProvider.autoDispose.family<List<PlanItemView>, String>((ref, id) {
-  return ref.watch(planCollectionServiceProvider).watchItems(id);
-});
+final planItemsProvider = StreamProvider.autoDispose
+    .family<List<PlanItemView>, String>((ref, id) {
+      return ref.watch(planCollectionServiceProvider).watchItems(id);
+    });
 
 final planningAlertSyncProvider = Provider<ReminderAlertSync>(
   (ref) => ReminderAlertSync.device(ref.watch(databaseProvider)),
 );
 
-final taskPlanLabelProvider = StreamProvider.autoDispose.family<String?, int>((
-  ref,
-  taskId,
-) {
+/// Every task's plan name in one query (task id -> plan title). Rows read
+/// from this instead of each opening its own query as it scrolls in.
+final allTaskPlanLabelsProvider = StreamProvider<Map<int, String>>((ref) {
   final db = ref.watch(databaseProvider);
   return db
       .customSelect(
         '''
-    SELECT c.title FROM plan_collections c
+    SELECT i.task_id AS task_id, c.title AS title FROM plan_collections c
     JOIN plan_collection_items i ON i.collection_id=c.id
-    LEFT JOIN plan_occurrences o ON o.plan_id=i.definition_id
-    WHERE i.task_id=? OR o.linked_task_id=? LIMIT 1
+    WHERE i.task_id IS NOT NULL
+    UNION ALL
+    SELECT o.linked_task_id AS task_id, c.title AS title FROM plan_collections c
+    JOIN plan_collection_items i ON i.collection_id=c.id
+    JOIN plan_occurrences o ON o.plan_id=i.definition_id
+    WHERE o.linked_task_id IS NOT NULL
   ''',
-        variables: [Variable(taskId), Variable(taskId)],
         readsFrom: {
           db.planCollectionTable,
           db.planCollectionItemTable,
@@ -47,7 +48,24 @@ final taskPlanLabelProvider = StreamProvider.autoDispose.family<String?, int>((
         },
       )
       .watch()
-      .map((rows) => rows.isEmpty ? null : rows.single.data['title'] as String);
+      .map((rows) {
+        final out = <int, String>{};
+        for (final r in rows) {
+          final id = r.data['task_id'] as int?;
+          final title = r.data['title'] as String?;
+          if (id != null && title != null) out.putIfAbsent(id, () => title);
+        }
+        return out;
+      });
+});
+
+/// The plan a task belongs to, if any (read from [allTaskPlanLabelsProvider]).
+final taskPlanLabelProvider = StreamProvider.autoDispose.family<String?, int>((
+  ref,
+  taskId,
+) {
+  final all = ref.watch(allTaskPlanLabelsProvider);
+  return Stream.value(all.value?[taskId]);
 });
 
 final planningRequestPermissionsProvider = Provider<Future<bool> Function()>(
