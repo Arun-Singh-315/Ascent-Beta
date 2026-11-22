@@ -16,6 +16,7 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import 'medicine_time_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 
 Future<void> showMedicineEditor(
   BuildContext context, {
@@ -260,7 +261,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                       style: TextStyle(
                         color: g.ink,
                         fontSize: 24,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: -.6,
                       ),
                     ),
@@ -329,29 +330,16 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                         onPressed: () => ref.invalidate(carePlansProvider),
                         child: const Text('Could not load care plans. Retry'),
                       ),
-                      data: (plans) => DropdownButtonFormField<int>(
+                      data: (plans) => AscentSelectField<int?>(
                         key: ValueKey('care_plan_$_carePlanId'),
-                        initialValue: plans.any((p) => p.id == _carePlanId)
+                        label: 'Care plan (optional)',
+                        value: plans.any((p) => p.id == _carePlanId)
                             ? _carePlanId
                             : null,
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Care plan (optional)',
-                        ),
-                        items: [
-                          const DropdownMenuItem<int>(
-                            value: null,
-                            child: Text('No care plan'),
-                          ),
+                        options: [
+                          const AscentSelectOption<int?>(null, 'No care plan'),
                           for (final plan in plans)
-                            DropdownMenuItem(
-                              value: plan.id,
-                              child: Text(
-                                plan.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
+                            AscentSelectOption<int?>(plan.id, plan.title),
                         ],
                         onChanged: _saving
                             ? null

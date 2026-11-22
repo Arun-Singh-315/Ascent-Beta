@@ -31,6 +31,7 @@ import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
 import 'medicine_quick_add_sheet.dart';
 import 'medicine_today.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 class MedicineScreen extends ConsumerStatefulWidget {
   const MedicineScreen({super.key});
@@ -178,24 +179,14 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
   }
 
   Future<void> _delete(Medicine medicine) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Remove ${medicine.name}?'),
-        content: const Text(
+      title: 'Remove ${medicine.name}?',
+      content:
           'This removes the medicine, dose history, and linked reminders and tasks. You can undo immediately afterwards. Archive the schedule if you want to keep its history long term.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep medicine'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Remove',
+      cancelLabel: 'Keep medicine',
+      isDestructive: true,
     );
     if (confirmed != true || !mounted) return;
     try {
@@ -477,7 +468,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               medicine.name,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: g.ink,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.3,
               ),
             ),
@@ -710,7 +701,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         'No medicines added',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: context.glass.ink,
         ),
       ),
@@ -747,7 +738,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         ),
       ],
       body: medicines.when(
-        loading: () => const SizedBox.shrink(),
+        loading: () => const ListSkeleton(),
         error: (_, _) => Center(
           child: AscentButton.ghost(
             label: 'Couldn’t load medicines. Try again',

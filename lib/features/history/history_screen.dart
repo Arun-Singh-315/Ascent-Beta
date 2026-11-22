@@ -7,9 +7,13 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/history/history_provider.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({super.key, this.module, this.entity});
@@ -121,12 +125,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               )
               .toList()
         : <HistoryEvent>[];
-    await showModalBottomSheet<void>(
+    await showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      showDragHandle: true,
       builder: (ctx) => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         child: Column(
@@ -247,12 +247,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Column(
               children: [
-                TextField(
+                AppTextField(
                   key: const ValueKey('history_search'),
-                  decoration: const InputDecoration(
-                    hintText: 'Search your history',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
+                  hintText: 'Search your history',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  textInputAction: TextInputAction.search,
                   onChanged: (v) => setState(() {
                     _query = v.trim().toLowerCase();
                     _limit = 60;
@@ -277,22 +276,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _module ?? 'all',
-                        isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Activity',
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: 'all',
-                            child: Text('All activities'),
-                          ),
+                      child: AscentSelectField<String>(
+                        label: 'Activity',
+                        value: _module ?? 'all',
+                        options: [
+                          const AscentSelectOption('all', 'All activities'),
                           for (final entry in historyModules.entries)
-                            DropdownMenuItem(
-                              value: entry.key,
-                              child: Text(entry.value),
-                            ),
+                            AscentSelectOption(entry.key, entry.value),
                         ],
                         onChanged: widget.entity != null
                             ? null
@@ -365,8 +355,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             child: ref
                 .watch(historyEventsProvider)
                 .when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                  loading: () => const ListSkeleton(),
                   error: (_, _) => Center(
                     child: TextButton(
                       onPressed: () => ref.invalidate(historyEventsProvider),
@@ -465,7 +454,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                       dayLabel,
                                       style: TextStyle(
                                         color: g.ink,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                         fontSize: 15,
                                       ),
                                     ),

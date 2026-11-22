@@ -84,6 +84,10 @@ class PillarTints {
   static const money = Color(0xFF3A9A63);
   static const moneyDark = Color(0xFF62C08A);
   static const grow = Color(0xFFFF9500);
+
+  /// Promises: a warm, quiet gold ("keep your word").
+  static const promise = Color(0xFFB07A12);
+  static const promiseDark = Color(0xFFE6B85C);
   static const assistant = Color(0xFF5E5CE6);
   static const neutral = Color(0xFF8E8E93);
 }

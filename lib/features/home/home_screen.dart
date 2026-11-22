@@ -8,6 +8,8 @@ import '../../shared/widgets/empty_state.dart';
 import '../../app/theme/surface_tokens.dart';
 
 import 'package:flutter/material.dart';
+import '../capture/capture_card.dart';
+import 'widgets/home_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,6 +33,9 @@ import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
+import '../promises/widgets/home_promise_card.dart';
+import '../travel/home_travel_card.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 /// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
@@ -180,7 +185,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         }
                       });
                       return const Center(
-                        child: CircularProgressIndicator(
+                        child: CupertinoActivityIndicator(
                           key: ValueKey('blockage_profile_indicator'),
                         ),
                       );
@@ -214,6 +219,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             includeAssistant: false,
                           ),
 
+                          // Capture first: open the app, write, Enter.
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpace.s16,
+                              AppSpace.s12,
+                              AppSpace.s16,
+                              0,
+                            ),
+                            child: CaptureCard(),
+                          ),
+
                           // Ask Riya, right where the thumb starts.
                           const HomeAskBar(),
                           const SizedBox(height: 8),
@@ -228,6 +244,22 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           // Hero feed (CLAUDE.md §5.1): Things and Mind are
                           // live summaries with inline input; Life tiles
                           // follow. Each feature appears once.
+                          // Promises sit right under Now: one daily answer
+                          // that keeps your word to yourself in view.
+                          if (layout.visible.contains('promises') &&
+                              ref
+                                  .watch(unlockedFeaturesProvider)
+                                  .contains(AscentFeature.things))
+                            const HomeFeedEntrance(
+                              index: 1,
+                              child: HomePromiseCard(),
+                            ),
+                          // Travel shows only while a trip is on or a recent
+                          // visit is waiting for its bill or photos.
+                          const HomeFeedEntrance(
+                            index: 1,
+                            child: HomeTravelCard(),
+                          ),
                           const HomeFeedEntrance(
                             index: 1,
                             child: HomeThingsCard(),
@@ -236,8 +268,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             index: 2,
                             child: HomeMindCard(),
                           ),
+                          // The week at a glance: reminders, to-dos and
+                          // thoughts by day.
                           const HomeFeedEntrance(
                             index: 3,
+                            child: HomeCalendar(),
+                          ),
+                          const HomeFeedEntrance(
+                            index: 4,
                             child: HomeLifeTiles(),
                           ),
 

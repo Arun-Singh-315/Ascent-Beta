@@ -70,6 +70,20 @@ const youGroups = [
   ]),
   YouGroup('Plan', [
     YouEntry(
+      icon: Icons.handshake_outlined,
+      tint: PillarTints.promise,
+      title: 'Promises',
+      subtitle: 'Daily promises to yourself',
+      route: '/promises',
+    ),
+    YouEntry(
+      icon: Icons.luggage_outlined,
+      tint: PillarTints.plan,
+      title: 'Travel',
+      subtitle: 'Trips, places, bills and photos',
+      route: '/travel',
+    ),
+    YouEntry(
       icon: Icons.notifications_none_rounded,
       tint: PillarTints.plan,
       title: 'Reminders',
@@ -167,9 +181,7 @@ class YouScreen extends ConsumerWidget {
             const SizedBox(height: AppSpace.s28),
             _GroupHeader(group.title),
             _Group(
-              children: [
-                for (final entry in group.entries) _Row(entry: entry),
-              ],
+              children: [for (final entry in group.entries) _Row(entry: entry)],
             ),
           ],
         ],
@@ -228,7 +240,9 @@ class _Group extends StatelessWidget {
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0)
                 Padding(
-                  padding: const EdgeInsets.only(left: AppSpace.s16 + _tileSize + AppSpace.s12),
+                  padding: const EdgeInsets.only(
+                    left: AppSpace.s16 + _tileSize + AppSpace.s12,
+                  ),
                   child: Divider(height: 1, thickness: 1, color: g.line),
                 ),
               children[i],
@@ -295,11 +309,7 @@ class _Row extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpace.s8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: g.inkMuted,
-                ),
+                Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
               ],
             ),
           ),

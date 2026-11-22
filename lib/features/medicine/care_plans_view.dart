@@ -12,6 +12,7 @@ import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import 'care_forms.dart';
 import 'medicine_editor_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 class CarePlansView extends ConsumerWidget {
   const CarePlansView({super.key});
@@ -19,7 +20,7 @@ class CarePlansView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => ref
       .watch(carePlansProvider)
       .when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ListSkeleton(),
         error: (_, _) => Center(
           child: TextButton(
             onPressed: () => ref.invalidate(carePlansProvider),
@@ -111,7 +112,7 @@ class _PlanCard extends ConsumerWidget {
               plan.title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontSize: 23,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 letterSpacing: -.7,
                 height: 1.2,
               ),
@@ -270,7 +271,7 @@ class CarePlanScreen extends ConsumerWidget {
                                       style: TextStyle(
                                         color: context.glass.ink,
                                         fontSize: 23,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                         height: 1.1,
                                       ),
                                     ),
@@ -281,7 +282,7 @@ class CarePlanScreen extends ConsumerWidget {
                                       style: TextStyle(
                                         color: context.glass.inkSecondary,
                                         fontSize: 10,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                         letterSpacing: 1.2,
                                       ),
                                     ),
@@ -358,7 +359,7 @@ class CarePlanScreen extends ConsumerWidget {
                                                   .textTheme
                                                   .titleMedium
                                                   ?.copyWith(
-                                                    fontWeight: FontWeight.w700,
+                                                    fontWeight: FontWeight.w600,
                                                     fontSize: 17,
                                                     letterSpacing: -.3,
                                                     height: 1.3,
@@ -520,7 +521,7 @@ class CarePlanScreen extends ConsumerWidget {
                                 Text(
                                   record.title,
                                   style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 if (record.notes.isNotEmpty)
                                   Padding(

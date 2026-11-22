@@ -53,7 +53,7 @@ class RiyaParagraphText extends StatelessWidget {
               headingText,
               style: baseStyle.copyWith(
                 fontSize: (baseStyle.fontSize ?? 14.5) + 1.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0.1,
               ),
             ),
@@ -140,7 +140,7 @@ class RiyaParagraphText extends StatelessWidget {
                       child: Text(
                         '$number.',
                         style: baseStyle.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: isUser
                               ? baseStyle.color?.withValues(alpha: 0.8)
                               : accentColor,
@@ -226,7 +226,7 @@ class RiyaParagraphText extends StatelessWidget {
         spans.add(
           TextSpan(
             text: raw.substring(2, raw.length - 2),
-            style: baseStyle.copyWith(fontWeight: FontWeight.w700),
+            style: baseStyle.copyWith(fontWeight: FontWeight.w600),
           ),
         );
       } else if (raw.startsWith('`') && raw.endsWith('`') && raw.length >= 2) {

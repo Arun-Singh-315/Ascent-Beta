@@ -30,6 +30,7 @@ import 'models/things_sections.dart';
 import 'screens/add_activity_screen.dart';
 import 'things_providers.dart';
 import '../../shared/widgets/group_header.dart';
+import '../capture/capture_button.dart';
 
 /// The planning hero (CLAUDE.md §5.2): Today · Upcoming · Anytime · Routines.
 class ThingsHubScreen extends ConsumerStatefulWidget {
@@ -861,6 +862,7 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       // Grouped canvas behind white cards, like Home (CLAUDE.md §3.1).
       backgroundColor: HomeDesign.of(context).canvas,
       actions: [
+        const CaptureButton.nav(),
         AscentButton.icon(
           icon: _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
           tooltip: _showSearch ? 'Close search' : 'Search things',
@@ -935,7 +937,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  // Same canvas as the page, so the quick add is part of it.
+                  color: HomeDesign.of(context).canvas,
                   border: Border(
                     top: BorderSide(
                       color: context.glass.line.withValues(

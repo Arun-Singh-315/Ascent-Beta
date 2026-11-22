@@ -145,6 +145,10 @@ void main() {
         expect(find.text('Skip this dose'), findsOneWidget);
         expect(find.text('Snooze 30 minutes'), findsOneWidget);
         expect(tester.takeException(), isNull);
+        await tester.tapAt(const Offset(4, 4));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
 
         await tester.pumpWidget(const SizedBox());
         for (var i = 0; i < 5; i++) {

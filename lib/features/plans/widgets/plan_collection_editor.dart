@@ -14,6 +14,9 @@ import '../../../core/services/plan_collection_service.dart';
 import '../../../shared/widgets/ascent_switch_row.dart';
 import '../planning_providers.dart';
 import '../screens/plan_creator_screen.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_button.dart';
 
 Future<void> showPlanCollectionEditor(
   BuildContext context, {
@@ -317,12 +320,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   Future<bool> _settings(int index) async {
     FocusScope.of(context).unfocus();
     final item = _items[index];
-    final result = await showModalBottomSheet<PlanItemDraft>(
+    final result = await showAscentSheet<PlanItemDraft>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (_) => _ItemSettings(
         initial: item.draft,
         morning: _morning(),
@@ -349,12 +349,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     FocusScope.of(context).unfocus();
     final item = _items[index];
     final current = item.minutes;
-    final result = await showModalBottomSheet<int?>(
+    final result = await showAscentSheet<int?>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(AppSpace.s20),
         decoration: BoxDecoration(
@@ -375,7 +372,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                     'Set Focus Duration',
                     style: TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: ctx.textPrimary,
                     ),
                   ),
@@ -483,12 +480,12 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final times = <TimeOfDay?>[null, null, null, null];
     String? error;
     DateTime? endDate;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAscentFrostedDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, update) => AlertDialog(
-          title: const Text('Several times a day'),
-          content: SingleChildScrollView(
+        builder: (ctx, update) => AscentDialog(
+          title: 'Several times a day',
+          contentWidget: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,25 +564,34 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final minutes = times
-                    .whereType<TimeOfDay>()
-                    .map((t) => t.hour * 60 + t.minute)
-                    .toSet();
-                if (minutes.length != times.length || endDate == null) {
-                  update(
-                    () => error = 'Choose distinct times and an end date.',
-                  );
-                  return;
-                }
-                Navigator.pop(ctx, true);
-              },
-              child: const Text('Use these times'),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                AscentButton.outlined(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+                AscentButton.primary(
+                  label: 'Use these times',
+                  compact: true,
+                  onPressed: () {
+                    final minutes = times
+                        .whereType<TimeOfDay>()
+                        .map((t) => t.hour * 60 + t.minute)
+                        .toSet();
+                    if (minutes.length != times.length || endDate == null) {
+                      update(
+                        () => error = 'Choose distinct times and an end date.',
+                      );
+                      return;
+                    }
+                    Navigator.pop(ctx, true);
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -653,12 +659,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       initial: initial,
     );
     if (start == null || !mounted) return;
-    final result = await showModalBottomSheet<_Defaults>(
+    final result = await showAscentSheet<_Defaults>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (_) => _DefaultsSheet(initialAt: start),
     );
     if (result == null || !mounted) return;
@@ -676,12 +679,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
 
   Future<void> _pasteList() async {
     final g = context.glass;
-    final text = await showModalBottomSheet<String>(
+    final text = await showAscentSheet<String>(
       context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
         child: Container(
@@ -730,7 +730,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             'Add multiple items',
                             style: Theme.of(ctx).textTheme.titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   color: g.ink,
                                 ),
                           ),

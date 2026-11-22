@@ -40,6 +40,8 @@ import '../../core/database/app_database.dart';
 import '../../core/services/festival_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
   const AiAssistantScreen({
@@ -51,12 +53,9 @@ class AiAssistantScreen extends ConsumerStatefulWidget {
   final bool compact;
   static Future<void> showFromHome(
     BuildContext context,
-  ) => showModalBottomSheet<void>(
+  ) => showAscentSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
+    framed: false,
     enableDrag: false,
     builder: (context) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -411,7 +410,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final args = Map<String, dynamic>.from(raw['arguments'] as Map);
     final id = raw['id'] as String;
     _textController.text = id == 'promises.create'
-        ? 'Create a promise to ${args['text']}'
+        ? 'Make a promise to ${args['title'] ?? args['text']}'
         : id == 'tasks.create'
         ? 'Create a todo to ${args['title']}'
         : id.endsWith('.edit')
@@ -426,7 +425,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   String _reviewCopy(RiyaCommand command) {
     final a = command.arguments;
     if (command.id == 'promises.create') {
-      return '“${a['title'] ?? a['text'] ?? 'New Commitment'}”\n(Commitments are coming soon to Ascent)';
+      final days = a['lengthDays'] as int? ?? 21;
+      return 'Make a promise to yourself?\n“${a['title'] ?? a['text']}” for $days days, starting today.';
     }
     if (command.id.endsWith('.delete')) {
       return 'Delete “${a['expectedTitle'] ?? 'the selected item'}”?${command.id.startsWith('tasks.') ? '\nLinked reminders and records will also be removed.' : '\nIts progress history will also be removed.'}';
@@ -1102,24 +1102,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     String name,
   ) async {
     HapticFeedback.lightImpact();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear chat history?'),
-        content: Text(
+      title: 'Clear chat history?',
+      content:
           'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear history'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Clear history',
     );
     if (confirmed == true && mounted) {
       await ref.read(aiAssistantDaoProvider).clearChatHistory();
@@ -1135,12 +1123,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   ) {
     HapticFeedback.lightImpact();
     final customController = TextEditingController();
-    showModalBottomSheet<void>(
+    showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (sheetContext) {
         return Padding(
           padding: EdgeInsets.only(
@@ -1177,7 +1162,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       'Companion Identity',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: sheetContext.c.textPrimary,
                         letterSpacing: -0.3,
                       ),
@@ -1306,7 +1291,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           name,
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 15,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                             color: sheetContext.textPrimary,
                           ),
                         ),
@@ -1480,7 +1465,7 @@ class _ConversationMessageBubbleState
               assistantName,
               style: AscentTextStyles.interfaceLabel.copyWith(
                 color: chat.assistantName,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1507,22 +1492,22 @@ class _ConversationMessageBubbleState
                   ),
                   strong: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h1: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h2: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   h3: TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                   ),
                   listBullet: TextStyle(
@@ -1632,18 +1617,21 @@ class _ConversationMessageBubbleState
                 },
               ),
               if (widget.isLatest) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(
-                  Icons.refresh_rounded,
-                  size: 16,
-                  color: c.textTertiary,
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: c.textTertiary,
+                  ),
+                  tooltip: 'Regenerate',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  onPressed: busy ? null : onRecover,
                 ),
-                tooltip: 'Regenerate',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                onPressed: busy ? null : onRecover,
-              ),
               ],
             ],
           ),
@@ -1771,7 +1759,7 @@ class _ConversationMessageBubbleState
                                         fontSize: 10.5,
                                         letterSpacing: 1.0,
                                         color: accentColor,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -1785,7 +1773,7 @@ class _ConversationMessageBubbleState
                                 style: TextStyle(
                                   color: context.glass.ink,
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   height: 1.25,
                                 ),
                               ),
@@ -1910,7 +1898,7 @@ class _ConversationMessageBubbleState
                                 : 'Action needs attention',
                             style: TextStyle(
                               color: ChatPalette.of(context).label,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
@@ -2299,10 +2287,8 @@ class _RiyaRecordCard extends StatelessWidget {
     final (IconData icon, String tintId) = switch (type) {
       'reminders' => (Icons.notifications_active_outlined, 'things'),
       'water' || 'hydration' => (Icons.water_drop_outlined, 'hydration'),
-      'money' || 'transactions' => (
-        Icons.account_balance_wallet_outlined,
-        'money',
-      ),
+      'money' ||
+      'transactions' => (Icons.account_balance_wallet_outlined, 'money'),
       'medicine' => (Icons.medication_outlined, 'medicine'),
       'thoughts' => (Icons.lightbulb_outline_rounded, 'mind'),
       'focus' || 'sessions' => (Icons.timer_outlined, 'focus'),
@@ -2334,10 +2320,7 @@ class _RiyaRecordCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: tint.withValues(alpha: g.isDark ? .12 : .07),
-              border: Border.all(
-                color: tint.withValues(alpha: .6),
-                width: 1.5,
-              ),
+              border: Border.all(color: tint.withValues(alpha: .6), width: 1.5),
             ),
             child: Icon(icon, size: 20, color: tint),
           ),
@@ -2386,4 +2369,3 @@ class _RiyaRecordCard extends StatelessWidget {
     );
   }
 }
-

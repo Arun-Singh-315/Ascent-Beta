@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
 
 class InAppReminderDialog extends ConsumerWidget {
   final Reminder reminder;
@@ -24,9 +25,8 @@ class InAppReminderDialog extends ConsumerWidget {
     Reminder reminder, {
     bool isPreview = false,
   }) {
-    return showDialog(
+    return showAscentFrostedDialog<void>(
       context: context,
-      barrierDismissible: true,
       builder: (context) =>
           InAppReminderDialog(reminder: reminder, isPreview: isPreview),
     );

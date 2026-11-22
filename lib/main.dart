@@ -10,6 +10,9 @@ import 'core/notifications/reminder_alert_sync.dart';
 import 'core/ai/riya_alert_effects.dart';
 import 'core/database/app_database.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
+import 'core/cloud/cloud_gateway.dart';
+import 'core/cloud/cloud_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +24,11 @@ import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
+import 'core/promises/promise_providers.dart';
+import 'core/promises/promise_service.dart';
+import 'core/travel/here_locator.dart';
+import 'core/travel/travel_providers.dart';
+import 'core/travel/travel_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,9 +49,26 @@ Future<void> main() async {
   }
   await touchLastOpened(prefs);
 
+  // Online features (CLAUDE.md §7) exist only when a Supabase project is
+  // configured at build time; otherwise the app is fully offline.
+  CloudGateway cloud = const OfflineCloudGateway();
+  const cloudConfig = CloudConfig.fromEnvironment;
+  if (cloudConfig.isConfigured) {
+    try {
+      await Supabase.initialize(
+        url: cloudConfig.url,
+        publishableKey: cloudConfig.anonKey,
+      );
+      cloud = SupabaseCloudGateway(Supabase.instance.client);
+    } catch (e) {
+      debugPrint('Cloud unavailable, staying offline: $e');
+    }
+  }
+
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      cloudGatewayProvider.overrideWithValue(cloud),
     ],
   );
 
@@ -110,7 +135,8 @@ Future<void> main() async {
     }
     if (actionId == 'things_done' && effectivePayload != null) {
       final uri = Uri.tryParse(effectivePayload);
-      final idStr = uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
+      final idStr =
+          uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
       final taskId = int.tryParse(idStr ?? '');
       if (taskId != null) {
         final db = container.read(databaseProvider);
@@ -241,6 +267,21 @@ Future<void> _reconcileStartupAlerts(
     } catch (e) {
       // Pending rows remain durable for retry when alerts become available.
       debugPrint('Alert sync skipped/deferred: $e');
+    }
+    try {
+      // Promise nudges are one-shot; plan the next one for each promise.
+      await PromiseService(
+        db,
+        nudger: const DevicePromiseNudger(),
+      ).syncAllNudges();
+    } catch (e) {
+      debugPrint('Promise nudges deferred: $e');
+    }
+    try {
+      // Visits saved offline get their place names once online.
+      await nameOfflineVisits(TravelService(db), const DeviceHereLocator());
+    } catch (e) {
+      debugPrint('Visit naming deferred: $e');
     }
   } catch (e) {
     debugPrint('Startup maintenance deferred: $e');

@@ -259,10 +259,14 @@ void main() {
   test(
     'standalone reminder save/edit confirms actual row; expired date rejected',
     () async {
+      // Alert sync only schedules reminders still ahead of the real clock,
+      // so this one is placed in the future rather than on a fixed date.
+      final real = DateTime.now();
+      final future = DateTime(real.year, real.month, real.day + 30);
       final created = await executor.execute(
         RiyaCommand('reminders.create', {
           'title': 'Call',
-          'at': DateTime(2026, 10, 13, 19).toIso8601String(),
+          'at': future.add(const Duration(hours: 19)).toIso8601String(),
         }),
         requestId: 'remind',
         approved: true,
@@ -271,12 +275,13 @@ void main() {
       final edited = await executor.execute(
         RiyaCommand('reminders.edit', {
           'id': id,
-          'at': DateTime(2026, 10, 13, 20).toIso8601String(),
+          'at': future.add(const Duration(hours: 20)).toIso8601String(),
         }),
         requestId: 'edit',
         approved: true,
       );
-      expect(edited.message, contains('scheduling has not been verified'));
+      // Plain-language confirmation (record cards, 65b3878).
+      expect(edited.message, startsWith('Reminder set: “Call”'));
       expect((await db.reminderDao.getReminderById(id))!.scheduledAt.hour, 20);
       await expectLater(
         executor.execute(

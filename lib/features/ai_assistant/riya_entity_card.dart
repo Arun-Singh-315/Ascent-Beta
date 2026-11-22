@@ -33,10 +33,11 @@ class RiyaEntityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (type == 'promises') {
+      // Promises live on Home and in Promises; check in there with one tap.
       return _pane(
         context,
-        'Commitments / Promises are coming soon to Ascent!',
-        subtitle: 'Coming Soon',
+        'Your promises',
+        subtitle: 'Check in with one tap on Home',
       );
     }
     return ref
@@ -150,7 +151,10 @@ class RiyaEntityCard extends ConsumerWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2.5,
+                  ),
                   decoration: BoxDecoration(
                     color: g.clay.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
@@ -158,14 +162,14 @@ class RiyaEntityCard extends ConsumerWidget {
                   child: Text(
                     type == 'promises'
                         ? (category != null && category.isNotEmpty
-                            ? 'PROMISE · ${category.toUpperCase()}'
-                            : 'PROMISE')
+                              ? 'PROMISE · ${category.toUpperCase()}'
+                              : 'PROMISE')
                         : 'TODO',
                     style: TextStyle(
                       fontSize: 10.5,
                       letterSpacing: 1.0,
                       color: g.clay,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -177,7 +181,7 @@ class RiyaEntityCard extends ConsumerWidget {
               style: TextStyle(
                 color: removed ? g.inkMuted : g.ink,
                 fontSize: 15.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.25,
               ),
             ),
@@ -206,7 +210,11 @@ class RiyaEntityCard extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Row(
                     children: [
-                      Icon(Icons.notifications_active_outlined, size: 14, color: g.clay),
+                      Icon(
+                        Icons.notifications_active_outlined,
+                        size: 14,
+                        color: g.clay,
+                      ),
                       const SizedBox(width: 5),
                       Text(
                         'Reminder: $reminder',

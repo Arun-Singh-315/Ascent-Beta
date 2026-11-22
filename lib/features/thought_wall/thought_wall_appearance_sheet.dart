@@ -100,7 +100,7 @@ class _ThoughtWallAppearanceSheetState
                             'Wall appearance',
                             style: AscentTextStyles.headlineMedium.copyWith(
                               color: g.ink,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
@@ -125,7 +125,7 @@ class _ThoughtWallAppearanceSheetState
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -148,7 +148,7 @@ class _ThoughtWallAppearanceSheetState
                         style: TextStyle(
                           color: appearance.bubbleFilled ? g.clay : g.ink,
                           fontWeight: appearance.bubbleFilled
-                              ? FontWeight.w700
+                              ? FontWeight.w600
                               : FontWeight.w500,
                         ),
                       ),
@@ -172,7 +172,7 @@ class _ThoughtWallAppearanceSheetState
                         style: TextStyle(
                           color: !appearance.bubbleFilled ? g.clay : g.ink,
                           fontWeight: !appearance.bubbleFilled
-                              ? FontWeight.w700
+                              ? FontWeight.w600
                               : FontWeight.w500,
                         ),
                       ),
@@ -189,7 +189,7 @@ class _ThoughtWallAppearanceSheetState
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -214,7 +214,7 @@ class _ThoughtWallAppearanceSheetState
                           style: TextStyle(
                             color: appearance.defaultBullets == style ? g.clay : g.ink,
                             fontWeight: appearance.defaultBullets == style
-                                ? FontWeight.w700
+                                ? FontWeight.w600
                                 : FontWeight.w500,
                           ),
                         ),
@@ -231,7 +231,7 @@ class _ThoughtWallAppearanceSheetState
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -256,7 +256,7 @@ class _ThoughtWallAppearanceSheetState
                             fontWeight:
                                 (appearance.bubbleBorderWidth - width).abs() <
                                         0.1
-                                    ? FontWeight.w700
+                                    ? FontWeight.w600
                                     : FontWeight.w500,
                           ),
                         ),
@@ -276,7 +276,7 @@ class _ThoughtWallAppearanceSheetState
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -295,7 +295,7 @@ class _ThoughtWallAppearanceSheetState
                           style: TextStyle(
                             color: appearance.style == style ? g.clay : g.ink,
                             fontWeight: appearance.style == style
-                                ? FontWeight.w700
+                                ? FontWeight.w600
                                 : FontWeight.w500,
                           ),
                         ),
@@ -312,7 +312,7 @@ class _ThoughtWallAppearanceSheetState
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -329,7 +329,7 @@ class _ThoughtWallAppearanceSheetState
                           style: TextStyle(
                             color: appearance.density == density ? g.clay : g.ink,
                             fontWeight: appearance.density == density
-                                ? FontWeight.w700
+                                ? FontWeight.w600
                                 : FontWeight.w500,
                           ),
                         ),

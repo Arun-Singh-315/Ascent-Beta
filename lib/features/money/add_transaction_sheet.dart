@@ -14,6 +14,7 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
+import 'package:ascent/shared/widgets/ascent_popup_menu.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -458,7 +459,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                            selected ? FontWeight.w600 : FontWeight.w500,
                         color: selected ? Colors.white : context.textPrimary,
                       ),
                     ),
@@ -486,56 +487,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 style: TextStyle(color: context.textMuted, fontSize: 12),
               ),
             ] else ...[
-              DropdownButtonFormField<String>(
-                initialValue: _category,
-                isExpanded: true,
-                itemHeight: null,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: context.textPrimary),
-                menuMaxHeight: MediaQuery.sizeOf(context).height * .65,
-                dropdownColor: context.elevatedSurface,
-                decoration: field('Category'),
-                items: _categories
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(value),
-                        ),
-                      ),
-                    )
-                    .toList(),
+              AscentSelectField<String>(
+                label: 'Category',
+                value: _category,
+                options: [for (final v in _categories) AscentSelectOption(v, v)],
                 onChanged: _saving
                     ? null
-                    : (value) => setState(() => _category = value ?? _category),
+                    : (value) => setState(() => _category = value),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _account,
-                isExpanded: true,
-                itemHeight: null,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: context.textPrimary),
-                menuMaxHeight: MediaQuery.sizeOf(context).height * .65,
-                dropdownColor: context.elevatedSurface,
-                decoration: field('Account'),
-                items: _accounts
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Text(value),
-                        ),
-                      ),
-                    )
-                    .toList(),
+              AscentSelectField<String>(
+                label: 'Account',
+                value: _account,
+                options: [for (final v in _accounts) AscentSelectOption(v, v)],
                 onChanged: _saving
                     ? null
-                    : (value) => setState(() => _account = value ?? _account),
+                    : (value) => setState(() => _account = value),
               ),
               const SizedBox(height: 8),
               Align(

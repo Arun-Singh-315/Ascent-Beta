@@ -11,6 +11,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../shared/widgets/app_chip.dart';
 import '../../../shared/widgets/app_input_bar.dart';
+import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 Future<Map<String, dynamic>> weatherJson(Uri uri) async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 10);
@@ -80,17 +82,11 @@ final homeWeatherProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
 });
 
 void showWeatherForecastSheet(BuildContext context) {
-  final c = context.c;
-  showModalBottomSheet<void>(
+  showAscentSheet<void>(
     context: context,
-    useRootNavigator: true,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: c.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(Rd.header)),
-    ),
-    builder: (context) => const WeatherForecastSheet(),
+    framed: false,
+    builder: (context) =>
+        const AscentSheetSurface(child: WeatherForecastSheet()),
   );
 }
 
@@ -360,7 +356,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                               '$tempVal°C',
                               style: TextStyle(
                                 fontSize: 36,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                                 color: c.textPrimary,
                                 height: 1.1,
                               ),
@@ -503,7 +499,7 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
 
             if (searching) ...[
               const SizedBox(height: 8),
-              LinearProgressIndicator(color: c.accent, backgroundColor: c.accentTint),
+              CupertinoActivityIndicator(color: c.accent),
             ],
             if (error != null)
               Padding(
@@ -576,8 +572,8 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
                     ? SizedBox(
                         width: 14,
                         height: 14,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
+                        child: CupertinoActivityIndicator(
+                          radius: 7,
                           color: c.accent,
                         ),
                       )

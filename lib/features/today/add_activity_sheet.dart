@@ -1041,7 +1041,7 @@ class _TypeSelectChip extends StatelessWidget {
                   label,
                   style: AscentTextStyles.labelMedium.copyWith(
                     color: isSelected ? AppPalette.white : context.textPrimary,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ],

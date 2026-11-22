@@ -24,6 +24,7 @@ import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_transaction_sheet.dart';
 import 'budget_settings_sheet.dart';
+import 'package:ascent/shared/widgets/skeleton_shimmer.dart';
 
 class MoneyScreen extends ConsumerStatefulWidget {
   const MoneyScreen({super.key});
@@ -478,7 +479,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
                     style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
                       color: isExpense ? g.coral : g.sage,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -737,7 +738,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                     .titleSmall
                                     ?.copyWith(
                                       color: g.ink,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                     ),
                               ),
                               Text(
@@ -767,7 +768,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                 : 'Adjusting pace',
                             style: AppTypeRoles.typeRole34.copyWith(
                               color: isMindfulPace ? g.sage : g.amber,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -784,7 +785,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           style: AscentTextStyles.displaySmall
                               .copyWith(
                                 color: isMindfulPace ? g.sage : g.coral,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               )
                               .merge(AppTypeRoles.typeRole45),
                         ),
@@ -938,7 +939,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                               style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     color: g.coral,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                   ),
                             ),
                           ],
@@ -1000,7 +1001,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                     .titleSmall
                                     ?.copyWith(
                                       color: g.ink,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                     ),
                               ),
                             ),
@@ -1008,7 +1009,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                               '₹${totalCategorySpend.toStringAsFixed(0)}',
                               style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
                                 color: g.inkSecondary,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -1162,7 +1163,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                           .titleSmall
                                           ?.copyWith(
                                             color: g.ink,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                   ),
@@ -1263,7 +1264,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                 style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(
                                       color: g.inkSecondary,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                     ),
                               ),
                               const SizedBox(height: 8),
@@ -1298,7 +1299,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                         : 'Show All ${transactions.length} Transactions',
                                     style: TextStyle(
                                       color: g.clay,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                       fontSize: 13,
                                     ),
                                     textAlign: TextAlign.center,
@@ -1355,12 +1356,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     ],
                   );
                 },
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(AppSpace.s24),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                loading: () => const ListSkeleton(),
                 error: (e, _) =>
                     Center(child: Text('Error loading transactions: $e')),
               ),
@@ -1455,7 +1451,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                 .titleSmall
                                 ?.copyWith(
                                   color: g.ink,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                 ),
                           ),
                           const SizedBox(height: 2),
@@ -1666,7 +1662,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     }).toList(),
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const ListSkeleton(),
                 error: (e, _) => Center(child: Text('Error: $e')),
               ),
               const SizedBox(height: 32),

@@ -4,6 +4,7 @@ import 'settings_provider.dart';
 
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
+  'promises': 'Promises',
   'streak': 'Study streak',
   'reminders': 'Upcoming reminders',
   'today': 'Today',
@@ -54,6 +55,7 @@ class HomeLayout {
       ),
     ],
     visible: {
+      'promises',
       'streak',
       'reminders',
       'today',
@@ -102,12 +104,15 @@ class HomeLayout {
     final order = known(json['order'], homeSections);
     final savedOrder = (json['order'] as List).cast<dynamic>();
     final isExistingWithoutVault = !savedOrder.contains('vault');
+    final isExistingWithoutPromises = !savedOrder.contains('promises');
     final parsedVisible = known(json['visible'], homeSections).toSet();
     var visible = parsedVisible;
     // Migrate older active layouts without overriding explicit hidden choices
     // or turning an intentionally empty Home back into a populated one.
     if (parsedVisible.isNotEmpty) {
       if (isExistingWithoutVault) visible = {...visible, 'vault'};
+      // Promises arrived later: show them once to existing layouts too.
+      if (isExistingWithoutPromises) visible = {...visible, 'promises'};
     }
 
     final rawShortcuts = json['shortcuts'];

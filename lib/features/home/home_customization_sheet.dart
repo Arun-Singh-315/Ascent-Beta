@@ -9,16 +9,14 @@ import '../../core/providers/home_layout_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 Future<void> showHomeCustomization(BuildContext context) =>
-    showModalBottomSheet(
+    showAscentSheet(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      useRootNavigator: true,
+      framed: false,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: AppPalette.transparent,
       builder: (_) => Theme(
         data: HomeTheme.from(Theme.of(context)),
         child: const HomeCustomizationSheet(),

@@ -12,6 +12,8 @@ import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import 'vault_item_editor_sheet.dart';
 import 'cred_card_visual.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
 
 class VaultItemDetailSheet extends StatefulWidget {
   const VaultItemDetailSheet({
@@ -22,12 +24,9 @@ class VaultItemDetailSheet extends StatefulWidget {
   final VaultItem item;
 
   static Future<void> show(BuildContext context, VaultItem item) {
-    return showModalBottomSheet<void>(
+    return showAscentSheet<void>(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      framed: false,
       builder: (ctx) => VaultItemDetailSheet(item: item),
     );
   }
@@ -51,36 +50,22 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
-    showDialog<void>(
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await AscentDialog.confirm(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Vault Item?'),
-        content: Text(
+      title: 'Delete Vault Item?',
+      content:
           'Are you sure you want to delete "${widget.item.title}"? Associated secure scans and encrypted records will be permanently removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            onPressed: () async {
-              HapticFeedback.mediumImpact();
-              Navigator.of(ctx).pop(); // close dialog
-              if (widget.item.id != null) {
-                await ref.read(vaultStorageServiceProvider).deleteItem(widget.item.id!);
-              }
-              if (context.mounted) {
-                Navigator.of(context).pop(); // close sheet
-              }
-            },
-            child: const Text('Delete Permanently'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete Permanently',
+      isDestructive: true,
     );
+    if (confirmed != true) return;
+    if (widget.item.id != null) {
+      await ref.read(vaultStorageServiceProvider).deleteItem(widget.item.id!);
+    }
+    if (context.mounted) {
+      Navigator.of(context).pop(); // close sheet
+    }
   }
 
   @override
@@ -150,7 +135,7 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
                           style: AscentTextStyles.homeTitle.copyWith(
                             color: g.ink,
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 2),

@@ -26,6 +26,8 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:ascent/shared/widgets/ascent_sheet.dart';
+import 'package:ascent/shared/widgets/ascent_dialog.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -219,14 +221,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   void _confirmResetData() {
-    showModalBottomSheet(
+    showAscentSheet(
       context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      backgroundColor: AppPalette.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
+      framed: false,
       builder: (ctx) {
         final g = ctx.glass;
         return Container(
@@ -533,28 +530,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     final confirmController = TextEditingController();
     String? errorText;
 
-    return showDialog<bool>(
+    return showAscentFrostedDialog<bool>(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) {
           final g = ctx.glass;
-          return AlertDialog(
-            backgroundColor: g.bg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: g.line),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.lock_outline_rounded, color: g.clay),
-                const SizedBox(width: 8),
-                Text(
-                  isChanging ? 'Change Master PIN' : 'Set Master PIN',
-                  style: AscentTextStyles.headlineMedium.copyWith(color: g.ink),
-                ),
-              ],
-            ),
-            content: Column(
+          return AscentDialog(
+            icon: Icons.lock_outline_rounded,
+            title: isChanging ? 'Change Master PIN' : 'Set Master PIN',
+            contentWidget: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
@@ -572,7 +556,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   style: TextStyle(
                     letterSpacing: 4,
                     color: g.ink,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     labelText: 'New 4-digit PIN',
@@ -589,7 +573,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   style: TextStyle(
                     letterSpacing: 4,
                     color: g.ink,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     labelText: 'Confirm PIN',
@@ -610,32 +594,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogCtx, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                key: const ValueKey('save_pin_button'),
-                style: FilledButton.styleFrom(backgroundColor: g.clay),
-                onPressed: () async {
-                  final pin = pinController.text.trim();
-                  final confirm = confirmController.text.trim();
-                  if (pin.length < 4) {
-                    setDialogState(() => errorText = 'PIN must be 4 digits');
-                    return;
-                  }
-                  if (pin != confirm) {
-                    setDialogState(() => errorText = 'PINs do not match');
-                    return;
-                  }
-                  final ok = await ref
-                      .read(appLockProvider.notifier)
-                      .setPin(pin);
-                  if (ok && dialogCtx.mounted) {
-                    Navigator.pop(dialogCtx, true);
-                  }
-                },
-                child: const Text('Save PIN'),
+              Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  AscentButton.outlined(
+                    label: 'Cancel',
+                    compact: true,
+                    onPressed: () => Navigator.pop(dialogCtx, false),
+                  ),
+                  AscentButton.primary(
+                    key: const ValueKey('save_pin_button'),
+                    label: 'Save PIN',
+                    compact: true,
+                    onPressed: () async {
+                      final pin = pinController.text.trim();
+                      final confirm = confirmController.text.trim();
+                      if (pin.length < 4) {
+                        setDialogState(
+                          () => errorText = 'PIN must be 4 digits',
+                        );
+                        return;
+                      }
+                      if (pin != confirm) {
+                        setDialogState(() => errorText = 'PINs do not match');
+                        return;
+                      }
+                      final ok = await ref
+                          .read(appLockProvider.notifier)
+                          .setPin(pin);
+                      if (ok && dialogCtx.mounted) {
+                        Navigator.pop(dialogCtx, true);
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           );
@@ -1073,7 +1067,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
                                 style: AscentTextStyles.labelSmall.copyWith(
                                   color: g.clay,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
                               ),

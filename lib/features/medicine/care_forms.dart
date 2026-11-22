@@ -202,7 +202,7 @@ class _CareFormState extends ConsumerState<CareForm> {
                         : 'Edit care plan',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 24,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: -.6,
                     ),
                   ),

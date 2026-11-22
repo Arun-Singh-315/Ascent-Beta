@@ -103,105 +103,99 @@ void main() {
     );
   }
 
-  testWidgets(
-    'Today and scheduled content remain distinct without selecting Home dates',
-    (t) async {
-      final semantics = t.ensureSemantics();
-      await db.reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Morning review',
-          scheduledAt: today.add(const Duration(hours: 9)),
-        ),
-      );
-      await t.pumpWidget(app());
-      await settle(t);
-      final todayTile = find.byKey(
-        const ValueKey('home_calendar_day_2026-11-09'),
-      );
-      final presentation = t.widget<AscentCalendarDay>(todayTile);
-      expect(presentation.today, isTrue);
-      expect(presentation.selected, isFalse);
-      expect(presentation.hasScheduledItems, isTrue);
-      expect(
-        find.bySemanticsLabel(
-          RegExp('Monday, November 9, 2026, Today, Has scheduled items'),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Tap a date to see your day.'), findsNothing);
-      final disc = t.getSize(
-        find.byKey(const ValueKey('calendar_disc_2026_11_9')),
-      );
-      final tile = t.getSize(todayTile);
-      expect(disc.width, lessThan(tile.width));
-      expect(disc.height, lessThan(tile.height / 2));
-      semantics.dispose();
-      await t.pumpWidget(const SizedBox());
-    },
-  );
+  testWidgets('Home week shows reminders, to-dos and thoughts by day', (
+    t,
+  ) async {
+    await db.reminderDao.insertReminder(
+      ReminderTableCompanion.insert(
+        title: 'Dentist',
+        scheduledAt: DateTime(2026, 11, 9, 16),
+      ),
+    );
+    await db.taskDao.insertTask(
+      TaskTableCompanion.insert(
+        title: 'Pack bag',
+        plannedDate: Value(DateTime(2026, 11, 12)),
+      ),
+    );
+    await t.pumpWidget(app());
+    await settle(t);
+    expect(find.text('This week'), findsOneWidget);
+    expect(find.text('Dentist'), findsOneWidget);
+    expect(find.text('Pack bag'), findsNothing);
+    await t.tap(find.byKey(const ValueKey('home_calendar_day_2026-11-12')));
+    await settle(t);
+    expect(find.text('Pack bag'), findsOneWidget);
+    expect(find.text('Dentist'), findsNothing);
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox());
+  });
 
   for (final dark in [false, true]) {
-    for (final scale in [1.0, 2.0]) {
-      testWidgets(
-        'Calendar fits mobile and large text: dark=$dark scale=$scale',
-        (t) async {
-          t.view.devicePixelRatio = 1;
-          t.view.physicalSize = Size(scale == 1 ? 390 : 320, 1000);
-          addTearDown(t.view.resetDevicePixelRatio);
-          addTearDown(t.view.resetPhysicalSize);
-          final capture = GlobalKey();
-          await t.pumpWidget(app(dark: dark, scale: scale, capture: capture));
-          await settle(t);
-          expect(
-            find.byKey(const ValueKey('home_calendar_open')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('home_calendar_day_2026-11-09')),
-            findsOneWidget,
-          );
-          expect(t.takeException(), isNull);
-          await t.runAsync(() async {
-            final image =
-                await (capture.currentContext!.findRenderObject()
-                        as RenderRepaintBoundary)
-                    .toImage(pixelRatio: 2);
-            final bytes = await image.toByteData(
-              format: ui.ImageByteFormat.png,
-            );
-            final out = File(
-              'build/qa/home-calendar/${dark ? 'dark' : 'light'}-$scale.png',
-            );
-            await out.parent.create(recursive: true);
-            await out.writeAsBytes(bytes!.buffer.asUint8List());
-            image.dispose();
-          });
-          await t.tap(find.byTooltip('Previous week'));
-          await settle(t);
-          expect(
-            find.byKey(const ValueKey('home_calendar_day_2026-11-02')),
-            findsOneWidget,
-          );
-          await t.tap(find.text('Back to today'));
-          await settle(t);
-          expect(
-            find.byKey(const ValueKey('home_calendar_day_2026-11-09')),
-            findsOneWidget,
-          );
-          for (var i = 0; i < 4; i++) {
-            await t.tap(find.byTooltip('Next week'));
-            await settle(t);
-          }
-          expect(
-            find.byKey(const ValueKey('home_calendar_day_2026-12-07')),
-            findsOneWidget,
-          );
-          expect(t.takeException(), isNull);
-          await t.pumpWidget(const SizedBox());
-        },
-      );
-    }
+    testWidgets('Home week fits 320 px at 2x text (dark=$dark)', (t) async {
+      t.view.devicePixelRatio = 1;
+      t.view.physicalSize = const Size(320, 900);
+      addTearDown(t.view.reset);
+      await t.pumpWidget(app(dark: dark, scale: 2));
+      await settle(t);
+      expect(t.takeException(), isNull);
+      expect(find.text('Nothing scheduled today'), findsOneWidget);
+      await t.pumpWidget(const SizedBox());
+    });
   }
+
+  testWidgets('Calendar adds one to-do to several selected days', (t) async {
+    final real = DateTime.now();
+    final now = DateTime(real.year, real.month, real.day);
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => RemindersScreen(
+            openCalendar: true,
+            calendarOnly: true,
+            initialCalendarDate: now,
+          ),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    t.view.devicePixelRatio = 1;
+    t.view.physicalSize = const Size(430, 1400);
+    addTearDown(t.view.reset);
+    await t.pumpWidget(app(router: router));
+    await settle(t);
+    await t.tap(find.byKey(const ValueKey('calendar_select_days')));
+    await settle(t);
+    final next = now.add(const Duration(days: 2));
+    await t.tap(
+      find.byKey(
+        ValueKey('calendar_day_${next.year}_${next.month}_${next.day}'),
+      ),
+    );
+    await settle(t);
+    expect(find.text('2 days selected'), findsOneWidget);
+    await t.tap(find.byKey(const ValueKey('calendar_add_to_days')));
+    await settle(t);
+    await t.enterText(
+      find.descendant(
+        of: find.byKey(const ValueKey('multi_day_title')),
+        matching: find.byType(EditableText),
+      ),
+      'Gym',
+    );
+    await t.pump();
+    await t.tap(find.byKey(const ValueKey('multi_day_save')));
+    var gym = 0;
+    for (var i = 0; i < 30 && gym < 2; i++) {
+      await settle(t);
+      final tasks = await t.runAsync(() => db.select(db.taskTable).get());
+      gym = tasks!.where((x) => x.title == 'Gym').length;
+    }
+    expect(gym, 2);
+    await t.pumpWidget(const SizedBox());
+  });
+
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
@@ -379,8 +373,9 @@ void main() {
           expect(t.takeException(), isNull);
           await t.pumpWidget(const SizedBox());
         },
-skip: true, // Known bug: Full calendar loses its selection at narrow widths
-);
+        skip:
+            true, // Known bug: Full calendar loses its selection at narrow widths
+      );
     }
   }
 
@@ -449,64 +444,4 @@ skip: true, // Known bug: Full calendar loses its selection at narrow widths
       await t.pumpWidget(const SizedBox());
     },
   );
-
-  testWidgets('A Home date opens its full calendar and actual saved agenda', (
-    t,
-  ) async {
-    await db.reminderDao.insertReminder(
-      ReminderTableCompanion.insert(
-        title: 'Review the week',
-        scheduledAt: DateTime(2026, 11, 12, 14),
-      ),
-    );
-    final router = GoRouter(
-      routes: [
-        GoRoute(
-          path: '/',
-          builder: (_, _) => const Scaffold(body: HomeCalendar()),
-        ),
-        GoRoute(
-          path: '/calendar',
-          builder: (_, state) => RemindersScreen(
-            openCalendar: true,
-            calendarOnly: true,
-            initialCalendarDate: DateTime.tryParse(
-              state.uri.queryParameters['date'] ?? '',
-            ),
-          ),
-        ),
-      ],
-    );
-    addTearDown(router.dispose);
-    await t.pumpWidget(app(router: router));
-    await settle(t);
-    expect(
-      find.bySemanticsLabel(
-        RegExp('Thursday, November 12, 2026, Has scheduled items'),
-      ),
-      findsOneWidget,
-    );
-    await t.tap(find.byKey(const ValueKey('home_calendar_day_2026-11-12')));
-    await settle(t);
-    expect(
-      GoRouterState.of(
-        t.element(find.byType(RemindersScreen)),
-      ).uri.queryParameters['date'],
-      '2026-11-12',
-    );
-    expect(
-      find.byKey(const ValueKey('reminders_calendar_card')),
-      findsOneWidget,
-    );
-    expect(find.text('Review the week'), findsOneWidget);
-    expect(t.takeException(), isNull);
-    router.pop();
-    await settle(t);
-    expect(find.byKey(const ValueKey('home_calendar')), findsOneWidget);
-    expect(
-      (await t.runAsync(() => db.select(db.reminderTable).get()))!.length,
-      1,
-    );
-    await t.pumpWidget(const SizedBox());
-  });
 }

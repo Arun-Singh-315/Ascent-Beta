@@ -7,7 +7,7 @@ import '../providers/settings_provider.dart';
 /// everything other surfaces need: name, pitch, icon, route and the routes it
 /// owns. Home tiles and sections, shortcuts, onboarding and the "Unlock next"
 /// card all read this registry instead of keeping their own lists.
-enum AscentFeature { things, mind, care, money, focus, vault }
+enum AscentFeature { things, mind, care, money, focus, vault, travel }
 
 @immutable
 class FeatureSpec {
@@ -57,7 +57,14 @@ const featureSpecs = <FeatureSpec>[
     icon: Icons.checklist_rounded,
     route: '/things',
     tintId: 'things',
-    routes: {'/things', '/today', '/reminders', '/plans', '/calendar'},
+    routes: {
+      '/things',
+      '/today',
+      '/reminders',
+      '/plans',
+      '/calendar',
+      '/promises',
+    },
   ),
   FeatureSpec(
     id: AscentFeature.mind,
@@ -109,6 +116,17 @@ const featureSpecs = <FeatureSpec>[
     route: '/vault',
     tintId: 'assistant',
     routes: {'/vault'},
+    starter: false,
+  ),
+  FeatureSpec(
+    id: AscentFeature.travel,
+    title: 'Travel',
+    pick: 'Remember my trips',
+    pitch: 'Tap I’m here anywhere; split bills and keep photos by place.',
+    icon: Icons.luggage_outlined,
+    route: '/travel',
+    tintId: 'travel',
+    routes: {'/travel'},
     starter: false,
   ),
 ];

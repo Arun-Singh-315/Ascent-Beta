@@ -63,7 +63,7 @@ void main() {
         'visible': ['mind', 'life'],
         'tools': ['hydration'],
       });
-      expect(legacy.visible, {'mind', 'life', 'vault'});
+      expect(legacy.visible, {'mind', 'life', 'vault', 'promises'});
     },
   );
   test(

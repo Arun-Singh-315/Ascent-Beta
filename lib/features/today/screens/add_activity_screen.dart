@@ -208,7 +208,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: c.textPrimary,
                       ),
                     ),
@@ -283,7 +283,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                     'Activity Type',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
@@ -379,7 +379,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                     'Scheduled Date',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
@@ -442,7 +442,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                     'Notes (Optional)',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
