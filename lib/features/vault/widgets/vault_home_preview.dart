@@ -34,7 +34,7 @@ class VaultHomePreview extends ConsumerWidget {
               style: AscentTextStyles.homeTitle.copyWith(
                 color: g.ink,
                 fontSize: 20,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             TextButton.icon(
@@ -97,7 +97,7 @@ class VaultHomePreview extends ConsumerWidget {
                 style: AscentTextStyles.displaySmall.copyWith(
                   color: g.ink,
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 2),
@@ -127,7 +127,7 @@ class VaultHomePreview extends ConsumerWidget {
                 style: TextStyle(
                   color: g.clay,
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -178,7 +178,7 @@ class VaultHomePreview extends ConsumerWidget {
                     style: AscentTextStyles.displaySmall.copyWith(
                       color: g.ink,
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 2),

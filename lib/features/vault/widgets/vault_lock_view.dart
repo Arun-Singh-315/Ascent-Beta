@@ -181,7 +181,7 @@ class _VaultLockViewState extends ConsumerState<VaultLockView> {
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),

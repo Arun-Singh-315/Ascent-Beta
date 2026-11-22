@@ -136,7 +136,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                       title,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: g.ink,
                       ),
                       maxLines: 1,
@@ -179,7 +179,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                         'Active',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: g.sage,
                         ),
                       ),
@@ -433,7 +433,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                       title,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: g.ink,
                       ),
                       maxLines: 1,
@@ -476,7 +476,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                         'Active',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: g.sage,
                         ),
                       ),
@@ -515,7 +515,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                       item['time']?.toString() ?? '08:00',
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: accent,
                       ),
                     ),

@@ -13,9 +13,9 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/utils/human_time.dart';
 import '../../../shared/widgets/ascent_composer.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
-import '../../../shared/widgets/glass_card.dart';
 import 'activity_actions.dart';
 import 'activity_composer.dart';
 import '../../hydration/hydration_pace.dart';
@@ -78,10 +78,10 @@ class HomeThingsCard extends ConsumerWidget {
           height: 30,
           child: CircularProgressIndicator(
             value: progress,
-            strokeWidth: 3.5,
+            strokeWidth: 2,
             strokeCap: StrokeCap.round,
-            color: progress == 1 ? g.successInk : tint,
-            backgroundColor: tint.withValues(alpha: .16),
+            color: progress == 1 ? g.successInk : g.actionInk,
+            backgroundColor: g.line,
           ),
         ),
       ),
@@ -239,33 +239,12 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
         for (final t in recent)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpace.s8),
-            child: InkWell(
+            child: _ThoughtBubble(
               key: ValueKey('home_thought_${t.id}'),
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => context.open('/thought-wall?thought=${t.id}'),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s12,
-                  vertical: AppSpace.s10,
-                ),
-                // See-through bubble with a border, no colour fill.
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: tint.withValues(alpha: g.isDark ? .45 : .35),
-                    width: 1.2,
-                  ),
-                ),
-                child: Text(
-                  displayContent(t.content).trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.body.copyWith(color: g.ink),
-                ),
-              ),
+              thought: t,
             ),
           ),
+        const SizedBox(height: AppSpace.s4),
         AscentComposer(
           key: const ValueKey('home_mind_composer'),
           controller: _text,
@@ -283,7 +262,86 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
   }
 }
 
-/// A hero feed card: glass, a header that opens the screen, then content.
+/// "Just now", "12 min ago", then "Today at 9:10 AM" style.
+String _ago(DateTime at) {
+  final mins = DateTime.now().difference(at).inMinutes;
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return '$mins min ago';
+  final s = humanWhen(at);
+  return '${s[0].toUpperCase()}${s.substring(1)}';
+}
+
+/// A thought as a quiet speech bubble: hairline outline, one squared
+/// corner like a chat bubble, the words first and a small "when" below.
+class _ThoughtBubble extends StatelessWidget {
+  const _ThoughtBubble({super.key, required this.thought});
+  final Thought thought;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    const radius = BorderRadius.only(
+      topLeft: AppGeometry.radiusr18,
+      topRight: AppGeometry.radiusr18,
+      bottomRight: AppGeometry.radiusr18,
+      bottomLeft: AppGeometry.radiusr4,
+    );
+    final text = displayContent(thought.content).trim();
+    return Semantics(
+      button: true,
+      label: 'Thought: $text',
+      excludeSemantics: true,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: () => context.open('/thought-wall?thought=${thought.id}'),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(color: g.line),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s14,
+            AppSpace.s10,
+            AppSpace.s14,
+            AppSpace.s8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                text,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: AscentTextStyles.body.copyWith(
+                  color: g.ink,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: AppSpace.s4),
+              Row(
+                children: [
+                  if (thought.isPinned) ...[
+                    Icon(Icons.push_pin_outlined, size: 12, color: g.inkMuted),
+                    const SizedBox(width: AppSpace.s4),
+                  ],
+                  Text(
+                    _ago(thought.createdAt),
+                    style: AscentTextStyles.caption.copyWith(
+                      color: g.inkMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A hero feed card: 1 px bordered surface, a header that opens the
+/// screen, then content.
 class _FeedCard extends StatelessWidget {
   const _FeedCard({super.key, required this.header, required this.children});
   final Widget header;
@@ -297,14 +355,22 @@ class _FeedCard extends StatelessWidget {
       AppSpace.s16,
       AppSpace.s20,
     ),
-    child: GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          header,
-          const SizedBox(height: AppSpace.s8),
-          ...children,
-        ],
+    child: DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.glass.surface,
+        borderRadius: AppGeometry.roundedr20,
+        border: Border.all(color: context.glass.line),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            header,
+            const SizedBox(height: AppSpace.s12),
+            ...children,
+          ],
+        ),
       ),
     ),
   );
@@ -339,7 +405,7 @@ class _CardHeader extends StatelessWidget {
         child: ExcludeSemantics(
           child: Row(
             children: [
-              _IconChip(icon: icon, tint: tint, size: 40),
+              _IconChip(icon: icon, size: 40),
               const SizedBox(width: AppSpace.s12),
               Expanded(
                 child: Column(
@@ -371,28 +437,26 @@ class _CardHeader extends StatelessWidget {
 
 // Building blocks -------------------------------------------------------------
 
-/// Outlined ring icon: a tinted 1.5 px ring with a nearly see-through
-/// inside and an outlined glyph, so icons feel light on glass.
+/// Monochrome line icon in a thin 1 px ring: calm, and the same on every
+/// card. Colour is kept for meaning (warnings, done), never decoration.
 class _IconChip extends StatelessWidget {
-  const _IconChip({required this.icon, required this.tint, this.size = 40});
+  const _IconChip({required this.icon, this.size = 40});
   final IconData icon;
-  final Color tint;
   final double size;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      color: tint.withValues(alpha: context.glass.isDark ? .10 : .06),
-      border: Border.all(
-        color: tint.withValues(alpha: context.glass.isDark ? .70 : .55),
-        width: 1.5,
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: g.line),
       ),
-    ),
-    child: Icon(icon, size: size * .5, color: tint),
-  );
+      child: Icon(icon, size: size * .48, color: g.inkSecondary),
+    );
+  }
 }
 
 /// Small round quick action in a tile's corner (44 pt hit area).
@@ -423,10 +487,13 @@ class _QuickAction extends StatelessWidget {
           height: 44,
           child: Center(
             child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: tint),
-              child: Icon(icon, size: 18, color: context.glass.primaryButtonFg),
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: context.glass.line),
+              ),
+              child: Icon(icon, size: 18, color: context.glass.actionInk),
             ),
           ),
         ),
@@ -462,8 +529,12 @@ class HomeLifeTiles extends ConsumerWidget {
         AppSpace.s16,
         AppSpace.s20,
       ),
-      child: GlassCard(
-        padding: EdgeInsets.zero,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: g.surface,
+          borderRadius: AppGeometry.roundedr20,
+          border: Border.all(color: g.line),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -472,7 +543,7 @@ class HomeLifeTiles extends ConsumerWidget {
                 AppSpace.s16,
                 AppSpace.s16,
                 AppSpace.s16,
-                AppSpace.s4,
+                AppSpace.s12,
               ),
               child: Row(
                 children: [
@@ -495,15 +566,9 @@ class HomeLifeTiles extends ConsumerWidget {
               ),
             ),
             for (var i = 0; i < rows.length; i++) ...[
-              if (i > 0)
-                Divider(
-                  height: 1,
-                  indent: 80,
-                  color: g.ink.withValues(alpha: g.isDark ? .12 : .08),
-                ),
+              Divider(height: 1, thickness: 1, color: g.line),
               rows[i],
             ],
-            const SizedBox(height: AppSpace.s4),
           ],
         ),
       ),
@@ -542,31 +607,17 @@ class _DayRow extends StatelessWidget {
           HapticFeedback.selectionClick();
           context.open(route);
         },
-        child: Ink(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: AlignmentDirectional.centerStart.resolve(
-                Directionality.of(context),
-              ),
-              end: AlignmentDirectional.centerEnd.resolve(
-                Directionality.of(context),
-              ),
-              colors: [
-                tint.withValues(alpha: g.isDark ? .10 : .06),
-                tint.withValues(alpha: 0),
-              ],
-            ),
-          ),
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpace.s16,
-            AppSpace.s20,
+            AppSpace.s16,
             AppSpace.s8,
-            AppSpace.s20,
+            AppSpace.s16,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _IconChip(icon: icon, tint: tint, size: 48),
+              _IconChip(icon: icon, size: 36),
               const SizedBox(width: AppSpace.s16),
               Expanded(
                 child: ExcludeSemantics(
@@ -577,8 +628,7 @@ class _DayRow extends StatelessWidget {
                       Text(
                         title,
                         style: AscentTextStyles.caption.copyWith(
-                          color: g.inkSecondary,
-                          fontWeight: FontWeight.w600,
+                          color: g.inkMuted,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -586,13 +636,12 @@ class _DayRow extends StatelessWidget {
                         value,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AscentTextStyles.homeTitle.copyWith(
-                          color: g.ink,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
+                        style: AscentTextStyles.tabular(
+                          AscentTextStyles.body,
+                        ).copyWith(color: g.ink),
                       ),
                       for (final d in details) ...[
-                        const SizedBox(height: AppSpace.s8),
+                        const SizedBox(height: AppSpace.s6),
                         d,
                       ],
                     ],
@@ -617,21 +666,32 @@ Widget _detail(
   text,
   maxLines: 2,
   overflow: TextOverflow.ellipsis,
-  style: AscentTextStyles.bodyMedium.copyWith(
+  style: AscentTextStyles.caption.copyWith(
     color: color ?? context.glass.inkSecondary,
-    fontWeight: strong ? FontWeight.w600 : null,
+    fontWeight: strong ? FontWeight.w500 : FontWeight.w400,
   ),
 );
 
-Widget _bar(double value, Color tint) => ClipRRect(
-  borderRadius: BorderRadius.circular(999),
-  child: LinearProgressIndicator(
-    value: value.clamp(0, 1).toDouble(),
-    minHeight: 5,
-    color: tint,
-    backgroundColor: tint.withValues(alpha: .14),
-  ),
-);
+/// A thin progress line in the one action colour on a hairline track.
+Widget _bar(BuildContext context, double value) {
+  final g = context.glass;
+  return ClipRRect(
+    borderRadius: BorderRadius.circular(999),
+    child: TweenAnimationBuilder<double>(
+      tween: Tween(end: value.clamp(0, 1).toDouble()),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => LinearProgressIndicator(
+        value: v,
+        minHeight: 3,
+        color: g.actionInk,
+        backgroundColor: g.line,
+      ),
+    ),
+  );
+}
 
 class _WaterRow extends ConsumerStatefulWidget {
   const _WaterRow();
@@ -698,7 +758,7 @@ class _WaterRowState extends ConsumerState<_WaterRow> {
           color: behind != null ? g.warningInk : null,
           strong: behind != null,
         ),
-        _bar(goal <= 0 ? 0 : ml / goal, tint),
+        _bar(context, goal <= 0 ? 0 : ml / goal),
       ],
       action: _QuickAction(
         key: const ValueKey('home_bento_water_add'),
@@ -767,17 +827,16 @@ class _MedicineRow extends ConsumerWidget {
                   children: [
                     Icon(
                       d.isTaken
-                          ? Icons.check_circle_rounded
+                          ? Icons.check_circle_outline_rounded
                           : Icons.radio_button_unchecked_rounded,
                       size: 13,
-                      color: d.isTaken ? g.successInk : tint,
+                      color: d.isTaken ? g.successInk : g.inkMuted,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       at(d.timeSlot).replaceAll(':00', ''),
                       style: AscentTextStyles.caption.copyWith(
                         color: g.inkMuted,
-                        fontSize: 11,
                       ),
                     ),
                   ],
@@ -834,7 +893,7 @@ class _MoneyRow extends ConsumerWidget {
               : 'This month ${f.format(month)}',
         ),
         if (budget != null && budget.monthlyLimit > 0)
-          _bar(month / budget.monthlyLimit, tint),
+          _bar(context, month / budget.monthlyLimit),
       ],
       action: _QuickAction(
         key: const ValueKey('home_bento_money_add'),

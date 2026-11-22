@@ -8,6 +8,7 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../shared/widgets/app_chip.dart';
 import '../../ai_assistant/assistant_suggestions.dart';
 
 /// "Ask Riya anything…" near the top of Home, with two suggestions for the
@@ -107,21 +108,11 @@ class HomeAskBar extends ConsumerWidget {
               physics: const BouncingScrollPhysics(),
               itemCount: suggestions.length,
               separatorBuilder: (_, _) => const SizedBox(width: AppSpace.s8),
-              itemBuilder: (context, i) => ActionChip(
+              itemBuilder: (context, i) => AppChip(
                 key: ValueKey('home_ask_suggestion_$i'),
-                avatar: Icon(
-                  Icons.north_east_rounded,
-                  size: 14,
-                  color: g.actionInk,
-                ),
-                label: Text(
-                  suggestions[i],
-                  style: AscentTextStyles.caption.copyWith(color: g.ink),
-                ),
-                backgroundColor: g.surface.withValues(alpha: .7),
-                side: BorderSide(color: g.line),
-                shape: const StadiumBorder(),
-                onPressed: () => open(suggestions[i]),
+                icon: Icons.north_east_rounded,
+                label: suggestions[i],
+                onTap: () => open(suggestions[i]),
               ),
             ),
           ),

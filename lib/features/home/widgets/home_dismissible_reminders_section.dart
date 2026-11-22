@@ -50,7 +50,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                 style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -120,7 +120,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
               'Done',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
@@ -142,7 +142,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
               'Delete',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),

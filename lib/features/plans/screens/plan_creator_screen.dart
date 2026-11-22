@@ -458,7 +458,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
             'How long is this plan for?',
             style: TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: c.textPrimary,
               letterSpacing: -0.5,
             ),
@@ -577,7 +577,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                       id,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color:
                             isSelected ? colorScheme.onPrimary : c.textPrimary,
                       ),
@@ -594,7 +594,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: c.textPrimary,
                     ),
                   ),
@@ -652,7 +652,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                   'What do you want to do?',
                   style: TextStyle(
                     fontSize: 26,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: c.textPrimary,
                     letterSpacing: -0.5,
                   ),
@@ -726,7 +726,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                       'Your tasks',
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: c.textPrimary,
                       ),
                     ),
@@ -741,7 +741,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                         '${_tasks.length} added',
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: colorScheme.onPrimaryContainer,
                         ),
                       ),
@@ -883,7 +883,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                             'When will you do each?',
                             style: TextStyle(
                               fontSize: 24,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                               color: c.textPrimary,
                               letterSpacing: -0.5,
                             ),
@@ -961,7 +961,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                         taskTitle,
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: c.textPrimary,
                         ),
                       ),
@@ -1139,7 +1139,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
                       ? colorScheme.onPrimaryContainer
                       : c.textSecondary,
@@ -1173,7 +1173,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
             'Looks good?',
             style: TextStyle(
               fontSize: 26,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: c.textPrimary,
               letterSpacing: -0.5,
             ),
@@ -1208,7 +1208,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
             'Reminders',
             style: TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
               color: c.textPrimary,
             ),
           ),
@@ -1275,7 +1275,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               color: isSelected ? colorScheme.onPrimary : c.textSecondary,
             ),
           ),
@@ -1323,7 +1323,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                 dayLabel,
                 style: TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: c.textPrimary,
                 ),
               ),
@@ -1447,7 +1447,7 @@ class _PlanCreatorScreenState extends ConsumerState<PlanCreatorScreen> {
                     _currentStep == 3 ? 'Create plan' : 'Next',
                     style: const TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),

@@ -7,6 +7,7 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/history/history_provider.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/app_text_field.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
@@ -247,12 +248,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: Column(
               children: [
-                TextField(
+                AppTextField(
                   key: const ValueKey('history_search'),
-                  decoration: const InputDecoration(
-                    hintText: 'Search your history',
-                    prefixIcon: Icon(Icons.search_rounded),
-                  ),
+                  hintText: 'Search your history',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  textInputAction: TextInputAction.search,
                   onChanged: (v) => setState(() {
                     _query = v.trim().toLowerCase();
                     _limit = 60;
@@ -465,7 +465,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                       dayLabel,
                                       style: TextStyle(
                                         color: g.ink,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                         fontSize: 15,
                                       ),
                                     ),

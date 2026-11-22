@@ -143,7 +143,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                       child: Text(
                         'Edit plan',
                         style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           color: g.ink,
                         ),
                       ),
@@ -272,7 +272,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                     child: Text(
                       'Session history',
                       style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: g.ink,
                       ),
                     ),
@@ -439,7 +439,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
               Text(
                 'Move to plan',
                 style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                   color: g.ink,
                 ),
               ),
@@ -673,7 +673,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                         plan.status.toUpperCase(),
                         style: TextStyle(
                           fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 0.8,
                           color: plan.status == 'active' ? g.clay : g.inkMuted,
                         ),
@@ -748,7 +748,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                               plan.title,
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                     color: g.ink,
                                   ),
                             ),
@@ -782,7 +782,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                         style: TextStyle(
                                           color: g.clay,
                                           fontSize: 13,
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
