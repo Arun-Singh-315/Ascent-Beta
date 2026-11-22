@@ -120,7 +120,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
       subtitle: 'Actionable to-dos & study tasks',
       backgroundColor: context.bgSurface,
       actions: [
-        const HistoryAction(module:'tasks'),
+        const HistoryAction(module: 'tasks'),
         PopupMenuButton<String>(
           icon: Icon(
             Icons.filter_list_rounded,
@@ -185,7 +185,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
               continue;
             }
 
-            final isDoneToday = t.actualCompletedDate != null &&
+            final isDoneToday =
+                t.actualCompletedDate != null &&
                 (!t.isDailyStanding ||
                     (t.actualCompletedDate!.year == today.year &&
                         t.actualCompletedDate!.month == today.month &&
@@ -485,7 +486,8 @@ class _TaskItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
-    final isDone = task.actualCompletedDate != null &&
+    final isDone =
+        task.actualCompletedDate != null &&
         (!task.isDailyStanding ||
             (task.actualCompletedDate!.year == now.year &&
                 task.actualCompletedDate!.month == now.month &&
@@ -851,8 +853,7 @@ class _TaskItemTile extends ConsumerWidget {
                                 style:
                                     AppStateTypography.stateType3(
                                       state0:
-                                          status ==
-                                          TaskComputedStatus.lagging,
+                                          status == TaskComputedStatus.lagging,
                                     ).copyWith(
                                       color:
                                           status == TaskComputedStatus.lagging

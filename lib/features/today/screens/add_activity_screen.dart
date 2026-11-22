@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
-import '../../../core/providers/database_provider.dart' show ActivityKind, databaseProvider;
+import '../../../core/providers/database_provider.dart'
+    show ActivityKind, databaseProvider;
 import '../../../core/services/activity_entry_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/app_text_field.dart';
@@ -76,7 +77,8 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
       }
       _isImportant = task.priority.toLowerCase() == 'high';
     } else {
-      _kind = widget.initialKind ??
+      _kind =
+          widget.initialKind ??
           (widget.initialDurationMinutes != null
               ? ActivityKind.duration
               : ActivityKind.todo);
@@ -163,11 +165,13 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
     final isEditing = widget.existingTask != null;
 
     final now = DateTime.now();
-    final isToday = _selectedDate.year == now.year &&
+    final isToday =
+        _selectedDate.year == now.year &&
         _selectedDate.month == now.month &&
         _selectedDate.day == now.day;
     final tomorrow = now.add(const Duration(days: 1));
-    final isTomorrow = _selectedDate.year == tomorrow.year &&
+    final isTomorrow =
+        _selectedDate.year == tomorrow.year &&
         _selectedDate.month == tomorrow.month &&
         _selectedDate.day == tomorrow.day;
 
@@ -216,8 +220,10 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                   const SizedBox(width: 8),
                   if (isEditing)
                     IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded,
-                          color: Colors.red),
+                      icon: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.red,
+                      ),
                       onPressed: _handleDelete,
                     )
                   else
@@ -229,8 +235,10 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
             // Form Body
             Expanded(
               child: ListView(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 children: [
                   // Title Input Field with Auto-Focus
                   AppTextField(
@@ -269,10 +277,7 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                     const SizedBox(height: 6),
                     Text(
                       _errorMessage!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.error,
-                      ),
+                      style: TextStyle(fontSize: 12, color: colorScheme.error),
                     ),
                   ],
 
@@ -308,7 +313,8 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                       _buildChip(
                         label: '15m Focus',
                         icon: Icons.timer_outlined,
-                        isSelected: _kind == ActivityKind.duration &&
+                        isSelected:
+                            _kind == ActivityKind.duration &&
                             _targetMinutes == 15,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -324,7 +330,8 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                       _buildChip(
                         label: '30m Focus',
                         icon: Icons.timer_outlined,
-                        isSelected: _kind == ActivityKind.duration &&
+                        isSelected:
+                            _kind == ActivityKind.duration &&
                             _targetMinutes == 30,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -340,7 +347,8 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                       _buildChip(
                         label: '45m Focus',
                         icon: Icons.timer_outlined,
-                        isSelected: _kind == ActivityKind.duration &&
+                        isSelected:
+                            _kind == ActivityKind.duration &&
                             _targetMinutes == 45,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -356,7 +364,8 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                       _buildChip(
                         label: '60m Focus',
                         icon: Icons.timer_outlined,
-                        isSelected: _kind == ActivityKind.duration &&
+                        isSelected:
+                            _kind == ActivityKind.duration &&
                             _targetMinutes == 60,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -404,8 +413,11 @@ class _AddActivityScreenState extends ConsumerState<AddActivityScreen> {
                         isSelected: isTomorrow,
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          setState(() =>
-                              _selectedDate = now.add(const Duration(days: 1)));
+                          setState(
+                            () => _selectedDate = now.add(
+                              const Duration(days: 1),
+                            ),
+                          );
                         },
                         c: c,
                         colorScheme: colorScheme,

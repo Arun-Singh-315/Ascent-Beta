@@ -4,16 +4,8 @@ import '../../../core/providers/database_provider.dart';
 /// The 5 Human Energy & Time Lenses for Dayboard.
 /// Instead of rigid database kinds, human days are organized by cognitive load.
 enum ThingsSmartLens {
-  all(
-    id: 'all',
-    label: 'All',
-    icon: Icons.auto_awesome_mosaic_rounded,
-  ),
-  quickWins(
-    id: 'quick_wins',
-    label: '⚡ Quick Wins',
-    icon: Icons.bolt_rounded,
-  ),
+  all(id: 'all', label: 'All', icon: Icons.auto_awesome_mosaic_rounded),
+  quickWins(id: 'quick_wins', label: '⚡ Quick Wins', icon: Icons.bolt_rounded),
   deepFocus(
     id: 'deep_focus',
     label: '🎯 Deep Focus',
@@ -42,13 +34,7 @@ enum ThingsSmartLens {
 }
 
 /// Action chip types that can be triggered directly from an enriched card.
-enum ThingsActionType {
-  focusTimer,
-  moneyLog,
-  reminder,
-  complete,
-  custom,
-}
+enum ThingsActionType { focusTimer, moneyLog, reminder, complete, custom }
 
 class ThingsActionChipData {
   final String label;
@@ -153,7 +139,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.reminder,
           ),
         ],
-        proTip: 'Consistency in health is the anchor for high cognitive stamina.',
+        proTip:
+            'Consistency in health is the anchor for high cognitive stamina.',
       );
     }
 
@@ -200,7 +187,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.complete,
           ),
         ],
-        proTip: 'Clearing financial micro-tasks early eliminates low-grade mental friction.',
+        proTip:
+            'Clearing financial micro-tasks early eliminates low-grade mental friction.',
       );
     }
 
@@ -230,7 +218,9 @@ class ThingsEnrichmentEngine {
           'bug fix',
           'git',
         ])) {
-      final mins = targetMinutes != null && targetMinutes > 0 ? targetMinutes : 45;
+      final mins = targetMinutes != null && targetMinutes > 0
+          ? targetMinutes
+          : 45;
       return ThingsEnrichment(
         categoryLabel: 'Deep Focus & Engineering',
         categoryIcon: Icons.code_rounded,
@@ -254,7 +244,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.custom,
           ),
         ],
-        proTip: 'Deep focus delivers 4x the output in half the time when notifications are silenced.',
+        proTip:
+            'Deep focus delivers 4x the output in half the time when notifications are silenced.',
       );
     }
 
@@ -302,7 +293,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.complete,
           ),
         ],
-        proTip: 'Double checking travel documents before leaving prevents 95% of travel stress.',
+        proTip:
+            'Double checking travel documents before leaving prevents 95% of travel stress.',
       );
     }
 
@@ -348,7 +340,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.complete,
           ),
         ],
-        proTip: 'A quick 3-item list keeps shopping swift and avoids impulse purchases.',
+        proTip:
+            'A quick 3-item list keeps shopping swift and avoids impulse purchases.',
       );
     }
 
@@ -391,7 +384,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.complete,
           ),
         ],
-        proTip: 'Direct, empathetic communication turns complex blockers into quick agreements.',
+        proTip:
+            'Direct, empathetic communication turns complex blockers into quick agreements.',
       );
     }
 
@@ -433,7 +427,8 @@ class ThingsEnrichmentEngine {
             type: ThingsActionType.complete,
           ),
         ],
-        proTip: 'Protecting your wind-down routine guarantees peak vitality tomorrow morning.',
+        proTip:
+            'Protecting your wind-down routine guarantees peak vitality tomorrow morning.',
       );
     }
 
@@ -441,9 +436,15 @@ class ThingsEnrichmentEngine {
     final isFocus = targetMinutes != null && targetMinutes >= 20;
     return ThingsEnrichment(
       categoryLabel: isFocus ? 'Focus Task' : 'Quick Action',
-      categoryIcon: isFocus ? Icons.timer_outlined : Icons.check_circle_outline_rounded,
-      categoryColor: isFocus ? const Color(0xFFA78BFA) : const Color(0xFF94A3B8),
-      smartLens: isFocus ? ThingsSmartLens.deepFocus : ThingsSmartLens.quickWins,
+      categoryIcon: isFocus
+          ? Icons.timer_outlined
+          : Icons.check_circle_outline_rounded,
+      categoryColor: isFocus
+          ? const Color(0xFFA78BFA)
+          : const Color(0xFF94A3B8),
+      smartLens: isFocus
+          ? ThingsSmartLens.deepFocus
+          : ThingsSmartLens.quickWins,
       suggestedMinutes: targetMinutes ?? (isFocus ? 25 : 5),
       microSteps: const [
         'Define the immediate 2-minute starting action',
@@ -453,11 +454,16 @@ class ThingsEnrichmentEngine {
       actionChips: [
         ThingsActionChipData(
           label: isFocus ? 'Start Focus' : 'Mark Done',
-          icon: isFocus ? Icons.play_arrow_rounded : Icons.check_circle_outline_rounded,
-          type: isFocus ? ThingsActionType.focusTimer : ThingsActionType.complete,
+          icon: isFocus
+              ? Icons.play_arrow_rounded
+              : Icons.check_circle_outline_rounded,
+          type: isFocus
+              ? ThingsActionType.focusTimer
+              : ThingsActionType.complete,
         ),
       ],
-      proTip: 'Action precedes motivation. Taking the first 2-minute step unlocks momentum.',
+      proTip:
+          'Action precedes motivation. Taking the first 2-minute step unlocks momentum.',
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'widgets/things_row.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../shared/widgets/scroll_edge_fade.dart';
 import '../../app/theme/home_design.dart';
@@ -25,7 +26,6 @@ import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../home/widgets/activity_composer.dart';
-import '../home/widgets/activity_row_item.dart';
 import '../plans/widgets/home_plans_preview.dart';
 import 'add_activity_sheet.dart';
 import 'models/things_sections.dart';
@@ -253,16 +253,9 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   // Building blocks
   // ---------------------------------------------------------------------------
 
-  Widget _row(TodayActivityItem item) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: ActivityRowItem(
-      key: ValueKey('things_row_${item.id}'),
-      activity: item,
-      compact: true,
-      ground: true,
-      hubStyle: true,
-    ),
-  );
+  // The light list row: thousands of things scroll smoothly.
+  Widget _row(TodayActivityItem item) =>
+      ThingsRow(key: ValueKey('things_item_${item.id}'), item: item);
 
   Widget _sectionHeader(
     String title, {
