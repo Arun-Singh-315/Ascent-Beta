@@ -24,17 +24,17 @@ void main() {
       ]);
       expect(drafts[1].at, DateTime(2026, 11, 3, 18));
       expect(drafts[3].amount, 120);
-      expect(drafts[3].title, 'lunch');
+      expect(drafts[3].title, 'Lunch');
       expect(drafts[4].amount, 250);
       expect(await db.select(db.taskTable).get(), isEmpty);
     },
   );
   test(
-    'uncertain clocks and unsupported repeat rules require explicit review',
+    'bare clocks resolve to the next one ahead; unsupported repeats need review',
     () {
       final draft = parseQuickCapture('Reminder: call Sam at 7', now).single;
-      expect(draft.validate(now), isNotNull);
-      expect(draft.at, isNull);
+      expect(draft.validate(now), isNull);
+      expect(draft.at, DateTime(2026, 11, 2, 19));
       final repeat = parseQuickCapture(
         'Routine: read every monday tomorrow at 7pm',
         now,
