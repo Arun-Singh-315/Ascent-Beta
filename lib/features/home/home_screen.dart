@@ -9,6 +9,7 @@ import '../../app/theme/surface_tokens.dart';
 
 import 'package:flutter/material.dart';
 import '../capture/capture_card.dart';
+import 'widgets/home_calendar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -250,8 +251,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             index: 2,
                             child: HomeMindCard(),
                           ),
+                          // The week at a glance: reminders, to-dos and
+                          // thoughts by day.
                           const HomeFeedEntrance(
                             index: 3,
+                            child: HomeCalendar(),
+                          ),
+                          const HomeFeedEntrance(
+                            index: 4,
                             child: HomeLifeTiles(),
                           ),
 
