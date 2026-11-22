@@ -150,7 +150,7 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
                           style: AscentTextStyles.homeTitle.copyWith(
                             color: g.ink,
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 2),

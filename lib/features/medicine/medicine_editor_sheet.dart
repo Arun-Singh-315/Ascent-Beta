@@ -268,7 +268,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                       style: TextStyle(
                         color: g.ink,
                         fontSize: 24,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: -.6,
                       ),
                     ),

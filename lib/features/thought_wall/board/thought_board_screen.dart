@@ -870,7 +870,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   overflow: TextOverflow.ellipsis,
                   style: AscentTextStyles.listRowTitle.copyWith(
                     color: g.ink,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -880,7 +880,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   '$count',
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
             ],
@@ -1453,7 +1453,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                       '${d.day}',
                       style: AscentTextStyles.bodyMedium.copyWith(
                         color: g.ink,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Container(

@@ -165,7 +165,7 @@ class RiyaEntityCard extends ConsumerWidget {
                       fontSize: 10.5,
                       letterSpacing: 1.0,
                       color: g.clay,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -177,7 +177,7 @@ class RiyaEntityCard extends ConsumerWidget {
               style: TextStyle(
                 color: removed ? g.inkMuted : g.ink,
                 fontSize: 15.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.25,
               ),
             ),

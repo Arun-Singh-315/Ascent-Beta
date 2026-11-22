@@ -58,7 +58,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             'Daily Water Target',
             style: AscentTextStyles.cardTitle.copyWith(
               color: ctx.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           content: Column(
@@ -78,7 +78,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                 autofocus: true,
                 style: AscentTextStyles.displaySmall.copyWith(
                   color: g.clay,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 decoration: InputDecoration(
                   suffixText: 'mL',
@@ -153,7 +153,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             'Log Custom Amount',
             style: AscentTextStyles.cardTitle.copyWith(
               color: ctx.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
           content: Column(
@@ -173,7 +173,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                 autofocus: true,
                 style: AscentTextStyles.displaySmall.copyWith(
                   color: g.clay,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 decoration: InputDecoration(
                   hintText: '350',
@@ -337,7 +337,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                               currentMl == 0 ? 'First sip' : '$percent%',
                               style: AscentTextStyles.cardTitle.copyWith(
                                 color: context.textPrimary,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -357,7 +357,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                       style: AscentTextStyles.labelSmall.copyWith(
                         color: g.clay,
                         letterSpacing: 1.1,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -375,7 +375,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                   text: '$val',
                                   style: AscentTextStyles.displaySmall.copyWith(
                                     color: context.textPrimary,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                     letterSpacing: -0.5,
                                   ),
                                 ),
@@ -525,7 +525,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                   '+ Custom mL',
                   style: AscentTextStyles.captionMedium.copyWith(
                     color: g.clay,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -705,7 +705,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                       style: AscentTextStyles.bodyMedium
                                           .copyWith(
                                             color: context.textPrimary,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                     const SizedBox(height: 1),
@@ -767,7 +767,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                                   style: AscentTextStyles.captionMedium
                                       .copyWith(
                                         color: g.clay,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -956,7 +956,7 @@ class _AppleQuickIntakeButtonState extends State<_AppleQuickIntakeButton> {
                   '+${widget.amount}',
                   style: AscentTextStyles.bodyMedium.copyWith(
                     color: context.textPrimary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     fontSize: 12.5,
                   ),
                 ),
@@ -1037,7 +1037,7 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                     style: AscentTextStyles.labelSmall.copyWith(
                       color: context.textPrimary,
                       letterSpacing: 1.1,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -1054,7 +1054,7 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                   '$daysMet/7 Met',
                   style: AscentTextStyles.captionMedium.copyWith(
                     color: daysMet >= 4 ? AppPalette.colorFF10B981 : g.clay,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1125,7 +1125,7 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                         style: AscentTextStyles.captionMedium.copyWith(
                           color: isToday ? g.clay : context.textMuted,
                           fontWeight: isToday
-                              ? FontWeight.w700
+                              ? FontWeight.w600
                               : FontWeight.w500,
                           fontSize: 10.5,
                         ),
@@ -1156,7 +1156,7 @@ class _AppleHydrationWeeklyInsights extends StatelessWidget {
                 'Total: ${(totalVolume / 1000).toStringAsFixed(1)} L',
                 style: AscentTextStyles.captionMedium.copyWith(
                   color: g.clay,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
