@@ -3,6 +3,7 @@ import '../../shared/widgets/ascent_dialog.dart';
 import '../calendar/calendar_event_sheet.dart';
 import '../calendar/multi_day_todo_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
+import '../../shared/widgets/scroll_card.dart';
 import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
 import 'widgets/ios_reminder_dialog.dart';
@@ -78,6 +79,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   bool _multiSelect = false;
   final Set<DateTime> _multiDays = <DateTime>{};
   Set<DateTime> _thoughtDays = const {};
+  Set<DateTime> _busyDays = const {};
 
   void _publishCalendarView() {
     if (widget.calendarOnly) return;
@@ -579,7 +581,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   leadingTooltip: 'More options',
                   onLeadingTap: () => _openAddEditReminderSheet(),
                   onSubmit: _quickAdd,
-                  glass: true,
                 ),
               ),
             ),
@@ -767,56 +768,28 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   allActivities,
                 ),
               ] else if (_selectedTab == 0) ...[
-                if (overdueReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
-                    'Overdue',
-                    overdueReminders,
-                    g.coral,
-                    Icons.schedule_rounded,
-                    isUpcoming: true,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (todayReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
-                    'Today',
-                    todayReminders,
-                    g.amber,
-                    Icons.today_rounded,
-                    isUpcoming: true,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (tomorrowReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
+                _reminderListCard([
+                  ('Overdue', overdueReminders, g.coral, Icons.schedule_rounded),
+                  ('Today', todayReminders, g.amber, Icons.today_rounded),
+                  (
                     'Tomorrow',
                     tomorrowReminders,
                     g.inkSecondary,
                     Icons.event_rounded,
-                    isUpcoming: true,
                   ),
-                  const SizedBox(height: 12),
-                ],
-                if (thisWeekReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
+                  (
                     'This Week',
                     thisWeekReminders,
                     g.inkSecondary,
                     Icons.date_range_rounded,
-                    isUpcoming: true,
                   ),
-                  const SizedBox(height: 12),
-                ],
-                if (laterReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
+                  (
                     'Upcoming & Later',
                     laterReminders,
                     g.inkMuted,
                     Icons.calendar_month_rounded,
-                    isUpcoming: true,
                   ),
-                  const SizedBox(height: 12),
-                ],
+                ], upcoming: true),
                 if (overdueReminders.isEmpty &&
                     todayReminders.isEmpty &&
                     tomorrowReminders.isEmpty &&
@@ -850,13 +823,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ] else ...[
                 // Tab 1: Completed Reminders displayed immediately at the top without scrolling
                 if (pastReminders.isNotEmpty) ...[
-                  _buildReminderGroup(
-                    'Completed & Past',
-                    pastReminders,
-                    g.sage,
-                    Icons.history_rounded,
-                    isUpcoming: false,
-                  ),
+                  _reminderListCard([
+                    (
+                      'Completed & Past',
+                      pastReminders,
+                      g.sage,
+                      Icons.history_rounded,
+                    ),
+                  ], upcoming: false),
                 ] else ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpace.s36),
@@ -899,103 +873,53 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     );
   }
 
-  Widget _buildReminderGroup(
-    String title,
-    List<Reminder> reminders,
-    Color color,
-    IconData icon, {
-    required bool isUpcoming,
+  /// Every reminder group in one card: small section labels, flat rows,
+  /// built lazily and scrolling inside the card when the list is long.
+  Widget _reminderListCard(
+    List<(String, List<Reminder>, Color, IconData)> groups, {
+    required bool upcoming,
   }) {
-    final isCollapsed = _collapsedSections.contains(title);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
+    final entries = <Object>[];
+    for (final group in groups) {
+      if (group.$2.isEmpty) continue;
+      entries.add(group);
+      if (!_collapsedSections.contains(group.$1)) {
+        for (final r in group.$2) {
+          entries.add((r, group.$3));
+        }
+      }
+    }
+    if (entries.isEmpty) return const SizedBox.shrink();
+    return ScrollCard(
+      key: ValueKey('reminders_list_card_$upcoming'),
+      itemCount: entries.length,
+      dividerIndent: 54,
+      itemBuilder: (context, i) {
+        final e = entries[i];
+        if (e is (String, List<Reminder>, Color, IconData)) {
+          final collapsed = _collapsedSections.contains(e.$1);
+          return ScrollCardSection(
+            key: ValueKey('reminders_section_${e.$1}'),
+            title: e.$1,
+            count: e.$2.length,
+            icon: e.$4,
+            color: e.$3,
+            collapsed: collapsed,
             onTap: () {
               HapticFeedback.selectionClick();
               setState(() {
-                if (isCollapsed) {
-                  _collapsedSections.remove(title);
+                if (collapsed) {
+                  _collapsedSections.remove(e.$1);
                 } else {
-                  _collapsedSections.add(title);
+                  _collapsedSections.add(e.$1);
                 }
               });
             },
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-              child: _buildSectionHeader(
-                title,
-                reminders.length,
-                color,
-                icon,
-                isCollapsed: isCollapsed,
-              ),
-            ),
-          ),
-          if (!isCollapsed)
-            for (final reminder in reminders)
-              _buildReminderTile(
-                reminder,
-                isUpcoming: isUpcoming,
-                accent: color,
-              ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    String title,
-    int count,
-    Color color,
-    IconData icon, {
-    bool isCollapsed = false,
-  }) {
-    final g = context.glass;
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: AscentTextStyles.headlineMedium.copyWith(
-            color: g.ink,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: color.withValues(alpha: 0.25),
-              width: 0.8,
-            ),
-          ),
-          child: Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ),
-        const Spacer(),
-        Icon(
-          isCollapsed
-              ? Icons.keyboard_arrow_down_rounded
-              : Icons.keyboard_arrow_up_rounded,
-          size: 18,
-          color: g.inkMuted,
-        ),
-      ],
+          );
+        }
+        final (r, color) = e as (Reminder, Color);
+        return _buildReminderTile(r, isUpcoming: upcoming, accent: color);
+      },
     );
   }
 
@@ -1012,18 +936,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     ).format(reminder.scheduledAt);
     final protection = ref.watch(reminderProtectionProvider(reminder.id)).value;
 
-    final borderColor = isUpcoming
-        ? (isOverdue
-              ? g.coral.withValues(alpha: 0.45)
-              : accent.withValues(alpha: 0.25))
-        : g.line.withValues(alpha: 0.25);
-
-    final groundBg = isUpcoming
-        ? (isOverdue
-              ? g.coral.withValues(alpha: g.isDark ? 0.08 : 0.04)
-              : g.fill.withValues(alpha: g.isDark ? 0.06 : 0.03))
-        : (g.isDark ? g.fill.withValues(alpha: 0.03) : Colors.transparent);
-
     return Dismissible(
       key: ValueKey(reminder.id),
       direction: DismissDirection.endToStart,
@@ -1032,13 +944,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         return false;
       },
       background: Container(
-        margin: const EdgeInsets.only(bottom: 8),
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpace.s20),
-        decoration: BoxDecoration(
-          color: g.coralSoft,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(color: g.coralSoft),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1051,15 +959,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           ],
         ),
       ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: groundBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: isOverdue ? 1.1 : 0.9),
-        ),
+      // A flat row inside the list card: no card of its own.
+      child: Material(
+        type: MaterialType.transparency,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
           onTap: () {
             if (protection != null) {
               showPlanDetailSheet(context, protection.planId);
@@ -1324,6 +1227,21 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       _selectedCalendarDate,
     );
 
+    // Busy days, computed once per build (not once per day cell, which
+    // rescanned every task and reminder 42 times).
+    DateTime key(DateTime d) => DateTime(d.year, d.month, d.day);
+    final today0 = key(now);
+    final calTaskIds = allTasks.map((t) => t.id).toSet();
+    _busyDays = {
+      for (final r in activeReminders) key(r.scheduledAt),
+      for (final t in allTasks)
+        if (t.actualCompletedDate == null) key(t.plannedDate ?? today0),
+      for (final a in allActivities)
+        if (a.status != TodayActivityStatus.done &&
+            !(a.linkedTaskId != null && calTaskIds.contains(a.linkedTaskId)))
+          key(a.plannedDate ?? today0),
+    };
+
     // Mind thoughts sit on the day they were written (or carried on to).
     final thoughts = widget.thingsOnly
         ? const <Thought>[]
@@ -1528,31 +1446,49 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ],
             ),
           )
-        else ...[
-          if (dayReminders.isNotEmpty) ...[
-            _calendarSectionLabel('Reminders', g),
-            for (final reminder in dayReminders)
-              _buildCalendarReminderTile(reminder, g),
-            const SizedBox(height: 12),
-          ],
-          if (dayTasks.isNotEmpty) ...[
-            _calendarSectionLabel('Tasks & to-dos', g),
-            for (final task in dayTasks) _buildCalendarTaskTile(task, g),
-            const SizedBox(height: 12),
-          ],
-          if (dayActivities.isNotEmpty) ...[
-            _calendarSectionLabel('Things & activities', g),
-            for (final activity in dayActivities)
-              _buildCalendarActivityTile(activity, g),
-            const SizedBox(height: 12),
-          ],
-          if (dayThoughts.isNotEmpty) ...[
-            _calendarSectionLabel('Thoughts', g),
-            for (final thought in dayThoughts)
-              _buildCalendarThoughtTile(thought, g),
-          ],
-        ],
+        else
+          _agendaCard([
+            ('Reminders', Icons.notifications_none_rounded, [
+              for (final r in dayReminders)
+                () => _buildCalendarReminderTile(r, g),
+            ]),
+            ('Tasks & to-dos', Icons.check_circle_outline_rounded, [
+              for (final t in dayTasks) () => _buildCalendarTaskTile(t, g),
+            ]),
+            ('Things & activities', Icons.timer_outlined, [
+              for (final a in dayActivities)
+                () => _buildCalendarActivityTile(a, g),
+            ]),
+            ('Thoughts', Icons.lightbulb_outline_rounded, [
+              for (final t in dayThoughts)
+                () => _buildCalendarThoughtTile(t, g),
+            ]),
+          ]),
       ],
+    );
+  }
+
+  /// The selected day's agenda as one card: section labels and flat rows,
+  /// built only as they scroll into view (a day can hold 1,000+ items).
+  Widget _agendaCard(
+    List<(String, IconData, List<Widget Function()>)> sections,
+  ) {
+    final entries = <Object>[];
+    for (final s in sections) {
+      if (s.$3.isEmpty) continue;
+      entries.add(s);
+      entries.addAll(s.$3);
+    }
+    return ScrollCard(
+      key: const ValueKey('calendar_agenda_card'),
+      itemCount: entries.length,
+      itemBuilder: (context, i) {
+        final e = entries[i];
+        if (e is (String, IconData, List<Widget Function()>)) {
+          return ScrollCardSection(title: e.$1, count: e.$3.length, icon: e.$2);
+        }
+        return (e as Widget Function())();
+      },
     );
   }
 
@@ -1601,16 +1537,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       _openAddEditReminderSheet(null, _selectedCalendarDate);
     }
   }
-
-  Widget _calendarSectionLabel(String label, AscentGlass g) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      label,
-      style: AscentTextStyles.interfaceSupporting.copyWith(
-        color: g.inkSecondary,
-      ),
-    ),
-  );
 
   void _selectCalendarDay(DateTime day) {
     HapticFeedback.selectionClick();
@@ -1885,24 +1811,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final isToday = _isSameDay(day, now);
     final festival = FestivalService.getFestivalForDate(day);
 
-    final hasReminders = activeReminders.any(
-      (r) => _isSameDay(r.scheduledAt, day),
-    );
-    final hasTasks = allTasks.any((t) {
-      if (t.actualCompletedDate != null) return false;
-      if (t.plannedDate != null) return _isSameDay(t.plannedDate!, day);
-      return _isSameDay(now, day);
-    });
-    final taskIds = allTasks.map((t) => t.id).toSet();
-    final hasActivities = allActivities.any((a) {
-      if (a.status == TodayActivityStatus.done) return false;
-      if (a.linkedTaskId != null && taskIds.contains(a.linkedTaskId)) {
-        return false;
-      }
-      if (a.plannedDate != null) return _isSameDay(a.plannedDate!, day);
-      return _isSameDay(now, day);
-    });
-
+    final dayKey = DateTime(day.year, day.month, day.day);
     return AscentCalendarDay(
       key: ValueKey('calendar_day_${day.year}_${day.month}_${day.day}'),
       date: day,
@@ -1912,10 +1821,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           : isSelected,
       outsideMonth: !isCurrentMonth,
       hasScheduledItems:
-          hasReminders ||
-          hasTasks ||
-          hasActivities ||
-          _thoughtDays.contains(DateTime(day.year, day.month, day.day)),
+          _busyDays.contains(dayKey) || _thoughtDays.contains(dayKey),
       semanticLabel:
           '${DateFormat.yMMMMEEEEd().format(day)}${festival == null ? '' : ', ${festival.name}'}',
       agendaRow: agendaRow,
@@ -2004,20 +1910,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
   Widget _buildCalendarThoughtTile(Thought thought, AscentGlass g) {
     final line = thought.content.trim().split('\n').first;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s8),
+    return Material(
+      type: MaterialType.transparency,
       child: InkWell(
         key: ValueKey('calendar_thought_${thought.id}'),
-        borderRadius: AppGeometry.roundedr12,
         onTap: () => context.open('/thought-wall?thought=${thought.id}'),
-        child: Ink(
+        child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s12,
+            horizontal: AppSpace.s16,
             vertical: AppSpace.s12,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: AppGeometry.roundedr12,
-            border: Border.all(color: g.line),
           ),
           child: Row(
             children: [
@@ -2083,16 +1984,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       },
     );
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.zero,
       child: Material(
         key: ValueKey('calendar_reminder_tile_${reminder.id}'),
-        color: g.fill,
-        borderRadius: BorderRadius.circular(16),
+        type: MaterialType.transparency,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
           onTap: () => _openAddEditReminderSheet(reminder),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2116,11 +2015,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget _buildCalendarTaskTile(Task task, AscentGlass g) {
     return Container(
       key: ValueKey('calendar_task_tile_${task.id}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: g.fill,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
@@ -2195,15 +2089,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final isTimer = activity.kind != ActivityKind.todo;
     final isMedicine = activity.sourceType == 'medicine';
 
-    return Container(
+    return Material(
       key: ValueKey('calendar_activity_tile_${activity.id}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: g.fill,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      type: MaterialType.transparency,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: () {
           HapticFeedback.lightImpact();
           context.open('/things');

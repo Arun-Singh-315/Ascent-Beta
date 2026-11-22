@@ -934,19 +934,10 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
           if (_segment != ThingsSegment.routines)
             SafeArea(
               top: false,
+              // No strip of its own: the field sits straight on the page,
+              // like Mindspace's composer.
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                decoration: BoxDecoration(
-                  // Same canvas as the page, so the quick add is part of it.
-                  color: HomeDesign.of(context).canvas,
-                  border: Border(
-                    top: BorderSide(
-                      color: context.glass.line.withValues(
-                        alpha: context.glass.isDark ? 0.25 : 0.15,
-                      ),
-                    ),
-                  ),
-                ),
                 child: _buildComposer(context),
               ),
             ),

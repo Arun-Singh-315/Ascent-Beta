@@ -5,6 +5,7 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/scroll_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -36,7 +37,6 @@ class MoneyScreen extends ConsumerStatefulWidget {
 class _MoneyScreenState extends ConsumerState<MoneyScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  bool _showAllTransactions = false;
 
   @override
   void initState() {
@@ -50,7 +50,10 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     super.dispose();
   }
 
-  Future<void> _toggleExpenseReminder(bool enable, Reminder? existingReminder) async {
+  Future<void> _toggleExpenseReminder(
+    bool enable,
+    Reminder? existingReminder,
+  ) async {
     final db = ref.read(databaseProvider);
     HapticFeedback.lightImpact();
     if (existingReminder != null) {
@@ -98,7 +101,13 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     final db = ref.read(databaseProvider);
     HapticFeedback.lightImpact();
     final now = DateTime.now();
-    final scheduled = DateTime(now.year, now.month, now.day, 10, 0).add(const Duration(days: 3));
+    final scheduled = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      10,
+      0,
+    ).add(const Duration(days: 3));
     await db.reminderDao.insertReminder(
       ReminderTableCompanion.insert(
         title: 'Bill Due: ${tx.title} (₹${tx.amount.toStringAsFixed(0)})',
@@ -170,19 +179,21 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
         context,
         message: '${tx.title} removed',
         onUndo: () async {
-          await ref.read(financeDaoProvider).insertTransaction(
-            FinanceTransactionTableCompanion.insert(
-              id: drift.Value(tx.id),
-              title: tx.title,
-              amount: tx.amount,
-              date: tx.date,
-              type: drift.Value(tx.type),
-              category: drift.Value(tx.category),
-              account: drift.Value(tx.account),
-              notes: drift.Value(tx.notes),
-              isRecurring: drift.Value(tx.isRecurring),
-            ),
-          );
+          await ref
+              .read(financeDaoProvider)
+              .insertTransaction(
+                FinanceTransactionTableCompanion.insert(
+                  id: drift.Value(tx.id),
+                  title: tx.title,
+                  amount: tx.amount,
+                  date: tx.date,
+                  type: drift.Value(tx.type),
+                  category: drift.Value(tx.category),
+                  account: drift.Value(tx.account),
+                  notes: drift.Value(tx.notes),
+                  isRecurring: drift.Value(tx.isRecurring),
+                ),
+              );
         },
       );
     }
@@ -195,15 +206,17 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
         context,
         message: 'Goal "${goal.title}" removed',
         onUndo: () async {
-          await ref.read(financeDaoProvider).insertSavingsGoal(
-            SavingsGoalTableCompanion.insert(
-              id: drift.Value(goal.id),
-              title: goal.title,
-              targetAmount: goal.targetAmount,
-              savedAmount: drift.Value(goal.savedAmount),
-              targetDate: drift.Value(goal.targetDate),
-            ),
-          );
+          await ref
+              .read(financeDaoProvider)
+              .insertSavingsGoal(
+                SavingsGoalTableCompanion.insert(
+                  id: drift.Value(goal.id),
+                  title: goal.title,
+                  targetAmount: goal.targetAmount,
+                  savedAmount: drift.Value(goal.savedAmount),
+                  targetDate: drift.Value(goal.targetDate),
+                ),
+              );
         },
       );
     }
@@ -282,17 +295,21 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       compact: true,
                       onPressed: () async {
                         final title = titleController.text.trim();
-                        final target = double.tryParse(targetController.text.trim());
+                        final target = double.tryParse(
+                          targetController.text.trim(),
+                        );
                         if (title.isNotEmpty && target != null && target > 0) {
-                          await ref.read(financeDaoProvider).updateSavingsGoal(
-                            SavingsGoalTableCompanion(
-                              id: drift.Value(goal.id),
-                              title: drift.Value(title),
-                              targetAmount: drift.Value(target),
-                              savedAmount: drift.Value(goal.savedAmount),
-                              targetDate: drift.Value(goal.targetDate),
-                            ),
-                          );
+                          await ref
+                              .read(financeDaoProvider)
+                              .updateSavingsGoal(
+                                SavingsGoalTableCompanion(
+                                  id: drift.Value(goal.id),
+                                  title: drift.Value(title),
+                                  targetAmount: drift.Value(target),
+                                  savedAmount: drift.Value(goal.savedAmount),
+                                  targetDate: drift.Value(goal.targetDate),
+                                ),
+                              );
                           if (ctx.mounted) Navigator.pop(ctx);
                         }
                       },
@@ -360,7 +377,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   controller: amountController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: isDeposit ? 'Deposit Amount (₹)' : 'Withdraw Amount (₹)',
+                    labelText: isDeposit
+                        ? 'Deposit Amount (₹)'
+                        : 'Withdraw Amount (₹)',
                     prefixText: '₹ ',
                     filled: true,
                     fillColor: context.bgBase,
@@ -369,12 +388,19 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,
-                  children: [500, 1000, 2000].map((amt) => ActionChip(
-                    label: Text('+₹$amt', style: const TextStyle(fontSize: 12)),
-                    onPressed: () => setDialogState(() {
-                      amountController.text = '$amt';
-                    }),
-                  )).toList(),
+                  children: [500, 1000, 2000]
+                      .map(
+                        (amt) => ActionChip(
+                          label: Text(
+                            '+₹$amt',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: () => setDialogState(() {
+                            amountController.text = '$amt';
+                          }),
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -392,20 +418,29 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         label: isDeposit ? 'Add Funds' : 'Withdraw',
                         compact: true,
                         onPressed: () async {
-                          final amt = double.tryParse(amountController.text.trim());
+                          final amt = double.tryParse(
+                            amountController.text.trim(),
+                          );
                           if (amt != null && amt > 0) {
                             final newTotal = isDeposit
                                 ? goal.savedAmount + amt
-                                : (goal.savedAmount - amt).clamp(0.0, double.infinity);
-                            await ref.read(financeDaoProvider).updateSavingsGoal(
-                              SavingsGoalTableCompanion(
-                                id: drift.Value(goal.id),
-                                title: drift.Value(goal.title),
-                                targetAmount: drift.Value(goal.targetAmount),
-                                savedAmount: drift.Value(newTotal),
-                                targetDate: drift.Value(goal.targetDate),
-                              ),
-                            );
+                                : (goal.savedAmount - amt).clamp(
+                                    0.0,
+                                    double.infinity,
+                                  );
+                            await ref
+                                .read(financeDaoProvider)
+                                .updateSavingsGoal(
+                                  SavingsGoalTableCompanion(
+                                    id: drift.Value(goal.id),
+                                    title: drift.Value(goal.title),
+                                    targetAmount: drift.Value(
+                                      goal.targetAmount,
+                                    ),
+                                    savedAmount: drift.Value(newTotal),
+                                    targetDate: drift.Value(goal.targetDate),
+                                  ),
+                                );
                             if (ctx.mounted) Navigator.pop(ctx);
                           }
                         },
@@ -477,25 +512,22 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   const SizedBox(height: 6),
                   Text(
                     '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
-                    style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
-                      color: isExpense ? g.coral : g.sage,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style:
+                        AscentTextStyles.tabular(
+                          AscentTextStyles.listRowTitle,
+                        ).copyWith(
+                          color: isExpense ? g.coral : g.sage,
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ],
               ),
             ),
             IconButton(
               tooltip: 'Edit transaction',
-              icon: Icon(
-                Icons.edit_outlined,
-                size: 20,
-                color: g.inkMuted,
-              ),
-              onPressed: () => AddTransactionSheet.show(
-                context,
-                transactionToEdit: tx,
-              ),
+              icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+              onPressed: () =>
+                  AddTransactionSheet.show(context, transactionToEdit: tx),
             ),
             IconButton(
               tooltip: 'Delete transaction',
@@ -701,7 +733,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
             children: [
               // Safe to Spend Velocity Card
               AscentCard(
- variant: AscentCardVariant.outlined,
+                variant: AscentCardVariant.outlined,
                 margin: const EdgeInsets.only(bottom: AppSpace.s16),
                 padding: const EdgeInsets.all(AppSpace.s16),
                 child: Column(
@@ -733,9 +765,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             children: [
                               Text(
                                 'Safe to Spend Today',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
+                                style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(
                                       color: g.ink,
                                       fontWeight: FontWeight.w600,
@@ -814,7 +844,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
               // Hero Balance Card
               AscentCard(
- variant: AscentCardVariant.outlined,
+                variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -971,7 +1001,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   final sorted = catMap.entries.toList()
                     ..sort((a, b) => b.value.compareTo(a.value));
                   return AscentCard(
- variant: AscentCardVariant.outlined,
+                    variant: AscentCardVariant.outlined,
                     margin: const EdgeInsets.only(bottom: AppSpace.s16),
                     padding: const EdgeInsets.all(AppSpace.s16),
                     child: Column(
@@ -996,9 +1026,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             Expanded(
                               child: Text(
                                 'Spending by Category',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
+                                style: Theme.of(context).textTheme.titleSmall
                                     ?.copyWith(
                                       color: g.ink,
                                       fontWeight: FontWeight.w600,
@@ -1007,10 +1035,13 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             ),
                             Text(
                               '₹${totalCategorySpend.toStringAsFixed(0)}',
-                              style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle).copyWith(
-                                color: g.inkSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style:
+                                  AscentTextStyles.tabular(
+                                    AscentTextStyles.listRowTitle,
+                                  ).copyWith(
+                                    color: g.inkSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                           ],
                         ),
@@ -1055,7 +1086,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                   child: LinearProgressIndicator(
                                     value: totalCategorySpend > 0
                                         ? (entry.value / totalCategorySpend)
-                                            .clamp(0.0, 1.0)
+                                              .clamp(0.0, 1.0)
                                         : 0.0,
                                     minHeight: 5,
                                     backgroundColor: context.bgBase,
@@ -1121,12 +1152,15 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     days.putIfAbsent(day, () => []).add(tx);
                   }
 
-                  final allDayEntries = days.entries.toList();
-                  final hasHighVolume =
-                      allDayEntries.length > 2 || transactions.length > 6;
-                  final visibleEntries = _showAllTransactions
-                      ? allDayEntries
-                      : allDayEntries.take(2).toList();
+                  final dayRows = <Object>[
+                    for (final entry in days.entries) ...[
+                      entry.key,
+                      ...entry.value,
+                    ],
+                  ];
+                  final total =
+                      ref.watch(transactionCountProvider).value ??
+                      transactions.length;
 
                   final recurringBills = transactions
                       .where(
@@ -1141,7 +1175,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     children: [
                       if (recurringBills.isNotEmpty)
                         AscentCard(
- variant: AscentCardVariant.outlined,
+                          variant: AscentCardVariant.outlined,
                           margin: const EdgeInsets.only(bottom: AppSpace.s16),
                           padding: const EdgeInsets.all(AppSpace.s14),
                           child: Column(
@@ -1248,109 +1282,41 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             ],
                           ),
                         ),
-                      for (final entry in visibleEntries)
-                        AscentCard(
- variant: AscentCardVariant.outlined,
-                          key: ValueKey(
-                            'transactions_${entry.key.toIso8601String()}',
-                          ),
-                          margin: const EdgeInsets.only(bottom: AppSpace.s16),
-                          padding: const EdgeInsets.all(AppSpace.s14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                DateFormat('EEEE, MMM d, y').format(entry.key),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: g.inkSecondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                      // Every transaction in one card: day labels and
+                      // flat rows, built lazily, scrolling inside the card.
+                      ScrollCard(
+                        key: const ValueKey('money_transactions_card'),
+                        itemCount: dayRows.length,
+                        dividerIndent: AppSpace.s16,
+                        itemBuilder: (context, i) {
+                          final e = dayRows[i];
+                          if (e is DateTime) {
+                            final count = days[e]!.length;
+                            return ScrollCardSection(
+                              key: ValueKey(
+                                'transactions_${e.toIso8601String()}',
                               ),
-                              const SizedBox(height: 8),
-                              for (var i = 0; i < entry.value.length; i++) ...[
-                                if (i > 0) Divider(height: 1, color: g.line),
-                                _transactionRow(entry.value[i]),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                      // High-Volume Protection: Expand / Collapse Toggle
-                      if (hasHighVolume) ...[
-                        InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(
-                              () =>
-                                  _showAllTransactions = !_showAllTransactions,
+                              title: DateFormat('EEEE, MMM d').format(e),
+                              count: count,
                             );
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    _showAllTransactions
-                                        ? 'Show Recent Only'
-                                        : 'Show All ${transactions.length} Transactions',
-                                    style: TextStyle(
-                                      color: g.clay,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(
-                                  _showAllTransactions
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
-                                  color: g.clay,
-                                ),
-                              ],
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s12,
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-
-                      // Direct Link to Full Module History
-                      AscentCard(
- variant: AscentCardVariant.outlined,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s16,
-                          vertical: AppSpace.s12,
-                        ),
-                        child: InkWell(
-                          onTap: () => context.push('/history?module=money'),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.history_rounded,
-                                size: 16,
-                                color: g.inkMuted,
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  'View Full Ledger in History (${transactions.length} records)',
-                                  style: TextStyle(
-                                    color: g.inkMuted,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
+                            child: _transactionRow(e as FinanceTransaction),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpace.s8),
+                      Center(
+                        child: AscentButton.ghost(
+                          key: const ValueKey('money_view_all'),
+                          icon: Icons.history_rounded,
+                          label: 'View all $total in History',
+                          compact: true,
+                          onPressed: () =>
+                              context.push('/history?module=money'),
                         ),
                       ),
                     ],
@@ -1373,7 +1339,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
             children: [
               // Monthly Budget Setting Card
               AscentCard(
- variant: AscentCardVariant.outlined,
+                variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1422,7 +1388,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
               // Daily Mindful Expense Check-in Card
               AscentCard(
- variant: AscentCardVariant.outlined,
+                variant: AscentCardVariant.outlined,
                 padding: const EdgeInsets.all(AppSpace.s16),
                 child: Row(
                   children: [
@@ -1446,9 +1412,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         children: [
                           Text(
                             'Evening Expense Reflection',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
+                            style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(
                                   color: g.ink,
                                   fontWeight: FontWeight.w600,
@@ -1457,10 +1421,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           const SizedBox(height: 2),
                           Text(
                             'Daily gentle nudge at 9:00 PM to record spending & reflect on mindful choices.',
-                            style: TextStyle(
-                              color: g.inkMuted,
-                              fontSize: 12,
-                            ),
+                            style: TextStyle(color: g.inkMuted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -1505,7 +1466,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 data: (goals) {
                   if (goals.isEmpty) {
                     return AscentCard(
- variant: AscentCardVariant.outlined,
+                      variant: AscentCardVariant.outlined,
                       padding: const EdgeInsets.all(AppSpace.s24),
                       child: Center(
                         child: Column(
@@ -1543,7 +1504,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         1.0,
                       );
                       return AscentCard(
- variant: AscentCardVariant.outlined,
+                        variant: AscentCardVariant.outlined,
                         margin: const EdgeInsets.only(bottom: AppSpace.s10),
                         padding: const EdgeInsets.all(AppSpace.s16),
                         child: Column(
@@ -1574,9 +1535,14 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                     ),
                                     Text(
                                       '${(percent * 100).toInt()}%',
-                                      style: AscentTextStyles.tabular(AscentTextStyles.listRowTitle)
-                                          .copyWith(color: context.accentPrimary)
-                                          .merge(AppTypeRoles.typeRole9),
+                                      style:
+                                          AscentTextStyles.tabular(
+                                                AscentTextStyles.listRowTitle,
+                                              )
+                                              .copyWith(
+                                                color: context.accentPrimary,
+                                              )
+                                              .merge(AppTypeRoles.typeRole9),
                                     ),
                                   ],
                                 ),
@@ -1618,7 +1584,8 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                         color: context.accentPrimary,
                                       ),
                                       tooltip: 'Deposit or withdraw funds',
-                                      onPressed: () => _showDepositWithdrawDialog(g),
+                                      onPressed: () =>
+                                          _showDepositWithdrawDialog(g),
                                     ),
                                     TextButton(
                                       onPressed: () async {

@@ -13,6 +13,14 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
     )..orderBy([(t) => OrderingTerm.desc(t.date)])).watch();
   }
 
+  /// How many transactions exist (for honest "View all N" labels).
+  Stream<int> watchTransactionCount() {
+    final count = financeTransactionTable.id.count();
+    return (selectOnly(
+      financeTransactionTable,
+    )..addColumns([count])).map((row) => row.read(count) ?? 0).watchSingle();
+  }
+
   /// Watch recent transactions with limit.
   Stream<List<FinanceTransaction>> watchRecentTransactions({int limit = 15}) {
     return (select(financeTransactionTable)

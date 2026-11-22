@@ -145,63 +145,63 @@ class DueCheckInItem {
   });
 }
 
-final dueCheckInForTaskProvider = StreamProvider.family<DueCheckInItem?, int>((
-  ref,
-  taskId,
-) async* {
-  final db = ref.watch(databaseProvider);
-  final planDao = ref.watch(planDaoProvider);
+// autoDispose: each row's watcher stops when the row scrolls away, instead
+// of piling up one live reminders watcher per task ever shown.
+final dueCheckInForTaskProvider = StreamProvider.autoDispose
+    .family<DueCheckInItem?, int>((ref, taskId) async* {
+      final db = ref.watch(databaseProvider);
+      final planDao = ref.watch(planDaoProvider);
 
-  final remindersStream = db.reminderDao.watchAllReminders();
-  await for (final reminders in remindersStream) {
-    // 1. Check routine occurrences
-    final occ = await planDao.getOccurrenceByTaskId(taskId);
-    if (occ != null && occ.outcome == 'scheduled') {
-      final links = await planDao.getAlertLinksForOccurrence(occ.id);
-      final checkLinks = links.where((l) => l.role == 'check_in').toList();
-      DueCheckInItem? found;
-      for (final link in checkLinks) {
-        final rem = reminders
-            .where((r) => r.id == link.reminderId && r.isActive)
-            .firstOrNull;
-        if (rem != null && !rem.scheduledAt.isAfter(DateTime.now())) {
-          found = DueCheckInItem(
-            taskId: taskId,
-            title: rem.title,
-            reminderId: rem.id,
-            occurrenceId: occ.id,
-            scheduledAt: rem.scheduledAt,
-            isRoutine: true,
-          );
-          break;
+      final remindersStream = db.reminderDao.watchAllReminders();
+      await for (final reminders in remindersStream) {
+        // 1. Check routine occurrences
+        final occ = await planDao.getOccurrenceByTaskId(taskId);
+        if (occ != null && occ.outcome == 'scheduled') {
+          final links = await planDao.getAlertLinksForOccurrence(occ.id);
+          final checkLinks = links.where((l) => l.role == 'check_in').toList();
+          DueCheckInItem? found;
+          for (final link in checkLinks) {
+            final rem = reminders
+                .where((r) => r.id == link.reminderId && r.isActive)
+                .firstOrNull;
+            if (rem != null && !rem.scheduledAt.isAfter(DateTime.now())) {
+              found = DueCheckInItem(
+                taskId: taskId,
+                title: rem.title,
+                reminderId: rem.id,
+                occurrenceId: occ.id,
+                scheduledAt: rem.scheduledAt,
+                isRoutine: true,
+              );
+              break;
+            }
+          }
+          if (found != null) {
+            yield found;
+            continue;
+          }
         }
-      }
-      if (found != null) {
-        yield found;
-        continue;
-      }
-    }
 
-    // 2. Check one-time HomePlans
-    final plans = await HomeCaptureService(db).watchPlans().first;
-    final homePlan = plans
-        .where((p) => p.task?.id == taskId && p.needsAnswer)
-        .firstOrNull;
-    if (homePlan != null && homePlan.checkIn != null) {
-      yield DueCheckInItem(
-        taskId: taskId,
-        title: homePlan.task?.title ?? homePlan.reminder.title,
-        reminderId: homePlan.checkIn!.id,
-        occurrenceId: null,
-        scheduledAt: homePlan.checkIn!.scheduledAt,
-        isRoutine: false,
-      );
-      continue;
-    }
+        // 2. Check one-time HomePlans
+        final plans = await HomeCaptureService(db).watchPlans().first;
+        final homePlan = plans
+            .where((p) => p.task?.id == taskId && p.needsAnswer)
+            .firstOrNull;
+        if (homePlan != null && homePlan.checkIn != null) {
+          yield DueCheckInItem(
+            taskId: taskId,
+            title: homePlan.task?.title ?? homePlan.reminder.title,
+            reminderId: homePlan.checkIn!.id,
+            occurrenceId: null,
+            scheduledAt: homePlan.checkIn!.scheduledAt,
+            isRoutine: false,
+          );
+          continue;
+        }
 
-    yield null;
-  }
-});
+        yield null;
+      }
+    });
 
 final reminderProtectionProvider =
     FutureProvider.family<PlanChildRestriction?, int>((ref, reminderId) async {
@@ -277,8 +277,14 @@ final overallBudgetStreamProvider = StreamProvider<FinanceBudget?>((ref) {
 final recentTransactionsStreamProvider =
     StreamProvider<List<FinanceTransaction>>((ref) {
       final dao = ref.watch(financeDaoProvider);
-      return dao.watchRecentTransactions(limit: 25);
+      // Lists render lazily, so a generous window costs little.
+      return dao.watchRecentTransactions(limit: 200);
     });
+
+/// Total number of transactions (not just the loaded window).
+final transactionCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(financeDaoProvider).watchTransactionCount(),
+);
 
 final savingsGoalsStreamProvider = StreamProvider<List<SavingsGoal>>((ref) {
   final dao = ref.watch(financeDaoProvider);
