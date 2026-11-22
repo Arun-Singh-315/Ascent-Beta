@@ -958,7 +958,8 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
+                  // Same canvas as the page, so the quick add is part of it.
+                  color: HomeDesign.of(context).canvas,
                   border: Border(
                     top: BorderSide(
                       color: context.glass.line.withValues(

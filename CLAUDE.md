@@ -72,7 +72,7 @@ Calm means easy on the eyes: muted, slightly desaturated blues, deep-navy ink by
 | `canvas` | `#F2F5F9` | `#0B0E13` | Page background (grouped) |
 | `surface` | `#FFFFFF` | `#161B23` | Cards, grouped list cells |
 | `surfaceElevated` | `#FFFFFF` | `#1E242E` | Sheets, dialogs, menus, popovers (opaque) |
-| `surfaceRecessed` | `#E8EDF3` | `#1E242E` | Inputs, segmented tracks, empty-state tiles |
+| `surfaceRecessed` | `#E8EDF3` | `#1E242E` | Segmented tracks, empty-state tiles (inputs have no fill, §6.5) |
 | `separator` | `#D6DEE8` | `#2B323D` | 1 px hairlines |
 | `label` | `#1A2332` | `#E4E9F0` | Primary text |
 | `labelSecondary` | `#4A5668` | `#A9B4C2` | Secondary text |
@@ -223,7 +223,7 @@ All buttons: press scale 0.97 with spring, haptic, disabled = 40% opacity, a loa
 
 ### 6.5 Inputs
 
-`AppTextField` (single-line and multi-line forms) and `AppComposer` (chat/capture). `surfaceRecessed` fill, radius 12 (composer 24), no border at rest, a 1 px `action` border on focus, a clear button when there is text, and an error line in Footnote `danger` below.
+`AppTextField` (single-line and multi-line forms) and `AppComposer` (chat/capture). **No fill of their own**: an input takes the colour of the screen or card it sits on, so it reads as part of that surface (docks behind a composer use the page `canvas`, never a white strip). A 1 px `separator` border at rest, a 1 px `action` border on focus, radius 12 (composer 24), a clear button when there is text, and an error line in Footnote `danger` below.
 
 ### 6.6 Sheets and dialogs
 

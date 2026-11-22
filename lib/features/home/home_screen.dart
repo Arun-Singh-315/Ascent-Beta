@@ -33,7 +33,6 @@ import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import '../capture/capture_button.dart';
 
 /// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
@@ -147,7 +146,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     return Scaffold(
       backgroundColor: c.bg,
       extendBody: true,
-      floatingActionButton: const CaptureButton.fab(),
       body: SafeArea(
         child: AscentBackdrop(
           child: Stack(

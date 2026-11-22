@@ -14,13 +14,13 @@ import '../../../core/providers/time_tracking_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/utils/human_time.dart';
-import '../../../shared/widgets/ascent_composer.dart';
 import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'activity_actions.dart';
-import 'activity_composer.dart';
+import '../../capture/capture_sheet.dart';
 import '../../hydration/hydration_pace.dart';
 import '../../thought_wall/board/board_logic.dart' show displayContent;
+import '../../thought_wall/board/thought_lines.dart';
 
 /// Home's hero cards, in feed order (CLAUDE.md §5.1): Things and Mind are
 /// live summaries with their own inline input (see, add, leave), then one
@@ -94,8 +94,12 @@ class HomeThingsCard extends ConsumerWidget {
             onPressed: () => context.open('/things'),
             child: Text('Show all ${pending.length}'),
           ),
-        const SizedBox(height: AppSpace.s8),
-        const ActivityComposer(),
+        if (pending.isEmpty)
+          _EmptyRow(
+            key: const ValueKey('home_things_empty'),
+            text: total == 0 ? 'Your day is wide open' : 'All clear',
+            onAdd: () => showCaptureSheet(context),
+          ),
       ],
     );
   }
@@ -160,59 +164,13 @@ class _ThingRow extends ConsumerWidget {
   }
 }
 
-/// Mind: the latest thoughts as small bubbles and a capture field, so a
-/// thought goes in without leaving Home.
-class HomeMindCard extends ConsumerStatefulWidget {
+/// Mind: the latest thoughts as quiet bubbles. New thoughts come in
+/// through the Capture card at the top of Home.
+class HomeMindCard extends ConsumerWidget {
   const HomeMindCard({super.key});
 
   @override
-  ConsumerState<HomeMindCard> createState() => _HomeMindCardState();
-}
-
-class _HomeMindCardState extends ConsumerState<HomeMindCard> {
-  final _text = TextEditingController();
-  final _focus = FocusNode();
-  bool _saving = false;
-
-  @override
-  void dispose() {
-    _text.dispose();
-    _focus.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save(String raw) async {
-    final text = raw.trim();
-    if (text.isEmpty || _saving) return;
-    setState(() => _saving = true);
-    final dao = ref.read(thoughtDaoProvider);
-    try {
-      final id = await dao.insertThought(
-        ThoughtTableCompanion.insert(content: text),
-      );
-      if (!mounted) return;
-      HapticFeedback.lightImpact();
-      _text.clear();
-      AscentSnackBar.show(
-        context,
-        message: 'Thought saved',
-        actionLabel: 'Undo',
-        onAction: () => dao.deleteThought(id),
-      );
-    } catch (_) {
-      if (mounted) {
-        AscentSnackBar.error(
-          context,
-          message: 'Could not save. Your text is still here.',
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(unlockedFeaturesProvider).contains(AscentFeature.mind)) {
       return const SizedBox.shrink();
     }
@@ -245,19 +203,12 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
               thought: t,
             ),
           ),
-        const SizedBox(height: AppSpace.s4),
-        AscentComposer(
-          key: const ValueKey('home_mind_composer'),
-          controller: _text,
-          focusNode: _focus,
-          hint: 'What\u2019s on your mind?',
-          maxLines: 4,
-          busy: _saving,
-          fieldKey: const ValueKey('home_mind_field'),
-          sendKey: const ValueKey('home_mind_send'),
-          sendTooltip: 'Save thought',
-          onSend: _save,
-        ),
+        if (recent.isEmpty)
+          _EmptyRow(
+            key: const ValueKey('home_mind_empty'),
+            text: 'Nothing on your mind yet',
+            onAdd: () => showCaptureSheet(context),
+          ),
       ],
     );
   }
@@ -287,54 +238,116 @@ class _ThoughtBubble extends StatelessWidget {
       bottomRight: AppGeometry.radiusr18,
       bottomLeft: AppGeometry.radiusr4,
     );
-    final text = displayContent(thought.content).trim();
+    final content = displayContent(thought.content).trim();
+    final lines = parseThoughtLines(content);
+    final shown = lines.take(3).toList();
+    final progress = progressLabel(content);
+    final spoken = lines.map((l) => l.text).join(', ');
     return Semantics(
       button: true,
-      label: 'Thought: $text',
+      label: 'Thought: $spoken',
       excludeSemantics: true,
-      child: InkWell(
-        borderRadius: radius,
-        onTap: () => context.open('/thought-wall?thought=${thought.id}'),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(color: g.line),
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.s14,
-            AppSpace.s10,
-            AppSpace.s14,
-            AppSpace.s8,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                text,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: AscentTextStyles.body.copyWith(
-                  color: g.ink,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: AppSpace.s4),
-              Row(
-                children: [
-                  if (thought.isPinned) ...[
-                    Icon(Icons.push_pin_outlined, size: 12, color: g.inkMuted),
-                    const SizedBox(width: AppSpace.s4),
-                  ],
-                  Text(
-                    _ago(thought.createdAt),
-                    style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+      // Its own Material, so the outline and ripple paint above the card's
+      // surface instead of under it.
+      child: Material(
+        color: g.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: g.line),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.open('/thought-wall?thought=${thought.id}'),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s14,
+              AppSpace.s10,
+              AppSpace.s14,
+              AppSpace.s8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final l in shown)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.s2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (l.isItem) ...[
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSpace.s3),
+                            child: Icon(
+                              l.isDone
+                                  ? Icons.check_circle_outline_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 16,
+                              color: l.isDone ? g.successInk : g.inkMuted,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.s8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            l.text,
+                            maxLines: shown.length == 1 ? 3 : 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AscentTextStyles.body.copyWith(
+                              color: l.isDone ? g.inkSecondary : g.ink,
+                              height: 1.35,
+                              decoration: l.isDone
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              decorationColor: g.inkSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ],
+                const SizedBox(height: AppSpace.s2),
+                Text(
+                  [
+                    if (thought.isPinned) 'Pinned',
+                    if (progress != null) '$progress done',
+                    if (lines.length > shown.length)
+                      '+${lines.length - shown.length} more',
+                    _ago(thought.createdAt),
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AscentTextStyles.caption.copyWith(
+                    color: g.inkMuted,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// One quiet line for an empty card: what's missing and an Add action.
+class _EmptyRow extends StatelessWidget {
+  const _EmptyRow({super.key, required this.text, required this.onAdd});
+  final String text;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            text,
+            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
+          ),
+        ),
+        AscentButton.ghost(label: 'Add', compact: true, onPressed: onAdd),
+      ],
     );
   }
 }

@@ -66,14 +66,14 @@ void main() {
         child: child!,
       ),
       home: Scaffold(
+        appBar: AppBar(actions: const [CaptureButton.nav()]),
         body: body,
-        floatingActionButton: const CaptureButton.fab(),
       ),
     ),
   );
 
   Future<void> open(WidgetTester t) async {
-    await t.tap(find.byKey(const ValueKey('capture_fab')));
+    await t.tap(find.byKey(const ValueKey('capture_nav')));
     await flush(t);
     expect(find.byType(CaptureSheet), findsOneWidget);
   }

@@ -8,7 +8,8 @@ import '../../core/theme/app_tokens.dart';
 /// Follows the Global Input Rule:
 /// - ONE input = ONE container.
 /// - Single [TextField] (or [TextFormField]) with [InputDecoration].
-/// - Filled with `surfaceAlt` (`#F4EEE6` in Sand & Dusk).
+/// - No fill by default: it takes the colour of the screen or card it sits
+///   on, so it reads as part of that surface.
 /// - 1px warm hairline border (`#E9E1D5`).
 /// - 14px corner radius ([Rd.field]).
 /// - [prefixIcon] and [suffixIcon] rendered inside the decoration, NOT outside.
@@ -70,7 +71,7 @@ class AppTextField extends StatelessWidget {
     final c = context.c;
     final colorScheme = Theme.of(context).colorScheme;
 
-    final resolvedFill = fillColor ?? c.surfaceAlt;
+    final resolvedFill = fillColor ?? Colors.transparent;
     final resolvedBorderColor = c.border;
     final resolvedFocusColor = colorScheme.primary;
     final resolvedErrorColor = colorScheme.error;
