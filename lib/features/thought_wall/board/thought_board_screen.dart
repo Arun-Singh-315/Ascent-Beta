@@ -47,6 +47,7 @@ import 'palace_card.dart';
 import 'palace_providers.dart';
 import 'thought_lifecycle.dart';
 import 'thought_lines.dart';
+import '../../capture/capture_button.dart';
 
 /// One drawn row of a tab: a header, a card, or a control. Built lazily, so a
 /// tab with thousands of thoughts only builds what is on screen.
@@ -1795,6 +1796,7 @@ class _ThoughtBoardScreenState extends ConsumerState<ThoughtBoardScreen>
                   ),
                 ]
               : [
+                  const CaptureButton.nav(),
                   IconButton(
                     key: const ValueKey('palace_search_toggle'),
                     tooltip: _searching ? 'Close search' : 'Search',
