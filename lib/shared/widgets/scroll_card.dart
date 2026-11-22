@@ -25,7 +25,12 @@ class ScrollCard extends StatefulWidget {
     this.divider = true,
     this.dividerIndent = AppSpace.s16,
     this.empty,
+    this.fill = false,
   });
+
+  /// Fill the height the parent gives (inside an `Expanded`) and always
+  /// scroll inside, so the screen around the card stays still.
+  final bool fill;
 
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
@@ -90,7 +95,7 @@ class _ScrollCardState extends State<ScrollCard> {
     Widget body;
     if (n == 0) {
       body = widget.empty ?? const SizedBox.shrink();
-    } else if (n <= widget.scrollAfter) {
+    } else if (n <= widget.scrollAfter && !widget.fill) {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -120,7 +125,7 @@ class _ScrollCardState extends State<ScrollCard> {
         ),
       );
       body = SizedBox(
-        height: height,
+        height: widget.fill ? null : height,
         child: Stack(
           children: [
             Positioned.fill(child: list),
@@ -198,12 +203,12 @@ class _ScrollCardState extends State<ScrollCard> {
       child: ClipRRect(
         borderRadius: AppGeometry.roundedr20,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: widget.fill ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ?header,
             if (header != null && n > 0) Divider(height: 1, color: g.line),
-            body,
+            if (widget.fill && n > 0) Expanded(child: body) else body,
           ],
         ),
       ),

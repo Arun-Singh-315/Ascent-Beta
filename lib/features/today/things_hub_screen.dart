@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import '../../app/theme/surface_tokens.dart';
 import '../../shared/widgets/scroll_edge_fade.dart';
 import '../../app/theme/home_design.dart';
 import 'package:flutter/services.dart';
@@ -297,36 +298,16 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
   Widget _group(List<TodayActivityItem> items, {Key? key}) {
     final g = context.glass;
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: DecoratedSliver(
-        key: key,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          // Light cards: shadow, no outline; dark cards: a hairline (§3.3).
-          border: g.isDark
-              ? Border.all(color: g.line.withValues(alpha: .30))
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: g.shadow.withValues(alpha: g.isDark ? 0 : .08),
-              blurRadius: 12,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        sliver: SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          sliver: SliverList.separated(
-            itemCount: items.length,
-            itemBuilder: (_, i) => _row(items[i]),
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              thickness: .5,
-              indent: 46,
-              color: g.line.withValues(alpha: .6),
-            ),
-          ),
+      key: key,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      sliver: SliverList.separated(
+        itemCount: items.length,
+        itemBuilder: (_, i) => _row(items[i]),
+        separatorBuilder: (_, _) => Divider(
+          height: 1,
+          thickness: .5,
+          indent: 46,
+          color: g.line.withValues(alpha: .6),
         ),
       ),
     );
@@ -374,65 +355,35 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       DayPart.anytime => Icons.all_inclusive_rounded,
       DayPart.medicine => Icons.medication_outlined,
     };
-    // Flattened so the list builds lazily (1000 things stay smooth): each
-    // entry is a header, a row or a hairline, painted as one card.
-    final entries = <Widget>[];
+    // Flat data, widgets built only for rows on screen (thousands of things
+    // stay smooth). The list card around the whole screen frames it.
+    final entries = <Object>[];
     for (var i = 0; i < parts.length; i++) {
-      if (i > 0) {
-        entries.add(
-          Divider(
-            height: 16,
-            indent: 16,
-            endIndent: 16,
-            color: g.line.withValues(alpha: .5),
-          ),
-        );
-      }
-      entries.add(
-        Padding(
-          key: ValueKey('things_part_${parts[i].$1.name}'),
-          padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
-          child: GroupHeader(
-            icon: icon(parts[i].$1),
-            tint: tint(parts[i].$1),
-            title: parts[i].$1.label,
-            count: parts[i].$2.length,
-          ),
-        ),
-      );
-      for (final item in parts[i].$2) {
-        entries.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: _row(item),
-          ),
-        );
-      }
+      entries.add(parts[i]);
+      entries.addAll(parts[i].$2);
     }
-    final surface = Theme.of(context).colorScheme.surface;
-    const radius = Radius.circular(22);
     return SliverPadding(
       key: const ValueKey('things_day_board'),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       sliver: SliverList.builder(
         itemCount: entries.length,
         itemBuilder: (context, i) {
-          final first = i == 0, last = i == entries.length - 1;
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.vertical(
-                top: first ? radius : Radius.zero,
-                bottom: last ? radius : Radius.zero,
+          final e = entries[i];
+          if (e is (DayPart, List<TodayActivityItem>)) {
+            return Padding(
+              key: ValueKey('things_part_${e.$1.name}'),
+              padding: EdgeInsets.fromLTRB(16, i == 0 ? 8 : 16, 12, 4),
+              child: GroupHeader(
+                icon: icon(e.$1),
+                tint: tint(e.$1),
+                title: e.$1.label,
+                count: e.$2.length,
               ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: first ? 8 : 0,
-                bottom: last ? 8 : 0,
-              ),
-              child: entries[i],
-            ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _row(e as TodayActivityItem),
           );
         },
       ),
@@ -893,43 +844,42 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       ],
       body: Column(
         children: [
-          Expanded(
-            // Rows fade out above the quick add instead of a hard cut.
-            child: ScrollEdgeFade(
-              child: CustomScrollView(
-                key: ValueKey('things_list_${_segment.name}'),
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      child: AscentSegmentedControl<ThingsSegment>(
-                        key: const ValueKey('things_segments'),
-                        segments: [
-                          for (final s in ThingsSegment.values)
-                            AscentSegment(
-                              key: ValueKey('things_segment_${s.name}'),
-                              value: s,
-                              label: s.label,
-                            ),
-                        ],
-                        selected: _segment,
-                        onChanged: _selectSegment,
-                      ),
-                    ),
+          // Fixed: segments and search stay put; only the list card scrolls.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: AscentSegmentedControl<ThingsSegment>(
+              key: const ValueKey('things_segments'),
+              segments: [
+                for (final s in ThingsSegment.values)
+                  AscentSegment(
+                    key: ValueKey('things_segment_${s.name}'),
+                    value: s,
+                    label: s.label,
                   ),
-                  if (_showSearch)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                        child: _buildSearch(),
-                      ),
-                    ),
-                  ...content,
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                ],
+              ],
+              selected: _segment,
+              onChanged: _selectSegment,
+            ),
+          ),
+          if (_showSearch)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _buildSearch(),
+            ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _ListCard(
+                child: CustomScrollView(
+                  key: ValueKey('things_list_${_segment.name}'),
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    ...content,
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -946,6 +896,37 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// The one card a list lives in: it fills the space it is given and the
+/// list scrolls inside it (thin rounded scrollbar, soft fade at the bottom),
+/// so the screen around it stays still.
+class _ListCard extends StatelessWidget {
+  const _ListCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: g.surface,
+        borderRadius: AppGeometry.roundedr20,
+        border: Border.all(color: g.line),
+      ),
+      child: ClipRRect(
+        borderRadius: AppGeometry.roundedr20,
+        child: ScrollEdgeFade(
+          extent: 20,
+          child: Scrollbar(
+            thickness: 3,
+            radius: const Radius.circular(999),
+            child: child,
+          ),
+        ),
       ),
     );
   }
