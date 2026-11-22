@@ -145,62 +145,100 @@ class DueCheckInItem {
   });
 }
 
-// autoDispose: each row's watcher stops when the row scrolls away, instead
-// of piling up one live reminders watcher per task ever shown.
-final dueCheckInForTaskProvider = StreamProvider.autoDispose
-    .family<DueCheckInItem?, int>((ref, taskId) async* {
-      final db = ref.watch(databaseProvider);
-      final planDao = ref.watch(planDaoProvider);
-
-      final remindersStream = db.reminderDao.watchAllReminders();
-      await for (final reminders in remindersStream) {
-        // 1. Check routine occurrences
-        final occ = await planDao.getOccurrenceByTaskId(taskId);
-        if (occ != null && occ.outcome == 'scheduled') {
-          final links = await planDao.getAlertLinksForOccurrence(occ.id);
-          final checkLinks = links.where((l) => l.role == 'check_in').toList();
-          DueCheckInItem? found;
-          for (final link in checkLinks) {
-            final rem = reminders
-                .where((r) => r.id == link.reminderId && r.isActive)
-                .firstOrNull;
-            if (rem != null && !rem.scheduledAt.isAfter(DateTime.now())) {
-              found = DueCheckInItem(
-                taskId: taskId,
-                title: rem.title,
-                reminderId: rem.id,
-                occurrenceId: occ.id,
-                scheduledAt: rem.scheduledAt,
-                isRoutine: true,
-              );
-              break;
-            }
-          }
-          if (found != null) {
-            yield found;
-            continue;
-          }
-        }
-
-        // 2. Check one-time HomePlans
-        final plans = await HomeCaptureService(db).watchPlans().first;
-        final homePlan = plans
-            .where((p) => p.task?.id == taskId && p.needsAnswer)
-            .firstOrNull;
-        if (homePlan != null && homePlan.checkIn != null) {
-          yield DueCheckInItem(
-            taskId: taskId,
-            title: homePlan.task?.title ?? homePlan.reminder.title,
-            reminderId: homePlan.checkIn!.id,
-            occurrenceId: null,
-            scheduledAt: homePlan.checkIn!.scheduledAt,
-            isRoutine: false,
-          );
-          continue;
-        }
-
-        yield null;
+/// Due check-ins for every task, worked out once per reminders change
+/// (task id -> check-in). Rows read their entry from this map instead of
+/// each re-reading every reminder and plan as it scrolls into view.
+final dueCheckInsProvider = StreamProvider<Map<int, DueCheckInItem>>((
+  ref,
+) async* {
+  final db = ref.watch(databaseProvider);
+  final planDao = ref.watch(planDaoProvider);
+  await for (final reminders in db.reminderDao.watchAllReminders()) {
+    final now = DateTime.now();
+    final out = <int, DueCheckInItem>{};
+    // 1. Routine check-ins: a due, active reminder linked as a check-in to
+    //    a scheduled occurrence.
+    for (final rem in reminders) {
+      if (!rem.isActive || rem.scheduledAt.isAfter(now)) continue;
+      final link = await planDao.getAlertLinkForReminder(rem.id);
+      if (link == null || link.role != 'check_in') continue;
+      final occ = await planDao.getOccurrenceById(link.occurrenceId);
+      final taskId = occ?.linkedTaskId;
+      if (occ == null || taskId == null || occ.outcome != 'scheduled') {
+        continue;
       }
+      out.putIfAbsent(
+        taskId,
+        () => DueCheckInItem(
+          taskId: taskId,
+          title: rem.title,
+          reminderId: rem.id,
+          occurrenceId: occ.id,
+          scheduledAt: rem.scheduledAt,
+          isRoutine: true,
+        ),
+      );
+    }
+    // 2. One-time Home plans waiting for an answer.
+    final plans = await HomeCaptureService(db).watchPlans().first;
+    for (final p in plans) {
+      final task = p.task;
+      final checkIn = p.checkIn;
+      if (task == null || checkIn == null || !p.needsAnswer) continue;
+      out.putIfAbsent(
+        task.id,
+        () => DueCheckInItem(
+          taskId: task.id,
+          title: task.title,
+          reminderId: checkIn.id,
+          occurrenceId: null,
+          scheduledAt: checkIn.scheduledAt,
+          isRoutine: false,
+        ),
+      );
+    }
+    yield out;
+  }
+});
+
+/// One task's due check-in, read from [dueCheckInsProvider].
+final dueCheckInForTaskProvider = StreamProvider.autoDispose
+    .family<DueCheckInItem?, int>((ref, taskId) {
+      final all = ref.watch(dueCheckInsProvider);
+      return Stream.value(all.value?[taskId]);
+    });
+
+/// Which plan each reminder belongs to (reminder id -> plan id and title),
+/// from one query, so a long reminders list can label rows without each
+/// row running its own lookups.
+final reminderPlanLabelsProvider =
+    StreamProvider<Map<int, ({String planId, String planTitle})>>((ref) {
+      final db = ref.watch(databaseProvider);
+      return db
+          .customSelect(
+            '''
+        SELECT l.reminder_id AS rid, d.id AS pid, d.title AS title
+        FROM occurrence_alert_links l
+        JOIN plan_occurrences o ON o.id = l.occurrence_id
+        JOIN plan_definitions d ON d.id = o.plan_id
+        WHERE d.status != 'ended'
+      ''',
+            readsFrom: {
+              db.occurrenceAlertLinkTable,
+              db.planOccurrenceTable,
+              db.planDefinitionTable,
+            },
+          )
+          .watch()
+          .map(
+            (rows) => {
+              for (final r in rows)
+                r.data['rid'] as int: (
+                  planId: r.data['pid'] as String,
+                  planTitle: r.data['title'] as String,
+                ),
+            },
+          );
     });
 
 final reminderProtectionProvider =

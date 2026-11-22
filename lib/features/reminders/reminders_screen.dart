@@ -739,6 +739,98 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             final pastReminders = reminders.where((r) => !r.isActive).toList()
               ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
+            final segments = Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.s16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AscentSegmentedControl<int>(
+                      segments: [
+                        AscentSegment(
+                          value: 0,
+                          label: _count(
+                            'Active',
+                            reminders.where((r) => r.isActive).length,
+                          ),
+                        ),
+                        AscentSegment(
+                          value: 1,
+                          label: _count('Completed', pastReminders.length),
+                        ),
+                      ],
+                      selected: _selectedTab,
+                      onChanged: (val) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedTab = val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+            final listGroups = _selectedTab == 0
+                ? [
+                    (
+                      'Overdue',
+                      overdueReminders,
+                      g.coral,
+                      Icons.schedule_rounded,
+                    ),
+                    ('Today', todayReminders, g.amber, Icons.today_rounded),
+                    (
+                      'Tomorrow',
+                      tomorrowReminders,
+                      g.inkSecondary,
+                      Icons.event_rounded,
+                    ),
+                    (
+                      'This Week',
+                      thisWeekReminders,
+                      g.inkSecondary,
+                      Icons.date_range_rounded,
+                    ),
+                    (
+                      'Upcoming & Later',
+                      laterReminders,
+                      g.inkMuted,
+                      Icons.calendar_month_rounded,
+                    ),
+                  ]
+                : [
+                    (
+                      'Completed & Past',
+                      pastReminders,
+                      g.sage,
+                      Icons.history_rounded,
+                    ),
+                  ];
+            // The list lives in one card that fills the screen below the
+            // segments and scrolls inside; the screen itself stays still.
+            if (!_isCalendarView && listGroups.any((x) => x.$2.isNotEmpty)) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s16,
+                  AppSpace.s16,
+                  AppSpace.s16,
+                  AppSpace.s8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (!_notificationsEnabled) _notificationPermissionNotice(),
+                    segments,
+                    Expanded(
+                      child: _reminderListCard(
+                        listGroups,
+                        upcoming: _selectedTab == 0,
+                        fill: true,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 AppSpace.s16,
@@ -749,36 +841,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               children: [
                 if (!_notificationsEnabled) _notificationPermissionNotice(),
 
-                // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED + CALENDAR TOGGLE ─────────────
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpace.s16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: AscentSegmentedControl<int>(
-                          segments: [
-                            AscentSegment(
-                              value: 0,
-                              label: _count(
-                                'Active',
-                                reminders.where((r) => r.isActive).length,
-                              ),
-                            ),
-                            AscentSegment(
-                              value: 1,
-                              label: _count('Completed', pastReminders.length),
-                            ),
-                          ],
-                          selected: _selectedTab,
-                          onChanged: (val) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedTab = val);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                segments,
 
                 if (_selectedTab == 0 && _isCalendarView) ...[
                   _buildGoogleCalendarView(
@@ -913,6 +976,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget _reminderListCard(
     List<(String, List<Reminder>, Color, IconData)> groups, {
     required bool upcoming,
+    bool fill = false,
   }) {
     final entries = <Object>[];
     for (final group in groups) {
@@ -927,6 +991,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     if (entries.isEmpty) return const SizedBox.shrink();
     return ScrollCard(
       key: ValueKey('reminders_list_card_$upcoming'),
+      fill: fill,
       itemCount: entries.length,
       dividerIndent: 54,
       itemBuilder: (context, i) {
@@ -958,6 +1023,23 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     );
   }
 
+  static final _rowTime = DateFormat('EEE, MMM d • h:mm a');
+
+  /// Opens a reminder: its plan when it belongs to one (checked exactly at
+  /// tap time, including one-time managed plans), otherwise the editor.
+  Future<void> _openReminder(Reminder reminder, String? knownPlanId) async {
+    var planId = knownPlanId;
+    planId ??=
+        (await ref.read(reminderDaoProvider).getReminderProtection(reminder.id))
+            ?.planId;
+    if (!mounted) return;
+    if (planId != null) {
+      showPlanDetailSheet(context, planId);
+    } else {
+      _openAddEditReminderSheet(reminder);
+    }
+  }
+
   Widget _buildReminderTile(
     Reminder reminder, {
     required bool isUpcoming,
@@ -966,10 +1048,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final g = context.glass;
     final isOverdue =
         reminder.isActive && reminder.scheduledAt.isBefore(DateTime.now());
-    final formattedTime = DateFormat(
-      'EEE, MMM d • h:mm a',
-    ).format(reminder.scheduledAt);
-    final protection = ref.watch(reminderProtectionProvider(reminder.id)).value;
+    final formattedTime = _rowTime.format(reminder.scheduledAt);
+    // One shared map for the whole list; no per-row lookups while scrolling.
+    final protection = ref.watch(
+      reminderPlanLabelsProvider.select((m) => m.value?[reminder.id]),
+    );
 
     return Dismissible(
       key: ValueKey(reminder.id),
@@ -998,13 +1081,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
-          onTap: () {
-            if (protection != null) {
-              showPlanDetailSheet(context, protection.planId);
-            } else {
-              _openAddEditReminderSheet(reminder);
-            }
-          },
+          onTap: () => _openReminder(reminder, protection?.planId),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
             child: Row(
@@ -1151,11 +1228,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       return;
                     }
                     if (val == 'edit') {
-                      if (protection != null) {
-                        showPlanDetailSheet(context, protection.planId);
-                      } else {
-                        _openAddEditReminderSheet(reminder);
-                      }
+                      _openReminder(reminder, protection?.planId);
                     } else if (val == 'delete') {
                       _confirmDeleteReminder(reminder);
                     }
@@ -1530,6 +1603,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     }
     return ScrollCard(
       key: const ValueKey('calendar_agenda_card'),
+      // Tall enough that, once scrolled into view, the agenda scrolls inside
+      // its card for the rest of the day's items.
+      maxHeight: MediaQuery.sizeOf(context).height * .72,
       itemCount: entries.length,
       itemBuilder: (context, i) {
         final e = entries[i];
