@@ -1,20 +1,71 @@
 import 'ai_service.dart';
+import '../promises/promise_service.dart';
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
 
-const riyaPromiseCapabilities = <RiyaCapability>[];
+const riyaPromiseCapabilities = <RiyaCapability>[
+  RiyaCapability(
+    'promises.create',
+    'Make a daily promise to yourself',
+    '/promises',
+    {'title': RiyaValue.text, 'lengthDays': RiyaValue.integer},
+    required: ['title'],
+    write: true,
+    example: 'make a promise to walk 20 minutes',
+  ),
+  RiyaCapability(
+    'promises.list',
+    'Show my promises and how they are going',
+    '/promises',
+    {'offset': RiyaValue.offset},
+  ),
+];
 
+/// Promises through the assistant: make one, or see how they are going.
+/// Day-to-day check-ins happen with one tap on Home.
 class RiyaPromiseActions {
   RiyaPromiseActions(this.db, this.clock);
   final AppDatabase db;
   final DateTime Function() clock;
 
   Future<RiyaResult> run(RiyaCommand command) async {
-    return const RiyaResult(
-      'Commitments & Promises are coming soon to Ascent!',
-      '/home',
-    );
+    final service = PromiseService(db, clock: clock);
+    switch (command.id) {
+      case 'promises.create':
+        final length = command.arguments['lengthDays'] as int? ?? 21;
+        await service.create(
+          title: command.arguments['title'] as String,
+          lengthDays: length,
+        );
+        return RiyaResult(
+          'Promise made for $length days. Day 1 is today; tap Kept it on '
+              'Home each evening.',
+          '/promises',
+        );
+      default:
+        final active = (await service.loadAll())
+            .where((p) => p.isActive)
+            .toList();
+        if (active.isEmpty) {
+          return const RiyaResult(
+            'You have no active promises. Say "make a promise to …" to start '
+                'one.',
+            '/promises',
+          );
+        }
+        final offset = (command.arguments['offset'] as int? ?? 0).clamp(
+          0,
+          active.length,
+        );
+        final lines = [
+          for (final p in active.skip(offset).take(3))
+            '• ${p.title}: ${p.progress.length == null ? 'day ${p.progress.dayNumber}' : 'day ${p.progress.dayNumber} of ${p.progress.length}'}'
+                '${p.progress.streak > 1 ? ', ${p.progress.streak}-day streak' : ''}'
+                '${p.progress.keptToday ? ', kept today' : ''}',
+        ];
+        return RiyaResult(lines.join('\n'), '/promises');
+    }
   }
 }
 
@@ -222,9 +273,15 @@ class RiyaProductivityIntents {
 
   RiyaResolution _create(String type, String text) {
     if (type == 'promises') {
-      return const RiyaResolution(
-        message: 'Commitments & Promises are coming soon to Ascent!',
-        options: ['Add a task instead'],
+      final days = RegExp(r'\bfor\s+(\d{1,3})\s+days?\b').firstMatch(text);
+      final title = text
+          .replaceAll(RegExp(r'\s*\bfor\s+\d{1,3}\s+days?\b'), '')
+          .trim();
+      return RiyaResolution(
+        command: RiyaCommand('promises.create', {
+          'title': title,
+          if (days != null) 'lengthDays': int.parse(days[1]!),
+        }),
       );
     }
     final parsed = LocalDeterministicAiEngine().tryParseActivityOrTask(
@@ -273,7 +330,10 @@ class RiyaProductivityIntents {
     verb = verb.toLowerCase();
     if (type == 'promises') {
       return const RiyaResolution(
-        message: 'Commitments & Promises are coming soon to Ascent!',
+        message:
+            'Check in on promises with one tap on Home, or open Promises to '
+            'edit or release one.',
+        options: ['Show promises'],
       );
     }
     final title = (await db.taskDao.getTaskById(id))?.title;

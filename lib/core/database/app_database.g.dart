@@ -26761,6 +26761,1137 @@ class PlanCollectionItemTableCompanion
   }
 }
 
+class $PromiseTableTable extends PromiseTable
+    with TableInfo<$PromiseTableTable, PromiseRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PromiseTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _whyMeta = const VerificationMeta('why');
+  @override
+  late final GeneratedColumn<String> why = GeneratedColumn<String>(
+    'why',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startDayMeta = const VerificationMeta(
+    'startDay',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDay = GeneratedColumn<DateTime>(
+    'start_day',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lengthDaysMeta = const VerificationMeta(
+    'lengthDays',
+  );
+  @override
+  late final GeneratedColumn<int> lengthDays = GeneratedColumn<int>(
+    'length_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nudgeMinuteMeta = const VerificationMeta(
+    'nudgeMinute',
+  );
+  @override
+  late final GeneratedColumn<int> nudgeMinute = GeneratedColumn<int>(
+    'nudge_minute',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endedAt = GeneratedColumn<DateTime>(
+    'ended_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    why,
+    startDay,
+    lengthDays,
+    nudgeMinute,
+    status,
+    endedAt,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'promises';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PromiseRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('why')) {
+      context.handle(
+        _whyMeta,
+        why.isAcceptableOrUnknown(data['why']!, _whyMeta),
+      );
+    }
+    if (data.containsKey('start_day')) {
+      context.handle(
+        _startDayMeta,
+        startDay.isAcceptableOrUnknown(data['start_day']!, _startDayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDayMeta);
+    }
+    if (data.containsKey('length_days')) {
+      context.handle(
+        _lengthDaysMeta,
+        lengthDays.isAcceptableOrUnknown(data['length_days']!, _lengthDaysMeta),
+      );
+    }
+    if (data.containsKey('nudge_minute')) {
+      context.handle(
+        _nudgeMinuteMeta,
+        nudgeMinute.isAcceptableOrUnknown(
+          data['nudge_minute']!,
+          _nudgeMinuteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PromiseRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PromiseRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      why: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}why'],
+      ),
+      startDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_day'],
+      )!,
+      lengthDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}length_days'],
+      ),
+      nudgeMinute: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}nudge_minute'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ended_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $PromiseTableTable createAlias(String alias) {
+    return $PromiseTableTable(attachedDatabase, alias);
+  }
+}
+
+class PromiseRow extends DataClass implements Insertable<PromiseRow> {
+  final String id;
+  final String title;
+
+  /// Optional "because …" the person can add later.
+  final String? why;
+
+  /// Local midnight of day 1.
+  final DateTime startDay;
+
+  /// 7, 21, 30, 66 … or null for an ongoing promise.
+  final int? lengthDays;
+
+  /// Daily nudge, minutes after midnight (e.g. 1260 = 9 pm), or null.
+  final int? nudgeMinute;
+
+  /// 'active', 'done' (ran its full length) or 'released' (ended early).
+  final String status;
+  final DateTime? endedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const PromiseRow({
+    required this.id,
+    required this.title,
+    this.why,
+    required this.startDay,
+    this.lengthDays,
+    this.nudgeMinute,
+    required this.status,
+    this.endedAt,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || why != null) {
+      map['why'] = Variable<String>(why);
+    }
+    map['start_day'] = Variable<DateTime>(startDay);
+    if (!nullToAbsent || lengthDays != null) {
+      map['length_days'] = Variable<int>(lengthDays);
+    }
+    if (!nullToAbsent || nudgeMinute != null) {
+      map['nudge_minute'] = Variable<int>(nudgeMinute);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<DateTime>(endedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  PromiseTableCompanion toCompanion(bool nullToAbsent) {
+    return PromiseTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      why: why == null && nullToAbsent ? const Value.absent() : Value(why),
+      startDay: Value(startDay),
+      lengthDays: lengthDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lengthDays),
+      nudgeMinute: nudgeMinute == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nudgeMinute),
+      status: Value(status),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory PromiseRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PromiseRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      why: serializer.fromJson<String?>(json['why']),
+      startDay: serializer.fromJson<DateTime>(json['startDay']),
+      lengthDays: serializer.fromJson<int?>(json['lengthDays']),
+      nudgeMinute: serializer.fromJson<int?>(json['nudgeMinute']),
+      status: serializer.fromJson<String>(json['status']),
+      endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'why': serializer.toJson<String?>(why),
+      'startDay': serializer.toJson<DateTime>(startDay),
+      'lengthDays': serializer.toJson<int?>(lengthDays),
+      'nudgeMinute': serializer.toJson<int?>(nudgeMinute),
+      'status': serializer.toJson<String>(status),
+      'endedAt': serializer.toJson<DateTime?>(endedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  PromiseRow copyWith({
+    String? id,
+    String? title,
+    Value<String?> why = const Value.absent(),
+    DateTime? startDay,
+    Value<int?> lengthDays = const Value.absent(),
+    Value<int?> nudgeMinute = const Value.absent(),
+    String? status,
+    Value<DateTime?> endedAt = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => PromiseRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    why: why.present ? why.value : this.why,
+    startDay: startDay ?? this.startDay,
+    lengthDays: lengthDays.present ? lengthDays.value : this.lengthDays,
+    nudgeMinute: nudgeMinute.present ? nudgeMinute.value : this.nudgeMinute,
+    status: status ?? this.status,
+    endedAt: endedAt.present ? endedAt.value : this.endedAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  PromiseRow copyWithCompanion(PromiseTableCompanion data) {
+    return PromiseRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      why: data.why.present ? data.why.value : this.why,
+      startDay: data.startDay.present ? data.startDay.value : this.startDay,
+      lengthDays: data.lengthDays.present
+          ? data.lengthDays.value
+          : this.lengthDays,
+      nudgeMinute: data.nudgeMinute.present
+          ? data.nudgeMinute.value
+          : this.nudgeMinute,
+      status: data.status.present ? data.status.value : this.status,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PromiseRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('why: $why, ')
+          ..write('startDay: $startDay, ')
+          ..write('lengthDays: $lengthDays, ')
+          ..write('nudgeMinute: $nudgeMinute, ')
+          ..write('status: $status, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    why,
+    startDay,
+    lengthDays,
+    nudgeMinute,
+    status,
+    endedAt,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PromiseRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.why == this.why &&
+          other.startDay == this.startDay &&
+          other.lengthDays == this.lengthDays &&
+          other.nudgeMinute == this.nudgeMinute &&
+          other.status == this.status &&
+          other.endedAt == this.endedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class PromiseTableCompanion extends UpdateCompanion<PromiseRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String?> why;
+  final Value<DateTime> startDay;
+  final Value<int?> lengthDays;
+  final Value<int?> nudgeMinute;
+  final Value<String> status;
+  final Value<DateTime?> endedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const PromiseTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.why = const Value.absent(),
+    this.startDay = const Value.absent(),
+    this.lengthDays = const Value.absent(),
+    this.nudgeMinute = const Value.absent(),
+    this.status = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PromiseTableCompanion.insert({
+    required String id,
+    required String title,
+    this.why = const Value.absent(),
+    required DateTime startDay,
+    this.lengthDays = const Value.absent(),
+    this.nudgeMinute = const Value.absent(),
+    this.status = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       startDay = Value(startDay),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PromiseRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? why,
+    Expression<DateTime>? startDay,
+    Expression<int>? lengthDays,
+    Expression<int>? nudgeMinute,
+    Expression<String>? status,
+    Expression<DateTime>? endedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (why != null) 'why': why,
+      if (startDay != null) 'start_day': startDay,
+      if (lengthDays != null) 'length_days': lengthDays,
+      if (nudgeMinute != null) 'nudge_minute': nudgeMinute,
+      if (status != null) 'status': status,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PromiseTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String?>? why,
+    Value<DateTime>? startDay,
+    Value<int?>? lengthDays,
+    Value<int?>? nudgeMinute,
+    Value<String>? status,
+    Value<DateTime?>? endedAt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return PromiseTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      why: why ?? this.why,
+      startDay: startDay ?? this.startDay,
+      lengthDays: lengthDays ?? this.lengthDays,
+      nudgeMinute: nudgeMinute ?? this.nudgeMinute,
+      status: status ?? this.status,
+      endedAt: endedAt ?? this.endedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (why.present) {
+      map['why'] = Variable<String>(why.value);
+    }
+    if (startDay.present) {
+      map['start_day'] = Variable<DateTime>(startDay.value);
+    }
+    if (lengthDays.present) {
+      map['length_days'] = Variable<int>(lengthDays.value);
+    }
+    if (nudgeMinute.present) {
+      map['nudge_minute'] = Variable<int>(nudgeMinute.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<DateTime>(endedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PromiseTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('why: $why, ')
+          ..write('startDay: $startDay, ')
+          ..write('lengthDays: $lengthDays, ')
+          ..write('nudgeMinute: $nudgeMinute, ')
+          ..write('status: $status, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PromiseCheckInTableTable extends PromiseCheckInTable
+    with TableInfo<$PromiseCheckInTableTable, PromiseCheckInRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PromiseCheckInTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _promiseIdMeta = const VerificationMeta(
+    'promiseId',
+  );
+  @override
+  late final GeneratedColumn<String> promiseId = GeneratedColumn<String>(
+    'promise_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<DateTime> day = GeneratedColumn<DateTime>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resultMeta = const VerificationMeta('result');
+  @override
+  late final GeneratedColumn<String> result = GeneratedColumn<String>(
+    'result',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    promiseId,
+    day,
+    result,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'promise_check_ins';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PromiseCheckInRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('promise_id')) {
+      context.handle(
+        _promiseIdMeta,
+        promiseId.isAcceptableOrUnknown(data['promise_id']!, _promiseIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_promiseIdMeta);
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('result')) {
+      context.handle(
+        _resultMeta,
+        result.isAcceptableOrUnknown(data['result']!, _resultMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resultMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {promiseId, day},
+  ];
+  @override
+  PromiseCheckInRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PromiseCheckInRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      promiseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}promise_id'],
+      )!,
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}day'],
+      )!,
+      result: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $PromiseCheckInTableTable createAlias(String alias) {
+    return $PromiseCheckInTableTable(attachedDatabase, alias);
+  }
+}
+
+class PromiseCheckInRow extends DataClass
+    implements Insertable<PromiseCheckInRow> {
+  final String id;
+  final String promiseId;
+
+  /// Local midnight of the day answered.
+  final DateTime day;
+
+  /// 'kept' or 'missed'.
+  final String result;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const PromiseCheckInRow({
+    required this.id,
+    required this.promiseId,
+    required this.day,
+    required this.result,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['promise_id'] = Variable<String>(promiseId);
+    map['day'] = Variable<DateTime>(day);
+    map['result'] = Variable<String>(result);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  PromiseCheckInTableCompanion toCompanion(bool nullToAbsent) {
+    return PromiseCheckInTableCompanion(
+      id: Value(id),
+      promiseId: Value(promiseId),
+      day: Value(day),
+      result: Value(result),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory PromiseCheckInRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PromiseCheckInRow(
+      id: serializer.fromJson<String>(json['id']),
+      promiseId: serializer.fromJson<String>(json['promiseId']),
+      day: serializer.fromJson<DateTime>(json['day']),
+      result: serializer.fromJson<String>(json['result']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'promiseId': serializer.toJson<String>(promiseId),
+      'day': serializer.toJson<DateTime>(day),
+      'result': serializer.toJson<String>(result),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  PromiseCheckInRow copyWith({
+    String? id,
+    String? promiseId,
+    DateTime? day,
+    String? result,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => PromiseCheckInRow(
+    id: id ?? this.id,
+    promiseId: promiseId ?? this.promiseId,
+    day: day ?? this.day,
+    result: result ?? this.result,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  PromiseCheckInRow copyWithCompanion(PromiseCheckInTableCompanion data) {
+    return PromiseCheckInRow(
+      id: data.id.present ? data.id.value : this.id,
+      promiseId: data.promiseId.present ? data.promiseId.value : this.promiseId,
+      day: data.day.present ? data.day.value : this.day,
+      result: data.result.present ? data.result.value : this.result,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PromiseCheckInRow(')
+          ..write('id: $id, ')
+          ..write('promiseId: $promiseId, ')
+          ..write('day: $day, ')
+          ..write('result: $result, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, promiseId, day, result, createdAt, updatedAt, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PromiseCheckInRow &&
+          other.id == this.id &&
+          other.promiseId == this.promiseId &&
+          other.day == this.day &&
+          other.result == this.result &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class PromiseCheckInTableCompanion extends UpdateCompanion<PromiseCheckInRow> {
+  final Value<String> id;
+  final Value<String> promiseId;
+  final Value<DateTime> day;
+  final Value<String> result;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<int> rowid;
+  const PromiseCheckInTableCompanion({
+    this.id = const Value.absent(),
+    this.promiseId = const Value.absent(),
+    this.day = const Value.absent(),
+    this.result = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PromiseCheckInTableCompanion.insert({
+    required String id,
+    required String promiseId,
+    required DateTime day,
+    required String result,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       promiseId = Value(promiseId),
+       day = Value(day),
+       result = Value(result),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<PromiseCheckInRow> custom({
+    Expression<String>? id,
+    Expression<String>? promiseId,
+    Expression<DateTime>? day,
+    Expression<String>? result,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (promiseId != null) 'promise_id': promiseId,
+      if (day != null) 'day': day,
+      if (result != null) 'result': result,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PromiseCheckInTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? promiseId,
+    Value<DateTime>? day,
+    Value<String>? result,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return PromiseCheckInTableCompanion(
+      id: id ?? this.id,
+      promiseId: promiseId ?? this.promiseId,
+      day: day ?? this.day,
+      result: result ?? this.result,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (promiseId.present) {
+      map['promise_id'] = Variable<String>(promiseId.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<DateTime>(day.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(result.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PromiseCheckInTableCompanion(')
+          ..write('id: $id, ')
+          ..write('promiseId: $promiseId, ')
+          ..write('day: $day, ')
+          ..write('result: $result, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -26853,6 +27984,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PlanCollectionTableTable(this);
   late final $PlanCollectionItemTableTable planCollectionItemTable =
       $PlanCollectionItemTableTable(this);
+  late final $PromiseTableTable promiseTable = $PromiseTableTable(this);
+  late final $PromiseCheckInTableTable promiseCheckInTable =
+      $PromiseCheckInTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -26944,6 +28078,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     occurrenceAlertLinkTable,
     planCollectionTable,
     planCollectionItemTable,
+    promiseTable,
+    promiseCheckInTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -47947,6 +49083,598 @@ typedef $$PlanCollectionItemTableTableProcessedTableManager =
         bool definitionId,
       })
     >;
+typedef $$PromiseTableTableCreateCompanionBuilder =
+    PromiseTableCompanion Function({
+      required String id,
+      required String title,
+      Value<String?> why,
+      required DateTime startDay,
+      Value<int?> lengthDays,
+      Value<int?> nudgeMinute,
+      Value<String> status,
+      Value<DateTime?> endedAt,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$PromiseTableTableUpdateCompanionBuilder =
+    PromiseTableCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String?> why,
+      Value<DateTime> startDay,
+      Value<int?> lengthDays,
+      Value<int?> nudgeMinute,
+      Value<String> status,
+      Value<DateTime?> endedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$PromiseTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PromiseTableTable> {
+  $$PromiseTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get why => $composableBuilder(
+    column: $table.why,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDay => $composableBuilder(
+    column: $table.startDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lengthDays => $composableBuilder(
+    column: $table.lengthDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nudgeMinute => $composableBuilder(
+    column: $table.nudgeMinute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PromiseTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PromiseTableTable> {
+  $$PromiseTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get why => $composableBuilder(
+    column: $table.why,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDay => $composableBuilder(
+    column: $table.startDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lengthDays => $composableBuilder(
+    column: $table.lengthDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nudgeMinute => $composableBuilder(
+    column: $table.nudgeMinute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PromiseTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PromiseTableTable> {
+  $$PromiseTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get why =>
+      $composableBuilder(column: $table.why, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDay =>
+      $composableBuilder(column: $table.startDay, builder: (column) => column);
+
+  GeneratedColumn<int> get lengthDays => $composableBuilder(
+    column: $table.lengthDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get nudgeMinute => $composableBuilder(
+    column: $table.nudgeMinute,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$PromiseTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PromiseTableTable,
+          PromiseRow,
+          $$PromiseTableTableFilterComposer,
+          $$PromiseTableTableOrderingComposer,
+          $$PromiseTableTableAnnotationComposer,
+          $$PromiseTableTableCreateCompanionBuilder,
+          $$PromiseTableTableUpdateCompanionBuilder,
+          (
+            PromiseRow,
+            BaseReferences<_$AppDatabase, $PromiseTableTable, PromiseRow>,
+          ),
+          PromiseRow,
+          PrefetchHooks Function()
+        > {
+  $$PromiseTableTableTableManager(_$AppDatabase db, $PromiseTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PromiseTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PromiseTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PromiseTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> why = const Value.absent(),
+                Value<DateTime> startDay = const Value.absent(),
+                Value<int?> lengthDays = const Value.absent(),
+                Value<int?> nudgeMinute = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> endedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PromiseTableCompanion(
+                id: id,
+                title: title,
+                why: why,
+                startDay: startDay,
+                lengthDays: lengthDays,
+                nudgeMinute: nudgeMinute,
+                status: status,
+                endedAt: endedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String?> why = const Value.absent(),
+                required DateTime startDay,
+                Value<int?> lengthDays = const Value.absent(),
+                Value<int?> nudgeMinute = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime?> endedAt = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PromiseTableCompanion.insert(
+                id: id,
+                title: title,
+                why: why,
+                startDay: startDay,
+                lengthDays: lengthDays,
+                nudgeMinute: nudgeMinute,
+                status: status,
+                endedAt: endedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PromiseTableTable, PromiseRow>(table),
+                  BaseReferences<_$AppDatabase, $PromiseTableTable, PromiseRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PromiseTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PromiseTableTable,
+      PromiseRow,
+      $$PromiseTableTableFilterComposer,
+      $$PromiseTableTableOrderingComposer,
+      $$PromiseTableTableAnnotationComposer,
+      $$PromiseTableTableCreateCompanionBuilder,
+      $$PromiseTableTableUpdateCompanionBuilder,
+      (
+        PromiseRow,
+        BaseReferences<_$AppDatabase, $PromiseTableTable, PromiseRow>,
+      ),
+      PromiseRow,
+      PrefetchHooks Function()
+    >;
+typedef $$PromiseCheckInTableTableCreateCompanionBuilder =
+    PromiseCheckInTableCompanion Function({
+      required String id,
+      required String promiseId,
+      required DateTime day,
+      required String result,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$PromiseCheckInTableTableUpdateCompanionBuilder =
+    PromiseCheckInTableCompanion Function({
+      Value<String> id,
+      Value<String> promiseId,
+      Value<DateTime> day,
+      Value<String> result,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$PromiseCheckInTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PromiseCheckInTableTable> {
+  $$PromiseCheckInTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promiseId => $composableBuilder(
+    column: $table.promiseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PromiseCheckInTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PromiseCheckInTableTable> {
+  $$PromiseCheckInTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promiseId => $composableBuilder(
+    column: $table.promiseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PromiseCheckInTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PromiseCheckInTableTable> {
+  $$PromiseCheckInTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get promiseId =>
+      $composableBuilder(column: $table.promiseId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get result =>
+      $composableBuilder(column: $table.result, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$PromiseCheckInTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PromiseCheckInTableTable,
+          PromiseCheckInRow,
+          $$PromiseCheckInTableTableFilterComposer,
+          $$PromiseCheckInTableTableOrderingComposer,
+          $$PromiseCheckInTableTableAnnotationComposer,
+          $$PromiseCheckInTableTableCreateCompanionBuilder,
+          $$PromiseCheckInTableTableUpdateCompanionBuilder,
+          (
+            PromiseCheckInRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PromiseCheckInTableTable,
+              PromiseCheckInRow
+            >,
+          ),
+          PromiseCheckInRow,
+          PrefetchHooks Function()
+        > {
+  $$PromiseCheckInTableTableTableManager(
+    _$AppDatabase db,
+    $PromiseCheckInTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PromiseCheckInTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PromiseCheckInTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PromiseCheckInTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> promiseId = const Value.absent(),
+                Value<DateTime> day = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PromiseCheckInTableCompanion(
+                id: id,
+                promiseId: promiseId,
+                day: day,
+                result: result,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String promiseId,
+                required DateTime day,
+                required String result,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PromiseCheckInTableCompanion.insert(
+                id: id,
+                promiseId: promiseId,
+                day: day,
+                result: result,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PromiseCheckInTableTable, PromiseCheckInRow>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $PromiseCheckInTableTable,
+                    PromiseCheckInRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PromiseCheckInTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PromiseCheckInTableTable,
+      PromiseCheckInRow,
+      $$PromiseCheckInTableTableFilterComposer,
+      $$PromiseCheckInTableTableOrderingComposer,
+      $$PromiseCheckInTableTableAnnotationComposer,
+      $$PromiseCheckInTableTableCreateCompanionBuilder,
+      $$PromiseCheckInTableTableUpdateCompanionBuilder,
+      (
+        PromiseCheckInRow,
+        BaseReferences<
+          _$AppDatabase,
+          $PromiseCheckInTableTable,
+          PromiseCheckInRow
+        >,
+      ),
+      PromiseCheckInRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -48082,6 +49810,10 @@ class $AppDatabaseManager {
         _db,
         _db.planCollectionItemTable,
       );
+  $$PromiseTableTableTableManager get promiseTable =>
+      $$PromiseTableTableTableManager(_db, _db.promiseTable);
+  $$PromiseCheckInTableTableTableManager get promiseCheckInTable =>
+      $$PromiseCheckInTableTableTableManager(_db, _db.promiseCheckInTable);
 }
 
 mixin _$UserProfileDaoMixin on DatabaseAccessor<AppDatabase> {

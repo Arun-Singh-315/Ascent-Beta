@@ -20,14 +20,15 @@ abstract final class BrandPalette {
       'reminders' ||
       'plans' => dark ? CalmBluePalette.darkAction : CalmBluePalette.action,
       'thought-wall' ||
-      'mind' ||
-      'promises' => dark ? const Color(0xFF6CCBC3) : const Color(0xFF2F8F8A),
+      'mind' => dark ? const Color(0xFF6CCBC3) : const Color(0xFF2F8F8A),
       'hydration' ||
       'health' => dark ? PillarTints.waterDark : PillarTints.water,
       'medicine' ||
       'walk' ||
       'chai-break' => dark ? const Color(0xFFFF375F) : const Color(0xFFFF2D55),
       'money' => dark ? PillarTints.moneyDark : PillarTints.money,
+      'promises' ||
+      'promise' => dark ? PillarTints.promiseDark : PillarTints.promise,
       'focus' ||
       'learning' ||
       'momentum' ||

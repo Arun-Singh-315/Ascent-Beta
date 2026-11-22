@@ -21,6 +21,8 @@ import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
+import 'core/promises/promise_providers.dart';
+import 'core/promises/promise_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,9 +44,7 @@ Future<void> main() async {
   await touchLastOpened(prefs);
 
   final container = ProviderContainer(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(prefs),
-    ],
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
   );
 
   // Daily automatic backup, after start-up so it never slows the first frame.
@@ -110,7 +110,8 @@ Future<void> main() async {
     }
     if (actionId == 'things_done' && effectivePayload != null) {
       final uri = Uri.tryParse(effectivePayload);
-      final idStr = uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
+      final idStr =
+          uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
       final taskId = int.tryParse(idStr ?? '');
       if (taskId != null) {
         final db = container.read(databaseProvider);
@@ -241,6 +242,15 @@ Future<void> _reconcileStartupAlerts(
     } catch (e) {
       // Pending rows remain durable for retry when alerts become available.
       debugPrint('Alert sync skipped/deferred: $e');
+    }
+    try {
+      // Promise nudges are one-shot; plan the next one for each promise.
+      await PromiseService(
+        db,
+        nudger: const DevicePromiseNudger(),
+      ).syncAllNudges();
+    } catch (e) {
+      debugPrint('Promise nudges deferred: $e');
     }
   } catch (e) {
     debugPrint('Startup maintenance deferred: $e');

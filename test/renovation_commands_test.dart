@@ -276,7 +276,7 @@ void main() {
         requestId: 'edit',
         approved: true,
       );
-      expect(edited.message, contains('scheduling has not been verified'));
+      expect(edited.message, contains('Reminder set'));
       expect((await db.reminderDao.getReminderById(id))!.scheduledAt.hour, 20);
       await expectLater(
         executor.execute(

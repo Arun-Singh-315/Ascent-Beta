@@ -57,7 +57,14 @@ const featureSpecs = <FeatureSpec>[
     icon: Icons.checklist_rounded,
     route: '/things',
     tintId: 'things',
-    routes: {'/things', '/today', '/reminders', '/plans', '/calendar'},
+    routes: {
+      '/things',
+      '/today',
+      '/reminders',
+      '/plans',
+      '/calendar',
+      '/promises',
+    },
   ),
   FeatureSpec(
     id: AscentFeature.mind,

@@ -33,6 +33,7 @@ import 'tables/momentum_tables.dart';
 import 'tables/challenge_tables.dart';
 import 'tables/medicine_tables.dart';
 import 'tables/plan_tables.dart';
+import 'tables/promise_tables.dart';
 import '../services/plan_child_protection.dart';
 import '../services/home_capture_service.dart';
 
@@ -111,6 +112,8 @@ part 'daos/plan_dao.dart';
     OccurrenceAlertLinkTable,
     PlanCollectionTable,
     PlanCollectionItemTable,
+    PromiseTable,
+    PromiseCheckInTable,
   ],
   daos: [
     UserProfileDao,
@@ -155,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -362,6 +365,12 @@ class AppDatabase extends _$AppDatabase {
         // their defaults: allopathy, daily.
         await addColumnSafely(medicineTable, medicineTable.system);
         await addColumnSafely(medicineTable, medicineTable.everyDays);
+      }
+      if (from < 28) {
+        // Promises become their own feature: a promise and its daily
+        // check-ins (kept or missed). New tables only; nothing is moved.
+        await m.createTable(promiseTable);
+        await m.createTable(promiseCheckInTable);
       }
     },
   );
