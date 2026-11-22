@@ -17,7 +17,8 @@ import '../../../core/utils/human_time.dart';
 import '../../../shared/widgets/ascent_button.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'activity_actions.dart';
-import '../../capture/capture_sheet.dart';
+import '../../../shared/widgets/ascent_composer.dart';
+import 'activity_composer.dart';
 import '../../hydration/hydration_pace.dart';
 import '../../thought_wall/board/board_logic.dart' show displayContent;
 import '../../thought_wall/board/thought_lines.dart';
@@ -95,11 +96,13 @@ class HomeThingsCard extends ConsumerWidget {
             child: Text('Show all ${pending.length}'),
           ),
         if (pending.isEmpty)
-          _EmptyRow(
+          _EmptyHint(
             key: const ValueKey('home_things_empty'),
             text: total == 0 ? 'Your day is wide open' : 'All clear',
-            onAdd: () => showCaptureSheet(context),
           ),
+        const SizedBox(height: AppSpace.s8),
+        // Add a thing right here: type it naturally, Enter saves.
+        const ActivityComposer(),
       ],
     );
   }
@@ -164,13 +167,59 @@ class _ThingRow extends ConsumerWidget {
   }
 }
 
-/// Mind: the latest thoughts as quiet bubbles. New thoughts come in
-/// through the Capture card at the top of Home.
-class HomeMindCard extends ConsumerWidget {
+/// Mind: the latest thoughts as quiet bubbles and a field to add one
+/// without leaving Home.
+class HomeMindCard extends ConsumerStatefulWidget {
   const HomeMindCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeMindCard> createState() => _HomeMindCardState();
+}
+
+class _HomeMindCardState extends ConsumerState<HomeMindCard> {
+  final _text = TextEditingController();
+  final _focus = FocusNode();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save(String raw) async {
+    final text = raw.trim();
+    if (text.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    final dao = ref.read(thoughtDaoProvider);
+    try {
+      final id = await dao.insertThought(
+        ThoughtTableCompanion.insert(content: text),
+      );
+      if (!mounted) return;
+      HapticFeedback.lightImpact();
+      _text.clear();
+      AscentSnackBar.show(
+        context,
+        message: 'Thought saved',
+        actionLabel: 'Undo',
+        onAction: () => dao.deleteThought(id),
+      );
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not save. Your text is still here.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (!ref.watch(unlockedFeaturesProvider).contains(AscentFeature.mind)) {
       return const SizedBox.shrink();
     }
@@ -204,11 +253,23 @@ class HomeMindCard extends ConsumerWidget {
             ),
           ),
         if (recent.isEmpty)
-          _EmptyRow(
-            key: const ValueKey('home_mind_empty'),
+          const _EmptyHint(
+            key: ValueKey('home_mind_empty'),
             text: 'Nothing on your mind yet',
-            onAdd: () => showCaptureSheet(context),
           ),
+        const SizedBox(height: AppSpace.s4),
+        AscentComposer(
+          key: const ValueKey('home_mind_composer'),
+          controller: _text,
+          focusNode: _focus,
+          hint: 'What\u2019s on your mind?',
+          maxLines: 4,
+          busy: _saving,
+          fieldKey: const ValueKey('home_mind_field'),
+          sendKey: const ValueKey('home_mind_send'),
+          sendTooltip: 'Save thought',
+          onSend: _save,
+        ),
       ],
     );
   }
@@ -316,9 +377,7 @@ class _ThoughtBubble extends StatelessWidget {
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.caption.copyWith(
-                    color: g.inkMuted,
-                  ),
+                  style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
                 ),
               ],
             ),
@@ -330,26 +389,19 @@ class _ThoughtBubble extends StatelessWidget {
 }
 
 /// One quiet line for an empty card: what's missing and an Add action.
-class _EmptyRow extends StatelessWidget {
-  const _EmptyRow({super.key, required this.text, required this.onAdd});
+/// One quiet line for an empty card, above its input.
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint({super.key, required this.text});
   final String text;
-  final VoidCallback onAdd;
 
   @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            text,
-            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
-          ),
-        ),
-        AscentButton.ghost(label: 'Add', compact: true, onPressed: onAdd),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpace.s4),
+    child: Text(
+      text,
+      style: AscentTextStyles.body.copyWith(color: context.glass.inkSecondary),
+    ),
+  );
 }
 
 /// A hero feed card: 1 px bordered surface, a header that opens the
