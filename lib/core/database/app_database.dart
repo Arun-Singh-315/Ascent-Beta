@@ -34,6 +34,7 @@ import 'tables/challenge_tables.dart';
 import 'tables/medicine_tables.dart';
 import 'tables/plan_tables.dart';
 import 'tables/promise_tables.dart';
+import 'tables/travel_tables.dart';
 import '../services/plan_child_protection.dart';
 import '../services/home_capture_service.dart';
 
@@ -114,6 +115,12 @@ part 'daos/plan_dao.dart';
     PlanCollectionItemTable,
     PromiseTable,
     PromiseCheckInTable,
+    TripTable,
+    TripPersonTable,
+    VisitTable,
+    TripExpenseTable,
+    TripShareTable,
+    VisitPhotoTable,
   ],
   daos: [
     UserProfileDao,
@@ -158,7 +165,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -371,6 +378,15 @@ class AppDatabase extends _$AppDatabase {
         // check-ins (kept or missed). New tables only; nothing is moved.
         await m.createTable(promiseTable);
         await m.createTable(promiseCheckInTable);
+      }
+      if (from < 29) {
+        // Travel: trips, people, visits, shared bills and visit photos.
+        await m.createTable(tripTable);
+        await m.createTable(tripPersonTable);
+        await m.createTable(visitTable);
+        await m.createTable(tripExpenseTable);
+        await m.createTable(tripShareTable);
+        await m.createTable(visitPhotoTable);
       }
     },
   );

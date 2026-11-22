@@ -23,6 +23,9 @@ import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
 import 'core/promises/promise_providers.dart';
 import 'core/promises/promise_service.dart';
+import 'core/travel/here_locator.dart';
+import 'core/travel/travel_providers.dart';
+import 'core/travel/travel_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -251,6 +254,12 @@ Future<void> _reconcileStartupAlerts(
       ).syncAllNudges();
     } catch (e) {
       debugPrint('Promise nudges deferred: $e');
+    }
+    try {
+      // Visits saved offline get their place names once online.
+      await nameOfflineVisits(TravelService(db), const DeviceHereLocator());
+    } catch (e) {
+      debugPrint('Visit naming deferred: $e');
     }
   } catch (e) {
     debugPrint('Startup maintenance deferred: $e');

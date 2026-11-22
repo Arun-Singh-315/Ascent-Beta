@@ -32,6 +32,7 @@ import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
 import '../promises/widgets/home_promise_card.dart';
+import '../travel/home_travel_card.dart';
 
 /// A focused daily workspace with distinct places for action, thought and life.
 class HomeScreen extends StatelessWidget {
@@ -239,6 +240,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               index: 1,
                               child: HomePromiseCard(),
                             ),
+                          // Travel shows only while a trip is on or a recent
+                          // visit is waiting for its bill or photos.
+                          const HomeFeedEntrance(
+                            index: 1,
+                            child: HomeTravelCard(),
+                          ),
                           const HomeFeedEntrance(
                             index: 1,
                             child: HomeThingsCard(),
