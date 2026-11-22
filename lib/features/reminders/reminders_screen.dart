@@ -4,6 +4,7 @@ import '../calendar/calendar_event_sheet.dart';
 import '../calendar/multi_day_todo_sheet.dart';
 import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/scroll_card.dart';
+import '../../shared/widgets/scroll_edge_fade.dart';
 import '../today/add_activity_sheet.dart';
 import 'widgets/in_app_reminder_dialog.dart';
 import 'widgets/ios_reminder_dialog.dart';
@@ -189,7 +190,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     }
   }
 
-  Future<void> _openAddEditReminderSheet([Reminder? existing, DateTime? initialDate]) async {
+  Future<void> _openAddEditReminderSheet([
+    Reminder? existing,
+    DateTime? initialDate,
+  ]) async {
     final result = await showIOSReminderDialog(
       context,
       existing: existing,
@@ -220,13 +224,21 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           'Open Things',
           Icons.dashboard_customize_outlined,
         ),
-        const AscentAction('plans', 'Routines and plans', Icons.event_repeat_rounded),
+        const AscentAction(
+          'plans',
+          'Routines and plans',
+          Icons.event_repeat_rounded,
+        ),
         AscentAction(
           'sync',
           _syncingAlerts ? 'Syncing alerts…' : 'Sync reminder alerts',
           Icons.sync_rounded,
         ),
-        const AscentAction('help', 'How this works', Icons.help_outline_rounded),
+        const AscentAction(
+          'help',
+          'How this works',
+          Icons.help_outline_rounded,
+        ),
       ],
     );
     if (!mounted) return;
@@ -263,9 +275,18 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final day = parsed.day ?? DateTime(now.year, now.month, now.day);
     DateTime at;
     if (parsed.hour != null) {
-      at = DateTime(day.year, day.month, day.day, parsed.hour!, parsed.minute ?? 0);
-    } else if (DateTime(day.year, day.month, day.day)
-        .isAfter(DateTime(now.year, now.month, now.day))) {
+      at = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        parsed.hour!,
+        parsed.minute ?? 0,
+      );
+    } else if (DateTime(
+      day.year,
+      day.month,
+      day.day,
+    ).isAfter(DateTime(now.year, now.month, now.day))) {
       at = DateTime(day.year, day.month, day.day, 9);
     } else {
       final next = now.add(Duration(minutes: 30 - now.minute % 30));
@@ -289,16 +310,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       if (!mounted) return;
       showUndoSnackbar(
         context,
-        message:
-            'Reminder set for ${DateFormat('EEE h:mm a').format(at)}',
+        message: 'Reminder set for ${DateFormat('EEE h:mm a').format(at)}',
         onUndo: () async {
-          await (db.update(db.reminderTable)..where((r) => r.id.equals(id)))
-              .write(
-                const ReminderTableCompanion(
-                  isActive: drift.Value(false),
-                  alertSyncPending: drift.Value(true),
-                ),
-              );
+          await (db.update(
+            db.reminderTable,
+          )..where((r) => r.id.equals(id))).write(
+            const ReminderTableCompanion(
+              isActive: drift.Value(false),
+              alertSyncPending: drift.Value(true),
+            ),
+          );
           await db.reminderDao.deleteReminder(id);
         },
       );
@@ -584,12 +605,140 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 ),
               ),
             ),
-      body: remindersAsync.when(
-        data: (allReminders) {
-          final reminders = allReminders
-              .where((r) => !r.title.startsWith('Did you do it?'))
-              .toList();
-          if (reminders.isEmpty && !_isCalendarView) {
+      // Content fades out above the quick add instead of a hard cut.
+      body: ScrollEdgeFade(
+        child: remindersAsync.when(
+          data: (allReminders) {
+            final reminders = allReminders
+                .where((r) => !r.title.startsWith('Did you do it?'))
+                .toList();
+            if (reminders.isEmpty && !_isCalendarView) {
+              return ListView(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpace.s16,
+                  AppSpace.s16,
+                  AppSpace.s16,
+                  100 + MediaQuery.paddingOf(context).bottom,
+                ),
+                children: [
+                  if (!_notificationsEnabled) _notificationPermissionNotice(),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.s16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: AscentSegmentedControl<int>(
+                            segments: const [
+                              AscentSegment(value: 0, label: 'Active'),
+                              AscentSegment(value: 1, label: 'Completed'),
+                            ],
+                            selected: _selectedTab,
+                            onChanged: (val) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _selectedTab = val);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  EmptyState(
+                    icon: Icons.notifications_none_rounded,
+                    title: 'No Reminders Yet',
+                    subtitle:
+                        'Set reminders for upcoming interviews, study blocks, and application deadlines.',
+                    actionLabel: 'Create Reminder',
+                    onAction: () => _openAddEditReminderSheet(),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                      label: const Text('Open Calendar & Schedule View'),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _isCalendarView = true);
+                      },
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final now = DateTime.now();
+            final startOfToday = DateTime(now.year, now.month, now.day);
+            final endOfToday = DateTime(
+              now.year,
+              now.month,
+              now.day,
+              23,
+              59,
+              59,
+              999,
+            );
+            final startOfTomorrow = startOfToday.add(const Duration(days: 1));
+            final endOfTomorrow = endOfToday.add(const Duration(days: 1));
+            final endOfWeek = startOfToday.add(const Duration(days: 7));
+
+            final overdueReminders =
+                reminders
+                    .where((r) => r.isActive && r.scheduledAt.isBefore(now))
+                    .toList()
+                  ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+            final todayReminders =
+                reminders
+                    .where(
+                      (r) =>
+                          r.isActive &&
+                          !r.scheduledAt.isBefore(now) &&
+                          r.scheduledAt.isAfter(
+                            startOfToday.subtract(const Duration(seconds: 1)),
+                          ) &&
+                          r.scheduledAt.isBefore(startOfTomorrow),
+                    )
+                    .toList()
+                  ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+            final tomorrowReminders =
+                reminders
+                    .where(
+                      (r) =>
+                          r.isActive &&
+                          r.scheduledAt.isAfter(endOfToday) &&
+                          r.scheduledAt.isBefore(
+                            endOfTomorrow.add(const Duration(milliseconds: 1)),
+                          ),
+                    )
+                    .toList()
+                  ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+            final thisWeekReminders =
+                reminders
+                    .where(
+                      (r) =>
+                          r.isActive &&
+                          r.scheduledAt.isAfter(endOfTomorrow) &&
+                          r.scheduledAt.isBefore(endOfWeek),
+                    )
+                    .toList()
+                  ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+            final laterReminders =
+                reminders
+                    .where(
+                      (r) =>
+                          r.isActive &&
+                          r.scheduledAt.isAfter(
+                            endOfWeek.subtract(const Duration(milliseconds: 1)),
+                          ),
+                    )
+                    .toList()
+                  ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+            final pastReminders = reminders.where((r) => !r.isActive).toList()
+              ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 AppSpace.s16,
@@ -599,15 +748,26 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ),
               children: [
                 if (!_notificationsEnabled) _notificationPermissionNotice(),
+
+                // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED + CALENDAR TOGGLE ─────────────
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpace.s16),
                   child: Row(
                     children: [
                       Expanded(
                         child: AscentSegmentedControl<int>(
-                          segments: const [
-                            AscentSegment(value: 0, label: 'Active'),
-                            AscentSegment(value: 1, label: 'Completed'),
+                          segments: [
+                            AscentSegment(
+                              value: 0,
+                              label: _count(
+                                'Active',
+                                reminders.where((r) => r.isActive).length,
+                              ),
+                            ),
+                            AscentSegment(
+                              value: 1,
+                              label: _count('Completed', pastReminders.length),
+                            ),
                           ],
                           selected: _selectedTab,
                           onChanged: (val) {
@@ -616,258 +776,133 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           },
                         ),
                       ),
-
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
-                EmptyState(
-                  icon: Icons.notifications_none_rounded,
-                  title: 'No Reminders Yet',
-                  subtitle:
-                      'Set reminders for upcoming interviews, study blocks, and application deadlines.',
-                  actionLabel: 'Create Reminder',
-                  onAction: () => _openAddEditReminderSheet(),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                    label: const Text('Open Calendar & Schedule View'),
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _isCalendarView = true);
-                    },
+
+                if (_selectedTab == 0 && _isCalendarView) ...[
+                  _buildGoogleCalendarView(
+                    context,
+                    g,
+                    reminders.where((r) => r.isActive).toList(),
+                    allTasks,
+                    allActivities,
                   ),
-                ),
-              ],
-            );
-          }
-
-          final now = DateTime.now();
-          final startOfToday = DateTime(now.year, now.month, now.day);
-          final endOfToday = DateTime(
-            now.year,
-            now.month,
-            now.day,
-            23,
-            59,
-            59,
-            999,
-          );
-          final startOfTomorrow = startOfToday.add(const Duration(days: 1));
-          final endOfTomorrow = endOfToday.add(const Duration(days: 1));
-          final endOfWeek = startOfToday.add(const Duration(days: 7));
-
-          final overdueReminders =
-              reminders
-                  .where((r) => r.isActive && r.scheduledAt.isBefore(now))
-                  .toList()
-                ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-          final todayReminders =
-              reminders
-                  .where(
-                    (r) =>
-                        r.isActive &&
-                        !r.scheduledAt.isBefore(now) &&
-                        r.scheduledAt.isAfter(
-                          startOfToday.subtract(const Duration(seconds: 1)),
-                        ) &&
-                        r.scheduledAt.isBefore(startOfTomorrow),
-                  )
-                  .toList()
-                ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-
-          final tomorrowReminders =
-              reminders
-                  .where(
-                    (r) =>
-                        r.isActive &&
-                        r.scheduledAt.isAfter(endOfToday) &&
-                        r.scheduledAt.isBefore(
-                          endOfTomorrow.add(const Duration(milliseconds: 1)),
-                        ),
-                  )
-                  .toList()
-                ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-
-          final thisWeekReminders =
-              reminders
-                  .where(
-                    (r) =>
-                        r.isActive &&
-                        r.scheduledAt.isAfter(endOfTomorrow) &&
-                        r.scheduledAt.isBefore(endOfWeek),
-                  )
-                  .toList()
-                ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-
-          final laterReminders =
-              reminders
-                  .where(
-                    (r) =>
-                        r.isActive &&
-                        r.scheduledAt.isAfter(
-                          endOfWeek.subtract(const Duration(milliseconds: 1)),
-                        ),
-                  )
-                  .toList()
-                ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-
-          final pastReminders = reminders.where((r) => !r.isActive).toList()
-            ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              AppSpace.s16,
-              AppSpace.s16,
-              AppSpace.s16,
-              100 + MediaQuery.paddingOf(context).bottom,
-            ),
-            children: [
-              if (!_notificationsEnabled) _notificationPermissionNotice(),
-
-              // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED + CALENDAR TOGGLE ─────────────
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpace.s16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AscentSegmentedControl<int>(
-                        segments: [
-                          AscentSegment(
-                            value: 0,
-                            label: _count(
-                              'Active',
-                              reminders.where((r) => r.isActive).length,
-                            ),
-                          ),
-                          AscentSegment(
-                            value: 1,
-                            label: _count('Completed', pastReminders.length),
-                          ),
-                        ],
-                        selected: _selectedTab,
-                        onChanged: (val) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedTab = val);
-                        },
-                      ),
-                    ),
-
-                  ],
-                ),
-              ),
-
-              if (_selectedTab == 0 && _isCalendarView) ...[
-                _buildGoogleCalendarView(
-                  context,
-                  g,
-                  reminders.where((r) => r.isActive).toList(),
-                  allTasks,
-                  allActivities,
-                ),
-              ] else if (_selectedTab == 0) ...[
-                _reminderListCard([
-                  ('Overdue', overdueReminders, g.coral, Icons.schedule_rounded),
-                  ('Today', todayReminders, g.amber, Icons.today_rounded),
-                  (
-                    'Tomorrow',
-                    tomorrowReminders,
-                    g.inkSecondary,
-                    Icons.event_rounded,
-                  ),
-                  (
-                    'This Week',
-                    thisWeekReminders,
-                    g.inkSecondary,
-                    Icons.date_range_rounded,
-                  ),
-                  (
-                    'Upcoming & Later',
-                    laterReminders,
-                    g.inkMuted,
-                    Icons.calendar_month_rounded,
-                  ),
-                ], upcoming: true),
-                if (overdueReminders.isEmpty &&
-                    todayReminders.isEmpty &&
-                    tomorrowReminders.isEmpty &&
-                    thisWeekReminders.isEmpty &&
-                    laterReminders.isEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s36),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(Icons.task_alt_rounded, size: 40, color: g.clay),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No active reminders',
-                            style: AscentTextStyles.headlineMedium
-                                .copyWith(color: g.ink)
-                                .merge(AppTypeRoles.typeRole9),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Completed reminders stay in the Completed tab. Tasks have their own completion status.',
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ] else ...[
-                // Tab 1: Completed Reminders displayed immediately at the top without scrolling
-                if (pastReminders.isNotEmpty) ...[
+                ] else if (_selectedTab == 0) ...[
                   _reminderListCard([
                     (
-                      'Completed & Past',
-                      pastReminders,
-                      g.sage,
-                      Icons.history_rounded,
+                      'Overdue',
+                      overdueReminders,
+                      g.coral,
+                      Icons.schedule_rounded,
                     ),
-                  ], upcoming: false),
-                ] else ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s36),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.history_toggle_off_rounded,
-                            size: 40,
-                            color: g.inkMuted,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No completed reminders yet',
-                            style: AscentTextStyles.headlineMedium
-                                .copyWith(color: g.ink)
-                                .merge(AppTypeRoles.typeRole9),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Reminders you finish will appear here.',
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
+                    ('Today', todayReminders, g.amber, Icons.today_rounded),
+                    (
+                      'Tomorrow',
+                      tomorrowReminders,
+                      g.inkSecondary,
+                      Icons.event_rounded,
+                    ),
+                    (
+                      'This Week',
+                      thisWeekReminders,
+                      g.inkSecondary,
+                      Icons.date_range_rounded,
+                    ),
+                    (
+                      'Upcoming & Later',
+                      laterReminders,
+                      g.inkMuted,
+                      Icons.calendar_month_rounded,
+                    ),
+                  ], upcoming: true),
+                  if (overdueReminders.isEmpty &&
+                      todayReminders.isEmpty &&
+                      tomorrowReminders.isEmpty &&
+                      thisWeekReminders.isEmpty &&
+                      laterReminders.isEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s36,
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.task_alt_rounded,
+                              size: 40,
+                              color: g.clay,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Text(
+                              'No active reminders',
+                              style: AscentTextStyles.headlineMedium
+                                  .copyWith(color: g.ink)
+                                  .merge(AppTypeRoles.typeRole9),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Completed reminders stay in the Completed tab. Tasks have their own completion status.',
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: g.inkMuted,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
+                ] else ...[
+                  // Tab 1: Completed Reminders displayed immediately at the top without scrolling
+                  if (pastReminders.isNotEmpty) ...[
+                    _reminderListCard([
+                      (
+                        'Completed & Past',
+                        pastReminders,
+                        g.sage,
+                        Icons.history_rounded,
+                      ),
+                    ], upcoming: false),
+                  ] else ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s36,
+                      ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.history_toggle_off_rounded,
+                              size: 40,
+                              color: g.inkMuted,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No completed reminders yet',
+                              style: AscentTextStyles.headlineMedium
+                                  .copyWith(color: g.ink)
+                                  .merge(AppTypeRoles.typeRole9),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Reminders you finish will appear here.',
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: g.inkMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ],
-            ],
-          );
-        },
-        loading: () => const ListSkeleton(),
-        error: (err, stack) => Center(
-          child: Text('Error: $err', style: TextStyle(color: g.inkMuted)),
+            );
+          },
+          loading: () => const ListSkeleton(),
+          error: (err, stack) => Center(
+            child: Text('Error: $err', style: TextStyle(color: g.inkMuted)),
+          ),
         ),
       ),
     );
@@ -1448,21 +1483,35 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           )
         else
           _agendaCard([
-            ('Reminders', Icons.notifications_none_rounded, [
-              for (final r in dayReminders)
-                () => _buildCalendarReminderTile(r, g),
-            ]),
-            ('Tasks & to-dos', Icons.check_circle_outline_rounded, [
-              for (final t in dayTasks) () => _buildCalendarTaskTile(t, g),
-            ]),
-            ('Things & activities', Icons.timer_outlined, [
-              for (final a in dayActivities)
-                () => _buildCalendarActivityTile(a, g),
-            ]),
-            ('Thoughts', Icons.lightbulb_outline_rounded, [
-              for (final t in dayThoughts)
-                () => _buildCalendarThoughtTile(t, g),
-            ]),
+            (
+              'Reminders',
+              Icons.notifications_none_rounded,
+              [
+                for (final r in dayReminders)
+                  () => _buildCalendarReminderTile(r, g),
+              ],
+            ),
+            (
+              'Tasks & to-dos',
+              Icons.check_circle_outline_rounded,
+              [for (final t in dayTasks) () => _buildCalendarTaskTile(t, g)],
+            ),
+            (
+              'Things & activities',
+              Icons.timer_outlined,
+              [
+                for (final a in dayActivities)
+                  () => _buildCalendarActivityTile(a, g),
+              ],
+            ),
+            (
+              'Thoughts',
+              Icons.lightbulb_outline_rounded,
+              [
+                for (final t in dayThoughts)
+                  () => _buildCalendarThoughtTile(t, g),
+              ],
+            ),
           ]),
       ],
     );
@@ -1826,9 +1875,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           '${DateFormat.yMMMMEEEEd().format(day)}${festival == null ? '' : ', ${festival.name}'}',
       agendaRow: agendaRow,
       compact: widget.calendarOnly && !agendaRow,
-      onTap: () => _multiSelect
-          ? _toggleMultiDay(day)
-          : _selectCalendarDay(day),
+      onTap: () =>
+          _multiSelect ? _toggleMultiDay(day) : _selectCalendarDay(day),
     );
   }
 

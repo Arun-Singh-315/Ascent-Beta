@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import '../../shared/widgets/scroll_edge_fade.dart';
 import '../../app/theme/home_design.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -893,40 +894,43 @@ class _ThingsHubScreenState extends ConsumerState<ThingsHubScreen> {
       body: Column(
         children: [
           Expanded(
-            child: CustomScrollView(
-              key: ValueKey('things_list_${_segment.name}'),
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: AscentSegmentedControl<ThingsSegment>(
-                      key: const ValueKey('things_segments'),
-                      segments: [
-                        for (final s in ThingsSegment.values)
-                          AscentSegment(
-                            key: ValueKey('things_segment_${s.name}'),
-                            value: s,
-                            label: s.label,
-                          ),
-                      ],
-                      selected: _segment,
-                      onChanged: _selectSegment,
-                    ),
-                  ),
+            // Rows fade out above the quick add instead of a hard cut.
+            child: ScrollEdgeFade(
+              child: CustomScrollView(
+                key: ValueKey('things_list_${_segment.name}'),
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                if (_showSearch)
+                slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                      child: _buildSearch(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: AscentSegmentedControl<ThingsSegment>(
+                        key: const ValueKey('things_segments'),
+                        segments: [
+                          for (final s in ThingsSegment.values)
+                            AscentSegment(
+                              key: ValueKey('things_segment_${s.name}'),
+                              value: s,
+                              label: s.label,
+                            ),
+                        ],
+                        selected: _segment,
+                        onChanged: _selectSegment,
+                      ),
                     ),
                   ),
-                ...content,
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-              ],
+                  if (_showSearch)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                        child: _buildSearch(),
+                      ),
+                    ),
+                  ...content,
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
+                ],
+              ),
             ),
           ),
           // Quick add on every list segment; Routines has its own plan

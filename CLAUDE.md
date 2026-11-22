@@ -223,7 +223,7 @@ All buttons: press scale 0.97 with spring, haptic, disabled = 40% opacity, a loa
 
 ### 6.5 Inputs
 
-`AppTextField` (single-line and multi-line forms) and `AppComposer` (chat/capture). **No fill of their own**: an input takes the colour of the screen or card it sits on, so it reads as part of that surface (docks behind a composer use the page `canvas`, never a white strip). A 1 px `separator` border at rest, a 1 px `action` border on focus, radius 12 (composer 24), a clear button when there is text, and an error line in Footnote `danger` below.
+`AppTextField` (single-line and multi-line forms) and `AppComposer` (chat/capture). Input bars on a page (quick add, capture, chat) use the **same `surface` as the cards** with a 1 px `separator` border, so they read as one more card on the screen. Form fields inside a card or sheet have **no fill of their own** and take that surface's colour. Never put an input on a strip or slab of its own colour: docks are transparent, and a list that scrolls under a bar fades out (`ScrollEdgeFade`) instead of ending in a hard cut. Focus is a 1 px `action` border; radius 12 (composer 24); a clear button when there is text; an error line in Footnote `danger` below.
 
 ### 6.6 Sheets and dialogs
 
