@@ -1,15 +1,20 @@
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
+import '../../app/theme/surface_tokens.dart';
+import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/time_tracking_provider.dart';
+import 'app_chip.dart';
+import 'app_text_field.dart';
+import 'ascent_action_menu.dart';
 import 'ascent_button.dart';
-import 'chat_bubble_card.dart';
+import 'ascent_dialog.dart';
+import 'ascent_sheet.dart';
+import 'ascent_snack_bar.dart';
+import 'glass_chrome.dart';
 
 Color parseHexColor(String? hex, {Color fallback = AppPalette.colorFF5FA070}) {
   if (hex == null || hex.isEmpty) return fallback;
@@ -24,394 +29,257 @@ Color parseHexColor(String? hex, {Color fallback = AppPalette.colorFF5FA070}) {
   return fallback;
 }
 
-/// The persistent live session bar pinned in MainScaffold above the bottom navigation.
-/// Shows live ticking elapsed time, category color, controls, and opens the details sheet.
-class LiveSessionBar extends ConsumerWidget {
-  final bool isHomeTab;
+Color _tintFor(BuildContext context, TimeTrackingState s) =>
+    s.activeCategory != null
+    ? parseHexColor(s.activeCategory!.colorHex)
+    : context.glass.actionInk;
 
-  const LiveSessionBar({super.key, this.isHomeTab = false});
+/// The running timer, pinned above the tab bar on every tab (CLAUDE.md
+/// §5.2, §3.4 glass chrome), so a session never runs out of sight.
+///
+/// Shows the label, the ticking time, Pause/Resume and Done; tapping opens
+/// the session sheet. Swipe sideways to hide it until the next session.
+/// Nothing animates on its own, so it costs nothing while it sits there.
+class LiveSessionBar extends ConsumerWidget {
+  const LiveSessionBar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final trackingState = ref.watch(timeTrackingProvider);
-    final session = trackingState.activeSession;
-
-    if (session == null || trackingState.isFloatingDismissed) {
+    final s = ref.watch(timeTrackingProvider);
+    final session = s.activeSession;
+    if (session == null || s.isFloatingDismissed) {
       return const SizedBox.shrink();
     }
-
-    final isStudy = session.activityType.toLowerCase() == 'study';
-    final categoryColor = trackingState.activeCategory != null
-        ? parseHexColor(trackingState.activeCategory!.colorHex)
-        : (isStudy
-              ? context.accentPrimaryBright
-              : context.accentSecondaryBright);
-
-    final iconData = isStudy
-        ? Icons.school_rounded
-        : Icons.sports_esports_rounded;
+    final g = context.glass;
+    final tint = _tintFor(context, s);
+    final label = session.label.isNotEmpty ? session.label : 'Focus session';
+    final notifier = ref.read(timeTrackingProvider.notifier);
 
     return Dismissible(
-      key: ValueKey('floating_activity_${session.id}'),
+      key: ValueKey('live_session_bar_${session.id}'),
       direction: DismissDirection.horizontal,
       onDismissed: (_) {
         HapticFeedback.lightImpact();
-        ref.read(timeTrackingProvider.notifier).dismissFloatingBar();
+        notifier.dismissFloatingBar();
       },
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: AppSpace.s20),
-        color: AppPalette.transparent,
-      ),
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: AppSpace.s20),
-        color: AppPalette.transparent,
-      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s16,
-          vertical: AppSpace.s8,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s12,
+          0,
+          AppSpace.s12,
+          AppSpace.s8,
         ),
-        child: ChatBubbleCard(
-          tailPosition: BubbleTailPosition.bottomLeft,
-          isPulsing: trackingState.isRunning,
-          borderColor: categoryColor.withValues(alpha: 0.5),
-          accentTint: categoryColor,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s14,
-            vertical: AppSpace.s10,
+        child: GlassChrome(
+          key: const ValueKey('live_session_bar'),
+          borderRadius: BorderRadius.circular(20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s12,
+            AppSpace.s4,
+            AppSpace.s4,
+            AppSpace.s4,
           ),
-          onTap: () =>
-              _showActiveSessionSheet(context, ref, session, trackingState),
-          child: Row(
-            children: [
-              AppTag(
-                padding: const EdgeInsets.all(AppSpace.s8),
-                nightDecoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(iconData, color: categoryColor, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: categoryColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            session.label.isNotEmpty
-                                ? session.label
-                                : 'Active Session',
+          child: Semantics(
+            container: true,
+            label:
+                '$label, ${s.isRunning ? 'running' : 'paused'}, ${s.formattedTime}',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => showActiveSessionSheet(context, ref),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: s.isRunning ? tint : g.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s12),
+                  Expanded(
+                    child: ExcludeSemantics(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AscentTextStyles.labelMedium
-                                .copyWith(color: context.textPrimary)
-                                .merge(AppTypeRoles.typeRole8),
+                            style: AscentTextStyles.listRowTitle.copyWith(
+                              color: g.ink,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          trackingState.formattedTime,
-                          style: AscentTextStyles.monoCode
-                              .copyWith(
-                                color: trackingState.isRunning
-                                    ? context.accentPrimaryBright
-                                    : context.textMuted,
-                              )
-                              .merge(AppTypeRoles.typeRole71),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          trackingState.isRunning ? '• Live Focus' : '• Paused',
-                          style: AscentTextStyles.captionMedium.copyWith(
-                            color: trackingState.isRunning
-                                ? context.accentPrimaryBright
-                                : context.textMuted,
+                          Text(
+                            '${s.formattedTime} · ${s.isRunning ? 'Running' : 'Paused'}',
+                            style:
+                                AscentTextStyles.tabular(
+                                  AscentTextStyles.caption,
+                                ).copyWith(
+                                  color: s.isRunning ? tint : g.inkMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    key: const ValueKey('live_session_toggle'),
+                    tooltip: s.isRunning ? 'Pause' : 'Resume',
+                    icon: Icon(
+                      s.isRunning
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: g.ink,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      s.isRunning
+                          ? notifier.pauseSession()
+                          : notifier.resumeSession();
+                    },
+                  ),
+                  IconButton(
+                    key: const ValueKey('live_session_done'),
+                    tooltip: 'Finish session',
+                    icon: Icon(Icons.check_rounded, color: g.successInk),
+                    onPressed: () => _confirmComplete(context, ref, label),
+                  ),
+                ],
               ),
-              // Play / Pause button
-              IconButton(
-                icon: Icon(
-                  trackingState.isRunning
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: context.textPrimary,
-                  size: 24,
-                ),
-                onPressed: () {
-                  if (trackingState.isRunning) {
-                    ref.read(timeTrackingProvider.notifier).pauseSession();
-                  } else {
-                    ref.read(timeTrackingProvider.notifier).resumeSession();
-                  }
-                },
-              ),
-              // Stop button
-              IconButton(
-                icon: Icon(
-                  Icons.stop_rounded,
-                  color: context.stateDangerBright,
-                  size: 24,
-                ),
-                onPressed: () =>
-                    _confirmCompleteSession(context, ref, session.label),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+}
 
-  static void _confirmCompleteSession(
-    BuildContext context,
-    WidgetRef ref, [
-    String? label,
-  ]) {
-    final taskLabel =
-        label ??
-        ref.read(timeTrackingProvider).activeSession?.label ??
-        'session';
-    showDialog(
+Future<void> _confirmComplete(
+  BuildContext context,
+  WidgetRef ref,
+  String label,
+) async {
+  final ok = await AscentDialog.confirm(
+    context: context,
+    title: 'Finish this session?',
+    content: '“$label” is saved with the time so far.',
+    confirmLabel: 'Finish',
+    icon: Icons.check_circle_outline_rounded,
+  );
+  if (ok != true) return;
+  HapticFeedback.lightImpact();
+  await ref.read(timeTrackingProvider.notifier).completeSession();
+  if (context.mounted) {
+    AscentSnackBar.show(context, message: 'Session saved');
+  }
+}
+
+/// The session sheet: time, Pause/Resume, Finish and Abandon.
+Future<void> showActiveSessionSheet(BuildContext context, WidgetRef ref) =>
+    showAscentSheet<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.bgSurface,
-        shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr20),
-        title: Text(
-          'Complete Session?',
-          style: AppTypography.plusJakartaSans18W700121(
-            color: context.textPrimary,
-          ),
+      builder: (_) => const _ActiveSessionSheet(),
+    );
+
+class _ActiveSessionSheet extends ConsumerWidget {
+  const _ActiveSessionSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(timeTrackingProvider);
+    final session = s.activeSession;
+    final g = context.glass;
+    if (session == null) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpace.s24),
+        child: Text(
+          'No session running.',
+          style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
         ),
-        content: Text(
-          'Finish tracking \'$taskLabel\'?',
-          style: AppTypeRoles.typeRole59.copyWith(color: context.textMuted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
+      );
+    }
+    final notifier = ref.read(timeTrackingProvider.notifier);
+    final label = session.label.isNotEmpty ? session.label : 'Focus session';
+    return Padding(
+      key: const ValueKey('live_session_sheet'),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s8,
+        AppSpace.s20,
+        AppSpace.s24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label, style: AscentTextStyles.homeTitle.copyWith(color: g.ink)),
+          const SizedBox(height: AppSpace.s8),
+          Text(
+            s.formattedTime,
+            style: AscentTextStyles.tabular(
+              AscentTextStyles.displayMedium,
+            ).copyWith(color: s.isRunning ? _tintFor(context, s) : g.inkMuted),
           ),
-          ElevatedButton(
-            style: context.surfaces.buttonStyle(
-              ElevatedButton.styleFrom(
-                backgroundColor: context.accentSecondary,
-                foregroundColor: AppPalette.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppGeometry.roundedr12,
+          Text(
+            s.isRunning ? 'Running' : 'Paused',
+            style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
+          ),
+          const SizedBox(height: AppSpace.s20),
+          Row(
+            children: [
+              Expanded(
+                child: AscentButton.secondary(
+                  label: s.isRunning ? 'Pause' : 'Resume',
+                  icon: s.isRunning
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  onPressed: () => s.isRunning
+                      ? notifier.pauseSession()
+                      : notifier.resumeSession(),
                 ),
               ),
-              filled: true,
-              icon: false,
-            ),
+              const SizedBox(width: AppSpace.s12),
+              Expanded(
+                child: AscentButton.primary(
+                  key: const ValueKey('live_session_sheet_finish'),
+                  label: 'Finish',
+                  icon: Icons.check_rounded,
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await notifier.completeSession();
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s8),
+          AscentButton.destructive(
+            label: 'Abandon session',
+            icon: Icons.delete_outline_rounded,
+            expanded: true,
             onPressed: () async {
-              Navigator.pop(ctx);
-              await ref.read(timeTrackingProvider.notifier).completeSession();
+              final ok = await AscentDialog.confirm(
+                context: context,
+                title: 'Abandon this session?',
+                content: 'The time is not saved. This cannot be undone.',
+                confirmLabel: 'Abandon',
+                isDestructive: true,
+              );
+              if (ok != true || !context.mounted) return;
+              Navigator.pop(context);
+              await notifier.abandonSession();
             },
-            child: const Text('Complete', style: AppTypeRoles.typeRole2),
           ),
         ],
       ),
     );
   }
-
-  static void _showActiveSessionSheet(
-    BuildContext context,
-    WidgetRef ref,
-    TimeSession session,
-    TimeTrackingState trackingState,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      useRootNavigator: true,
-      useSafeArea: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
-      builder: (ctx) {
-        final categoryColor = trackingState.activeCategory != null
-            ? parseHexColor(trackingState.activeCategory!.colorHex)
-            : (session.activityType == 'study'
-                  ? context.accentPrimaryBright
-                  : context.accentSecondaryBright);
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Active Session',
-                      style: AscentTextStyles.displaySmall.copyWith(
-                        color: context.textPrimary,
-                      ),
-                    ),
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s10,
-                        vertical: AppSpace.s4,
-                      ),
-                      nightDecoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.15),
-                        borderRadius: AppGeometry.roundedr12,
-                        border: Border.all(
-                          color: categoryColor.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        session.activityType.toUpperCase(),
-                        style: AscentTextStyles.captionMedium
-                            .copyWith(color: categoryColor)
-                            .merge(AppTypeRoles.typeRole9),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                ChatBubbleCard(
-                  tailPosition: BubbleTailPosition.bottomLeft,
-                  accentTint: categoryColor,
-                  isPulsing: trackingState.isRunning,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session.label,
-                        style: AscentTextStyles.labelLarge.copyWith(
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Elapsed Duration: ${trackingState.formattedTime}',
-                        style: AscentTextStyles.monoCode
-                            .copyWith(color: context.accentPrimaryBright)
-                            .merge(AppTypeRoles.typeRole28),
-                      ),
-                      if (session.linkedTaskId != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          'Linked to Task #${session.linkedTaskId}',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AscentButton.secondary(
-                        label: trackingState.isRunning ? 'Pause' : 'Resume',
-                        icon: trackingState.isRunning
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          if (trackingState.isRunning) {
-                            ref
-                                .read(timeTrackingProvider.notifier)
-                                .pauseSession();
-                          } else {
-                            ref
-                                .read(timeTrackingProvider.notifier)
-                                .resumeSession();
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AscentButton.primary(
-                        label: 'Complete',
-                        icon: Icons.check_circle_rounded,
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          await ref
-                              .read(timeTrackingProvider.notifier)
-                              .completeSession();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Session completed and saved.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                AscentButton.destructive(
-                  label: 'Abandon Session',
-                  icon: Icons.delete_outline_rounded,
-                  expanded: true,
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await ref
-                        .read(timeTrackingProvider.notifier)
-                        .abandonSession();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Session abandoned.'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                AscentButton.outlined(
-                  label: 'Cancel',
-                  compact: true,
-                  expanded: true,
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }
 
-/// Helper to trigger the start session flow with §6 mid-session switch prompt.
+/// Starts a focus session. If one is already running, asks whether to pause
+/// or finish it first.
 Future<void> showStartSessionSheet(
   BuildContext context,
   WidgetRef ref, {
@@ -421,307 +289,142 @@ Future<void> showStartSessionSheet(
 }) async {
   final current = ref.read(timeTrackingProvider);
   if (current.activeSession != null) {
-    // §6 Mid-session switch prompt
-    final action = await showDialog<String>(
+    final action = await showAscentActionMenu<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.bgSurface,
-        title: Text(
-          'Session Already Active',
-          style: AscentTextStyles.displaySmall.copyWith(
-            color: context.textPrimary,
+      title: '“${current.activeSession!.label}” is running',
+      actions: const [
+        AscentAction('pause', 'Pause it and start new', Icons.pause_rounded),
+        AscentAction('stop', 'Finish it and start new', Icons.check_rounded),
+      ],
+    );
+    if (action == null) return;
+    if (action == 'pause') {
+      await ref.read(timeTrackingProvider.notifier).pauseSession();
+    } else {
+      await ref.read(timeTrackingProvider.notifier).completeSession();
+    }
+  }
+  if (!context.mounted) return;
+  await showAscentSheet<void>(
+    context: context,
+    builder: (_) => _StartSessionSheet(
+      defaultLabel: defaultLabel,
+      defaultTaskId: defaultTaskId,
+      defaultActivityType: defaultActivityType,
+    ),
+  );
+}
+
+class _StartSessionSheet extends ConsumerStatefulWidget {
+  const _StartSessionSheet({
+    this.defaultLabel,
+    this.defaultTaskId,
+    required this.defaultActivityType,
+  });
+  final String? defaultLabel;
+  final int? defaultTaskId;
+  final String defaultActivityType;
+
+  @override
+  ConsumerState<_StartSessionSheet> createState() => _StartSessionSheetState();
+}
+
+class _StartSessionSheetState extends ConsumerState<_StartSessionSheet> {
+  late final _label = TextEditingController(text: widget.defaultLabel ?? '');
+  int? _categoryId;
+  bool _starting = false;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  Future<void> _start(List<SessionCategory> categories) async {
+    final label = _label.text.trim();
+    if (label.isEmpty || _starting) return;
+    setState(() => _starting = true);
+    final catId =
+        _categoryId ?? (categories.isNotEmpty ? categories.first.id : 1);
+    final cat = categories.where((c) => c.id == catId).firstOrNull;
+    Navigator.pop(context);
+    await ref
+        .read(timeTrackingProvider.notifier)
+        .startSession(
+          label: label,
+          categoryId: catId,
+          activityType: cat?.name.toLowerCase() ?? widget.defaultActivityType,
+          linkedTaskId: widget.defaultTaskId,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final categories =
+        ref.watch(activeSessionCategoriesProvider).value ?? const [];
+    _categoryId ??= categories
+        .where(
+          (c) =>
+              c.name.toLowerCase() == widget.defaultActivityType.toLowerCase(),
+        )
+        .firstOrNull
+        ?.id;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s8,
+        AppSpace.s20,
+        AppSpace.s24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Start a focus session',
+            style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
           ),
-        ),
-        content: Text(
-          'Active session: "${current.activeSession!.label}" (${current.formattedTime}).\nHow would you like to proceed?',
-          style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-        ),
-        actions: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AscentButton.secondary(
-                label: 'Pause & Switch',
-                expanded: true,
-                onPressed: () => Navigator.pop(ctx, 'pause'),
-              ),
-              const SizedBox(height: 8),
-              AscentButton.primary(
-                label: 'Stop & Switch',
-                expanded: true,
-                onPressed: () => Navigator.pop(ctx, 'stop'),
-              ),
-              const SizedBox(height: 8),
-              AscentButton.outlined(
-                label: 'Cancel',
-                compact: true,
-                expanded: true,
-                onPressed: () => Navigator.pop(ctx, 'cancel'),
-              ),
-            ],
+          const SizedBox(height: AppSpace.s16),
+          AppTextField(
+            key: const ValueKey('start_session_label'),
+            controller: _label,
+            autofocus: true,
+            hintText: 'e.g. Pitch deck, DSA practice',
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _start(categories),
+          ),
+          if (categories.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.s12),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final c in categories)
+                  AppChip(
+                    key: ValueKey('start_session_category_${c.id}'),
+                    label: c.name,
+                    icon: Icons.circle,
+                    iconColor: parseHexColor(c.colorHex),
+                    isSelected: _categoryId == c.id,
+                    onTap: () => setState(() => _categoryId = c.id),
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpace.s20),
+          AscentButton.primary(
+            key: const ValueKey('start_session_go'),
+            label: 'Start',
+            icon: Icons.play_arrow_rounded,
+            expanded: true,
+            loading: _starting,
+            onPressed: _label.text.trim().isEmpty || _starting
+                ? null
+                : () => _start(categories),
           ),
         ],
       ),
     );
-
-    if (action == null || action == 'cancel') {
-      return;
-    }
-
-    if (action == 'pause') {
-      await ref.read(timeTrackingProvider.notifier).pauseSession();
-    } else if (action == 'stop') {
-      await ref.read(timeTrackingProvider.notifier).completeSession();
-    }
   }
-
-  if (!context.mounted) return;
-
-  // Open the new session starter modal
-  _openStarterModal(
-    context,
-    ref,
-    defaultLabel: defaultLabel,
-    defaultTaskId: defaultTaskId,
-    defaultActivityType: defaultActivityType,
-  );
-}
-
-void _openStarterModal(
-  BuildContext context,
-  WidgetRef ref, {
-  String? defaultLabel,
-  int? defaultTaskId,
-  String defaultActivityType = 'study',
-}) {
-  final labelController = TextEditingController(text: defaultLabel ?? '');
-  String activityType = defaultActivityType;
-  int? selectedCategoryId;
-  int? linkedTaskId = defaultTaskId;
-
-  showModalBottomSheet(
-    context: context,
-    useRootNavigator: true,
-    useSafeArea: true,
-    isScrollControlled: true,
-    backgroundColor: context.bgSurface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-    ),
-    builder: (ctx) {
-      final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-      final categoriesAsync = ref.watch(activeSessionCategoriesProvider);
-
-      return StatefulBuilder(
-        builder: (ctx, setModalState) {
-          final categories = categoriesAsync.value ?? [];
-          if (selectedCategoryId == null && categories.isNotEmpty) {
-            final match = categories.firstWhere(
-              (c) => c.name.toLowerCase() == activityType.toLowerCase(),
-              orElse: () => categories.first,
-            );
-            selectedCategoryId = match.id;
-          }
-
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpace.s24,
-              AppSpace.s24,
-              AppSpace.s24,
-              AppSpace.s24 + bottomInset,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Start Focus Session',
-                  style: AscentTextStyles.displaySmall.copyWith(
-                    color: context.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Activity Type selector
-                Row(
-                  children: [
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.school_rounded,
-                                size: 16,
-                                color: activityType == 'study'
-                                    ? AppPalette.white
-                                    : context.textPrimary,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text('Study'),
-                            ],
-                          ),
-                        ),
-                        selected: activityType == 'study',
-                        selectedColor: context.accentPrimary,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setModalState(() {
-                              activityType = 'study';
-                              final studyCat = categories.where(
-                                (c) => c.name.toLowerCase() == 'study',
-                              );
-                              if (studyCat.isNotEmpty) {
-                                selectedCategoryId = studyCat.first.id;
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ChoiceChip(
-                        label: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.sports_esports_rounded,
-                                size: 16,
-                                color: activityType == 'entertainment'
-                                    ? AppPalette.white
-                                    : context.textPrimary,
-                              ),
-                              const SizedBox(width: 6),
-                              const Text('Entertainment'),
-                            ],
-                          ),
-                        ),
-                        selected: activityType == 'entertainment',
-                        selectedColor: context.accentSecondary,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setModalState(() {
-                              activityType = 'entertainment';
-                              final entCat = categories.where(
-                                (c) => c.name.toLowerCase() == 'entertainment',
-                              );
-                              if (entCat.isNotEmpty) {
-                                selectedCategoryId = entCat.first.id;
-                              }
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Label input
-                TextField(
-                  controller: labelController,
-                  autofocus: true,
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: context.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Session Label',
-                    hintText: activityType == 'study'
-                        ? 'e.g. System Design Practice, DSA Problem'
-                        : 'e.g. Quick Gaming Break, Reading',
-                    hintStyle: AscentTextStyles.bodySmall.copyWith(
-                      color: context.textMuted,
-                    ),
-                    filled: true,
-                    fillColor: context.bgBase,
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Category Pills
-                if (categories.isNotEmpty) ...[
-                  Text(
-                    'Category',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: categories.map((cat) {
-                      final isSelected = selectedCategoryId == cat.id;
-                      final cColor = parseHexColor(cat.colorHex);
-                      return ChoiceChip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: cColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(cat.name),
-                          ],
-                        ),
-                        selected: isSelected,
-                        selectedColor: cColor.withValues(alpha: 0.25),
-                        onSelected: (val) {
-                          if (val) {
-                            setModalState(() => selectedCategoryId = cat.id);
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: AscentButton.outlined(
-                        label: 'Cancel',
-                        compact: true,
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AscentButton.primary(
-                        label: 'Start Session',
-                        onPressed: () async {
-                          final label = labelController.text.trim();
-                          if (label.isEmpty) return;
-                          final catId =
-                              selectedCategoryId ??
-                              (categories.isNotEmpty ? categories.first.id : 1);
-                          Navigator.pop(ctx);
-                          await ref
-                              .read(timeTrackingProvider.notifier)
-                              .startSession(
-                                label: label,
-                                categoryId: catId,
-                                activityType: activityType,
-                                linkedTaskId: linkedTaskId,
-                              );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
 }

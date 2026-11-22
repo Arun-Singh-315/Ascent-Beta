@@ -4,6 +4,7 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
+import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/you/you_screen.dart';
 import 'package:ascent/shared/widgets/glass_chrome.dart';
 import 'package:ascent/shared/widgets/main_scaffold.dart';
@@ -15,6 +16,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// No running session: the tab bar is under test, not timers.
+class _IdleTimer extends TimeTrackingNotifier {
+  @override
+  TimeTrackingState build() => const TimeTrackingState();
+}
 
 /// A shell with the real [MainScaffold] and stub tab pages that echo their
 /// location, plus one pushed (non-tab) page and the legacy `/more` redirect.
@@ -100,6 +107,7 @@ Future<(GoRouter, AppDatabase)> _pump(
         sharedPreferencesProvider.overrideWithValue(prefs),
         databaseProvider.overrideWithValue(db),
         userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
+        timeTrackingProvider.overrideWith(_IdleTimer.new),
       ],
       child: MaterialApp.router(
         routerConfig: router,
