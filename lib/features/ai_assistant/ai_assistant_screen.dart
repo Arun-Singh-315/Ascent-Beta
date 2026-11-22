@@ -411,7 +411,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final args = Map<String, dynamic>.from(raw['arguments'] as Map);
     final id = raw['id'] as String;
     _textController.text = id == 'promises.create'
-        ? 'Create a promise to ${args['text']}'
+        ? 'Make a promise to ${args['title'] ?? args['text']}'
         : id == 'tasks.create'
         ? 'Create a todo to ${args['title']}'
         : id.endsWith('.edit')
@@ -426,7 +426,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   String _reviewCopy(RiyaCommand command) {
     final a = command.arguments;
     if (command.id == 'promises.create') {
-      return '“${a['title'] ?? a['text'] ?? 'New Commitment'}”\n(Commitments are coming soon to Ascent)';
+      final days = a['lengthDays'] as int? ?? 21;
+      return 'Make a promise to yourself?\n“${a['title'] ?? a['text']}” for $days days, starting today.';
     }
     if (command.id.endsWith('.delete')) {
       return 'Delete “${a['expectedTitle'] ?? 'the selected item'}”?${command.id.startsWith('tasks.') ? '\nLinked reminders and records will also be removed.' : '\nIts progress history will also be removed.'}';
@@ -1632,18 +1633,21 @@ class _ConversationMessageBubbleState
                 },
               ),
               if (widget.isLatest) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(
-                  Icons.refresh_rounded,
-                  size: 16,
-                  color: c.textTertiary,
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: c.textTertiary,
+                  ),
+                  tooltip: 'Regenerate',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  onPressed: busy ? null : onRecover,
                 ),
-                tooltip: 'Regenerate',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                onPressed: busy ? null : onRecover,
-              ),
               ],
             ],
           ),
@@ -2299,10 +2303,8 @@ class _RiyaRecordCard extends StatelessWidget {
     final (IconData icon, String tintId) = switch (type) {
       'reminders' => (Icons.notifications_active_outlined, 'things'),
       'water' || 'hydration' => (Icons.water_drop_outlined, 'hydration'),
-      'money' || 'transactions' => (
-        Icons.account_balance_wallet_outlined,
-        'money',
-      ),
+      'money' ||
+      'transactions' => (Icons.account_balance_wallet_outlined, 'money'),
       'medicine' => (Icons.medication_outlined, 'medicine'),
       'thoughts' => (Icons.lightbulb_outline_rounded, 'mind'),
       'focus' || 'sessions' => (Icons.timer_outlined, 'focus'),
@@ -2334,10 +2336,7 @@ class _RiyaRecordCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: tint.withValues(alpha: g.isDark ? .12 : .07),
-              border: Border.all(
-                color: tint.withValues(alpha: .6),
-                width: 1.5,
-              ),
+              border: Border.all(color: tint.withValues(alpha: .6), width: 1.5),
             ),
             child: Icon(icon, size: 20, color: tint),
           ),
@@ -2386,4 +2385,3 @@ class _RiyaRecordCard extends StatelessWidget {
     );
   }
 }
-
