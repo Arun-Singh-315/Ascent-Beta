@@ -568,7 +568,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   style: TextStyle(
                     letterSpacing: 4,
                     color: g.ink,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     labelText: 'New 4-digit PIN',
@@ -588,7 +588,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   style: TextStyle(
                     letterSpacing: 4,
                     color: g.ink,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                   decoration: InputDecoration(
                     labelText: 'Confirm PIN',
@@ -1096,7 +1096,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                 '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
                                 style: AscentTextStyles.labelSmall.copyWith(
                                   color: g.clay,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
                               ),

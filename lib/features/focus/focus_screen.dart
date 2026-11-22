@@ -395,7 +395,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                     textStyle: AscentTextStyles.labelMedium
                         .copyWith(
                           color: g.clay,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                 ),
@@ -930,7 +930,7 @@ class _StatsPanel extends ConsumerWidget {
                 "Today's Stats",
                 style: AscentTextStyles.labelMedium.copyWith(
                   color: g.ink,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1005,7 +1005,7 @@ class _StatChip extends StatelessWidget {
               value,
               style: AscentTextStyles.statMedium.copyWith(
                 color: g.ink,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Text(

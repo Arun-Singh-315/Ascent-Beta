@@ -265,7 +265,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
       text,
       style: Theme.of(
         context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     ),
   );
 
@@ -490,7 +490,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         Text(
           medicine.name,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             fontSize: 17,
             color: g.ink,
           ),
@@ -810,7 +810,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
               medicine.name,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: g.ink,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
                 height: 1.3,
               ),
             ),
@@ -1043,7 +1043,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
         'No medicines added',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: context.glass.ink,
         ),
       ),

@@ -73,7 +73,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
           style: AscentTextStyles.homeTitle.copyWith(
             color: g.ink,
             fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
@@ -115,7 +115,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
               foregroundColor: Colors.white,
               onPressed: () => VaultItemEditorSheet.show(context),
               icon: const Icon(Icons.add_rounded, size: 20),
-              label: const Text('Add to Vault', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: const Text('Add to Vault', style: TextStyle(fontWeight: FontWeight.w600)),
             )
           : null,
     );
@@ -165,7 +165,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
                   checkmarkColor: g.clay,
                   labelStyle: TextStyle(
                     color: selectedCategory == null ? g.clay : g.inkMuted,
-                    fontWeight: selectedCategory == null ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selectedCategory == null ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 12.5,
                   ),
                   onSelected: (_) => ref.read(vaultCategoryFilterProvider.notifier).setCategory(null),
@@ -182,7 +182,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
                     checkmarkColor: g.clay,
                     labelStyle: TextStyle(
                       color: selected ? g.clay : g.inkMuted,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                       fontSize: 12.5,
                     ),
                     onSelected: (_) => ref.read(vaultCategoryFilterProvider.notifier).setCategory(cat),
@@ -243,7 +243,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
             const SizedBox(height: AppSpace.s16),
             Text(
               title,
-              style: AscentTextStyles.displaySmall.copyWith(color: g.ink, fontSize: 17, fontWeight: FontWeight.w700),
+              style: AscentTextStyles.displaySmall.copyWith(color: g.ink, fontSize: 17, fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpace.s8),
@@ -261,7 +261,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
               ),
               onPressed: () => VaultItemEditorSheet.show(context, category: category ?? VaultCategory.card),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add First Item', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: const Text('Add First Item', style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
         ),

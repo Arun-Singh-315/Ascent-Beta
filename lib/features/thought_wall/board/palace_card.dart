@@ -274,7 +274,7 @@ class _PalaceCardState extends State<PalaceCard> {
                       overflow: _expanded ? null : TextOverflow.ellipsis,
                       style: body.copyWith(
                         fontWeight: line.isHighlighted
-                            ? FontWeight.w700
+                            ? FontWeight.w600
                             : null,
                         color: style.showsCircle(line) && line.isDone
                             ? g.inkMuted
@@ -341,7 +341,7 @@ class _PalaceCardState extends State<PalaceCard> {
         Text(
           'Archived',
           key: ValueKey('tag_archived_${thought.id}'),
-          style: tagStyle.copyWith(color: g.clay, fontWeight: FontWeight.w700),
+          style: tagStyle.copyWith(color: g.clay, fontWeight: FontWeight.w600),
         ),
       if (progress != null)
         Text(progress, key: ValueKey('tag_progress_${thought.id}'), style: tagStyle),
@@ -611,7 +611,7 @@ class _PalaceCardState extends State<PalaceCard> {
                           'All done. Mark thought done?',
                           style: AscentTextStyles.labelLarge.copyWith(
                             color: g.clay,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
