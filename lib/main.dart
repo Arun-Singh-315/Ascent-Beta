@@ -24,6 +24,11 @@ import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
+import 'core/promises/promise_providers.dart';
+import 'core/promises/promise_service.dart';
+import 'core/travel/here_locator.dart';
+import 'core/travel/travel_providers.dart';
+import 'core/travel/travel_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -130,7 +135,8 @@ Future<void> main() async {
     }
     if (actionId == 'things_done' && effectivePayload != null) {
       final uri = Uri.tryParse(effectivePayload);
-      final idStr = uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
+      final idStr =
+          uri?.queryParameters['focus'] ?? uri?.queryParameters['task'];
       final taskId = int.tryParse(idStr ?? '');
       if (taskId != null) {
         final db = container.read(databaseProvider);
@@ -261,6 +267,21 @@ Future<void> _reconcileStartupAlerts(
     } catch (e) {
       // Pending rows remain durable for retry when alerts become available.
       debugPrint('Alert sync skipped/deferred: $e');
+    }
+    try {
+      // Promise nudges are one-shot; plan the next one for each promise.
+      await PromiseService(
+        db,
+        nudger: const DevicePromiseNudger(),
+      ).syncAllNudges();
+    } catch (e) {
+      debugPrint('Promise nudges deferred: $e');
+    }
+    try {
+      // Visits saved offline get their place names once online.
+      await nameOfflineVisits(TravelService(db), const DeviceHereLocator());
+    } catch (e) {
+      debugPrint('Visit naming deferred: $e');
     }
   } catch (e) {
     debugPrint('Startup maintenance deferred: $e');

@@ -33,6 +33,8 @@ import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
+import '../promises/widgets/home_promise_card.dart';
+import '../travel/home_travel_card.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
 /// A focused daily workspace with distinct places for action, thought and life.
@@ -242,6 +244,22 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           // Hero feed (CLAUDE.md §5.1): Things and Mind are
                           // live summaries with inline input; Life tiles
                           // follow. Each feature appears once.
+                          // Promises sit right under Now: one daily answer
+                          // that keeps your word to yourself in view.
+                          if (layout.visible.contains('promises') &&
+                              ref
+                                  .watch(unlockedFeaturesProvider)
+                                  .contains(AscentFeature.things))
+                            const HomeFeedEntrance(
+                              index: 1,
+                              child: HomePromiseCard(),
+                            ),
+                          // Travel shows only while a trip is on or a recent
+                          // visit is waiting for its bill or photos.
+                          const HomeFeedEntrance(
+                            index: 1,
+                            child: HomeTravelCard(),
+                          ),
                           const HomeFeedEntrance(
                             index: 1,
                             child: HomeThingsCard(),

@@ -1068,7 +1068,6 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     );
   }
 
-
   // ---------------------------------------------------------------------------
   // Walk Status
   // ---------------------------------------------------------------------------
@@ -1086,11 +1085,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   AiResponse _handleWalkQuery(WidgetRef ref) {
     return const AiResponse(
       text:
-          'Outdoor Walk tracking is coming soon to Ascent! In the meantime, you can log walking or workout sessions with the focus timer.',
-      clarifyingOptions: [
-        'Plan my day',
-        'What are my tasks today?',
-      ],
+          "Ascent doesn't count steps or distance. To time a walk, start a "
+          'Focus session and call it Walk. Want a daily walk promise instead?',
+      clarifyingOptions: ['Make a promise to walk 20 minutes', 'Plan my day'],
     );
   }
 
@@ -1118,7 +1115,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   // ---------------------------------------------------------------------------
 
   AiResponse? _tryParseStudyPlan(String prompt, String lower) {
-    final isStudyKeyword = lower.contains('study plan') ||
+    final isStudyKeyword =
+        lower.contains('study plan') ||
         lower.contains('syllabus plan') ||
         lower.contains('prep plan') ||
         lower.contains('revision plan') ||
@@ -1168,7 +1166,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
               '',
             )
             .trim();
-        if (extracted != null && extracted.isNotEmpty && extracted.length < 50) {
+        if (extracted != null &&
+            extracted.isNotEmpty &&
+            extracted.length < 50) {
           subject = extracted;
         }
       }
@@ -1231,7 +1231,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   AiResponse? _tryParseMealPlan(String prompt, String lower) {
-    final isMealKeyword = lower.contains('meal plan') ||
+    final isMealKeyword =
+        lower.contains('meal plan') ||
         lower.contains('diet plan') ||
         lower.contains('nutrition plan') ||
         lower.contains('healthy eating plan') ||
@@ -1403,7 +1404,6 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         "**Activities:** All today's activities are finished. Zero backlog.",
       );
     }
-
 
     buffer.writeln(
       "\n**Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
