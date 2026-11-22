@@ -160,6 +160,63 @@ void main() {
     await unmount(tester);
   });
 
+  testWidgets('Your day lists every dose and recent spending', (
+    tester,
+  ) async {
+    final db = await pump(tester);
+    final today = DateTime.now();
+    final key =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final id = await tester.runAsync(
+      () => db
+          .into(db.medicineTable)
+          .insert(
+            MedicineTableCompanion.insert(
+              name: 'Magnesium',
+              dosage: '200 mg',
+              scheduledTimes: '["22:00"]',
+              startDate: DateTime(2026, 1, 1),
+            ),
+          ),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => db
+          .into(db.medicineLogTable)
+          .insert(
+            MedicineLogTableCompanion.insert(
+              medicineId: id!,
+              dateStr: key,
+              timeSlot: '22:00',
+            ),
+          ),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => db.financeDao.insertTransaction(
+        FinanceTransactionTableCompanion.insert(
+          title: 'Groceries',
+          amount: 840,
+          date: today,
+        ),
+      ),
+    );
+    for (var i = 0; i < 6; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Magnesium · 200 mg'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('home_bento_medicine_take')),
+      findsOneWidget,
+    );
+    expect(find.text('Groceries'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    await unmount(tester);
+  });
+
   testWidgets('locked features have no card', (tester) async {
     await pump(tester, unlocked: ['things']);
     expect(find.byKey(const ValueKey('home_things_card')), findsOneWidget);
