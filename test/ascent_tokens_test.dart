@@ -17,12 +17,10 @@ void main() {
       expect(AscentTheme.dark().extension<AscentTokens>(), AscentTokens.dark);
     });
 
-    test('dark mode is charcoal, not navy', () {
-      expect(AscentTokens.dark.canvas, const Color(0xFF111317));
-      expect(AscentTokens.dark.surface, const Color(0xFF191C22));
-      final c = AscentTokens.dark.canvas;
-      // Neutral: the blue channel may lead red by only a hair.
-      expect((c.b - c.r).abs(), lessThan(0.03));
+    test('dark mode is a deep blue-black, not inverted light', () {
+      expect(AscentTokens.dark.canvas, const Color(0xFF0A0F17));
+      expect(AscentTokens.dark.surface, const Color(0xFF131A24));
+      expect(AscentTokens.dark.canvas.computeLuminance(), lessThan(0.01));
     });
 
     for (final (name, t) in [
@@ -42,6 +40,9 @@ void main() {
             t.care,
             t.water,
             t.money,
+            t.focus,
+            t.success,
+            t.warning,
           ]) {
             expect(_contrast(ink, bg), greaterThanOrEqualTo(4.5));
           }
@@ -120,11 +121,12 @@ void main() {
     );
   });
 
-  test('Day Page type roles use Inter, thoughts use Newsreader', () {
+  test('roles use Inter Tight for headings and numbers, Inter for text', () {
+    expect(AscentTextStyles.greeting.fontFamily, startsWith('InterTight'));
+    expect(AscentTextStyles.value.fontFamily, startsWith('InterTight'));
     expect(AscentTextStyles.row.fontFamily, startsWith('Inter'));
-    expect(AscentTextStyles.row.fontSize, 15);
-    expect(AscentTextStyles.meta.fontSize, 12.5);
-    expect(AscentTextStyles.thought.fontFamily, startsWith('Newsreader'));
-    expect(AscentTextStyles.body.fontFamily, startsWith('Inter'));
+    expect(AscentTextStyles.row.fontSize, 14.5);
+    expect(AscentTextStyles.thought.fontFamily, isNot(startsWith('InterTight')));
+    expect(AscentTextStyles.button.fontSize, 12.5);
   });
 }

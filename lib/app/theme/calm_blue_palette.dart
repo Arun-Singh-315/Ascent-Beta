@@ -1,6 +1,8 @@
 import 'package:flutter/painting.dart';
 
-/// Calm Blue: Ascent's one colour palette (CLAUDE.md §3.1).
+/// Calm Blue, Harbor edition: Ascent's one colour palette (CLAUDE.md §3.1).
+/// A light blue-tinted page with a navy theme; red, green and amber are used
+/// only where they mean something (overdue, done, due soon).
 ///
 /// Soft, low-glare blues and a white/graphite base. Light and dark mirror
 /// each other role for role. Every colour role in the app resolves here;
@@ -15,49 +17,49 @@ import 'package:flutter/painting.dart';
 ///   labels stay readable.
 abstract final class CalmBluePalette {
   // ── Light ──────────────────────────────────────────────────────────────────
-  static const canvas = Color(0xFFF2F5F9);
+  static const canvas = Color(0xFFF1F5FB);
   static const surface = Color(0xFFFFFFFF);
   static const elevated = Color(0xFFFFFFFF);
-  static const recessed = Color(0xFFE8EDF3);
-  static const separator = Color(0xFFD6DEE8);
-  static const label = Color(0xFF1A2332);
-  static const labelSecondary = Color(0xFF4A5668);
-  static const labelTertiary = Color(0xFF5B677C);
-  static const action = Color(0xFF2F68C8);
-  static const actionPressed = Color(0xFF2756A8);
-  static const actionTint = Color(0xFFE6EEF9);
-  static const actionTintInk = Color(0xFF24559F);
+  static const recessed = Color(0xFFE5ECF6);
+  static const separator = Color(0xFFDCE4F0);
+  static const label = Color(0xFF0F1D30);
+  static const labelSecondary = Color(0xFF45556B);
+  static const labelTertiary = Color(0xFF56657C);
+  static const action = Color(0xFF13325C);
+  static const actionPressed = Color(0xFF0E2747);
+  static const actionTint = Color(0xFFDDE6F3);
+  static const actionTintInk = Color(0xFF13325C);
   static const onAction = Color(0xFFFFFFFF);
-  static const success = Color(0xFF2E8B57);
-  static const successTint = Color(0xFFE5F2EA);
-  static const warning = Color(0xFFB7731F);
-  static const warningTint = Color(0xFFF8EEDD);
-  static const danger = Color(0xFFC0392F);
-  static const dangerTint = Color(0xFFF8E6E4);
+  static const success = Color(0xFF24744B);
+  static const successTint = Color(0xFFE2F2E9);
+  static const warning = Color(0xFF94590F);
+  static const warningTint = Color(0xFFF8ECD8);
+  static const danger = Color(0xFFB23A32);
+  static const dangerTint = Color(0xFFFBE8E6);
   static const star = Color(0xFFD9A514);
   static const track = Color(0x1A1A2332);
   static const shadow = Color(0x0D1A2332);
 
   // ── Dark: charcoal, designed on its own (not inverted navy) ──────────────────────────────────────────────────────────
-  static const darkCanvas = Color(0xFF111317);
-  static const darkSurface = Color(0xFF191C22);
-  static const darkElevated = Color(0xFF20242B);
-  static const darkRecessed = Color(0xFF20242B);
-  static const darkSeparator = Color(0xFF2B3038);
-  static const darkLabel = Color(0xFFE8EBEF);
-  static const darkLabelSecondary = Color(0xFFAAB2BD);
-  static const darkLabelTertiary = Color(0xFF8D96A3);
-  static const darkAction = Color(0xFF8EB1EC);
-  static const darkActionFill = Color(0xFF3A66B8);
-  static const darkActionPressed = Color(0xFF30579E);
-  static const darkActionTint = Color(0xFF1B2A42);
-  static const darkActionTintInk = Color(0xFFA9C4F2);
-  static const darkSuccess = Color(0xFF5DBB84);
-  static const darkSuccessTint = Color(0xFF16291F);
-  static const darkWarning = Color(0xFFE0A458);
-  static const darkWarningTint = Color(0xFF2D2416);
-  static const darkDanger = Color(0xFFE8776D);
-  static const darkDangerTint = Color(0xFF34191A);
+  static const darkCanvas = Color(0xFF0A0F17);
+  static const darkSurface = Color(0xFF131A24);
+  static const darkElevated = Color(0xFF1A2230);
+  static const darkRecessed = Color(0xFF1A2230);
+  static const darkSeparator = Color(0xFF232D3C);
+  static const darkLabel = Color(0xFFE6ECF5);
+  static const darkLabelSecondary = Color(0xFFA6B3C6);
+  static const darkLabelTertiary = Color(0xFF8796AD);
+  static const darkAction = Color(0xFFA9C3E8);
+  static const darkActionFill = Color(0xFF3C5F96);
+  static const darkActionPressed = Color(0xFF334F7E);
+  static const darkActionTint = Color(0xFF14213A);
+  static const darkActionTintInk = Color(0xFFA9C3E8);
+  static const darkSuccess = Color(0xFF6CCB98);
+  static const darkSuccessTint = Color(0xFF14291E);
+  static const darkWarning = Color(0xFFE8AE5C);
+  static const darkWarningTint = Color(0xFF2E2314);
+  static const darkDanger = Color(0xFFF08A80);
+  static const darkDangerTint = Color(0xFF3A1D1C);
   static const darkStar = Color(0xFFE6C35A);
   static const darkTrack = Color(0x1FE4E9F0);
   static const darkShadow = Color(0x80000000);
@@ -139,16 +141,16 @@ abstract final class CalmBluePalette {
   static const glassShadow = Color(0x142F4F86);
 
   // ── Pillar kinds (text and icons on canvas or surface, ≥ 4.5:1) ─────────
-  static const think = Color(0xFF1F7A75);
-  static const darkThink = Color(0xFF6CCBC3);
-  static const commit = Color(0xFF9A5B12);
-  static const darkCommit = Color(0xFFE0A458);
-  static const care = Color(0xFFBE2F50);
-  static const darkCare = Color(0xFFF08BA1);
-  static const water = Color(0xFF1F6F99);
-  static const darkWater = Color(0xFF7CC3E6);
-  static const money = Color(0xFF2B7D4E);
-  static const darkMoney = Color(0xFF6CC795);
+  static const think = Color(0xFF3F5BC4);
+  static const darkThink = Color(0xFF94A8F2);
+  static const commit = Color(0xFF94590F);
+  static const darkCommit = Color(0xFFE8AE5C);
+  static const care = Color(0xFFA93A5D);
+  static const darkCare = Color(0xFFEE93B1);
+  static const water = Color(0xFF16698F);
+  static const darkWater = Color(0xFF6EC0EA);
+  static const money = Color(0xFF24744B);
+  static const darkMoney = Color(0xFF6CCB98);
 
   // ── Home colour zones (background tints, mixed into the canvas) ─────────
   static const zoneNow = Color(0xFFD6E6F8);
@@ -165,4 +167,8 @@ abstract final class CalmBluePalette {
   static const darkZoneCare = Color(0xFF2E1A23);
   static const darkZoneMoney = Color(0xFF12291E);
   static const darkZoneMore = Color(0xFF1B1F26);
+
+  // Focus (indigo-blue), used for focus sessions and their charts.
+  static const focus = Color(0xFF3F5BC4);
+  static const darkFocus = Color(0xFF94A8F2);
 }

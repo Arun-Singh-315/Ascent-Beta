@@ -35,6 +35,7 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     required this.care,
     required this.water,
     required this.money,
+    required this.focus,
     required this.zones,
   });
 
@@ -83,6 +84,9 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
   final Color water;
   final Color money;
 
+  /// Focus sessions (indigo-blue).
+  final Color focus;
+
   /// Background tint for each Home zone, before it is mixed into [canvas].
   final Map<HomeZone, Color> zones;
 
@@ -112,6 +116,7 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     care: CalmBluePalette.care,
     water: CalmBluePalette.water,
     money: CalmBluePalette.money,
+    focus: CalmBluePalette.focus,
     zones: {
       HomeZone.now: CalmBluePalette.zoneNow,
       HomeZone.plan: CalmBluePalette.zonePlan,
@@ -145,6 +150,7 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     care: CalmBluePalette.darkCare,
     water: CalmBluePalette.darkWater,
     money: CalmBluePalette.darkMoney,
+    focus: CalmBluePalette.darkFocus,
     zones: {
       HomeZone.now: CalmBluePalette.darkZoneNow,
       HomeZone.plan: CalmBluePalette.darkZonePlan,
@@ -180,6 +186,7 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
         care: care,
         water: water,
         money: money,
+        focus: focus,
         zones: zones,
       );
 
@@ -211,6 +218,7 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
       care: c(care, other.care),
       water: c(water, other.water),
       money: c(money, other.money),
+      focus: c(focus, other.focus),
       zones: {
         for (final z in HomeZone.values) z: c(zones[z]!, other.zones[z]!),
       },
