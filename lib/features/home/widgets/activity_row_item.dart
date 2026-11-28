@@ -1,4 +1,5 @@
 import '../../../shared/widgets/ascent_press_feedback.dart';
+import '../../../app/theme/ascent_tokens.dart';
 import '../../../shared/widgets/ascent_action_menu.dart';
 import 'activity_timer_progress.dart';
 import 'activity_actions.dart';
@@ -377,10 +378,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     : (isPaused
                           ? (context.isDark
                                 ? ((AppPalette.white.withValues(alpha: 0.12)))
-                                : ((const Color(0xFFFAFAFA))))
+                                : context.tokens.surface)
                           : (context.isDark
-                                ? ((g.fill))
-                                : ((const Color(0xFFFAFAFA))))),
+                                ? g.fill
+                                : context.tokens.surface)),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isDone
@@ -577,7 +578,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                   Expanded(
                                     child: Text(
                                       activity.title,
-                                      style: GoogleFonts.plusJakartaSans(
+                                      style: GoogleFonts.inter(
                                         fontSize: 15.5,
                                         fontWeight: FontWeight.w600,
                                         height: 1.30,
@@ -1008,10 +1009,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 scale: visualDone ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.elasticOut,
-                child: const Icon(
+                child: Icon(
                   Icons.check_rounded,
                   size: 13,
-                  color: Colors.white,
+                  color: context.tokens.onAction,
                 ),
               ),
             ),

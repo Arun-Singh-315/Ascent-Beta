@@ -32,21 +32,21 @@ abstract final class CalmBluePalette {
   static const successTint = Color(0xFFE5F2EA);
   static const warning = Color(0xFFB7731F);
   static const warningTint = Color(0xFFF8EEDD);
-  static const danger = Color(0xFFC6443A);
+  static const danger = Color(0xFFC0392F);
   static const dangerTint = Color(0xFFF8E6E4);
   static const star = Color(0xFFD9A514);
   static const track = Color(0x1A1A2332);
   static const shadow = Color(0x0D1A2332);
 
-  // ── Dark (mirror) ──────────────────────────────────────────────────────────
-  static const darkCanvas = Color(0xFF0B0E13);
-  static const darkSurface = Color(0xFF161B23);
-  static const darkElevated = Color(0xFF1E242E);
-  static const darkRecessed = Color(0xFF1E242E);
-  static const darkSeparator = Color(0xFF2B323D);
-  static const darkLabel = Color(0xFFE4E9F0);
-  static const darkLabelSecondary = Color(0xFFA9B4C2);
-  static const darkLabelTertiary = Color(0xFF8995A6);
+  // ── Dark: charcoal, designed on its own (not inverted navy) ──────────────────────────────────────────────────────────
+  static const darkCanvas = Color(0xFF111317);
+  static const darkSurface = Color(0xFF191C22);
+  static const darkElevated = Color(0xFF20242B);
+  static const darkRecessed = Color(0xFF20242B);
+  static const darkSeparator = Color(0xFF2B3038);
+  static const darkLabel = Color(0xFFE8EBEF);
+  static const darkLabelSecondary = Color(0xFFAAB2BD);
+  static const darkLabelTertiary = Color(0xFF8D96A3);
   static const darkAction = Color(0xFF8EB1EC);
   static const darkActionFill = Color(0xFF3A66B8);
   static const darkActionPressed = Color(0xFF30579E);
@@ -88,9 +88,9 @@ abstract final class CalmBluePalette {
     Color(0xFFF7F9FD),
   ];
   static const backdropDark = [
-    Color(0xFF0E1A33),
-    Color(0xFF0C1425),
-    Color(0xFF0A0E16),
+    Color(0xFF161B23),
+    Color(0xFF13161B),
+    Color(0xFF111317),
   ];
   static const cloudBlue = Color(0xFF8DB7F5);
   static const cloudLilac = Color(0xFFC7B8F2);
@@ -137,4 +137,32 @@ abstract final class CalmBluePalette {
   static const glassRimLight = Color(0xCCFFFFFF);
   static const glassRimDark = Color(0x1FFFFFFF);
   static const glassShadow = Color(0x142F4F86);
+
+  // ── Pillar kinds (text and icons on canvas or surface, ≥ 4.5:1) ─────────
+  static const think = Color(0xFF1F7A75);
+  static const darkThink = Color(0xFF6CCBC3);
+  static const commit = Color(0xFF9A5B12);
+  static const darkCommit = Color(0xFFE0A458);
+  static const care = Color(0xFFBE2F50);
+  static const darkCare = Color(0xFFF08BA1);
+  static const water = Color(0xFF1F6F99);
+  static const darkWater = Color(0xFF7CC3E6);
+  static const money = Color(0xFF2B7D4E);
+  static const darkMoney = Color(0xFF6CC795);
+
+  // ── Home colour zones (background tints, mixed into the canvas) ─────────
+  static const zoneNow = Color(0xFFD6E6F8);
+  static const zonePlan = Color(0xFFDCE8FA);
+  static const zoneKeep = Color(0xFFFBE4D2);
+  static const zoneMind = Color(0xFFD5EEEA);
+  static const zoneCare = Color(0xFFF8DBE4);
+  static const zoneMoney = Color(0xFFD6EEDF);
+  static const zoneMore = Color(0xFFE3E7EE);
+  static const darkZoneNow = Color(0xFF18273D);
+  static const darkZonePlan = Color(0xFF15233A);
+  static const darkZoneKeep = Color(0xFF2C2118);
+  static const darkZoneMind = Color(0xFF10292A);
+  static const darkZoneCare = Color(0xFF2E1A23);
+  static const darkZoneMoney = Color(0xFF12291E);
+  static const darkZoneMore = Color(0xFF1B1F26);
 }

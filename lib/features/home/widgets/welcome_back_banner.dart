@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../../app/theme/calm_blue_palette.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
@@ -98,8 +99,8 @@ class _WelcomeBackBannerState extends State<WelcomeBackBanner>
               boxShadow: [
                 BoxShadow(
                   color: isDark
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : Colors.black.withValues(alpha: 0.1),
+                      ? CalmBluePalette.darkShadow
+                      : CalmBluePalette.shadow,
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),

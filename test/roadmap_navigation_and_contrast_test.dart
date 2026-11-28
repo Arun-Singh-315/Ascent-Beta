@@ -5,7 +5,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
-import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
 import 'package:drift/drift.dart' as drift;
@@ -48,31 +47,6 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
     }
     await t.pumpAndSettle();
-  }
-
-  Future<void> mount(WidgetTester t, Widget child, {bool large = false}) async {
-    if (large) {
-      t.view.physicalSize = const Size(320, 844);
-      t.view.devicePixelRatio = 1;
-      addTearDown(t.view.resetPhysicalSize);
-      addTearDown(t.view.resetDevicePixelRatio);
-    }
-    await t.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          theme: AscentTheme.dark(),
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(large ? 2 : 1)),
-            child: child!,
-          ),
-          home: child,
-        ),
-      ),
-    );
-    await settle(t);
   }
 
   test(
@@ -188,37 +162,4 @@ void main() {
     });
   }
 
-  testWidgets('Home reminder actions fit 320px at 2x and meet 48dp targets', (
-    t,
-  ) async {
-    final id = await db.reminderDao.insertReminder(
-      ReminderTableCompanion.insert(
-        title: 'A long reminder with inline actions',
-        scheduledAt: DateTime.now(),
-      ),
-    );
-    final row = (await db.reminderDao.getReminderById(id))!;
-    await mount(
-      t,
-      Scaffold(
-        body: SingleChildScrollView(
-          child: HomeDismissibleRemindersSection(
-            reminders: [row],
-            onDismissReminder: (_) async {},
-            onCompleteReminder: (_) async {},
-            onSnoozeReminder: (_) async {},
-          ),
-        ),
-      ),
-      large: true,
-    );
-    for (final label in ['Mark done', 'Delete', 'Snooze 10 min']) {
-      final size = t.getSize(find.byTooltip(label));
-      expect(size.width, greaterThanOrEqualTo(48));
-      expect(size.height, greaterThanOrEqualTo(48));
-    }
-    expect(t.takeException(), isNull);
-    await t.pumpWidget(const SizedBox());
-    await t.pump(const Duration(seconds: 2));
-  });
 }

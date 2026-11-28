@@ -11,7 +11,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/local_day_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_calendar.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -70,7 +69,7 @@ void main() {
     GoRouter? router,
   }) {
     final base = dark ? AscentTheme.dark() : AscentTheme.light();
-    final theme = neutralHome ? HomeTheme.from(base) : base;
+    final theme = neutralHome ? base : base;
     Widget builder(BuildContext context, Widget? child) => MediaQuery(
       data: MediaQuery.of(
         context,

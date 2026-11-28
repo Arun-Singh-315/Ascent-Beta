@@ -15,7 +15,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -129,84 +128,5 @@ void main() {
       },
     );
 
-    testWidgets(
-      '3. HomeDismissibleRemindersSection supports swipe to complete and delete',
-      (tester) async {
-        bool completed = false;
-        bool dismissed = false;
-
-        final reminder1 = Reminder(
-          id: 42,
-          title: 'Take vitamins',
-          scheduledAt: DateTime.now().add(const Duration(hours: 2)),
-          alarmEnabled: false,
-          isActive: true,
-          alertSyncPending: false,
-          createdAt: DateTime.now(),
-        );
-
-        final reminder2 = Reminder(
-          id: 43,
-          title: 'Drink water',
-          scheduledAt: DateTime.now().add(const Duration(hours: 3)),
-          alarmEnabled: false,
-          isActive: true,
-          alertSyncPending: false,
-          createdAt: DateTime.now(),
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: HomeDismissibleRemindersSection(
-                reminders: [reminder1],
-                onCompleteReminder: (r) async {
-                  completed = true;
-                },
-                onDismissReminder: (r) async {
-                  dismissed = true;
-                },
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Take vitamins'), findsOneWidget);
-
-        // Swipe right on first reminder to complete
-        await tester.drag(find.text('Take vitamins'), const Offset(500, 0));
-        await tester.pumpAndSettle();
-        expect(completed, isTrue);
-
-        // Pump second reminder to test swipe left delete
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: HomeDismissibleRemindersSection(
-                reminders: [reminder2],
-                onCompleteReminder: (r) async {},
-                onDismissReminder: (r) async {
-                  dismissed = true;
-                },
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Drink water'), findsOneWidget);
-
-        // Swipe left on second reminder to delete
-        await tester.drag(find.text('Drink water'), const Offset(-500, 0));
-        await tester.pumpAndSettle();
-        expect(dismissed, isTrue);
-
-        await tester.pumpWidget(const SizedBox.shrink());
-        await tester.pump();
-      },
-    );
   });
 }

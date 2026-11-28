@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../../app/theme/calm_blue_palette.dart';
+import '../../../app/theme/ascent_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'home_header_scene.dart';
@@ -16,7 +18,6 @@ import '../../../core/streak/study_streak_provider.dart';
 import '../../../app/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_tokens.dart';
-import 'home_assistant_hero_card.dart';
 import 'home_day_design.dart';
 import 'home_weather.dart';
 import 'package:ascent/shared/widgets/ascent_dialog.dart';
@@ -27,11 +28,9 @@ class HomeHeader extends ConsumerStatefulWidget {
     super.key,
     required this.profile,
     this.now,
-    this.includeAssistant = true,
   });
   final UserProfile? profile;
   final DateTime? now;
-  final bool includeAssistant;
 
   @override
   ConsumerState<HomeHeader> createState() => _HomeHeaderState();
@@ -225,10 +224,10 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     }
 
     final pillBg = dark
-        ? const Color(0xFF141824).withValues(alpha: 0.75)
+        ? context.tokens.surface.withValues(alpha: 0.75)
         : c.surfaceAlt.withValues(alpha: 0.65);
     final pillBorder = Border.all(
-      color: dark ? const Color(0xFF263044) : c.border.withValues(alpha: 0.85),
+      color: dark ? context.tokens.separator : c.border.withValues(alpha: 0.85),
       width: 1,
     );
 
@@ -427,7 +426,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         ? null
         : const CosmicProfileService().getZodiac(dob);
     final todayFestival = ref.watch(todayFestivalProvider);
-    final assistantName = ref.watch(assistantNameProvider);
 
     final weatherState = ref.watch(homeWeatherProvider);
     final current = weatherState.value?['current'] as Map<String, dynamic>?;
@@ -461,11 +459,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
         borderRadius: const BorderRadius.vertical(
           bottom: Radius.circular(AppRadius.header),
         ),
-        border: AppBorder.bottom(dark ? const Color(0xFF1E2536) : c.border),
+        border: AppBorder.bottom(dark ? context.tokens.separator : c.border),
         boxShadow: dark
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: CalmBluePalette.darkShadow,
                   blurRadius: 18,
                   offset: const Offset(0, 4),
                 ),
@@ -664,11 +662,11 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                         ),
                         decoration: BoxDecoration(
                           color: dark
-                              ? const Color(0xFF161F30).withValues(alpha: 0.75)
+                              ? context.tokens.surface.withValues(alpha: 0.75)
                               : c.surfaceAlt,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: dark ? const Color(0xFF253755) : c.border,
+                            color: dark ? context.tokens.separator : c.border,
                             width: 0.8,
                           ),
                         ),
@@ -678,7 +676,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                             Icon(
                               periodIcon,
                               size: 12,
-                              color: dark ? const Color(0xFF7DD3FC) : c.accent,
+                              color: dark ? context.tokens.action : c.accent,
                             ),
                             const SizedBox(width: 4),
                             Text(
@@ -687,7 +685,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                                 color: dark
-                                    ? const Color(0xFFBAE6FD)
+                                    ? context.tokens.labelSecondary
                                     : c.textSecondary,
                                 letterSpacing: -0.1,
                               ),
@@ -765,12 +763,6 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                         ],
                       ),
                     ),
-                  ],
-
-                  // Optional embedded AI Gateway (spacious header keeps it outside by default)
-                  if (widget.includeAssistant) ...[
-                    const SizedBox(height: 12),
-                    HomeAssistantHeroCard(assistantName: assistantName),
                   ],
 
                   // Row 6: Quote / Day Cue
@@ -856,7 +848,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
 
   void _paintRain(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = (dark ? const Color(0xFF5B8AC4) : const Color(0xFF285A94))
+      ..color = (dark ? CalmBluePalette.darkAction : CalmBluePalette.action)
           .withValues(alpha: dark ? 0.22 : 0.16)
       ..strokeWidth = 1.0
       ..strokeCap = StrokeCap.round;
@@ -878,7 +870,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
 
   void _paintSnow(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: dark ? 0.55 : 0.40)
+      ..color = CalmBluePalette.surface.withValues(alpha: dark ? 0.55 : 0.40)
       ..style = PaintingStyle.fill;
 
     const flakeCount = 20;
@@ -905,10 +897,10 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     final celestialPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          (dark ? const Color(0xFF1E3A8A) : const Color(0xFF3B82F6)).withValues(
+          (dark ? CalmBluePalette.darkActionFill : CalmBluePalette.action).withValues(
             alpha: dark ? (0.24 + 0.06 * breath) : 0.12,
           ),
-          (dark ? const Color(0xFF312E81) : const Color(0xFF6366F1)).withValues(
+          (dark ? CalmBluePalette.darkSkyNight : CalmBluePalette.skyNight).withValues(
             alpha: dark ? 0.12 : 0.06,
           ),
           Colors.transparent,
@@ -923,7 +915,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
     final twilightPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          (dark ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0)).withValues(
+          (dark ? CalmBluePalette.darkCanvas : CalmBluePalette.recessed).withValues(
             alpha: dark ? 0.30 : 0.12,
           ),
           Colors.transparent,
@@ -957,9 +949,9 @@ class _AtmosphereCanvasPainter extends CustomPainter {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              (dark ? const Color(0xFF38BDF8) : const Color(0xFF60A5FA))
+              (dark ? CalmBluePalette.darkWater : CalmBluePalette.water)
                   .withValues(alpha: dark ? 0.08 : 0.04),
-              (dark ? const Color(0xFF818CF8) : const Color(0xFFA5B4FC))
+              (dark ? CalmBluePalette.darkAction : CalmBluePalette.actionTint)
                   .withValues(alpha: dark ? 0.04 : 0.02),
               Colors.transparent,
             ],
@@ -980,7 +972,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              (dark ? const Color(0xFFFBBF24) : const Color(0xFFF59E0B))
+              (dark ? CalmBluePalette.darkWarning : CalmBluePalette.warning)
                   .withValues(alpha: dark ? 0.12 : 0.10),
               Colors.transparent,
             ],
@@ -996,7 +988,7 @@ class _AtmosphereCanvasPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              (dark ? const Color(0xFFEA580C) : const Color(0xFFF97316))
+              (dark ? CalmBluePalette.darkCommit : CalmBluePalette.commit)
                   .withValues(alpha: dark ? 0.15 : 0.08),
               Colors.transparent,
             ],

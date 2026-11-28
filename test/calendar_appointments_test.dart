@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/features/calendar/calendar_event_sheet.dart';
 import 'package:ascent/features/home/widgets/home_weather.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,7 +80,7 @@ void main() {
         ProviderScope(
           overrides: [databaseProvider.overrideWithValue(db)],
           child: MaterialApp(
-            theme: HomeTheme.from(AscentTheme.light()),
+            theme: AscentTheme.light(),
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(
                 context,
@@ -129,7 +128,7 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          theme: HomeTheme.from(AscentTheme.light()),
+          theme: AscentTheme.light(),
           home: const Scaffold(body: WeatherForecastSheet()),
         ),
       ),

@@ -1,12 +1,9 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/shared/widgets/ascent_dialog.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -38,31 +35,6 @@ void main() {
   });
 
   group('Dark Night Mode Glass Theme & Exception Handling Tests', () {
-    test(
-      'Requirement 1: HomeTheme.from configures dark glass tokens and blur: 0 for performance',
-      () {
-        final parentDark = AscentTheme.dark();
-        final homeDark = HomeTheme.from(parentDark);
-
-        expect(homeDark.brightness, equals(Brightness.dark));
-
-        final glass = homeDark.extension<AscentGlass>();
-        expect(glass, isNotNull);
-        // Dark glass fill should have proper translucent opacity (> 0.06)
-        expect(glass!.fill.a, greaterThan(0.06));
-        // Edge should be crisp and defined (> 0.12)
-        expect(glass.edge.a, greaterThan(0.12));
-
-        final surfaces = homeDark.extension<AppSurfaces>();
-        expect(surfaces, isNotNull);
-        // Rule 2: Home screen blur must be 0 to guarantee <100ms render
-        expect(surfaces!.blur, equals(0.0));
-        // Card fill and border in dark surfaces should match glass tokens
-        expect(surfaces.cardFill, equals(glass.fill));
-        expect(surfaces.cardBorderColor, equals(glass.edge));
-      },
-    );
-
 
 
     testWidgets(
@@ -80,7 +52,7 @@ void main() {
             child: MaterialApp(
               theme: AscentTheme.dark(),
               home: Theme(
-                data: HomeTheme.from(AscentTheme.dark()),
+                data: AscentTheme.dark(),
                 child: const Scaffold(body: ActivityComposer()),
               ),
             ),

@@ -2,7 +2,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/day_glass_material.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,7 +17,6 @@ void main() {
     expect(material.bottomOpacity, 1);
     expect(material.blur, 0);
     expect(theme.extension<AppSurfaces>()!.cardFill.a, 1);
-    expect(HomeTheme.from(theme), same(theme));
     expect(AscentTheme.assistant(theme), same(theme));
     for (final ink in [glass.ink, glass.inkSecondary, glass.inkMuted]) {
       final contrast =

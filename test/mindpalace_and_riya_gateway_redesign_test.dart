@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
@@ -45,35 +44,12 @@ void main() {
 
   group('Ask Riya Gateway & Mindspace Alignment Tests', () {
     testWidgets(
-      'HomeAssistantHeroCard renders minimal card without AI badge or glow',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(const Scaffold(body: HomeAssistantHeroCard())),
-        );
-        await tester.pump();
-
-        expect(
-          find.byKey(const ValueKey('home_assistant_button')),
-          findsOneWidget,
-        );
-        expect(find.text('Ask Riya'), findsOneWidget);
-        expect(find.text('Plan your day or ask anything'), findsOneWidget);
-        expect(find.text('AI'), findsNothing);
-        expect(find.text('Chat'), findsOneWidget);
-        expect(find.byTooltip('Ask Riya'), findsOneWidget);
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
-
-    testWidgets(
-      'HomeHeader remains spacious without assistant hero when includeAssistant is false',
+      'HomeHeader remains spacious without an assistant hero',
       (tester) async {
         await tester.pumpWidget(
           buildApp(
             const Scaffold(
-              body: HomeHeader(profile: null, includeAssistant: false),
+              body: HomeHeader(profile: null),
             ),
           ),
         );

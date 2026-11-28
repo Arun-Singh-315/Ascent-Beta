@@ -3,7 +3,6 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/glass_theme.dart';
-import 'widgets/home_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -17,10 +16,7 @@ Future<void> showHomeCustomization(BuildContext context) =>
       framed: false,
       isDismissible: false,
       enableDrag: false,
-      builder: (_) => Theme(
-        data: HomeTheme.from(Theme.of(context)),
-        child: const HomeCustomizationSheet(),
-      ),
+      builder: (_) => const HomeCustomizationSheet(),
     );
 
 class HomeCustomizationSheet extends ConsumerStatefulWidget {

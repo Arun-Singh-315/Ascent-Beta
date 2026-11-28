@@ -134,7 +134,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: g.ink,
@@ -145,7 +145,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                     const SizedBox(height: 2),
                     Text(
                       '$subject • $durationDays Days • $dailyMinutes mins/day',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: g.inkSecondary,
@@ -177,7 +177,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                       const SizedBox(width: 4),
                       Text(
                         'Active',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                           color: g.sage,
@@ -220,7 +220,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                       children: [
                         Text(
                           item['title']?.toString() ?? '',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: g.ink,
@@ -231,7 +231,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                           const SizedBox(height: 1),
                           Text(
                             item['notes'].toString(),
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 10.5,
                               color: g.inkSecondary,
                             ),
@@ -267,7 +267,7 @@ class _RiyaStudyPlanCardState extends ConsumerState<RiyaStudyPlanCard> {
                 _isExpanded
                     ? 'Show less'
                     : 'View all ${items.length} milestones',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.inter(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: accent,
@@ -431,7 +431,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: g.ink,
@@ -442,7 +442,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                     const SizedBox(height: 2),
                     Text(
                       '$dietType • ${items.length} Meals • ${targetWater}mL Water',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                         color: g.inkSecondary,
@@ -474,7 +474,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                       const SizedBox(width: 4),
                       Text(
                         'Active',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: GoogleFonts.inter(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                           color: g.sage,
@@ -527,7 +527,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                       children: [
                         Text(
                           item['title']?.toString() ?? '',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: g.ink,
@@ -538,7 +538,7 @@ class _RiyaMealPlanCardState extends ConsumerState<RiyaMealPlanCard> {
                           const SizedBox(height: 1),
                           Text(
                             item['notes'].toString(),
-                            style: GoogleFonts.plusJakartaSans(
+                            style: GoogleFonts.inter(
                               fontSize: 10.5,
                               color: g.inkSecondary,
                             ),

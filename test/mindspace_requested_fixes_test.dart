@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/shared/utils/action_text.dart';
 import 'package:ascent/shared/widgets/note_list_button.dart';
 import 'package:drift/drift.dart' as d;
@@ -128,34 +127,4 @@ void main() {
     },
   );
 
-  testWidgets('Reminders heading disappears together with the empty preview', (
-    tester,
-  ) async {
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    addTearDown(db.close);
-    try {
-      final id = await db.reminderDao.insertReminder(
-        ReminderTableCompanion.insert(
-          title: 'Call',
-          scheduledAt: DateTime.now().add(const Duration(hours: 1)),
-        ),
-      );
-      final reminder = (await db.reminderDao.getReminderById(id))!;
-      Widget view(List<Reminder> reminders) => MaterialApp(
-        home: Scaffold(
-          body: HomeDismissibleRemindersSection(
-            reminders: reminders,
-            onDismissReminder: (_) async {},
-          ),
-        ),
-      );
-      await tester.pumpWidget(view([reminder]));
-      expect(find.text('Reminders'), findsOneWidget);
-      await tester.pumpWidget(view([]));
-      expect(find.text('Reminders'), findsNothing);
-      expect(find.byType(Dismissible), findsNothing);
-    } finally {
-      await tester.pumpWidget(const SizedBox());
-    }
-  });
 }

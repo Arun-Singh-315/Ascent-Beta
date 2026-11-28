@@ -7,11 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 
-import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 
 void main() {
@@ -178,135 +176,6 @@ void main() {
   group('Study Streak Meter UI Widget Tests', () {});
 
   group('Home Screen Dismissible Reminders Tests', () {
-    testWidgets(
-      'HomeDismissibleRemindersSection deletes a reminder on swipe left',
-      (tester) async {
-        bool dismissed = false;
-
-        final reminders = [
-          Reminder(
-            alarmEnabled: false,
-            id: 101,
-            title: 'Review System Design Chapter 3',
-            scheduledAt: DateTime.now().add(const Duration(hours: 2)),
-            isActive: true,
-            linkedTaskId: null,
-            createdAt: DateTime.now(),
-            alertSyncPending: false,
-          ),
-        ];
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Scaffold(
-              body: StatefulBuilder(
-                builder: (context, update) => HomeDismissibleRemindersSection(
-                  reminders: reminders,
-                  onDismissReminder: (reminder) async {
-                    update(() {
-                      dismissed = true;
-                      reminders.removeWhere((item) => item.id == reminder.id);
-                    });
-                  },
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Review System Design Chapter 3'), findsOneWidget);
-
-        // Perform swipe to dismiss
-        await tester.drag(
-          find.text('Review System Design Chapter 3'),
-          const Offset(-500, 0),
-        );
-        await tester.pumpAndSettle();
-
-        expect(dismissed, isTrue);
-        expect(find.byType(Dismissible), findsNothing);
-      },
-    );
-
-    testWidgets('HomeDismissibleRemindersSection hides all empty reminder UI', (
-      tester,
-    ) async {
-      bool addPressed = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AscentTheme.dark(),
-          home: Scaffold(
-            body: HomeDismissibleRemindersSection(
-              reminders: const [],
-              onDismissReminder: (_) async {},
-              onAddReminder: () {
-                addPressed = true;
-              },
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Text), findsNothing);
-      expect(addPressed, isFalse);
-    });
-
-    testWidgets(
-      'Rule 7 Capping: HomeDismissibleRemindersSection only renders 1 primary reminder even if 7 exist, with +X more chip',
-      (tester) async {
-        bool viewAllTriggered = false;
-
-        final sevenReminders = List.generate(
-          7,
-          (i) => Reminder(
-            alarmEnabled: false,
-            id: i + 1,
-            title: 'Reminder #$i',
-            scheduledAt: DateTime.now().add(Duration(minutes: (i + 1) * 15)),
-            isActive: true,
-            linkedTaskId: null,
-            createdAt: DateTime.now(),
-            alertSyncPending: false,
-          ),
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: AscentTheme.dark(),
-            home: Scaffold(
-              body: HomeDismissibleRemindersSection(
-                reminders: sevenReminders,
-                onDismissReminder: (_) async {},
-                onViewAll: () {
-                  viewAllTriggered = true;
-                },
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Only the first (primary) reminder should be rendered as a card
-        expect(find.text('Reminder #0'), findsOneWidget);
-        expect(find.text('Reminder #1'), findsNothing);
-        expect(find.text('Reminder #2'), findsNothing);
-        expect(find.text('Reminder #6'), findsNothing);
-
-        // Total count badge should show 7
-
-        // Overflow indicator removed per feedback; tapping the card triggers navigation
-        expect(find.text('+6 more reminders inside • View all'), findsNothing);
-
-        // Tapping the reminder card triggers navigation to full reminders screen
-        await tester.tap(find.text('Reminder #0'));
-        await tester.pumpAndSettle();
-        expect(viewAllTriggered, isTrue);
-      },
-    );
   });
 
   group('Study Streak Card Visibility Toggle Tests', () {

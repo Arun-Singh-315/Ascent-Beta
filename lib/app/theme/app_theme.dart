@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoPageTransitionsBuilder, CupertinoThemeData;
+import 'home_design.dart';
+import 'ascent_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -51,6 +53,8 @@ class AscentTheme {
           shadow: material.shadow,
         ),
         AppColors.light,
+        AscentTokens.light,
+        const HomeDesign.day(),
       ],
     );
   }
@@ -151,7 +155,7 @@ class AscentTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: canvas,
       canvasColor: canvas,
-      fontFamily: GoogleFonts.dmSans().fontFamily,
+      fontFamily: GoogleFonts.inter().fontFamily,
       textTheme: textTheme,
       cupertinoOverrideTheme: CupertinoThemeData(
         primaryColor: action,
@@ -397,6 +401,8 @@ class AscentTheme {
         isDark ? AppColors.dark : AppColors.light,
         glass,
         isDark ? AppSurfaces.night : AppSurfaces.legacyLight,
+        isDark ? AscentTokens.dark : AscentTokens.light,
+        isDark ? const HomeDesign.night() : const HomeDesign.day(),
       ],
     );
   }

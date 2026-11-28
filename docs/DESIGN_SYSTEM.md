@@ -26,7 +26,8 @@ The rules changed to the Apple-premium personal-OS language on 20 November 2026.
 - ~440 inline `Color(0x…)` and ~210 `Colors.*` uses in feature code (largest: onboarding, assistant screen, vault card art, plan creator, Home header).
 - 128 `OutlineInputBorder` uses that must move to `AppTextField`.
 - Raw Material overlays (`showModalBottomSheet`, `AlertDialog`, `SnackBar`, `PopupMenuButton`, `DropdownButton`) that must move to the shared wrappers.
-- Legacy font families (about 150 direct Plus Jakarta Sans uses, plus Bricolage Grotesque and Merriweather) to move to the DM Sans roles in `AscentTextStyles`.
+- Fonts: since 28 November 2026 every interface style renders in Inter (thoughts in Newsreader), both bundled offline. Older `AscentTextStyles` names still exist and move to the 14 Day Page roles screen by screen.
+- Colours: new code reads `context.tokens` (`AscentTokens`). Home has no raw colours; other features migrate as they are touched.
 - Hardcoded assistant names in about 10 files to move to the configured name.
 
 When you touch a file, bring it to the rules. Don't add new violations.
