@@ -24,6 +24,7 @@ import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
 import 'v7/home_header_v7.dart';
+import 'v7/home_things_v7.dart';
 import 'widgets/home_now_card.dart';
 import 'widgets/home_feed_cards.dart';
 import 'home_customization_sheet.dart';
@@ -282,18 +283,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             ),
                           ),
 
-                          // Capture first: open the app, write, Enter.
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              AppSpace.s16,
-                              AppSpace.s12,
-                              AppSpace.s16,
-                              0,
-                            ),
-                            child: CaptureCard(),
-                          ),
-
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpace.s16),
 
                           // 2. Now card: the single "what should I do now?"
                           // answer (CLAUDE.md §5.1).
@@ -303,6 +293,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               index: 0,
                               child: HomeNowCard(),
                             ),
+                          ),
+
+                          // Capture right under Now: write, Enter, done.
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpace.s16,
+                              0,
+                              AppSpace.s16,
+                              AppSpace.s16,
+                            ),
+                            child: CaptureCard(bar: true),
                           ),
 
                           // Hero feed (CLAUDE.md §5.1): Things and Mind are
@@ -328,7 +329,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             key: _sectionKeys[1],
                             child: const HomeFeedEntrance(
                               index: 1,
-                              child: HomeThingsCard(),
+                              child: HomeThingsSection(),
                             ),
                           ),
                           KeyedSubtree(

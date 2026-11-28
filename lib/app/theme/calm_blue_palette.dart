@@ -172,6 +172,15 @@ abstract final class CalmBluePalette {
   static const focus = Color(0xFF3F5BC4);
   static const darkFocus = Color(0xFF94A8F2);
 
+  // Home v7 soft sections: a barely-there fill and two lighter edges for
+  // lines inside a section (rows, groups).
+  static const region = Color(0x6BFFFFFF);
+  static const darkRegion = Color(0x09FFFFFF);
+  static const line = Color(0xFFE2E9F3);
+  static const darkLine = Color(0xFF18212E);
+  static const lineFaint = Color(0xFFE7EDF5);
+  static const darkLineFaint = Color(0xFF151E2A);
+
   // ── Home summary panel (deep navy, same in both themes' spirit) ──────────
   static const summaryTop = Color(0xFF1B3D6B);
   static const summaryBottom = Color(0xFF0E2442);

@@ -7,6 +7,8 @@ import '../../app/app_navigation.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
+import '../../app/theme/ascent_tokens.dart';
+import '../../shared/widgets/ascent_icon.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/features/feature_registry.dart';
@@ -155,10 +157,15 @@ class CaptureCard extends ConsumerStatefulWidget {
     super.key,
     this.autofocus = false,
     this.framed = true,
+    this.bar = false,
     this.onClose,
   });
 
   final bool autofocus;
+
+  /// Home v7: a slim bar with no header; the type chips, preview and
+  /// "Just captured" list only open while you type.
+  final bool bar;
 
   /// Shows a close button in the header (used by the capture sheet).
   final VoidCallback? onClose;
@@ -183,11 +190,17 @@ class _CaptureCardState extends ConsumerState<CaptureCard> {
   void initState() {
     super.initState();
     _text.addListener(_onText);
+    _focus.addListener(_onFocus);
+  }
+
+  void _onFocus() {
+    if (widget.bar && mounted) setState(() {});
   }
 
   @override
   void dispose() {
     _text.removeListener(_onText);
+    _focus.removeListener(_onFocus);
     _text.dispose();
     _focus.dispose();
     super.dispose();
@@ -253,10 +266,9 @@ class _CaptureCardState extends ConsumerState<CaptureCard> {
       // One receipt per line, so each saved row can be undone on its own.
       final saved = <_Captured>[];
       for (final (i, d) in drafts.indexed) {
-        final receipt = await service.save(
-          [d],
-          requestId: 'card:${now.microsecondsSinceEpoch}:$_batch:$i',
-        );
+        final receipt = await service.save([
+          d,
+        ], requestId: 'card:${now.microsecondsSinceEpoch}:$_batch:$i');
         saved.add(_Captured(d, receipt, i, receipt.items.first.route, _batch));
         if (receipt.reminderIds.isNotEmpty) {
           ReminderAlertSync.device(
@@ -311,116 +323,138 @@ class _CaptureCardState extends ConsumerState<CaptureCard> {
     final g = context.glass;
     final preview = _preview();
     final now = DateTime.now();
+    final open = !widget.bar || _focus.hasFocus || _text.text.trim().isNotEmpty;
+    final t = context.tokens;
+    final field = AppTextField(
+      key: const ValueKey('capture_card_field'),
+      controller: _text,
+      focusNode: _focus,
+      autofocus: widget.autofocus,
+      hintText: widget.bar && _target == null
+          ? 'Write it down: call mom at 6, ₹250 lunch'
+          : _hint(_target),
+      minLines: 1,
+      maxLines: 5,
+      keyboardType: TextInputType.text,
+      textCapitalization: TextCapitalization.sentences,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => _save(),
+      fillColor: widget.bar ? t.region : null,
+      prefixIcon: widget.bar
+          ? Padding(
+              padding: const EdgeInsets.only(left: 12, right: 4),
+              child: Center(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: AscentIcon(AscentGlyph.plus, size: 16, color: t.action),
+              ),
+            )
+          : null,
+      suffixIcon: _text.text.trim().isEmpty
+          ? null
+          : AscentButton.icon(
+              key: const ValueKey('capture_card_save'),
+              icon: Icons.arrow_upward_rounded,
+              tooltip: 'Save',
+              semanticLabel: 'Save',
+              onPressed: _saving ? null : _save,
+            ),
+    );
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Text(
-              'Capture',
-              style: AscentTextStyles.listRowTitle.copyWith(color: g.ink),
-            ),
-            const SizedBox(width: AppSpace.s12),
-            Expanded(
-              child: Text(
-                'One per line · Enter saves',
-                maxLines: 1,
-                textAlign: TextAlign.end,
-                overflow: TextOverflow.ellipsis,
-                style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+        if (widget.bar)
+          field
+        else ...[
+          Row(
+            children: [
+              Text(
+                'Capture',
+                style: AscentTextStyles.listRowTitle.copyWith(color: g.ink),
               ),
-            ),
-            if (widget.onClose != null)
-              AscentButton.icon(
-                icon: Icons.close_rounded,
-                tooltip: 'Close capture',
-                semanticLabel: 'Close capture',
-                onPressed: widget.onClose,
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpace.s12),
-        AppTextField(
-          key: const ValueKey('capture_card_field'),
-          controller: _text,
-          focusNode: _focus,
-          autofocus: widget.autofocus,
-          hintText: _hint(_target),
-          minLines: 1,
-          maxLines: 5,
-          keyboardType: TextInputType.text,
-          textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _save(),
-          suffixIcon: _text.text.trim().isEmpty
-              ? null
-              : AscentButton.icon(
-                  key: const ValueKey('capture_card_save'),
-                  icon: Icons.arrow_upward_rounded,
-                  tooltip: 'Save',
-                  semanticLabel: 'Save',
-                  onPressed: _saving ? null : _save,
-                ),
-        ),
-        const SizedBox(height: AppSpace.s12),
-        Wrap(
-          spacing: AppSpace.s8,
-          runSpacing: AppSpace.s8,
-          children: [
-            for (final t in <CaptureTarget?>[null, ...CaptureTarget.values])
-              Semantics(
-                selected: _target == t,
-                child: AppChip(
-                  key: ValueKey('capture_toggle_${t?.name ?? 'auto'}'),
-                  label: captureTargetLabel(t),
-                  icon: captureTargetIcon(t),
-                  isSelected: _target == t,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() => _target = t);
-                  },
+              const SizedBox(width: AppSpace.s12),
+              Expanded(
+                child: Text(
+                  'One per line · Enter saves',
+                  maxLines: 1,
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
+                  style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
                 ),
               ),
-          ],
-        ),
-        if (_error != null) ...[
-          const SizedBox(height: AppSpace.s8),
-          Text(
-            _error!,
-            key: const ValueKey('capture_card_error'),
-            style: AscentTextStyles.caption.copyWith(color: g.errorInk),
+              if (widget.onClose != null)
+                AscentButton.icon(
+                  icon: Icons.close_rounded,
+                  tooltip: 'Close capture',
+                  semanticLabel: 'Close capture',
+                  onPressed: widget.onClose,
+                ),
+            ],
           ),
-        ] else if (preview.isNotEmpty) ...[
           const SizedBox(height: AppSpace.s12),
-          for (final d in preview.take(4))
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s4),
-              child: Row(
-                children: [
-                  Icon(
-                    captureTargetIcon(captureTargetOf(d.kind)),
-                    size: 16,
-                    color: g.inkSecondary,
+          field,
+        ],
+        if (open) ...[
+          SizedBox(height: widget.bar ? AppSpace.s8 : AppSpace.s12),
+          Wrap(
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              for (final t in <CaptureTarget?>[null, ...CaptureTarget.values])
+                Semantics(
+                  selected: _target == t,
+                  child: AppChip(
+                    key: ValueKey('capture_toggle_${t?.name ?? 'auto'}'),
+                    label: captureTargetLabel(t),
+                    icon: captureTargetIcon(t),
+                    isSelected: _target == t,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _target = t);
+                    },
                   ),
-                  const SizedBox(width: AppSpace.s8),
-                  Expanded(
-                    child: Text(
-                      '${d.title.isEmpty ? '…' : d.title}  ·  ${_meta(d, now)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AscentTextStyles.caption.copyWith(
-                        color: g.inkSecondary,
+                ),
+            ],
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: AppSpace.s8),
+            Text(
+              _error!,
+              key: const ValueKey('capture_card_error'),
+              style: AscentTextStyles.caption.copyWith(color: g.errorInk),
+            ),
+          ] else if (preview.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.s12),
+            for (final d in preview.take(4))
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.s4),
+                child: Row(
+                  children: [
+                    Icon(
+                      captureTargetIcon(captureTargetOf(d.kind)),
+                      size: 16,
+                      color: g.inkSecondary,
+                    ),
+                    const SizedBox(width: AppSpace.s8),
+                    Expanded(
+                      child: Text(
+                        '${d.title.isEmpty ? '…' : d.title}  ·  ${_meta(d, now)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AscentTextStyles.caption.copyWith(
+                          color: g.inkSecondary,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          if (preview.length > 4)
-            Text(
-              '+${preview.length - 4} more',
-              style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-            ),
+            if (preview.length > 4)
+              Text(
+                '+${preview.length - 4} more',
+                style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
+              ),
+          ],
         ],
         if (_captured.isNotEmpty) ...[
           const SizedBox(height: AppSpace.s12),
@@ -446,6 +480,17 @@ class _CaptureCardState extends ConsumerState<CaptureCard> {
         ],
       ],
     );
+    if (widget.bar) {
+      return AnimatedSize(
+        key: const ValueKey('capture_card'),
+        duration: Duration(
+          milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 240,
+        ),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: content,
+      );
+    }
     if (!widget.framed) return content;
     return DecoratedBox(
       key: const ValueKey('capture_card'),
