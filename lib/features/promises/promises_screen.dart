@@ -15,7 +15,7 @@ import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/glass_card.dart';
 import 'promise_copy.dart';
 import 'promise_sheet.dart';
-import 'widgets/home_promise_card.dart';
+import 'widgets/promise_hero.dart';
 import 'widgets/promise_dots.dart';
 
 /// All promises: active ones as full cards you can answer right here, then

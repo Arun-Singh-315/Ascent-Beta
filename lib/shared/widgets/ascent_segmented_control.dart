@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/theme/ascent_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/monochrome_surfaces.dart';
@@ -45,6 +46,7 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     this.vertical = false,
     this.inline = false,
     this.pill = false,
+    this.slim = false,
     this.selectionColor,
   });
 
@@ -61,6 +63,9 @@ class AscentSegmentedControl<T> extends StatelessWidget {
   /// Open tabs with a sliding accent rule, without nested selection boxes.
   final bool inline;
   final bool pill;
+
+  /// Home v7: a slim 28 pt row with a 1 pt edge and a tinted selection.
+  final bool slim;
   final Color? selectionColor;
 
   void _handleSelect(T value) {
@@ -71,8 +76,67 @@ class AscentSegmentedControl<T> extends StatelessWidget {
     }
   }
 
+  Widget _buildSlim(BuildContext context) {
+    final t = context.tokens;
+    final reduce = MediaQuery.disableAnimationsOf(context);
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        border: Border.all(color: t.line),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          for (final (i, s) in segments.indexed) ...[
+            if (i > 0) const SizedBox(width: 2),
+            Expanded(
+              flex: s.flex,
+              child: Semantics(
+                button: true,
+                selected: s.value == selected,
+                child: GestureDetector(
+                  key: s.key,
+                  behavior: HitTestBehavior.opaque,
+                  onTap: enabled ? () => _handleSelect(s.value) : null,
+                  child: ConstrainedBox(
+                    // 26 pt drawn; the row's padding and edge make 32, and
+                    // the surrounding layout leaves room for a 44 pt touch.
+                    constraints: const BoxConstraints(minHeight: 30),
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: reduce ? 0 : 200),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: s.value == selected
+                            ? t.actionTint
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        s.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AscentTextStyles.button.copyWith(
+                          color: s.value == selected
+                              ? t.action
+                              : t.labelSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (slim) return _buildSlim(context);
     final g = context.glass;
     final textScaler = MediaQuery.textScalerOf(context);
     final isLargeText = textScaler.scale(1.0) >= 1.45;

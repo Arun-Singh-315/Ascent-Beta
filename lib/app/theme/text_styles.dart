@@ -9,17 +9,17 @@ import 'package:google_fonts/google_fonts.dart';
 /// ```
 ///
 /// Fonts (CLAUDE.md §3.2), bundled in `assets/fonts` so they work offline:
-/// - **Interface, to-dos and numbers** → Inter
-/// - **Thought text** → Newsreader (a reading serif for writing)
-/// - **Timers and code** → JetBrains Mono
+/// - **Headings and numbers** → Inter Tight
+/// - **Text, rows and thoughts** → Inter
+/// - **Code** → JetBrains Mono
 ///
-/// New code uses the 14 Day Page roles at the top of the class. The older
-/// styles below them now render in Inter and are migrated to the roles
-/// screen by screen.
+/// New code uses the Home v7 roles at the top of the class. The older
+/// styles below them render in Inter and move to the roles screen by
+/// screen.
 class AscentTextStyles {
   AscentTextStyles._();
 
-  // ── Day Page roles (the 14 roles new code uses) ───────────────────────────
+  // ── Home v7 roles (the roles new code uses) ───────────────────────────────
 
   static TextStyle _inter(
     double size,
@@ -35,54 +35,61 @@ class AscentTextStyles {
     fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
   );
 
-  /// 31 · Bold · −0.9 — Home greeting ("Good morning").
-  static TextStyle get greeting =>
-      _inter(31, FontWeight.w700, height: 1.1, spacing: -0.9);
-
-  /// 17 · Regular · 1.42 — the one-sentence day summary under the greeting.
-  /// Facts inside it use [dayLineFact].
-  static TextStyle get dayLine => _inter(17, FontWeight.w400, height: 1.42);
-
-  /// 17 · SemiBold — a fact inside [dayLine] ("3 of 7").
-  static TextStyle get dayLineFact =>
-      _inter(17, FontWeight.w600, height: 1.42, tabular: true);
-
-  /// 20 · Bold · −0.4 — section and zone headings ("Today").
-  static TextStyle get section =>
-      _inter(20, FontWeight.w700, height: 1.2, spacing: -0.4);
-
-  /// 21 · SemiBold · −0.4 — the title inside the Now card.
-  static TextStyle get nowTitle =>
-      _inter(21, FontWeight.w600, height: 1.22, spacing: -0.4);
-
-  /// 46 · SemiBold · tabular — a running timer.
-  static TextStyle get timer =>
-      _inter(46, FontWeight.w600, height: 1, spacing: -1.5, tabular: true);
-
-  /// 20 · SemiBold · tabular — a metric value ("1.8").
-  static TextStyle get value =>
-      _inter(20, FontWeight.w600, height: 1.15, spacing: -0.4, tabular: true);
-
-  /// 16.5 · Regular · 1.5 — thought text, set in Newsreader.
-  static TextStyle get thought => GoogleFonts.newsreader(
-    fontSize: 16.5,
-    fontWeight: FontWeight.w400,
-    height: 1.5,
+  /// Inter Tight: headings and numbers. Confident, calm, tight tracking.
+  static TextStyle _tight(
+    double size,
+    FontWeight weight, {
+    double height = 1.15,
+    double spacing = 0,
+    bool tabular = false,
+  }) => GoogleFonts.interTight(
+    fontSize: size,
+    fontWeight: weight,
+    height: height,
+    letterSpacing: spacing,
+    fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
   );
 
-  /// 15 · Regular — a row title: to-dos, reminders, doses, spends.
-  static TextStyle get row =>
-      _inter(15, FontWeight.w400, height: 1.3, spacing: -0.1);
+  /// 28 · Inter Tight 650 · −0.8 — Home headline ("Good morning, Arun.").
+  static TextStyle get greeting =>
+      _tight(28, FontWeight.w600, height: 1.08, spacing: -0.8);
 
-  /// 12.5 · Regular · tabular — row meta and units ("9:00 · 45 min").
+  /// 17 · Inter Tight 650 · −0.4 — section titles ("Things").
+  static TextStyle get section =>
+      _tight(17, FontWeight.w600, height: 1.2, spacing: -0.4);
+
+  /// 20 · Inter Tight 650 · −0.4 — the title inside the Now card.
+  static TextStyle get nowTitle =>
+      _tight(20, FontWeight.w600, height: 1.2, spacing: -0.4);
+
+  /// 26 · Inter Tight 600 · tabular — big numbers (countdown, timer).
+  static TextStyle get bigNumber =>
+      _tight(26, FontWeight.w600, height: 1, spacing: -0.8, tabular: true);
+
+  /// 17 · Inter Tight 600 · tabular — a metric value ("1.8").
+  static TextStyle get value =>
+      _tight(17, FontWeight.w600, height: 1.1, spacing: -0.3, tabular: true);
+
+  /// 14.5 · Inter 400 — row titles: to-dos, reminders, doses.
+  static TextStyle get row => _inter(14.5, FontWeight.w400, height: 1.3);
+
+  /// 13.5 · Inter 400 · 1.4 — a thought, written like a message.
+  static TextStyle get thought => _inter(13.5, FontWeight.w400, height: 1.4);
+
+  /// 12 · Inter 400 · tabular — meta and units ("9:00 · 45 min").
   static TextStyle get meta =>
-      _inter(12.5, FontWeight.w400, height: 1.3, tabular: true);
+      _inter(12, FontWeight.w400, height: 1.3, tabular: true);
 
-  /// 13 · SemiBold — eyebrows ("Up next · 9:00").
-  static TextStyle get eyebrow => _inter(13, FontWeight.w600, height: 1.25);
+  /// 11 · Inter 700 · tracked — eyebrows ("UP NEXT · 10:00"), set in caps
+  /// by the caller.
+  static TextStyle get eyebrow =>
+      _inter(11, FontWeight.w700, height: 1.25, spacing: 0.6);
 
-  /// 15 · SemiBold — button labels.
-  static TextStyle get button => _inter(15, FontWeight.w600, height: 1.2);
+  /// 12.5 · Inter 600 — small buttons (28 pt tall).
+  static TextStyle get button => _inter(12.5, FontWeight.w600, height: 1.2);
+
+  /// 13.5 · Inter 600 — row and list labels ("Water", "Morning").
+  static TextStyle get label => _inter(13.5, FontWeight.w600, height: 1.25);
 
   // Captions, tab labels and chips use the existing [caption] (12 · Medium).
 

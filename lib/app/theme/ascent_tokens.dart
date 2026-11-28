@@ -35,6 +35,10 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     required this.care,
     required this.water,
     required this.money,
+    required this.focus,
+    required this.region,
+    required this.line,
+    required this.lineFaint,
     required this.zones,
   });
 
@@ -83,6 +87,14 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
   final Color water;
   final Color money;
 
+  /// Focus sessions (indigo-blue).
+  final Color focus;
+
+  /// Home v7 soft section fill, and the lines used inside sections.
+  final Color region;
+  final Color line;
+  final Color lineFaint;
+
   /// Background tint for each Home zone, before it is mixed into [canvas].
   final Map<HomeZone, Color> zones;
 
@@ -112,6 +124,10 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     care: CalmBluePalette.care,
     water: CalmBluePalette.water,
     money: CalmBluePalette.money,
+    focus: CalmBluePalette.focus,
+    region: CalmBluePalette.region,
+    line: CalmBluePalette.line,
+    lineFaint: CalmBluePalette.lineFaint,
     zones: {
       HomeZone.now: CalmBluePalette.zoneNow,
       HomeZone.plan: CalmBluePalette.zonePlan,
@@ -145,6 +161,10 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
     care: CalmBluePalette.darkCare,
     water: CalmBluePalette.darkWater,
     money: CalmBluePalette.darkMoney,
+    focus: CalmBluePalette.darkFocus,
+    region: CalmBluePalette.darkRegion,
+    line: CalmBluePalette.darkLine,
+    lineFaint: CalmBluePalette.darkLineFaint,
     zones: {
       HomeZone.now: CalmBluePalette.darkZoneNow,
       HomeZone.plan: CalmBluePalette.darkZonePlan,
@@ -180,6 +200,10 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
         care: care,
         water: water,
         money: money,
+        focus: focus,
+        region: region,
+        line: line,
+        lineFaint: lineFaint,
         zones: zones,
       );
 
@@ -211,6 +235,10 @@ class AscentTokens extends ThemeExtension<AscentTokens> {
       care: c(care, other.care),
       water: c(water, other.water),
       money: c(money, other.money),
+      focus: c(focus, other.focus),
+      region: c(region, other.region),
+      line: c(line, other.line),
+      lineFaint: c(lineFaint, other.lineFaint),
       zones: {
         for (final z in HomeZone.values) z: c(zones[z]!, other.zones[z]!),
       },

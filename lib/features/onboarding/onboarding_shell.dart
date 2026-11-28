@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/theme/brand_palette.dart';
-import '../../app/theme/glass_theme.dart';
+import '../../app/theme/ascent_tokens.dart';
+import '../../app/theme/calm_blue_palette.dart';
 import '../../app/theme/surface_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
@@ -16,9 +16,11 @@ import '../../core/providers/local_day_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../home/widgets/home_unlock_next_card.dart';
 import '../../shared/widgets/app_text_field.dart';
-import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_icon.dart';
 import '../../shared/widgets/ascent_logo.dart';
 import '../../shared/widgets/ascent_segmented_control.dart';
+import '../../shared/widgets/ascent_small_button.dart';
+import '../home/v7/home_region.dart';
 
 /// First run: three calm, skippable screens (CLAUDE.md §1.2).
 ///
@@ -117,14 +119,26 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
+    final t = context.tokens;
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       key: const ValueKey('onboarding'),
-      backgroundColor: g.bg,
+      backgroundColor: t.canvas,
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
+          // The same quiet page as Home: canvas deepening very slightly.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [t.canvas, t.recessed],
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             child: Column(
               children: [
@@ -139,10 +153,9 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                     children: [
                       _Dots(count: 3, index: _page),
                       const Spacer(),
-                      AscentButton.ghost(
+                      AscentSmallButton.ghost(
                         key: const ValueKey('onboarding_skip'),
                         label: 'Skip',
-                        compact: true,
                         onPressed: _finishing
                             ? null
                             : () => _finish(skipped: true),
@@ -178,7 +191,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                     AppSpace.s20,
                     AppSpace.s16 + (bottom > 0 ? 0 : AppSpace.s8),
                   ),
-                  child: AscentButton.primary(
+                  child: AscentSmallButton.filled(
                     key: const ValueKey('onboarding_next'),
                     label: switch (_page) {
                       0 => 'Get started',
@@ -196,7 +209,6 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                                   : 'these ${_picked.length}'}',
                     },
                     expanded: true,
-                    loading: _finishing,
                     onPressed: _finishing || (_page == 2 && _picked.isEmpty)
                         ? null
                         : () => _page < 2 ? _go(_page + 1) : _finish(),
@@ -213,64 +225,102 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
 
 // Pages -----------------------------------------------------------------------
 
+/// A feature's glyph and colour, matching Home.
+(AscentGlyph?, Color) _look(AscentTokens t, AscentFeature f) => switch (f) {
+  AscentFeature.things => (AscentGlyph.things, t.action),
+  AscentFeature.mind => (AscentGlyph.mind, t.think),
+  AscentFeature.care => (AscentGlyph.life, t.care),
+  AscentFeature.money => (AscentGlyph.money, t.money),
+  AscentFeature.focus => (AscentGlyph.focus, t.focus),
+  _ => (null, t.action),
+};
+
+class _Title extends StatelessWidget {
+  const _Title(this.text, {this.center = false});
+  final String text;
+  final bool center;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    textAlign: center ? TextAlign.center : TextAlign.start,
+    style: AscentTextStyles.greeting.copyWith(color: context.tokens.action),
+  );
+}
+
+class _Lede extends StatelessWidget {
+  const _Lede(this.text, {this.center = false});
+  final String text;
+  final bool center;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    textAlign: center ? TextAlign.center : TextAlign.start,
+    style: AscentTextStyles.row.copyWith(
+      color: context.tokens.labelSecondary,
+      height: 1.45,
+    ),
+  );
+}
+
 class _WelcomePage extends StatelessWidget {
   const _WelcomePage({required this.active});
   final bool active;
 
-  static const _pillars = [
-    (Icons.wb_sunny_outlined, 'Today', 'Your day at a glance'),
-    (Icons.checklist_rounded, 'Plan', 'To-dos, routines and plans'),
-    (Icons.bubble_chart_outlined, 'Think', 'Thoughts, safely kept'),
-    (Icons.favorite_border_rounded, 'Live', 'Water, medicine and money'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
+    final t = context.tokens;
+    final pillars = [
+      (AscentGlyph.home, t.action, 'Today', 'Your day at a glance'),
+      (AscentGlyph.things, t.action, 'Plan', 'To-dos, routines and plans'),
+      (AscentGlyph.mind, t.think, 'Think', 'Thoughts, safely kept'),
+      (AscentGlyph.life, t.care, 'Live', 'Water, medicine and money'),
+    ];
     return _PageBody(
       children: [
         _Reveal(
           active: active,
           index: 0,
-          child: const Center(child: AscentLogo(size: 76)),
+          child: const Center(child: AscentLogo(size: 68)),
         ),
         const SizedBox(height: AppSpace.s24),
         _Reveal(
           active: active,
           index: 1,
-          child: Text(
-            'Your day,\ncalmly in one place.',
-            textAlign: TextAlign.center,
-            style: AscentTextStyles.interfaceDisplay.copyWith(
-              color: g.ink,
-              height: 1.15,
-            ),
-          ),
+          child: const _Title('Your day,\ncalmly in one place.', center: true),
         ),
         const SizedBox(height: AppSpace.s12),
         _Reveal(
           active: active,
           index: 2,
-          child: Text(
-            'Plan, think and take care of yourself. It works offline and stays yours.',
-            textAlign: TextAlign.center,
-            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
+          child: const _Lede(
+            'Plan, think and take care of yourself. It works offline and '
+            'stays yours.',
+            center: true,
           ),
         ),
-        const SizedBox(height: AppSpace.s32),
-        for (var i = 0; i < _pillars.length; i++)
-          _Reveal(
-            active: active,
-            index: 3 + i,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s12),
-              child: _PillarRow(
-                icon: _pillars[i].$1,
-                title: _pillars[i].$2,
-                subtitle: _pillars[i].$3,
-              ),
+        const SizedBox(height: AppSpace.s28),
+        _Reveal(
+          active: active,
+          index: 3,
+          child: HomeRegion(
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Column(
+              children: [
+                for (final (i, p) in pillars.indexed)
+                  _ListRow(
+                    first: i == 0,
+                    glyph: p.$1,
+                    color: p.$2,
+                    title: p.$3,
+                    subtitle: p.$4,
+                  ),
+              ],
             ),
           ),
+        ),
       ],
     );
   }
@@ -291,7 +341,7 @@ class _YouPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
+    final t = context.tokens;
     final assistant = ref.watch(assistantNameProvider);
     final typed = controller.text.trim();
     final name = typed.isEmpty
@@ -302,22 +352,13 @@ class _YouPage extends ConsumerWidget {
         _Reveal(
           active: active,
           index: 0,
-          child: Text(
-            'What should we\ncall you?',
-            style: AscentTextStyles.interfaceDisplay.copyWith(
-              color: g.ink,
-              height: 1.15,
-            ),
-          ),
+          child: const _Title('What should we\ncall you?'),
         ),
         const SizedBox(height: AppSpace.s8),
         _Reveal(
           active: active,
           index: 1,
-          child: Text(
-            'Optional. Only used to greet you.',
-            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
-          ),
+          child: const _Lede('Optional. Only used to greet you.'),
         ),
         const SizedBox(height: AppSpace.s24),
         _Reveal(
@@ -327,61 +368,39 @@ class _YouPage extends ConsumerWidget {
             key: const ValueKey('onboarding_name'),
             controller: controller,
             hintText: 'e.g. Arun',
+            fillColor: t.region,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.done,
           ),
         ),
-        const SizedBox(height: AppSpace.s24),
+        const SizedBox(height: AppSpace.s16),
+        // A live preview of Home's navy panel greeting you.
         _Reveal(
           active: active,
           index: 3,
-          child: _GlassCard(
-            child: Row(
-              children: [
-                Icon(Icons.wb_twilight_rounded, color: g.amber),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    child: Text(
-                      name.isEmpty
-                          ? '${_greeting(DateTime.now())}.'
-                          : '${_greeting(DateTime.now())}, $name.',
-                      key: ValueKey(name),
-                      style: AscentTextStyles.homeHeadline.copyWith(
-                        color: g.ink,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: _GreetingPreview(
+            text: name.isEmpty
+                ? '${_greeting(DateTime.now())}.'
+                : '${_greeting(DateTime.now())}, $name.',
+            assistant: assistant,
           ),
         ),
-        const SizedBox(height: AppSpace.s8),
+        const SizedBox(height: AppSpace.s28),
         _Reveal(
           active: active,
           index: 4,
           child: Text(
-            '$assistant, your assistant, will greet you by name too.',
-            style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-          ),
-        ),
-        const SizedBox(height: AppSpace.s32),
-        _Reveal(
-          active: active,
-          index: 5,
-          child: Text(
-            'Light or dark',
-            style: AscentTextStyles.caption.copyWith(color: g.inkSecondary),
+            'LIGHT OR DARK',
+            style: AscentTextStyles.eyebrow.copyWith(color: t.labelTertiary),
           ),
         ),
         const SizedBox(height: AppSpace.s8),
         _Reveal(
           active: active,
-          index: 6,
+          index: 5,
           child: AscentSegmentedControl<ThemeMode>(
             key: const ValueKey('onboarding_mode'),
+            slim: true,
             selected: ref.watch(themeModeProvider),
             onChanged: (m) {
               HapticFeedback.selectionClick();
@@ -399,6 +418,79 @@ class _YouPage extends ConsumerWidget {
   }
 }
 
+/// The greeting as Home will show it, on the same navy panel.
+class _GreetingPreview extends StatelessWidget {
+  const _GreetingPreview({required this.text, required this.assistant});
+  final String text, assistant;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: dark
+              ? const [
+                  CalmBluePalette.darkSummaryTop,
+                  CalmBluePalette.darkSummaryBottom,
+                ]
+              : const [
+                  CalmBluePalette.summaryTop,
+                  CalmBluePalette.summaryBottom,
+                ],
+        ),
+        border: dark ? Border.all(color: CalmBluePalette.summaryEdge) : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AnimatedSwitcher(
+            duration: Duration(
+              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 220,
+            ),
+            child: Text(
+              text,
+              key: ValueKey(text),
+              style: AscentTextStyles.nowTitle.copyWith(
+                color: CalmBluePalette.summaryInk,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(height: 1, color: CalmBluePalette.summaryDivider),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 1),
+                child: AscentIcon(
+                  AscentGlyph.riya,
+                  size: 14,
+                  color: CalmBluePalette.ringFocus,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$assistant will greet you by name too.',
+                  style: AscentTextStyles.meta.copyWith(
+                    color: CalmBluePalette.summarySoft,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PickPage extends StatelessWidget {
   const _PickPage({
     required this.active,
@@ -411,130 +503,164 @@ class _PickPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
     final starters = featureSpecs.where((s) => s.starter).toList();
     return _PageBody(
       children: [
         _Reveal(
           active: active,
           index: 0,
-          child: Text(
-            'Pick your\nfirst two.',
-            style: AscentTextStyles.interfaceDisplay.copyWith(
-              color: g.ink,
-              height: 1.15,
-            ),
-          ),
+          child: const _Title('Pick your\nfirst two.'),
         ),
         const SizedBox(height: AppSpace.s8),
         _Reveal(
           active: active,
           index: 1,
-          child: Text(
-            'Start small. More unlock as you go.',
-            style: AscentTextStyles.body.copyWith(color: g.inkSecondary),
-          ),
+          child: const _Lede('Start small. More unlock as you go.'),
         ),
         const SizedBox(height: AppSpace.s24),
-        for (var i = 0; i < starters.length; i++)
-          _Reveal(
-            active: active,
-            index: 2 + i,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s12),
-              child: _PickCard(
-                spec: starters[i],
-                selected: picked.contains(starters[i].id),
-                onTap: () => onToggle(starters[i].id),
-              ),
+        _Reveal(
+          active: active,
+          index: 2,
+          child: HomeRegion(
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Column(
+              children: [
+                for (final (i, s) in starters.indexed)
+                  _PickRow(
+                    first: i == 0,
+                    spec: s,
+                    selected: picked.contains(s.id),
+                    onTap: () => onToggle(s.id),
+                  ),
+              ],
             ),
           ),
+        ),
       ],
     );
   }
 }
 
-class _PickCard extends StatelessWidget {
-  const _PickCard({
+/// A row inside a soft section: tinted glyph tile, title and a quiet line.
+class _ListRow extends StatelessWidget {
+  const _ListRow({
+    required this.first,
+    required this.glyph,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+  final bool first;
+  final AscentGlyph? glyph;
+  final Color color;
+  final String title, subtitle;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: first ? null : Border(top: BorderSide(color: t.lineFaint)),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: AscentIcon(
+                glyph ?? AscentGlyph.you,
+                size: 18,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: AscentTextStyles.label.copyWith(color: t.label),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AscentTextStyles.meta.copyWith(
+                        color: t.labelSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            ?trailing,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickRow extends StatelessWidget {
+  const _PickRow({
+    required this.first,
     required this.spec,
     required this.selected,
     required this.onTap,
   });
+  final bool first;
   final FeatureSpec spec;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    final tint = BrandPalette.pillarTint(spec.tintId, dark: g.isDark);
+    final t = context.tokens;
+    final (glyph, color) = _look(t, spec.id);
     final reduce = MediaQuery.disableAnimationsOf(context);
     return Semantics(
       button: true,
       selected: selected,
       label: '${spec.pick}. ${spec.pitch}',
+      excludeSemantics: true,
       child: InkWell(
         key: ValueKey('onboarding_pick_${spec.id.name}'),
-        borderRadius: BorderRadius.circular(20),
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: reduce ? Duration.zero : const Duration(milliseconds: 200),
-          constraints: const BoxConstraints(minHeight: 72),
-          padding: const EdgeInsets.all(AppSpace.s16),
-          decoration: BoxDecoration(
-            color: selected ? g.tonalBg : g.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: selected ? g.actionInk : g.line),
-          ),
-          child: ExcludeSemantics(
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: tint.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(spec.icon, color: tint, size: 22),
-                ),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        spec.pick,
-                        style: AscentTextStyles.cardTitle.copyWith(
-                          color: g.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        spec.pitch,
-                        style: AscentTextStyles.caption.copyWith(
-                          color: g.inkSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpace.s8),
-                AnimatedSwitcher(
-                  duration: reduce
-                      ? Duration.zero
-                      : const Duration(milliseconds: 200),
-                  child: Icon(
-                    selected
-                        ? Icons.check_circle_rounded
-                        : Icons.circle_outlined,
-                    key: ValueKey(selected),
-                    color: selected ? g.actionInk : g.inkMuted,
-                    size: 24,
-                  ),
-                ),
-              ],
+        child: _ListRow(
+          first: first,
+          glyph: glyph,
+          color: color,
+          title: spec.pick,
+          subtitle: spec.pitch,
+          trailing: AnimatedContainer(
+            duration: Duration(milliseconds: reduce ? 0 : 200),
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: selected ? t.actionFill : Colors.transparent,
+              border: Border.all(
+                color: selected ? t.actionFill : t.labelTertiary,
+                width: 2,
+              ),
             ),
+            child: selected
+                ? AscentIcon(AscentGlyph.check, size: 12, color: t.onAction)
+                : null,
           ),
         ),
       ),
@@ -552,12 +678,7 @@ class _PageBody extends StatelessWidget {
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) => SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.s24,
-        AppSpace.s24,
-        AppSpace.s24,
-        AppSpace.s24,
-      ),
+      padding: const EdgeInsets.all(AppSpace.s24),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           minHeight: box.maxHeight - AppSpace.s24 * 2,
@@ -641,77 +762,6 @@ class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
   );
 }
 
-class _PillarRow extends StatelessWidget {
-  const _PillarRow({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return _GlassCard(
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: g.actionInk.withValues(alpha: .12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: g.actionInk, size: 22),
-          ),
-          const SizedBox(width: AppSpace.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AscentTextStyles.homeHeadline.copyWith(color: g.ink),
-                ),
-                Text(
-                  subtitle,
-                  style: AscentTextStyles.caption.copyWith(
-                    color: g.inkSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s16,
-        vertical: AppSpace.s12,
-      ),
-      decoration: BoxDecoration(
-        color: g.surface.withValues(alpha: .78),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: g.line),
-      ),
-      child: child,
-    );
-  }
-}
-
 class _Dots extends StatelessWidget {
   const _Dots({required this.count, required this.index});
   final int count;
@@ -719,20 +769,22 @@ class _Dots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
+    final t = context.tokens;
     return Semantics(
       label: 'Step ${index + 1} of $count',
       child: Row(
         children: [
           for (var i = 0; i < count; i++)
             AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
+              duration: Duration(
+                milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 260,
+              ),
               curve: Curves.easeOutCubic,
               margin: const EdgeInsets.only(right: AppSpace.s4),
               width: i == index ? 22 : 8,
               height: 8,
               decoration: BoxDecoration(
-                color: i == index ? g.actionInk : g.line,
+                color: i == index ? t.actionFill : t.separator,
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -741,6 +793,3 @@ class _Dots extends StatelessWidget {
     );
   }
 }
-
-/// Slow, soft colour fields in the assistant gradient. One 18 s loop that
-/// stops under reduce motion (CLAUDE.md §3.5).

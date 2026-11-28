@@ -7,6 +7,8 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../app/theme/surface_tokens.dart';
 
+import 'package:flutter/rendering.dart'
+    show RenderSliverMultiBoxAdaptor, SliverMultiBoxAdaptorParentData;
 import 'package:flutter/material.dart';
 import '../capture/capture_card.dart';
 import 'widgets/home_calendar.dart';
@@ -21,18 +23,17 @@ import 'widgets/home_unlock_next_card.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import 'widgets/home_header.dart';
+import 'v7/home_header_v7.dart';
+import 'v7/home_life_v7.dart';
+import 'v7/home_things_v7.dart';
+import 'v7/home_thoughts_v7.dart';
 import 'widgets/home_now_card.dart';
-import 'widgets/home_ask_bar.dart';
-import 'widgets/home_feed_cards.dart';
 import 'home_customization_sheet.dart';
 import '../../shared/widgets/ascent_backdrop.dart';
 import 'widgets/home_feed_entrance.dart';
-import 'widgets/home_compact_header.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import '../promises/widgets/home_promise_card.dart';
 import '../travel/home_travel_card.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
@@ -67,23 +68,80 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   final _headerCollapse = ValueNotifier<double>(0);
   double _expandedHeaderHeight = 280;
 
+  /// Sections the compact bar's tabs jump to, in order.
+  static const _tabNames = ['Now', 'Things', 'Thoughts', 'Life'];
+  final _sectionKeys = List.generate(_tabNames.length, (_) => GlobalKey());
+  final _sectionTops = List<double?>.filled(_tabNames.length, null);
+  final _tab = ValueNotifier<int>(0);
+
+  /// Height of the compact bar below the top inset, so a jump lands the
+  /// section just under it.
+  static const _barHeight = 150.0;
+
   void _updateCompactHeader() {
     final render = _headerKey.currentContext?.findRenderObject();
     if (render is RenderBox && render.hasSize) {
       _expandedHeaderHeight = render.size.height;
     }
     if (!_homeScroll.hasClients) return;
-    final start = (_expandedHeaderHeight - 76).clamp(0.0, double.infinity);
-    final value = ((_homeScroll.offset - start) / 64).clamp(0.0, 1.0);
+    final start = (_expandedHeaderHeight - 120).clamp(0.0, double.infinity);
+    final value = ((_homeScroll.offset - start) / 80).clamp(0.0, 1.0);
     if (_headerCollapse.value != value) _headerCollapse.value = value;
+    // Scroll-spy: the last section whose top has passed under the bar.
+    // Children laid out by this scroll only get their real offsets after
+    // the frame, so look once more then.
+    if (!_spyAgainScheduled) {
+      _spyAgainScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _spyAgainScheduled = false;
+        if (mounted) _spy();
+      });
+    }
+    _spy();
   }
 
-  void _returnToTop() {
+  bool _spyAgainScheduled = false;
+
+  /// Tops are remembered because the list drops boxes far off-screen.
+  void _spy() {
     if (!_homeScroll.hasClients) return;
+    final offset = _homeScroll.offset;
+    for (final (i, key) in _sectionKeys.indexed) {
+      final top = _scrollTop(key);
+      if (top != null) _sectionTops[i] = top;
+    }
+    var current = 0;
+    for (final (i, top) in _sectionTops.indexed) {
+      if (top != null && top - offset <= _barHeight + 24) current = i;
+    }
+    if (_tab.value != current) _tab.value = current;
+  }
+
+  /// A section's top in scroll coordinates (the list's own layout offset,
+  /// which stays right for sections scrolled away), or null before it has
+  /// ever been laid out.
+  double? _scrollTop(GlobalKey key) {
+    RenderObject? node = key.currentContext?.findRenderObject();
+    while (node != null && node.parent is! RenderSliverMultiBoxAdaptor) {
+      node = node.parent;
+    }
+    final data = node?.parentData;
+    return data is SliverMultiBoxAdaptorParentData ? data.layoutOffset : null;
+  }
+
+  void _jumpTo(int i) {
+    if (!_homeScroll.hasClients) return;
+    final top = _scrollTop(_sectionKeys[i]) ?? _sectionTops[i];
+    // Not measured yet (never scrolled to): head for the end; the spy
+    // measures it on the way.
+    final target = (top == null ? double.infinity : top - _barHeight + 8).clamp(
+      0.0,
+      _homeScroll.position.maxScrollExtent,
+    );
     _homeScroll.animateTo(
-      0,
+      target,
       duration: Duration(
-        milliseconds: MediaQuery.disableAnimationsOf(context) ? 1 : 280,
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 1 : 380,
       ),
       curve: Curves.easeOutCubic,
     );
@@ -127,6 +185,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     _homeScroll.removeListener(_updateCompactHeader);
     _homeScroll.dispose();
     _headerCollapse.dispose();
+    _tab.dispose();
     super.dispose();
   }
 
@@ -207,32 +266,44 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ),
                         padding: EdgeInsets.zero,
                         children: [
-                          // 1. HomeHeader
-                          HomeHeader(
+                          // Masthead and the navy summary panel.
+                          KeyedSubtree(
                             key: _headerKey,
-                            profile: profile,
-                          ),
-
-                          // Capture first: open the app, write, Enter.
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              AppSpace.s16,
-                              AppSpace.s12,
-                              AppSpace.s16,
-                              0,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s16,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  HomeMasthead(name: profile?.name ?? ''),
+                                  const HomeSummaryPanel(),
+                                ],
+                              ),
                             ),
-                            child: CaptureCard(),
                           ),
 
-                          // Ask Riya, right where the thumb starts.
-                          const HomeAskBar(),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpace.s16),
 
                           // 2. Now card: the single "what should I do now?"
                           // answer (CLAUDE.md §5.1).
-                          const HomeFeedEntrance(
-                            index: 0,
-                            child: HomeNowCard(),
+                          KeyedSubtree(
+                            key: _sectionKeys[0],
+                            child: const HomeFeedEntrance(
+                              index: 0,
+                              child: HomeNowCard(),
+                            ),
+                          ),
+
+                          // Capture right under Now: write, Enter, done.
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              AppSpace.s16,
+                              0,
+                              AppSpace.s16,
+                              AppSpace.s16,
+                            ),
+                            child: CaptureCard(bar: true),
                           ),
 
                           // Hero feed (CLAUDE.md §5.1): Things and Mind are
@@ -240,27 +311,25 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           // follow. Each feature appears once.
                           // Promises sit right under Now: one daily answer
                           // that keeps your word to yourself in view.
-                          if (layout.visible.contains('promises') &&
-                              ref
-                                  .watch(unlockedFeaturesProvider)
-                                  .contains(AscentFeature.things))
-                            const HomeFeedEntrance(
-                              index: 1,
-                              child: HomePromiseCard(),
-                            ),
                           // Travel shows only while a trip is on or a recent
                           // visit is waiting for its bill or photos.
                           const HomeFeedEntrance(
                             index: 1,
                             child: HomeTravelCard(),
                           ),
-                          const HomeFeedEntrance(
-                            index: 1,
-                            child: HomeThingsCard(),
+                          KeyedSubtree(
+                            key: _sectionKeys[1],
+                            child: const HomeFeedEntrance(
+                              index: 1,
+                              child: HomeThingsSection(),
+                            ),
                           ),
-                          const HomeFeedEntrance(
-                            index: 2,
-                            child: HomeMindCard(),
+                          KeyedSubtree(
+                            key: _sectionKeys[2],
+                            child: const HomeFeedEntrance(
+                              index: 2,
+                              child: HomeThoughtsSection(),
+                            ),
                           ),
                           // The week at a glance: reminders, to-dos and
                           // thoughts by day.
@@ -268,9 +337,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             index: 3,
                             child: HomeCalendar(),
                           ),
-                          const HomeFeedEntrance(
-                            index: 4,
-                            child: HomeLifeTiles(),
+                          KeyedSubtree(
+                            key: _sectionKeys[3],
+                            child: HomeFeedEntrance(
+                              index: 4,
+                              // Your promise lives in Life now.
+                              child: HomeLifeSection(
+                                showPromise: layout.visible.contains(
+                                  'promises',
+                                ),
+                              ),
+                            ),
                           ),
 
                           PlanningNotificationHandler(
@@ -338,9 +415,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           opacity: value,
                           child: Transform.translate(
                             offset: Offset(0, -8 * (1 - value)),
-                            child: HomeCompactHeader(
-                              name: profileAsync.value?.name ?? '',
-                              onReturnToTop: _returnToTop,
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _tab,
+                              builder: (context, tab, _) => HomeCompactBar(
+                                tabs: _tabNames,
+                                current: tab,
+                                onTab: _jumpTo,
+                              ),
                             ),
                           ),
                         ),
@@ -349,6 +430,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                   },
                 ),
               ),
+              // The live pill: next thing's countdown or a running timer.
+              if (profileAsync.value != null)
+                const Positioned(
+                  top: 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: HomeLivePill()),
+                ),
               // Return-user greeting: floats at the top for a few seconds and
               // never pushes the Dayboard down, positioned below header controls.
               if (_welcomeBackDays != null)

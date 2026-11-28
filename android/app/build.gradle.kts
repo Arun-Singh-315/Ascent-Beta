@@ -7,7 +7,7 @@ android {
     namespace = "com.arun.ascent"
 
     // API 36 required for new Play Store submissions from August 31, 2026 onward.
-    compileSdk = 36
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

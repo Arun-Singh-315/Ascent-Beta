@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/thought_wall/board/board_cards.dart';
 import 'package:ascent/features/thought_wall/thought_wall_preferences.dart';
 
@@ -42,38 +41,9 @@ void main() {
     );
   }
 
-  group('Ask Riya Gateway & Mindspace Alignment Tests', () {
-    testWidgets(
-      'HomeHeader remains spacious without an assistant hero',
-      (tester) async {
-        await tester.pumpWidget(
-          buildApp(
-            const Scaffold(
-              body: HomeHeader(profile: null),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        // HomeHeader does not contain home_assistant_button
-        expect(
-          find.descendant(
-            of: find.byType(HomeHeader),
-            matching: find.byKey(const ValueKey('home_assistant_button')),
-          ),
-          findsNothing,
-        );
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(const Duration(milliseconds: 50));
-      },
-    );
-
-
-  });
+  group('Ask Riya Gateway & Mindspace Alignment Tests', () {});
 
   group('Mind Palace Style & Typography Tests', () {
-
     testWidgets('ThoughtWallAppearance bubbleFilled defaults to false', (
       tester,
     ) async {
@@ -117,6 +87,5 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));
     });
-
   });
 }

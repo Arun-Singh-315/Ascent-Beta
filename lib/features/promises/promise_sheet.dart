@@ -17,7 +17,7 @@ import '../../shared/widgets/ascent_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/ascent_switch_row.dart';
 import 'promise_copy.dart';
-import 'widgets/home_promise_card.dart';
+import 'widgets/promise_hero.dart';
 import 'widgets/promise_dots.dart';
 
 /// Opens the promise sheet: new when [editing] is null, else edit.

@@ -5,10 +5,8 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/services/festival_service.dart';
 import 'package:ascent/features/ai_assistant/ai_assistant_screen.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/today/things_hub_screen.dart';
-import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/shared/widgets/festive_sparkle_badge.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -33,18 +31,6 @@ UserProfile _makeTestProfile({
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
     onboardingComplete: true,
-  );
-}
-
-class _FakeStudyStreakNotifier extends StudyStreakNotifier {
-  @override
-  StudyStreakStatus build() => StudyStreakCalculator().calculate(
-    todaySeconds: 7200,
-    yesterdaySeconds: 7200,
-    priorStreakDays: 5,
-    historicalLongestStreak: 5,
-    historicalShortestStreak: 1,
-    now: DateTime.now(),
   );
 }
 
@@ -210,55 +196,6 @@ void main() {
   });
 
   group('Festive Ambient UI: Home Header, Thought Wall, & Riya Tests', () {
-    testWidgets('Home Header displays festive banner on festival day', (
-      tester,
-    ) async {
-      final testProfile = _makeTestProfile();
-      final container = ProviderContainer(
-        overrides: [
-          databaseProvider.overrideWithValue(db),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          studyStreakProvider.overrideWith(_FakeStudyStreakNotifier.new),
-          userProfileStreamProvider.overrideWith(
-            (ref) => Stream.value(testProfile),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(body: HomeHeader(profile: testProfile)),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
-
-      final todayFestival = FestivalService.getTodayFestival();
-      if (todayFestival != null) {
-        expect(
-          find.byKey(const ValueKey('home_festival_banner')),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: find.byKey(const ValueKey('home_festival_banner')),
-            matching: find.textContaining('Happy ${todayFestival.name}'),
-          ),
-          findsOneWidget,
-        );
-        expect(find.text(todayFestival.thought), findsOneWidget);
-      }
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 500));
-    });
-
-
     testWidgets(
       'Riya AI Assistant greets with warm personalized festival wish',
       (tester) async {
@@ -308,6 +245,5 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       },
     );
-
   });
 }

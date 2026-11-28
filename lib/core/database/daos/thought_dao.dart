@@ -63,6 +63,31 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Stream<List<Thought>> watchAllThoughts() => watchActiveThoughts();
 
   /// Watch recent thoughts for Home preview (open first, then pinned and newest before limiting).
+  /// To-dos made from any of [ids] (Home's Thoughts replies).
+  Stream<List<Task>> watchTasksFromThoughts(List<int> ids) {
+    if (ids.isEmpty) return Stream.value(const []);
+    return (db.select(db.taskTable)..where(
+          (t) => t.linkedThoughtId.isIn(ids) & t.isArchived.equals(false),
+        ))
+        .watch();
+  }
+
+  /// Active reminders linked to any of [ids], as (thought id, reminder).
+  Stream<List<(int, Reminder)>> watchRemindersForThoughts(List<int> ids) {
+    if (ids.isEmpty) return Stream.value(const []);
+    final link = db.thoughtReminderLinkTable;
+    final r = db.reminderTable;
+    final q = db.select(link).join([
+      innerJoin(r, r.id.equalsExp(link.reminderId)),
+    ])..where(link.thoughtId.isIn(ids) & r.isActive.equals(true));
+    return q.watch().map(
+      (rows) => [
+        for (final row in rows)
+          (row.readTable(link).thoughtId, row.readTable(r)),
+      ],
+    );
+  }
+
   Stream<List<Thought>> watchRecentThoughts({int limit = 10}) {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false) & t.mood.equals('promise').not())

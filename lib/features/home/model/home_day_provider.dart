@@ -8,8 +8,10 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/local_day_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
+import 'day_summary.dart';
 import 'home_day.dart';
 
+export 'day_summary.dart';
 export 'home_day.dart';
 
 /// The wall clock, refreshed on each new minute while Home is listening, so
@@ -137,3 +139,35 @@ class _Items {
   @override
   int get hashCode => Object.hashAll(items);
 }
+
+/// Yesterday's totals, for the summary's "compared with yesterday". Read
+/// once per day; null while loading or if anything fails (the summary then
+/// simply leaves the comparison out).
+final homeYesterdayProvider = FutureProvider<YesterdayStats?>((ref) async {
+  final today = ref.watch(localDayProvider);
+  final y = today.subtract(const Duration(days: 1));
+  try {
+    final things = await ref.watch(taskDaoProvider).countCompletedOn(y);
+    final water = await ref.watch(waterDaoProvider).getWaterForDate(y);
+    final sessions = await ref
+        .watch(timeSessionDaoProvider)
+        .watchSessionsForDate(y)
+        .first;
+    final focus =
+        sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds) ~/ 60;
+    return YesterdayStats(
+      thingsDone: things,
+      waterMl: water,
+      focusMinutes: focus,
+    );
+  } catch (_) {
+    return null;
+  }
+});
+
+/// The header summary (rings, three lines, insight).
+final homeSummaryProvider = Provider<DaySummary>((ref) {
+  final day = ref.watch(homeDayProvider);
+  final y = ref.watch(homeYesterdayProvider).value;
+  return buildDaySummary(day, y);
+});

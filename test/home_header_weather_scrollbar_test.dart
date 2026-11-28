@@ -4,11 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/services/festival_service.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/home_weather.dart';
 
 void main() {
@@ -16,133 +12,6 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'weather_city': 'Bengaluru, India',
     });
-  });
-
-  UserProfile createTestProfile({String name = 'Arun'}) {
-    return UserProfile(
-      id: 1,
-      name: name,
-      targetRole: 'Engineering',
-      targetCompanies: 'Google',
-      weeklyHoursAvailable: 20,
-      preferredStudyWindow: 'Morning',
-      skillSelfRatings: '{}',
-      createdAt: DateTime(2026, 1, 1),
-      updatedAt: DateTime(2026, 1, 1),
-      dateOfBirth: DateTime(1998, 11, 10), // Scorpio
-      onboardingComplete: true,
-    );
-  }
-
-  group('HomeHeader Layout & Weather Design Tests', () {
-
-    testWidgets(
-      'Header chips use Wrap and have zero horizontal scrolling with all chips populated',
-      (tester) async {
-        final prefs = await SharedPreferences.getInstance();
-        final now = DateTime(2026, 11, 15);
-        final profile = createTestProfile();
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayFestivalProvider.overrideWith(
-                (ref) => const FestivalEvent(
-                  id: 'diwali',
-                  name: 'Diwali',
-                  greeting: 'Happy Diwali',
-                  thought: 'May light triumph over darkness.',
-                  riyaWish: 'Happy Diwali',
-                  month: 11,
-                  day: 15,
-                ),
-              ),
-              currentStreakStreamProvider.overrideWith(
-                (ref) => Stream.value(7),
-              ),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: Scaffold(
-                body: HomeHeader(profile: profile, now: now),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // All chips are rendered
-        expect(
-          find.byKey(const ValueKey('home_festival_banner')),
-          findsOneWidget,
-        );
-        expect(find.byKey(const ValueKey('home_rashi')), findsOneWidget);
-        expect(find.byKey(const ValueKey('home_streak_chip')), findsOneWidget);
-
-        // Header chips must NOT be inside a horizontal scrollview
-        final horizontalScrollables = find.byWidgetPredicate(
-          (widget) =>
-              widget is SingleChildScrollView &&
-              widget.scrollDirection == Axis.horizontal,
-        );
-        expect(horizontalScrollables, findsNothing);
-
-        // Chips are contained in a Wrap widget
-        expect(find.byType(Wrap), findsWidgets);
-      },
-    );
-
-    testWidgets(
-      'Header is immune to overflow at 320px width with 2.0x accessibility text scale',
-      (tester) async {
-        final prefs = await SharedPreferences.getInstance();
-        final now = DateTime(2026, 11, 15);
-        final profile = createTestProfile(name: 'Arun Singh Visen');
-
-        tester.view.physicalSize = const Size(320 * 3, 844 * 3);
-        tester.view.devicePixelRatio = 3.0;
-        addTearDown(() => tester.view.resetPhysicalSize());
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              todayFestivalProvider.overrideWith(
-                (ref) => const FestivalEvent(
-                  id: 'diwali',
-                  name: 'Diwali',
-                  greeting: 'Happy Diwali',
-                  thought: 'May light triumph over darkness.',
-                  riyaWish: 'Happy Diwali',
-                  month: 11,
-                  day: 15,
-                ),
-              ),
-              currentStreakStreamProvider.overrideWith(
-                (ref) => Stream.value(12),
-              ),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: MediaQuery(
-                data: const MediaQueryData(
-                  size: Size(320, 844),
-                  textScaler: TextScaler.linear(2.0),
-                ),
-                child: Scaffold(
-                  body: HomeHeader(profile: profile, now: now),
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Zero exceptions and zero RenderFlex overflow
-        expect(tester.takeException(), isNull);
-      },
-    );
   });
 
   group('WeatherForecastSheet Scrollbar & Navigation Tests', () {
