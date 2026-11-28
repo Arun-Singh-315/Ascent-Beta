@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/home/home_zone.dart';
 import 'calm_blue_palette.dart';
 
-/// Home's colour zones, top to bottom (Day Page plan, step 4).
-enum HomeZone { now, plan, keep, mind, care, money, more }
+export '../../core/home/home_zone.dart';
 
 /// The one set of colour roles for the Day Page (CLAUDE.md §3.1).
 ///
