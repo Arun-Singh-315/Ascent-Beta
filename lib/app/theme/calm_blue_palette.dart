@@ -85,14 +85,14 @@ abstract final class CalmBluePalette {
   // ── Backdrops (top → bottom), one identity per screen ────────────────
   // Home: soft Apple blue.
   static const backdropLight = [
-    Color(0xFFDDE9FB),
-    Color(0xFFEDF3FD),
-    Color(0xFFF7F9FD),
+    Color(0xFFF1F5FB),
+    Color(0xFFECF1F9),
+    Color(0xFFE5ECF6),
   ];
   static const backdropDark = [
-    Color(0xFF161B23),
-    Color(0xFF13161B),
-    Color(0xFF111317),
+    Color(0xFF0A0F17),
+    Color(0xFF0D131C),
+    Color(0xFF101722),
   ];
   static const cloudBlue = Color(0xFF8DB7F5);
   static const cloudLilac = Color(0xFFC7B8F2);
@@ -171,4 +171,22 @@ abstract final class CalmBluePalette {
   // Focus (indigo-blue), used for focus sessions and their charts.
   static const focus = Color(0xFF3F5BC4);
   static const darkFocus = Color(0xFF94A8F2);
+
+  // ── Home summary panel (deep navy, same in both themes' spirit) ──────────
+  static const summaryTop = Color(0xFF1B3D6B);
+  static const summaryBottom = Color(0xFF0E2442);
+  static const darkSummaryTop = Color(0xFF18304F);
+  static const darkSummaryBottom = Color(0xFF0E1A2E);
+  static const summaryEdge = Color(0xFF22324A);
+  static const summaryInk = Color(0xFFFFFFFF);
+  static const summaryMuted = Color(0xFFB9C7DC);
+  static const summarySoft = Color(0xFFD6E1F0);
+  static const summaryTrack = Color(0x21FFFFFF);
+  static const summaryDivider = Color(0x24FFFFFF);
+  static const summaryUp = Color(0xFF8FE0B4);
+  static const summaryDown = Color(0xFFF4A39B);
+  static const ringThings = Color(0xFFFFFFFF);
+  static const ringWater = Color(0xFF6EC6F2);
+  static const ringFocus = Color(0xFFF2BF66);
+  static const summaryShadow = Color(0x990E2442);
 }

@@ -263,6 +263,22 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
             ..limit(1))
           .getSingleOrNull();
 
+  /// How many tasks were completed on [day] (local calendar day).
+  Future<int> countCompletedOn(DateTime day) async {
+    final start = DateTime(day.year, day.month, day.day);
+    final end = start.add(const Duration(days: 1));
+    final count = taskTable.id.count();
+    final row =
+        await (selectOnly(taskTable)
+              ..addColumns([count])
+              ..where(
+                taskTable.actualCompletedDate.isBiggerOrEqualValue(start) &
+                    taskTable.actualCompletedDate.isSmallerThanValue(end),
+              ))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   /// Count of completed tasks (actualCompletedDate IS NOT NULL) for [phaseId].
   Future<int> getCompletedTaskCountForPhase(int phaseId) async {
     final count = taskTable.id.count();

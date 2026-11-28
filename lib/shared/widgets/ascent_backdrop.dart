@@ -88,6 +88,8 @@ class _BackdropPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Home is a calm, plain gradient (Home v7): no clouds, no doodle.
+    if (tone == BackdropTone.home) return;
     void cloud(Color c, Offset center, double r, double a) {
       final rect = Rect.fromCircle(center: center, radius: r);
       canvas.drawCircle(
