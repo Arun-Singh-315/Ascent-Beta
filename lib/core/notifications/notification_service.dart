@@ -74,15 +74,6 @@ class NotificationService {
   static const String channelCatchUpName = 'Daily Catch-up Nudge';
   static const String channelTimerId = 'ascent_timer_alerts';
   static const String channelTimerName = 'Live Session & Timer Alerts';
-  static const String channelMomentumWakeId = 'ascent_momentum_wake';
-  static const String channelMomentumWakeName = 'Momentum Wake-Up Alert';
-  static const String channelMomentumCommitmentId =
-      'ascent_momentum_commitments';
-  static const String channelMomentumCommitmentName =
-      'Momentum Scheduled Sessions';
-  static const String channelMomentumWindDownId = 'ascent_momentum_winddown';
-  static const String channelMomentumWindDownName =
-      'Momentum Evening Wind-Down';
   static const String channelMedicineId = 'ascent_medicine_reminders';
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
   static const String channelHydrationId = 'ascent_hydration_reminders';
@@ -145,51 +136,32 @@ class NotificationService {
 
     final path = uri.path;
 
+    // Only screens that exist. Payloads for retired features (Learning,
+    // Walk, Momentum and the old career tools) open Home instead.
     const baseDestinations = {
       '/home',
+      '/things',
+      '/today',
       '/reminders',
-      '/money',
+      '/calendar',
+      '/plans',
+      '/promises',
+      '/thought-wall',
+      '/ai-assistant',
+      '/you',
       '/more',
       '/focus',
-      '/learning',
       '/medicine',
-      '/walk',
-      '/chai-break',
       '/hydration',
-      '/thought-wall',
-      '/promises',
-      '/pipeline',
-      '/analytics',
-      '/settings',
-      '/study-plan',
-      '/dsa',
-      '/interview-prep',
-      '/consistency',
-      '/resume-vault',
-      '/momentum',
-      '/momentum-onboarding',
-      '/momentum/onboarding',
+      '/money',
       '/vault',
-      '/today',
-      '/things',
+      '/travel',
       '/history',
-      '/plans',
-      '/book-reader',
+      '/settings',
       '/backup',
-      '/ai-assistant',
     };
 
     if (baseDestinations.contains(path)) {
-      return trimmed;
-    }
-
-    if (RegExp(r'^/pipeline/\d+$').hasMatch(path)) {
-      return trimmed;
-    }
-    if (RegExp(r'^/analytics/series/\d+$').hasMatch(path)) {
-      return trimmed;
-    }
-    if (RegExp(r'^/study-plan/course/[^/]+$').hasMatch(path)) {
       return trimmed;
     }
 
@@ -218,7 +190,6 @@ class NotificationService {
   static String? _pendingActionId;
   static String? _pendingActionPayload;
   static void Function(String route)? onNotificationNavigate;
-  static void Function(String route, int seconds)? onNotificationSeek;
   static void Function(String actionId, String? payload)? onNotificationAction;
 
   static void setNotificationNavigateHandler(
@@ -282,12 +253,6 @@ class NotificationService {
 
     try {
       liveSessionChannel.setMethodCallHandler((call) async {
-        if (call.method == 'seek') {
-          final args = Map<String, dynamic>.from(call.arguments as Map);
-          if (args['route'] == '/learning' && args['seconds'] is int) {
-            onNotificationSeek?.call('/learning', args['seconds']);
-          }
-        }
         if (call.method == 'action' || call.method == 'open') {
           final args = Map<String, dynamic>.from(call.arguments as Map);
           final action = args['action'] as String?;
@@ -465,41 +430,15 @@ class NotificationService {
             importance: Importance.high,
           ),
         );
-        await androidImpl.createNotificationChannel(
-          const AndroidNotificationChannel(
-            channelMomentumWakeId,
-            channelMomentumWakeName,
-            description:
-                'Alarms for target wake-up times and circadian entrainment',
-            importance: Importance.max,
-            playSound: true,
-            enableVibration: true,
-            enableLights: true,
-            ledColor: AscentColors.accentSecondary,
-          ),
-        );
-        await androidImpl.createNotificationChannel(
-          const AndroidNotificationChannel(
-            channelMomentumCommitmentId,
-            channelMomentumCommitmentName,
-            description:
-                'Reminders for scheduled gym workouts, outdoor walks, and supporting habits',
-            importance: Importance.high,
-            playSound: true,
-            enableVibration: true,
-          ),
-        );
-        await androidImpl.createNotificationChannel(
-          const AndroidNotificationChannel(
-            channelMomentumWindDownId,
-            channelMomentumWindDownName,
-            description:
-                'Evening wind-down notifications to protect your 8-hour sleep recovery window',
-            importance: Importance.high,
-            playSound: true,
-            enableVibration: true,
-          ),
-        );
+        // Momentum was retired on 21 Nov 2026; remove its old channels from
+        // the phone's notification settings.
+        for (final id in const [
+          'ascent_momentum_wake',
+          'ascent_momentum_commitments',
+          'ascent_momentum_winddown',
+        ]) {
+          await androidImpl.deleteNotificationChannel(channelId: id);
+        }
         await androidImpl.createNotificationChannel(
           const AndroidNotificationChannel(
             channelMedicineId,
@@ -792,57 +731,7 @@ class NotificationService {
     }
   }
 
-  /// Daily Mid-day (14:30) and Evening Streak Guardian (20:30) brotherly nudges.
-  Future<void> scheduleDailyMomentumGuardianNudges() async {
-    if (!_isInitialized) await initialize();
 
-    // 1. Midday 14:30 Check-in
-    final midMsg = BoostNotificationCopy.forMiddayCheck();
-    await _scheduleDailyBoost(
-      id: 201,
-      time: const TimeOfDay(hour: 14, minute: 30),
-      msg: midMsg,
-    );
-
-    // 2. Evening 20:30 Streak Guardian
-    final eveningMsg = BoostNotificationCopy.forEveningStreakGuardian();
-    await _scheduleDailyBoost(
-      id: 202,
-      time: const TimeOfDay(hour: 20, minute: 30),
-      msg: eveningMsg,
-    );
-  }
-
-  Future<void> _scheduleDailyBoost({
-    required int id,
-    required TimeOfDay time,
-    required NotificationMessage msg,
-  }) async {
-    final scheduledTz = _nextInstanceOfTime(time);
-    final details = _buildModernNotificationDetails(
-      channelId: channelBoostNudgesId,
-      channelName: channelBoostNudgesName,
-      channelDescription: 'Daily momentum and streak guardian nudges',
-      title: msg.title,
-      body: msg.body,
-      summaryText: msg.summary,
-    );
-
-    try {
-      await _plugin.zonedSchedule(
-        id: id,
-        title: msg.title,
-        body: msg.body,
-        scheduledDate: scheduledTz,
-        notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents: DateTimeComponents.time,
-        payload: '/home',
-      );
-    } catch (e) {
-      debugPrint('Failed to schedule daily boost $id: $e');
-    }
-  }
 
   /// Schedules 8:00 PM catch-up reminder if consistency has not been logged.
   Future<void> scheduleEveningCatchUpNudge({
@@ -1181,215 +1070,8 @@ class NotificationService {
     return true;
   }
 
-  /// Schedules a 6:00 AM (or target time) wake alarm for Momentum with persistent vibration and alarm sound.
-  Future<void> scheduleMomentumWakeAlarm({
-    required int id,
-    required DateTime scheduledAt,
-    required String title,
-    required String body,
-  }) async {
-    if (!_isInitialized) await initialize();
 
-    final nowTz = tz.TZDateTime.now(tz.local);
-    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
-    if (scheduledTz.isBefore(nowTz)) {
-      if (nowTz.difference(scheduledTz).inSeconds < 45) {
-        scheduledTz = nowTz.add(const Duration(seconds: 10));
-      } else {
-        return;
-      }
-    }
 
-    final androidDetails = AndroidNotificationDetails(
-      channelMomentumWakeId,
-      channelMomentumWakeName,
-      channelDescription:
-          'Alarms for target wake-up times and circadian entrainment',
-      importance: Importance.max,
-      priority: Priority.max,
-      icon: '@drawable/ic_launcher_foreground',
-      color: AscentColors.accentSecondary,
-      category: AndroidNotificationCategory.alarm,
-      fullScreenIntent: true,
-      audioAttributesUsage: AudioAttributesUsage.alarm,
-      enableLights: true,
-      ledColor: AscentColors.accentSecondary,
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 1000]),
-      subText: 'Ascent • Momentum Wake Alert',
-      styleInformation: BigTextStyleInformation(
-        body,
-        contentTitle: title,
-        summaryText: '⏰ 06:00 AM Wake Call',
-      ),
-      playSound: true,
-    );
-
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.critical,
-      subtitle: 'Ascent • Momentum Wake Alert',
-    );
-
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-    );
-
-    try {
-      await _plugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledTz,
-        notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '/momentum',
-      );
-      debugPrint('Scheduled exact Momentum wake alarm id=$id at $scheduledTz');
-    } catch (e) {
-      debugPrint(
-        'Exact wake alarm failed ($e), falling back to inexactAllowWhileIdle for id=$id',
-      );
-      try {
-        await _plugin.zonedSchedule(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: scheduledTz,
-          notificationDetails: details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: '/momentum',
-        );
-      } catch (err) {
-        debugPrint('Failed to schedule Momentum wake alarm fallback: $err');
-      }
-    }
-  }
-
-  /// Schedules a workout, walk, or habit session reminder for Momentum.
-  Future<void> scheduleMomentumCommitmentReminder({
-    required int id,
-    required DateTime scheduledAt,
-    required String title,
-    required String body,
-    String? summaryText,
-  }) async {
-    if (!_isInitialized) await initialize();
-
-    final nowTz = tz.TZDateTime.now(tz.local);
-    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
-    if (scheduledTz.isBefore(nowTz)) {
-      if (nowTz.difference(scheduledTz).inSeconds < 45) {
-        scheduledTz = nowTz.add(const Duration(seconds: 10));
-      } else {
-        return;
-      }
-    }
-
-    final details = _buildModernNotificationDetails(
-      channelId: channelMomentumCommitmentId,
-      channelName: channelMomentumCommitmentName,
-      channelDescription:
-          'Reminders for scheduled gym workouts and outdoor walks',
-      title: title,
-      body: body,
-      summaryText: summaryText ?? '⚡ Momentum Session',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    try {
-      await _plugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledTz,
-        notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '/momentum',
-      );
-      debugPrint('Scheduled exact Momentum commitment id=$id at $scheduledTz');
-    } catch (e) {
-      debugPrint(
-        'Exact commitment failed ($e), falling back to inexact for id=$id',
-      );
-      try {
-        await _plugin.zonedSchedule(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: scheduledTz,
-          notificationDetails: details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: '/momentum',
-        );
-      } catch (err) {
-        debugPrint('Failed to schedule Momentum commitment fallback: $err');
-      }
-    }
-  }
-
-  /// Schedules 10:00 PM evening wind-down notification to protect sleep window.
-  Future<void> scheduleMomentumWindDownReminder({
-    required int id,
-    required DateTime scheduledAt,
-    required String title,
-    required String body,
-  }) async {
-    if (!_isInitialized) await initialize();
-
-    final nowTz = tz.TZDateTime.now(tz.local);
-    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
-    if (scheduledTz.isBefore(nowTz)) {
-      if (nowTz.difference(scheduledTz).inSeconds < 45) {
-        scheduledTz = nowTz.add(const Duration(seconds: 10));
-      } else {
-        return;
-      }
-    }
-
-    final details = _buildModernNotificationDetails(
-      channelId: channelMomentumWindDownId,
-      channelName: channelMomentumWindDownName,
-      channelDescription:
-          'Evening wind-down reminder to protect your 8-hour sleep opportunity',
-      title: title,
-      body: body,
-      summaryText: '🌙 Wind-Down & Recovery',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    try {
-      await _plugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: scheduledTz,
-        notificationDetails: details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: '/momentum',
-      );
-      debugPrint('Scheduled exact Momentum wind-down id=$id at $scheduledTz');
-    } catch (e) {
-      try {
-        await _plugin.zonedSchedule(
-          id: id,
-          title: title,
-          body: body,
-          scheduledDate: scheduledTz,
-          notificationDetails: details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: '/momentum',
-        );
-      } catch (err) {
-        debugPrint('Failed to schedule Momentum wind-down fallback: $err');
-      }
-    }
-  }
 
   /// Schedules a dedicated reminder for taking medicine/prescriptions.
   Future<void> scheduleMedicineReminder({
@@ -1752,132 +1434,7 @@ class NotificationService {
     }
   }
 
-  /// Shows or updates an ongoing notification for background outdoor walking or run session.
-  Future<void> showOngoingWalkNotification({
-    required int durationSeconds,
-    required double distanceKm,
-    required String pace,
-    bool isPaused = false,
-  }) async {
-    if (!_isInitialized) await initialize();
-    try {
-      final nowMillis = DateTime.now().millisecondsSinceEpoch;
-      final chronometerStart = nowMillis - (durationSeconds * 1000);
 
-      final actions = <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          isPaused ? actionResume : actionPause,
-          isPaused ? 'Resume' : 'Pause',
-          showsUserInterface: false,
-        ),
-      ];
 
-      final androidDetails = AndroidNotificationDetails(
-        channelOngoingSessionId,
-        channelOngoingSessionName,
-        channelDescription: 'Ongoing walking and GPS activity tracker',
-        importance: Importance.low,
-        priority: Priority.low,
-        ongoing: !isPaused,
-        autoCancel: false,
-        onlyAlertOnce: true,
-        showWhen: true,
-        usesChronometer: !isPaused,
-        when: chronometerStart,
-        color: AscentColors.stateSuccess,
-        subText: isPaused ? 'Walk Paused' : 'Walk Active • GPS Live',
-        category: AndroidNotificationCategory.status,
-        actions: actions,
-      );
-      const darwinDetails = DarwinNotificationDetails(
-        presentSound: false,
-        presentAlert: false,
-      );
-      await _plugin.show(
-        id: ongoingWalkNotificationId,
-        title: isPaused ? 'Walking Paused ⏸️' : 'Walking in Progress 🚶',
-        body: '${distanceKm.toStringAsFixed(2)} km • Pace: $pace /km',
-        payload: '/walk',
-        notificationDetails: NotificationDetails(
-          android: androidDetails,
-          iOS: darwinDetails,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Failed to show ongoing walk notification: $e');
-    }
-  }
 
-  /// Cancels the ongoing walk notification.
-  Future<void> cancelOngoingWalkNotification() async {
-    try {
-      await _plugin.cancel(id: ongoingWalkNotificationId);
-    } catch (e) {
-      debugPrint('Failed to cancel ongoing walk notification: $e');
-    }
-  }
-
-  /// Shows or updates an ongoing notification for Pause break countdown.
-  Future<void> showOngoingChaiBreakNotification({
-    required int remainingSeconds,
-    required String soundscapeTitle,
-    bool isPaused = false,
-  }) async {
-    if (!_isInitialized) await initialize();
-    try {
-      final actions = <AndroidNotificationAction>[
-        AndroidNotificationAction(
-          isPaused ? actionResume : actionPause,
-          isPaused ? 'Resume' : 'Pause',
-          showsUserInterface: false,
-        ),
-      ];
-
-      final m = remainingSeconds ~/ 60;
-      final s = remainingSeconds % 60;
-      final timeStr =
-          '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-
-      final androidDetails = AndroidNotificationDetails(
-        channelOngoingSessionId,
-        channelOngoingSessionName,
-        channelDescription: 'Ongoing Pause break countdown',
-        importance: Importance.low,
-        priority: Priority.low,
-        ongoing: !isPaused,
-        autoCancel: false,
-        onlyAlertOnce: true,
-        showWhen: false,
-        color: AscentColors.accentInfo,
-        subText: isPaused ? 'Break Paused' : 'Pause',
-        category: AndroidNotificationCategory.status,
-        actions: actions,
-      );
-      const darwinDetails = DarwinNotificationDetails(
-        presentSound: false,
-        presentAlert: false,
-      );
-      await _plugin.show(
-        id: ongoingChaiBreakNotificationId,
-        title: isPaused ? '☕ Break paused' : '☕ Pause',
-        body: '$soundscapeTitle • $timeStr remaining',
-        payload: '/chai-break',
-        notificationDetails: NotificationDetails(
-          android: androidDetails,
-          iOS: darwinDetails,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Failed to show ongoing chai break notification: $e');
-    }
-  }
-
-  /// Cancels the ongoing chai break notification.
-  Future<void> cancelOngoingChaiBreakNotification() async {
-    try {
-      await _plugin.cancel(id: ongoingChaiBreakNotificationId);
-    } catch (e) {
-      debugPrint('Failed to cancel ongoing chai break notification: $e');
-    }
-  }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -61,11 +62,18 @@ IconData weatherIconForCode(int code) => switch (code) {
   _ => Icons.wb_sunny_outlined,
 };
 
+/// Weather is opt-in (CLAUDE.md §1.3, §7): nothing is fetched until the
+/// person picks a city in the forecast sheet.
+bool weatherConfigured(SharedPreferences prefs) =>
+    prefs.getDouble('weather_lat') != null &&
+    prefs.getDouble('weather_lon') != null;
+
 final homeWeatherProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   final prefs = ref.watch(sharedPreferencesProvider);
-  final lat = prefs.getDouble('weather_lat') ?? 23.2599; // Default Bhopal
-  final lon = prefs.getDouble('weather_lon') ?? 77.4126;
-  final timer = Timer(const Duration(minutes: 15), ref.invalidateSelf);
+  if (!weatherConfigured(prefs)) return null;
+  final lat = prefs.getDouble('weather_lat')!;
+  final lon = prefs.getDouble('weather_lon')!;
+  final timer = Timer(const Duration(minutes: 30), ref.invalidateSelf);
   ref.onDispose(timer.cancel);
   return weatherJson(
     Uri.https('api.open-meteo.com', '/v1/forecast', {
@@ -88,48 +96,6 @@ void showWeatherForecastSheet(BuildContext context) {
     builder: (context) =>
         const AscentSheetSurface(child: WeatherForecastSheet()),
   );
-}
-
-class HomeWeather extends ConsumerWidget {
-  const HomeWeather({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(homeWeatherProvider);
-    final current = state.value?['current'] as Map<String, dynamic>?;
-    String city = 'Bhopal';
-    try {
-      city = ref.watch(sharedPreferencesProvider).getString('weather_city')?.split(',').first ?? 'Bhopal';
-    } catch (_) {}
-
-    final String label;
-    final IconData iconData;
-    if (current != null) {
-      final temp = (current['temperature_2m'] as num).round();
-      label = '$temp° · $city';
-      final code = (current['weather_code'] as num).toInt();
-      iconData = weatherIconForCode(code);
-    } else if (state.hasError) {
-      label = 'Weather unavailable · Retry';
-      iconData = Icons.cloud_off_rounded;
-    } else if (state.isLoading) {
-      label = 'Loading…';
-      iconData = Icons.wb_sunny_outlined;
-    } else {
-      label = '28° · $city';
-      iconData = Icons.wb_sunny_outlined;
-    }
-
-    return AppChip(
-      key: const ValueKey('home_weather'),
-      icon: iconData,
-      label: label,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        showWeatherForecastSheet(context);
-      },
-    );
-  }
 }
 
 class WeatherForecastSheet extends ConsumerStatefulWidget {
@@ -222,11 +188,17 @@ class _WeatherForecastSheetState extends ConsumerState<WeatherForecastSheet> {
     final data = weather.value;
     final current = data?['current'] as Map<String, dynamic>?;
     final prefs = ref.watch(sharedPreferencesProvider);
-    final currentCity = prefs.getString('weather_city') ?? 'Bhopal, India';
+    final currentCity = prefs.getString('weather_city') ?? 'Choose a city';
     final code = current != null ? (current['weather_code'] as num).toInt() : 0;
     final conditionIcon = weatherIconForCode(code);
-    final conditionText = current != null ? weatherDescription(code) : 'Clear sky';
-    final tempVal = current != null ? (current['temperature_2m'] as num).round() : 28;
+    final conditionText = current != null
+        ? weatherDescription(code)
+        : weatherConfigured(prefs)
+            ? 'Offline'
+            : 'Pick a city below to see the weather';
+    final tempVal = current != null
+        ? '${(current['temperature_2m'] as num).round()}'
+        : '–';
 
     return ConstrainedBox(
       constraints: BoxConstraints(

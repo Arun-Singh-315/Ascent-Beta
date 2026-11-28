@@ -1058,8 +1058,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                               ),
                                           onRecover: () =>
                                               _recoverMessage(actionData),
-                                          onOpenCourse: () =>
-                                              context.push('/study-plan'),
                                           onOpenHub: () => context.push(
                                             actionData?['route'] as String? ??
                                                 '/today',
@@ -1343,7 +1341,6 @@ class _ConversationMessageBubble extends ConsumerStatefulWidget {
   final Map<String, dynamic>? actionData;
   final List<String> messageQuickChips;
   final ValueChanged<String> onSelectChip;
-  final VoidCallback onOpenCourse;
   final VoidCallback onOpenHub;
   final VoidCallback onRecover;
   final ValueChanged<bool> onReview;
@@ -1362,7 +1359,6 @@ class _ConversationMessageBubble extends ConsumerStatefulWidget {
     required this.actionData,
     required this.messageQuickChips,
     required this.onSelectChip,
-    required this.onOpenCourse,
     required this.onOpenHub,
     required this.onRecover,
     required this.onReview,
@@ -1422,7 +1418,6 @@ class _ConversationMessageBubbleState
     final onRecover = widget.onRecover;
     final onReview = widget.onReview;
     final onEditDraft = widget.onEditDraft;
-    final onOpenCourse = widget.onOpenCourse;
     final onOpenHub = widget.onOpenHub;
     final busy = widget.busy;
 
@@ -1930,18 +1925,10 @@ class _ConversationMessageBubbleState
               const SizedBox(height: 6),
               _RiyaRecordCard(
                 actionData: actionData,
-                buttonLabel:
-                    msg.actionType == AiActionType.lectureMarkedComplete.name
-                    ? 'Open course'
-                    : 'View',
+                buttonLabel: 'View',
                 onOpen: () {
                   HapticFeedback.lightImpact();
-                  if (msg.actionType ==
-                      AiActionType.lectureMarkedComplete.name) {
-                    onOpenCourse();
-                  } else {
-                    onOpenHub();
-                  }
+                  onOpenHub();
                 },
               ),
             ],

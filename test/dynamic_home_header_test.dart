@@ -17,7 +17,11 @@ void main() {
   late SharedPreferences prefs;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'weather_city': 'Mumbai, India'});
+    SharedPreferences.setMockInitialValues({
+      'weather_city': 'Mumbai, India',
+      'weather_lat': 19.076,
+      'weather_lon': 72.8777,
+    });
     prefs = await SharedPreferences.getInstance();
   });
 
@@ -156,7 +160,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        // Rain keeps its canvas moving, so settle with fixed pumps.
+        await tester.pump(const Duration(milliseconds: 500));
 
         // Verify afternoon greeting
         expect(find.text('Good afternoon,'), findsOneWidget);
@@ -278,7 +283,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        // Rain keeps its canvas moving, so settle with fixed pumps.
+        await tester.pump(const Duration(milliseconds: 500));
 
         expect(tester.takeException(), isNull);
         expect(

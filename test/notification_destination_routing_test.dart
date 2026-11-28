@@ -21,11 +21,6 @@ void main() {
         NotificationService.destinationForPayload('/medicine'),
         '/medicine',
       );
-      expect(NotificationService.destinationForPayload('/walk'), '/walk');
-      expect(
-        NotificationService.destinationForPayload('/chai-break'),
-        '/chai-break',
-      );
       expect(
         NotificationService.destinationForPayload('/hydration'),
         '/hydration',
@@ -39,21 +34,11 @@ void main() {
         '/reminders',
       );
       expect(
-        NotificationService.destinationForPayload('/book-reader'),
-        '/book-reader',
+        NotificationService.destinationForPayload('/calendar'),
+        '/calendar',
       );
-      expect(
-        NotificationService.destinationForPayload('/momentum'),
-        '/momentum',
-      );
-      expect(
-        NotificationService.destinationForPayload('/momentum-onboarding'),
-        '/momentum-onboarding',
-      );
-      expect(
-        NotificationService.destinationForPayload('/momentum/onboarding'),
-        '/momentum/onboarding',
-      );
+      expect(NotificationService.destinationForPayload('/travel'), '/travel');
+      expect(NotificationService.destinationForPayload('/you'), '/you');
     });
 
     test('preserves query parameters on valid destination routes', () {
@@ -118,19 +103,32 @@ void main() {
       );
     });
 
-    test('supports recognized sub-paths', () {
-      expect(
-        NotificationService.destinationForPayload('/pipeline/101'),
+    test('retired screens open Home instead of a dead page', () {
+      for (final dead in [
+        '/learning',
+        '/walk',
+        '/chai-break',
+        '/momentum',
+        '/momentum-onboarding',
+        '/momentum/onboarding',
+        '/book-reader',
+        '/pipeline',
         '/pipeline/101',
-      );
-      expect(
-        NotificationService.destinationForPayload('/analytics/series/24'),
+        '/analytics',
         '/analytics/series/24',
-      );
-      expect(
-        NotificationService.destinationForPayload('/study-plan/course/dsa101'),
+        '/study-plan',
         '/study-plan/course/dsa101',
-      );
+        '/dsa',
+        '/interview-prep',
+        '/consistency',
+        '/resume-vault',
+      ]) {
+        expect(
+          NotificationService.destinationForPayload(dead),
+          '/home',
+          reason: dead,
+        );
+      }
     });
 
     test(

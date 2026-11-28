@@ -461,14 +461,21 @@ class RiyaExecutor {
     if (command.id == 'navigation.open' &&
         !const [
           '/today',
+          '/things',
           '/reminders',
           '/thought-wall',
           '/money',
           '/focus',
-          '/learning',
-          '/interview-prep',
+          '/calendar',
+          '/plans',
+          '/promises',
+          '/hydration',
+          '/medicine',
+          '/vault',
+          '/travel',
+          '/history',
+          '/settings',
           '/more',
-          '/chai-break',
         ].contains(a['route'])) {
       throw ArgumentError('Unsupported destination');
     }
@@ -917,7 +924,8 @@ class RiyaExecutor {
     'Focus Timer' => '/focus',
     'Money' => '/money',
     'Reminders & Alerts' => '/reminders',
-    'Interview Prep' => '/interview-prep',
+    'Hydration Tracker' => '/hydration',
+    'Medicine & Health' => '/medicine',
     _ => '/more',
   };
 }

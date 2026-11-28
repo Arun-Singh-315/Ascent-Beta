@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../today/models/things_sections.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,7 +65,7 @@ NowFocus resolveNowFocus({
   if (hasLiveSession) return const NowFocus.session();
 
   final pending = activities
-      .where((a) => a.status != TodayActivityStatus.done)
+      .where((a) => a.status != TodayActivityStatus.done && isOnTodayList(a))
       .toList();
 
   bool isFuture(TodayActivityItem a) =>
@@ -132,7 +133,7 @@ NowFocus resolveNowFocus({
       isLater: true,
     );
   }
-  if (activities.isNotEmpty) return const NowFocus.allDone();
+  if (activities.any(isOnTodayList)) return const NowFocus.allDone();
   return const NowFocus.empty();
 }
 
@@ -277,13 +278,9 @@ class _HomeNowCardState extends ConsumerState<HomeNowCard> {
     ];
 
     final Widget primary;
-    if (lecture) {
-      primary = AscentButton.primary(
-        label: 'Open',
-        compact: true,
-        onPressed: () => context.push('/learning'),
-      );
-    } else if (focus.isLater && !timed) {
+    // Lectures come from the retired Learning screens; their old sessions
+    // can still appear, so they open their actions instead of a dead route.
+    if (lecture || (focus.isLater && !timed)) {
       primary = AscentButton.tonal(
         label: 'Details',
         compact: true,
