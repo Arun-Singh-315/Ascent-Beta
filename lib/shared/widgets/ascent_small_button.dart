@@ -28,6 +28,7 @@ class AscentSmallButton extends StatefulWidget {
     this.glyph,
     this.color,
     this.semanticLabel,
+    this.expanded = false,
   });
 
   const AscentSmallButton.filled({
@@ -37,6 +38,7 @@ class AscentSmallButton extends StatefulWidget {
     this.glyph,
     this.color,
     this.semanticLabel,
+    this.expanded = false,
   }) : style = AscentSmallButtonStyle.filled;
 
   const AscentSmallButton.ghost({
@@ -46,6 +48,7 @@ class AscentSmallButton extends StatefulWidget {
     this.glyph,
     this.color,
     this.semanticLabel,
+    this.expanded = false,
   }) : style = AscentSmallButtonStyle.ghost;
 
   final String label;
@@ -56,6 +59,10 @@ class AscentSmallButton extends StatefulWidget {
   /// Overrides the label colour (for example danger red for Delete).
   final Color? color;
   final String? semanticLabel;
+
+  /// Full width and 48 pt tall: the one main action at the bottom of a
+  /// screen (onboarding). Same look, just bigger.
+  final bool expanded;
 
   @override
   State<AscentSmallButton> createState() => _AscentSmallButtonState();
@@ -101,7 +108,7 @@ class _AscentSmallButtonState extends State<AscentSmallButton> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
           child: Center(
-            widthFactor: 1,
+            widthFactor: widget.expanded ? null : 1,
             heightFactor: 1,
             child: AnimatedScale(
               scale: _down && !reduce ? 0.97 : 1,
@@ -110,7 +117,11 @@ class _AscentSmallButtonState extends State<AscentSmallButton> {
               child: Opacity(
                 opacity: enabled ? 1 : 0.4,
                 child: Container(
-                  constraints: const BoxConstraints(minHeight: 28),
+                  width: widget.expanded ? double.infinity : null,
+                  alignment: widget.expanded ? Alignment.center : null,
+                  constraints: BoxConstraints(
+                    minHeight: widget.expanded ? 48 : 28,
+                  ),
                   padding: EdgeInsets.symmetric(
                     horizontal: widget.style == AscentSmallButtonStyle.ghost
                         ? 4
@@ -118,11 +129,14 @@ class _AscentSmallButtonState extends State<AscentSmallButton> {
                   ),
                   decoration: BoxDecoration(
                     color: bg,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(
+                      widget.expanded ? 14 : 8,
+                    ),
                     border: Border.all(color: edge),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (widget.glyph != null) ...[
                         AscentIcon(widget.glyph!, size: 14, color: fg),
@@ -133,7 +147,13 @@ class _AscentSmallButtonState extends State<AscentSmallButton> {
                           widget.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AscentTextStyles.button.copyWith(color: fg),
+                          style:
+                              (widget.expanded
+                                      ? AscentTextStyles.label.copyWith(
+                                          fontSize: 15,
+                                        )
+                                      : AscentTextStyles.button)
+                                  .copyWith(color: fg),
                         ),
                       ),
                     ],
