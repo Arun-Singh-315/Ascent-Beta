@@ -18,7 +18,7 @@ import '../../../shared/widgets/ascent_snack_bar.dart';
 import '../../hydration/hydration_pace.dart';
 import '../../promises/promise_copy.dart';
 import '../../promises/promise_sheet.dart';
-import '../../promises/widgets/home_promise_card.dart' show answerPromise;
+import '../../promises/widgets/promise_hero.dart' show answerPromise;
 import '../../promises/widgets/promise_dots.dart';
 import '../model/life_rows.dart';
 import 'home_region.dart';

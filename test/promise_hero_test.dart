@@ -8,7 +8,7 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/promises/promise_sheet.dart';
 import 'package:ascent/features/promises/promises_screen.dart';
-import 'package:ascent/features/promises/widgets/home_promise_card.dart';
+import 'package:ascent/features/promises/widgets/promise_hero.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -59,7 +59,7 @@ void main() {
   }
 
   Widget app({
-    Widget child = const HomePromiseCard(),
+    Widget child = const _FirstPromise(),
     bool dark = false,
     double scale = 1,
   }) => UncontrolledProviderScope(
@@ -75,19 +75,6 @@ void main() {
       home: Scaffold(body: SingleChildScrollView(child: child)),
     ),
   );
-
-  testWidgets('no promises: an invitation whose starters create one', (
-    t,
-  ) async {
-    await t.pumpWidget(app());
-    await flush(t);
-    expect(find.text('Make a promise to yourself'), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('promise_starter_Read 10 pages')));
-    await flush(t);
-    expect(find.text('Read 10 pages'), findsOneWidget);
-    expect(find.byKey(const ValueKey('promise_kept')), findsOneWidget);
-    expect(find.text('Promise · Day 1 of 21'), findsOneWidget);
-  });
 
   testWidgets('Kept it fills today, and Undo opens it again', (t) async {
     await t.runAsync(() => service.create(title: 'Walk 20 minutes'));
@@ -135,40 +122,23 @@ void main() {
     expect(find.text('Promise · Day 2 of 21'), findsOneWidget);
   });
 
-  testWidgets('more promises show as compact rows with a round check', (
-    t,
-  ) async {
-    await t.runAsync(() async {
-      await service.create(title: 'Walk');
-      await service.create(title: 'Read');
-      await service.create(title: 'Sleep by 11');
-    });
-    await t.pumpWidget(app());
-    await flush(t);
-    expect(find.text('Walk'), findsOneWidget);
-    final rows = (await t.runAsync(() => service.loadAll()))!;
-    final read = rows.firstWhere((p) => p.title == 'Read');
-    await t.tap(find.byKey(ValueKey('promise_check_${read.id}')));
-    await flush(t);
-    expect(
-      (await t.runAsync(() => service.get(read.id)))!.progress.keptToday,
-      isTrue,
-    );
-  });
-
-  testWidgets('more than four promises offer Show all', (t) async {
-    await t.runAsync(() async {
-      for (var i = 0; i < 6; i++) {
-        await service.create(title: 'Promise $i');
-      }
-    });
-    await t.pumpWidget(app());
-    await flush(t);
-    expect(find.text('Show all 6'), findsOneWidget);
-  });
-
   testWidgets('the sheet makes a promise from one field', (t) async {
-    await t.pumpWidget(app());
+    await t.pumpWidget(
+      app(
+        child: Column(
+          children: [
+            Builder(
+              builder: (context) => TextButton(
+                key: const ValueKey('promise_make'),
+                onPressed: () => showPromiseSheet(context),
+                child: const Text('Make a promise'),
+              ),
+            ),
+            const _FirstPromise(),
+          ],
+        ),
+      ),
+    );
     await flush(t);
     await t.tap(find.byKey(const ValueKey('promise_make')));
     await flush(t);
@@ -249,4 +219,18 @@ void main() {
       ]);
     });
   });
+}
+
+/// The first promise as Home's Life row opens it: PromiseHero with its
+/// Kept it / Not today actions.
+class _FirstPromise extends ConsumerWidget {
+  const _FirstPromise();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = ref.watch(homePromisesProvider).value ?? const [];
+    return list.isEmpty
+        ? const SizedBox.shrink()
+        : PromiseHero(view: list.first);
+  }
 }

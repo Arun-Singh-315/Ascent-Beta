@@ -4,8 +4,6 @@ import 'package:ascent/app/theme/calm_blue_palette.dart';
 import 'package:ascent/core/ai/riya_intents.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
-import 'package:ascent/features/home/widgets/home_feed_cards.dart';
-import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -93,61 +91,6 @@ void main() {
         expect(res!.command, isNull, reason: 'open $retired');
       }
     });
-  });
-
-  group('Mind card subtitle', () {
-    final now = DateTime(2026, 11, 28, 15);
-    test('counts today when there is something today', () {
-      expect(
-        mindSubtitle(todayCount: 1, latest: now, now: now),
-        '1 thought today',
-      );
-      expect(
-        mindSubtitle(todayCount: 3, latest: now, now: now),
-        '3 thoughts today',
-      );
-    });
-    test('names the latest day instead of "nothing captured"', () {
-      expect(
-        mindSubtitle(todayCount: 0, latest: null, now: now),
-        'Nothing captured yet',
-      );
-      expect(
-        mindSubtitle(
-          todayCount: 0,
-          latest: DateTime(2026, 11, 27, 22),
-          now: now,
-        ),
-        'Latest from yesterday',
-      );
-      expect(
-        mindSubtitle(
-          todayCount: 0,
-          latest: DateTime(2026, 11, 25, 9),
-          now: now,
-        ),
-        'Latest from Wednesday',
-      );
-      expect(
-        mindSubtitle(
-          todayCount: 0,
-          latest: DateTime(2026, 11, 17, 10, 30),
-          now: now,
-        ),
-        'Latest from 17 Nov',
-      );
-    });
-  });
-
-  test('only rain, snow and storms animate the header', () {
-    expect(hasPrecipitation(null), isFalse);
-    expect(hasPrecipitation(0), isFalse); // clear
-    expect(hasPrecipitation(3), isFalse); // overcast
-    expect(hasPrecipitation(45), isFalse); // fog
-    expect(hasPrecipitation(61), isTrue); // rain
-    expect(hasPrecipitation(73), isTrue); // snow
-    expect(hasPrecipitation(81), isTrue); // showers
-    expect(hasPrecipitation(95), isTrue); // thunderstorm
   });
 
   testWidgets('ghost buttons use the readable link ink in dark mode', (
