@@ -25,6 +25,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
 import 'v7/home_header_v7.dart';
 import 'v7/home_things_v7.dart';
+import 'v7/home_thoughts_v7.dart';
 import 'widgets/home_now_card.dart';
 import 'widgets/home_feed_cards.dart';
 import 'home_customization_sheet.dart';
@@ -336,7 +337,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             key: _sectionKeys[2],
                             child: const HomeFeedEntrance(
                               index: 2,
-                              child: HomeMindCard(),
+                              child: HomeThoughtsSection(),
                             ),
                           ),
                           // The week at a glance: reminders, to-dos and

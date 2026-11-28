@@ -161,9 +161,7 @@ void main() {
     await unmount(tester);
   });
 
-  testWidgets('Your day lists every dose and recent spending', (
-    tester,
-  ) async {
+  testWidgets('Your day lists every dose and recent spending', (tester) async {
     final db = await pump(tester);
     final today = DateTime.now();
     final key =
