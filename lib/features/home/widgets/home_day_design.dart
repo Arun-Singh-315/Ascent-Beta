@@ -64,7 +64,8 @@ class HomeDayDesign {
 
   static MonochromeSurfaces _neutral(bool dark) =>
       dark ? const MonochromeSurfaces.dark() : const MonochromeSurfaces.light();
-  static Color canvas(bool dark) => dark ? _neutral(dark).canvas : Colors.white;
+  static Color canvas(bool dark) =>
+      dark ? _neutral(dark).canvas : CalmBluePalette.surface;
   static Color ink(bool dark) => _neutral(dark).primaryText;
   static Color secondary(bool dark) => _neutral(dark).secondaryText;
   static Color line(bool dark) => _neutral(dark).separator;

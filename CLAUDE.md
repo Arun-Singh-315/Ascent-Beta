@@ -65,25 +65,27 @@ The look is **iOS system design**: grouped backgrounds, clean white/graphite car
 
 Ascent has **exactly one palette, Calm Blue** (`lib/app/theme/calm_blue_palette.dart`), mirrored for light and dark. There are no theme presets. Never add a second palette, a preset picker or per-screen colour overrides (`Theme(data: …)` wrappers that swap colours). Widgets only ever use roles. When a palette, preset or theme variant is retired, delete its files, enum values, providers, pickers, tests and docs in the same change.
 
+Widgets read colours from `context.tokens` (`AscentTokens`, `lib/app/theme/ascent_tokens.dart`), which also holds the pillar kinds (think, commit, care, water, money) and the Home zone tints. Dark mode is a neutral charcoal, designed on its own rather than inverted navy.
+
 Calm means easy on the eyes: muted, slightly desaturated blues, deep-navy ink by day and soft off-white ink by night (never pure white on pure black), no glossy gradients, glows, sparkles or neon. Body text ≥ 7:1, secondary and hint text ≥ 4.5:1 on its surface.
 
 | Role | Light | Dark | Use |
 |---|---|---|---|
-| `canvas` | `#F2F5F9` | `#0B0E13` | Page background (grouped) |
-| `surface` | `#FFFFFF` | `#161B23` | Cards, grouped list cells |
-| `surfaceElevated` | `#FFFFFF` | `#1E242E` | Sheets, dialogs, menus, popovers (opaque) |
-| `surfaceRecessed` | `#E8EDF3` | `#1E242E` | Segmented tracks, empty-state tiles (inputs have no fill, §6.5) |
-| `separator` | `#D6DEE8` | `#2B323D` | 1 px hairlines |
-| `label` | `#1A2332` | `#E4E9F0` | Primary text |
-| `labelSecondary` | `#4A5668` | `#A9B4C2` | Secondary text |
-| `labelTertiary` | `#5B677C` | `#8995A6` | Hints, placeholders, timestamps |
+| `canvas` | `#F2F5F9` | `#111317` | Page background (grouped) |
+| `surface` | `#FFFFFF` | `#191C22` | Cards, grouped list cells |
+| `surfaceElevated` | `#FFFFFF` | `#20242B` | Sheets, dialogs, menus, popovers (opaque) |
+| `surfaceRecessed` | `#E8EDF3` | `#20242B` | Segmented tracks, empty-state tiles (inputs have no fill, §6.5) |
+| `separator` | `#D6DEE8` | `#2B3038` | 1 px hairlines |
+| `label` | `#1A2332` | `#E8EBEF` | Primary text |
+| `labelSecondary` | `#4A5668` | `#AAB2BD` | Secondary text |
+| `labelTertiary` | `#5B677C` | `#8D96A3` | Hints, placeholders, timestamps |
 | `action` | `#2F68C8` | `#8EB1EC` | Links, active icons, focus, selection |
 | `actionFill` | `#2F68C8` | `#3A66B8` | Filled primary buttons (white label) |
 | `onAction` | `#FFFFFF` | `#FFFFFF` | Text on filled action |
 | `actionTint` | `#E6EEF9` | `#1B2A42` | Tonal buttons, selected chips, user chat bubble |
 | `success` | `#2E8B57` | `#5DBB84` | Completion, switches on |
 | `warning` | `#B7731F` | `#E0A458` | Due soon, streak flame |
-| `danger` | `#C6443A` | `#E8776D` | Overdue, destructive |
+| `danger` | `#C0392F` | `#E8776D` | Overdue, destructive |
 | `star` | `#D9A514` | `#E6C35A` | Importance star only |
 
 Pillar tints (small icon tiles, charts, header accents only — never full-screen fills):
@@ -93,7 +95,8 @@ Rules: one filled `action` button per screen region. Color carries meaning; it i
 
 ### 3.2 Typography
 
-- Family: **DM Sans** for all UI (the single UI family, already used by the core `AscentTextStyles` roles). Numbers in timers/stats use tabular figures (`AscentTextStyles.tabular`). JetBrains Mono only for timers/code. Source Serif 4 only inside the book reader. Plus Jakarta Sans, Bricolage Grotesque and Merriweather are legacy: migrate them when you touch the file.
+- Families, bundled in `assets/fonts` so they work offline: **Inter** for all UI, to-dos and numbers; **Newsreader** for thought text only (`AscentTextStyles.thought`); JetBrains Mono only for timers/code; Source Serif 4 only inside the book reader. DM Sans, Plus Jakarta Sans, Bricolage Grotesque and Merriweather are retired. Numbers in timers/stats use tabular figures.
+- New code uses the Day Page roles in `AscentTextStyles`: `greeting` 31/700, `dayLine` 17/400 (facts `dayLineFact` 17/600), `section` 20/700, `nowTitle` 21/600, `timer` 46/600, `value` 20/600, `thought` Newsreader 16.5/400 (1.5), `row` 15/400, `meta` 12.5/400, `eyebrow` 13/600, `button` 15/600, `caption` 12/500, `pageBarTitle` 17/600, `screenTitle` 34/700. Older styles render in Inter and move to these roles screen by screen.
 - iOS scale (size/weight, letter-spacing): Large Title 34/700 (-0.4) · Title 1 28/700 · Title 2 22/700 · Title 3 20/600 · Headline 17/600 · Body 17/400 · Callout 16/400 · Subhead 15/400 · Footnote 13/400 · Caption 12/500.
 - Home section headings all use one token (`AscentTextStyles.homeTitle`, Title 3). Never invent sizes.
 

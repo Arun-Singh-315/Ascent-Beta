@@ -932,7 +932,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               Expanded(
                                 child: Text(
                                   'Happy ${todayFestival.name}! ${todayFestival.riyaWish}',
-                                  style: GoogleFonts.plusJakartaSans(
+                                  style: GoogleFonts.inter(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
                                     color: ChatPalette.of(context).highlightInk,
@@ -1158,7 +1158,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Companion Identity',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: sheetContext.c.textPrimary,
@@ -1168,7 +1168,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Choose who accompanies your daily Life OS',
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: sheetContext.c.textSecondary,
@@ -1287,7 +1287,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       children: [
                         Text(
                           name,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: sheetContext.textPrimary,
@@ -1296,7 +1296,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         const SizedBox(width: 8),
                         Text(
                           '· $tagline',
-                          style: GoogleFonts.plusJakartaSans(
+                          style: GoogleFonts.inter(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: sheetContext.textMuted,
@@ -1307,7 +1307,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     const SizedBox(height: 3),
                     Text(
                       description,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: GoogleFonts.inter(
                         fontSize: 12,
                         color: sheetContext.textMuted,
                         height: 1.3,

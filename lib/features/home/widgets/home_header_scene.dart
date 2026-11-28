@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../../../app/theme/calm_blue_palette.dart';
 import 'package:flutter/material.dart';
 import 'home_day_design.dart';
 import '../../../app/theme/home_design.dart';
@@ -24,8 +25,8 @@ class HomeHeaderScene extends StatelessWidget {
 
   static Color inkAt(DateTime time, {required bool dark}) =>
       dark || periodAt(time) == 'night'
-      ? const Color(0xFFF9FBFF)
-      : const Color(0xFF172A42);
+      ? CalmBluePalette.darkLabel
+      : CalmBluePalette.label;
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +73,8 @@ class HomeHeaderScene extends StatelessWidget {
                     radius: .95,
                     colors: [
                       (night
-                              ? const Color(0xFFB9C9FF)
-                              : const Color(0xFFFFEDC8))
+                              ? CalmBluePalette.skyNight
+                              : CalmBluePalette.skyMorningLight)
                           .withValues(alpha: dark || night ? .10 : .18),
                       Colors.transparent,
                     ],

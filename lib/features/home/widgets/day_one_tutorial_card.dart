@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import '../../../app/theme/calm_blue_palette.dart';
+import '../../../app/theme/ascent_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -43,7 +45,7 @@ class DayOneTutorialDialog extends ConsumerStatefulWidget {
         context: context,
         barrierDismissible: true,
         barrierLabel: 'Dismiss welcome',
-        barrierColor: Colors.black.withValues(alpha: .12),
+        barrierColor: CalmBluePalette.darkShadow.withValues(alpha: .12),
         blurSigma: 8,
         transitionDuration: const Duration(milliseconds: 240),
         builder: (_) => DayOneTutorialDialog(userName: userName),
@@ -60,8 +62,6 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
   bool _saving = false;
   bool _closing = false;
   String? _error;
-  static const ink = Color(0xFF202D3F);
-  static const muted = Color(0xFF607087);
 
   @override
   void dispose() {
@@ -143,12 +143,12 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
     return PopScope(
       canPop: !_saving,
       child: Dialog(
-        backgroundColor: const Color(0xFFFBFCFF),
+        backgroundColor: context.tokens.raised,
         elevation: 0,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: Colors.white),
+          side: BorderSide(color: context.tokens.separator),
         ),
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
@@ -164,16 +164,16 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                       child: Text(
                         DateFormat('EEEE, d MMM').format(DateTime.now()),
                         style: AscentTextStyles.labelSmall.copyWith(
-                          color: muted,
+                          color: context.tokens.labelSecondary,
                         ),
                       ),
                     ),
                     IconButton(
                       tooltip: 'Explore on my own',
                       onPressed: _saving ? null : _dismiss,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
-                        color: muted,
+                        color: context.tokens.labelSecondary,
                         size: 20,
                       ),
                     ),
@@ -189,10 +189,13 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                       Container(
                         height: 58,
                         width: 58,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
-                            colors: [Color(0xFFE3ECFE), Color(0xFFE6F2EA)],
+                            colors: [
+                              context.tokens.actionTint,
+                              context.tokens.success.withValues(alpha: .12),
+                            ],
                           ),
                         ),
                         child: const Icon(
@@ -207,7 +210,7 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                             ? 'A fresh page.\nOne small step.'
                             : 'You’re home, $name.',
                         style: AscentTextStyles.homeTitle.copyWith(
-                          color: ink,
+                          color: context.tokens.label,
                           fontSize: 26,
                           letterSpacing: -.6,
                           height: 1.16,
@@ -217,7 +220,7 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                       Text(
                         'What would make today feel worthwhile?',
                         style: AscentTextStyles.body.copyWith(
-                          color: muted,
+                          color: context.tokens.labelSecondary,
                           height: 1.4,
                         ),
                       ),
@@ -236,14 +239,14 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                           hintText: 'One thing I’d like to do…',
                           counterText: '',
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: context.tokens.surface,
                         ),
                       ),
                       const SizedBox(height: 14),
                       Text(
                         'A little inspiration · tap to edit',
                         style: AscentTextStyles.labelSmall.copyWith(
-                          color: muted,
+                          color: context.tokens.labelSecondary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -258,7 +261,7 @@ class _DayOneTutorialDialogState extends ConsumerState<DayOneTutorialDialog> {
                             ActionChip(
                               label: Text(idea),
                               onPressed: _saving ? null : () => _tryIdea(idea),
-                              backgroundColor: const Color(0xFFF0F4FB),
+                              backgroundColor: context.tokens.actionTint,
                               side: BorderSide.none,
                               labelStyle: AscentTextStyles.labelSmall.copyWith(
                                 color: SharedControlColors.actionBlue,

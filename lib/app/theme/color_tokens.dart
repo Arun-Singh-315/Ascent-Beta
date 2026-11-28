@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'ascent_tokens.dart';
 import 'glass_theme.dart';
-import 'day_glass_material.dart';
 import 'calm_blue_palette.dart';
 import 'shared_control_tokens.dart';
 
@@ -86,9 +86,9 @@ extension AscentColorsX on BuildContext {
   Color get financeAccent =>
       isDark ? AscentColors.financeBright : AscentColors.financePrimary;
 
-  Color get bgBase =>
-      Theme.of(this).extension<DayGlassMaterial>()?.canvas ??
-      (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
+  /// Page background. Reads [AscentTokens] so it fades with a theme switch
+  /// instead of jumping at the end.
+  Color get bgBase => tokens.canvas;
 
   Color get bgSurface =>
       isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;

@@ -31,7 +31,6 @@ import '../../app/theme/monochrome_surfaces.dart';
 import '../../app/theme/shared_control_tokens.dart';
 import '../../shared/widgets/ascent_calendar_day.dart';
 import '../../shared/widgets/feature_guide.dart';
-import '../home/widgets/home_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -419,15 +418,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final activitiesAsync = ref.watch(todayActivitiesProvider);
     final allActivities = activitiesAsync.value ?? const <TodayActivityItem>[];
 
-    return Theme(
-      data: _isCalendarView
-          ? HomeTheme.from(Theme.of(context))
-          : Theme.of(context),
-      child: Builder(
-        builder: (context) =>
-            _buildScreen(context, remindersAsync, allTasks, allActivities),
-      ),
-    );
+    return _buildScreen(context, remindersAsync, allTasks, allActivities);
   }
 
   Widget _buildScreen(

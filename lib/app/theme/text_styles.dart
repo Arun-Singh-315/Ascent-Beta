@@ -5,20 +5,99 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// All styles are color-free — apply color at the call site via color tokens:
 /// ```dart
-/// Text('Hello', style: AscentTextStyles.displayLarge.copyWith(color: context.textPrimary))
+/// Text('Hello', style: AscentTextStyles.row.copyWith(color: context.tokens.label))
 /// ```
 ///
-/// Font mapping:
-/// - **Display** → Plus Jakarta Sans (SemiBold / Bold)
-/// - **Body / Label** → DM Sans (Regular / Medium)
-/// - **Stat** → JetBrains Mono (Medium)
+/// Fonts (CLAUDE.md §3.2), bundled in `assets/fonts` so they work offline:
+/// - **Interface, to-dos and numbers** → Inter
+/// - **Thought text** → Newsreader (a reading serif for writing)
+/// - **Timers and code** → JetBrains Mono
+///
+/// New code uses the 14 Day Page roles at the top of the class. The older
+/// styles below them now render in Inter and are migrated to the roles
+/// screen by screen.
 class AscentTextStyles {
   AscentTextStyles._();
+
+  // ── Day Page roles (the 14 roles new code uses) ───────────────────────────
+
+  static TextStyle _inter(
+    double size,
+    FontWeight weight, {
+    double height = 1.3,
+    double spacing = 0,
+    bool tabular = false,
+  }) => GoogleFonts.inter(
+    fontSize: size,
+    fontWeight: weight,
+    height: height,
+    letterSpacing: spacing,
+    fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
+  );
+
+  /// 31 · Bold · −0.9 — Home greeting ("Good morning").
+  static TextStyle get greeting =>
+      _inter(31, FontWeight.w700, height: 1.1, spacing: -0.9);
+
+  /// 17 · Regular · 1.42 — the one-sentence day summary under the greeting.
+  /// Facts inside it use [dayLineFact].
+  static TextStyle get dayLine => _inter(17, FontWeight.w400, height: 1.42);
+
+  /// 17 · SemiBold — a fact inside [dayLine] ("3 of 7").
+  static TextStyle get dayLineFact =>
+      _inter(17, FontWeight.w600, height: 1.42, tabular: true);
+
+  /// 20 · Bold · −0.4 — section and zone headings ("Today").
+  static TextStyle get section =>
+      _inter(20, FontWeight.w700, height: 1.2, spacing: -0.4);
+
+  /// 21 · SemiBold · −0.4 — the title inside the Now card.
+  static TextStyle get nowTitle =>
+      _inter(21, FontWeight.w600, height: 1.22, spacing: -0.4);
+
+  /// 46 · SemiBold · tabular — a running timer.
+  static TextStyle get timer =>
+      _inter(46, FontWeight.w600, height: 1, spacing: -1.5, tabular: true);
+
+  /// 20 · SemiBold · tabular — a metric value ("1.8").
+  static TextStyle get value =>
+      _inter(20, FontWeight.w600, height: 1.15, spacing: -0.4, tabular: true);
+
+  /// 16.5 · Regular · 1.5 — thought text, set in Newsreader.
+  static TextStyle get thought => GoogleFonts.newsreader(
+    fontSize: 16.5,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+  );
+
+  /// 15 · Regular — a row title: to-dos, reminders, doses, spends.
+  static TextStyle get row =>
+      _inter(15, FontWeight.w400, height: 1.3, spacing: -0.1);
+
+  /// 12.5 · Regular · tabular — row meta and units ("9:00 · 45 min").
+  static TextStyle get meta =>
+      _inter(12.5, FontWeight.w400, height: 1.3, tabular: true);
+
+  /// 13 · SemiBold — eyebrows ("Up next · 9:00").
+  static TextStyle get eyebrow => _inter(13, FontWeight.w600, height: 1.25);
+
+  /// 15 · SemiBold — button labels.
+  static TextStyle get button => _inter(15, FontWeight.w600, height: 1.2);
+
+  // Captions, tab labels and chips use the existing [caption] (12 · Medium).
+
+  /// 17 · SemiBold — titles of full-screen create and edit pages.
+  static TextStyle get pageBarTitle =>
+      _inter(17, FontWeight.w600, height: 1.25, spacing: -0.2);
+
+  /// 34 · Bold · −0.4 — large titles on pushed screens.
+  static TextStyle get screenTitle =>
+      _inter(34, FontWeight.w700, height: 1.15, spacing: -0.6);
 
   // ── Section 4 Apple-Inspired Canonical Type Scale (DM Sans) ───────────────
 
   /// 28 px · SemiBold (w600) · h 1.20 · ls −0.4 — Page title
-  static TextStyle get pageTitle => GoogleFonts.dmSans(
+  static TextStyle get pageTitle => GoogleFonts.inter(
     fontSize: 28,
     fontWeight: FontWeight.w600,
     height: 1.20,
@@ -26,7 +105,7 @@ class AscentTextStyles {
   );
 
   /// 34 px · Bold (w700) · h 1.20 · ls −0.4 — iOS Large Title (root tabs)
-  static TextStyle get largeTitle => GoogleFonts.dmSans(
+  static TextStyle get largeTitle => GoogleFonts.inter(
     fontSize: 34,
     fontWeight: FontWeight.w700,
     height: 1.20,
@@ -42,7 +121,7 @@ class AscentTextStyles {
   );
 
   /// 32 px · SemiBold (w600) · h 1.20 · ls −0.3 — Headline metric (DM Sans with tabular figures)
-  static TextStyle get headlineMetric => GoogleFonts.dmSans(
+  static TextStyle get headlineMetric => GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.w600,
     height: 1.20,
@@ -51,7 +130,7 @@ class AscentTextStyles {
   );
 
   /// 20 px · SemiBold (w600) · h 1.25 · ls −0.2 — Section heading
-  static TextStyle get sectionHeading => GoogleFonts.dmSans(
+  static TextStyle get sectionHeading => GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.25,
@@ -59,7 +138,7 @@ class AscentTextStyles {
   );
 
   /// 18 px · SemiBold (w600) · h 1.30 · ls −0.1 — Card and dialog title
-  static TextStyle get cardTitle => GoogleFonts.dmSans(
+  static TextStyle get cardTitle => GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 1.30,
@@ -70,7 +149,7 @@ class AscentTextStyles {
   static TextStyle get dialogTitle => cardTitle;
 
   /// 16 px · Regular (w400) · h 1.45 · ls 0 — Body and editable input
-  static TextStyle get body => GoogleFonts.dmSans(
+  static TextStyle get body => GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.45,
@@ -81,7 +160,7 @@ class AscentTextStyles {
   static TextStyle get input => body;
 
   /// 15 px · SemiBold (w600) · h 1.30 · ls 0 — Button and segment label
-  static TextStyle get buttonLabel => GoogleFonts.dmSans(
+  static TextStyle get buttonLabel => GoogleFonts.inter(
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.30,
@@ -92,7 +171,7 @@ class AscentTextStyles {
   static TextStyle get segmentLabel => buttonLabel;
 
   /// 16 px · Medium (w500) · h 1.35 · ls 0 — List-row title
-  static TextStyle get listRowTitle => GoogleFonts.dmSans(
+  static TextStyle get listRowTitle => GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.35,
@@ -100,7 +179,7 @@ class AscentTextStyles {
   );
 
   /// 14 px · Regular (w400) · h 1.40 · ls 0 — Supporting text
-  static TextStyle get supportingText => GoogleFonts.dmSans(
+  static TextStyle get supportingText => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.40,
@@ -108,7 +187,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Medium (w500) · h 1.35 · ls 0 — Caption and tab label
-  static TextStyle get caption => GoogleFonts.dmSans(
+  static TextStyle get caption => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.35,
@@ -137,7 +216,7 @@ class AscentTextStyles {
   // ── Body (DM Sans) ──────────────────────────────────────────────────────────
 
   /// 16 px · Regular · h 1.45 · ls −0.15
-  static TextStyle get bodyLarge => GoogleFonts.dmSans(
+  static TextStyle get bodyLarge => GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.45,
@@ -145,7 +224,7 @@ class AscentTextStyles {
   );
 
   /// 14 px · Regular · h 1.45 · ls −0.12
-  static TextStyle get bodyMedium => GoogleFonts.dmSans(
+  static TextStyle get bodyMedium => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.45,
@@ -153,7 +232,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Regular · h 1.4 · ls −0.05
-  static TextStyle get bodySmall => GoogleFonts.dmSans(
+  static TextStyle get bodySmall => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -161,7 +240,7 @@ class AscentTextStyles {
   );
 
   /// 14 px · Medium (w500) · h 1.45 · ls −0.12 — slightly emphasised body copy
-  static TextStyle get bodyMediumMedium => GoogleFonts.dmSans(
+  static TextStyle get bodyMediumMedium => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.45,
@@ -171,7 +250,7 @@ class AscentTextStyles {
   // ── Labels (DM Sans Medium) ─────────────────────────────────────────────────
 
   /// 16 px · Medium · h 1.3 · ls +0.05  — button labels, tab labels
-  static TextStyle get labelLarge => GoogleFonts.dmSans(
+  static TextStyle get labelLarge => GoogleFonts.inter(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -179,7 +258,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Medium · h 1.3 · ls +0.35  — chips, badges, metadata
-  static TextStyle get labelSmall => GoogleFonts.dmSans(
+  static TextStyle get labelSmall => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -187,7 +266,7 @@ class AscentTextStyles {
   );
 
   /// 14 px · Medium · h 1.3 · ls +0.1 — form labels, card subtitles
-  static TextStyle get labelMedium => GoogleFonts.dmSans(
+  static TextStyle get labelMedium => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -195,7 +274,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Medium · h 1.3 · ls +0.25 — captions, pills
-  static TextStyle get captionMedium => GoogleFonts.dmSans(
+  static TextStyle get captionMedium => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -203,7 +282,7 @@ class AscentTextStyles {
   );
 
   /// 18 px · SemiBold · h 1.3 — card titles and section headings
-  static TextStyle get headlineMedium => GoogleFonts.plusJakartaSans(
+  static TextStyle get headlineMedium => GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 1.3,
@@ -242,53 +321,53 @@ class AscentTextStyles {
   // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
 
   // Scoped monochrome interface roles; legacy recipes remain unchanged.
-  static TextStyle get interfaceDisplay => GoogleFonts.dmSans(
+  static TextStyle get interfaceDisplay => GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.w600,
     height: 1.12,
     letterSpacing: -.6,
   );
-  static TextStyle get homeSection => GoogleFonts.dmSans(
+  static TextStyle get homeSection => GoogleFonts.inter(
     fontSize: 24,
     fontWeight: FontWeight.w500,
     height: 1.2,
     letterSpacing: -.6,
   );
-  static TextStyle get interfaceSection => GoogleFonts.dmSans(
+  static TextStyle get interfaceSection => GoogleFonts.inter(
     fontSize: 22,
     fontWeight: FontWeight.w600,
     height: 1.2,
     letterSpacing: -.3,
   );
-  static TextStyle get interfaceTitle => GoogleFonts.dmSans(
+  static TextStyle get interfaceTitle => GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.25,
     letterSpacing: -.2,
   );
-  static TextStyle get interfaceBody => GoogleFonts.dmSans(
+  static TextStyle get interfaceBody => GoogleFonts.inter(
     fontSize: 17,
     fontWeight: FontWeight.w400,
     height: 1.4,
   );
-  static TextStyle get interfaceNavigation => GoogleFonts.dmSans(
+  static TextStyle get interfaceNavigation => GoogleFonts.inter(
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 1.2,
   );
-  static TextStyle get interfaceSupporting => GoogleFonts.dmSans(
+  static TextStyle get interfaceSupporting => GoogleFonts.inter(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     height: 1.35,
   );
-  static TextStyle get interfaceLabel => GoogleFonts.dmSans(
+  static TextStyle get interfaceLabel => GoogleFonts.inter(
     fontSize: 13,
     fontWeight: FontWeight.w500,
     height: 1.3,
   );
 
   /// Legacy display role retained for existing consumers.
-  static TextStyle get homeDisplay => GoogleFonts.plusJakartaSans(
+  static TextStyle get homeDisplay => GoogleFonts.inter(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 38 / 32,
@@ -297,7 +376,7 @@ class AscentTextStyles {
 
   /// Title 21 / 27 · 700 (Plus Jakarta Sans) — Crisp geometric section heading
   /// Home section headings: Title 3, DM Sans 20/600 (CLAUDE.md §3.2).
-  static TextStyle get homeTitle => GoogleFonts.dmSans(
+  static TextStyle get homeTitle => GoogleFonts.inter(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 26 / 20,
@@ -305,14 +384,14 @@ class AscentTextStyles {
   );
 
   /// Headline 17 / 24 · 600 (DM Sans)
-  static TextStyle get homeHeadline => GoogleFonts.dmSans(
+  static TextStyle get homeHeadline => GoogleFonts.inter(
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 24 / 17,
   );
 
   /// Body 14 / 20 · 400 (DM Sans) · ls 0.1 — Crisp modern metadata and greeting
-  static TextStyle get homeBody => GoogleFonts.dmSans(
+  static TextStyle get homeBody => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 20 / 14,
@@ -320,7 +399,7 @@ class AscentTextStyles {
   );
 
   /// Secondary 13 / 18 · 400 (DM Sans) · ls −0.08
-  static TextStyle get homeSecondary => GoogleFonts.dmSans(
+  static TextStyle get homeSecondary => GoogleFonts.inter(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     height: 1.4,
@@ -328,7 +407,7 @@ class AscentTextStyles {
   );
 
   /// Caption 11 / 16 · 500 (DM Sans) · ls +0.35
-  static TextStyle get homeCaption => GoogleFonts.dmSans(
+  static TextStyle get homeCaption => GoogleFonts.inter(
     fontSize: 11,
     fontWeight: FontWeight.w500,
     height: 1.35,
@@ -347,7 +426,7 @@ class AppTypography {
   // DM Sans like the rest of the app (CLAUDE.md §3.2: serif only in the
   // book reader), a touch larger and airier for easy reading.
   static TextStyle thoughtContent({Color? color, TextDecoration? decoration}) =>
-      GoogleFonts.dmSans(
+      GoogleFonts.inter(
         fontSize: 15.5,
         fontWeight: FontWeight.w400,
         height: 1.5,
@@ -356,14 +435,14 @@ class AppTypography {
       );
 
   static TextStyle inter13Regular1({FontWeight? fontWeight, Color? color}) =>
-      GoogleFonts.dmSans(fontSize: 13, fontWeight: fontWeight, color: color);
+      GoogleFonts.inter(fontSize: 13, fontWeight: fontWeight, color: color);
   static TextStyle jetBrainsMono11W7002({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         color: color,
       );
-  static TextStyle inter11W7003({Color? color}) => GoogleFonts.dmSans(
+  static TextStyle inter11W7003({Color? color}) => GoogleFonts.inter(
     fontSize: 11,
     fontWeight: FontWeight.w700,
     color: color,
@@ -371,7 +450,7 @@ class AppTypography {
   static TextStyle plusJakartaSans18W6004({
     Color? color,
     TextDecoration? decoration,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     height: 1.35,
@@ -379,11 +458,11 @@ class AppTypography {
     decoration: decoration,
   );
   static TextStyle inter14Regular5({Color? color}) =>
-      GoogleFonts.dmSans(fontSize: 14, height: 1.4, color: color);
+      GoogleFonts.inter(fontSize: 14, height: 1.4, color: color);
   static TextStyle inter13Regular6({Color? color}) =>
-      GoogleFonts.dmSans(fontSize: 13, color: color);
+      GoogleFonts.inter(fontSize: 13, color: color);
   static TextStyle plusJakartaSans14W7007({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w700,
         color: color,
@@ -397,7 +476,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans105W60010({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 10.5,
         fontWeight: FontWeight.w600,
         color: color,
@@ -409,30 +488,21 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans16W70012({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         color: color,
       );
-  static TextStyle merriweather20W80013({Color? color}) =>
-      GoogleFonts.merriweather(
-        fontSize: 20,
-        fontWeight: FontWeight.w800,
-        height: 1.3,
-        color: color,
-      );
-  static TextStyle sourceSerif415Regular14({Color? color}) =>
-      GoogleFonts.sourceSerif4(fontSize: 15, height: 1.6, color: color);
   static TextStyle plusJakartaSans125Regular15({
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 12.5,
     fontWeight: fontWeight,
     color: color,
   );
   static TextStyle plusJakartaSans13W70016({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.4,
@@ -441,13 +511,13 @@ class AppTypography {
   static TextStyle plusJakartaSans14Regular17({
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: fontWeight,
     color: color,
   );
   static TextStyle plusJakartaSans13Regular18({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 13, color: color);
+      GoogleFonts.inter(fontSize: 13, color: color);
   static TextStyle jetBrainsMono48W70019({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 48,
@@ -456,40 +526,40 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans12W50020({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w500,
         color: color,
       );
   static TextStyle plusJakartaSans14W70021({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 14,
         color: color,
       );
   static TextStyle plusJakartaSans14Regular22({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 14,
         fontStyle: FontStyle.italic,
         height: 1.35,
         color: color,
       );
   static TextStyle plusJakartaSans11W80023({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 11,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.6,
         color: color,
       );
   static TextStyle plusJakartaSans44W80024({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 44,
         fontWeight: FontWeight.w800,
         letterSpacing: -1.5,
         color: color,
       );
   static TextStyle plusJakartaSans105W80025({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 10.5,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.5,
@@ -502,7 +572,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans95W70027({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 9.5,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.8,
@@ -515,21 +585,21 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans95W50029({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 9.5,
         fontWeight: FontWeight.w500,
         color: color,
       );
   static TextStyle plusJakartaSans155W70030({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 15.5,
         fontWeight: FontWeight.w700,
         color: color,
       );
   static TextStyle plusJakartaSans13W70031() =>
-      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13);
+      GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13);
   static TextStyle plusJakartaSans13W60032() =>
-      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13);
+      GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13);
   static TextStyle jetBrainsMono12W60033({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 12,
@@ -543,7 +613,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans15W70035({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: color,
@@ -554,7 +624,7 @@ class AppTypography {
     Color? color,
     TextDecoration? decoration,
     Color? decorationColor,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 12.5,
     fontWeight: FontWeight.w600,
     color: color,
@@ -574,7 +644,7 @@ class AppTypography {
     Color? color,
     TextDecoration? decoration,
     Color? decorationColor,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 13,
     height: 1.25,
     fontWeight: fontWeight,
@@ -591,21 +661,21 @@ class AppTypography {
   static TextStyle plusJakartaSans115Regular42({
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 11.5,
     fontWeight: fontWeight,
     color: color,
   );
   static TextStyle plusJakartaSans125Regular43({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 12.5, height: 1.4, color: color);
+      GoogleFonts.inter(fontSize: 12.5, height: 1.4, color: color);
   static TextStyle plusJakartaSans13W70044({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         color: color,
       );
   static TextStyle plusJakartaSans18W70045({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: color,
@@ -618,7 +688,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans135W70047({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13.5,
         fontWeight: FontWeight.w700,
         color: color,
@@ -637,7 +707,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans16W70050({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         height: 1.25,
@@ -660,7 +730,7 @@ class AppTypography {
     Color? color,
     TextDecoration? decoration,
     Color? decorationColor,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 18,
     fontWeight: FontWeight.w700,
     height: 1.25,
@@ -683,21 +753,21 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans135W60056({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13.5,
         fontWeight: FontWeight.w600,
         color: color,
       );
   static TextStyle plusJakartaSans12Regular57({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 12, color: color);
+      GoogleFonts.inter(fontSize: 12, color: color);
   static TextStyle plusJakartaSans11Regular58({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 11, color: color);
+      GoogleFonts.inter(fontSize: 11, color: color);
   static TextStyle plusJakartaSans125Regular59({
     FontWeight? fontWeight,
     Color? color,
     TextDecoration? decoration,
     Color? decorationColor,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 12.5,
     fontWeight: fontWeight,
     color: color,
@@ -716,12 +786,12 @@ class AppTypography {
     double? fontSize,
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.dmSans(
+  }) => GoogleFonts.inter(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
   );
-  static TextStyle inter12W50062({Color? color}) => GoogleFonts.dmSans(
+  static TextStyle inter12W50062({Color? color}) => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: color,
@@ -733,13 +803,13 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans20W80064({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w800,
         color: color,
       );
   static TextStyle plusJakartaSans125Regular65({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 12.5, height: 1.35, color: color);
+      GoogleFonts.inter(fontSize: 12.5, height: 1.35, color: color);
   static TextStyle jetBrainsMono13W70066({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontWeight: FontWeight.w700,
@@ -774,7 +844,7 @@ class AppTypography {
   static TextStyle plusJakartaSans14W60071({
     Color? color,
     TextDecoration? decoration,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontWeight: FontWeight.w500,
     height: 1.45,
     fontSize: 14,
@@ -785,7 +855,7 @@ class AppTypography {
   static TextStyle jetBrainsMonoInheritedRegular72({TextStyle? textStyle}) =>
       GoogleFonts.jetBrainsMono(textStyle: textStyle);
   static TextStyle plusJakartaSans12W60073({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: color,
@@ -805,7 +875,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans17W70076({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 17,
         fontWeight: FontWeight.w700,
         color: color,
@@ -813,13 +883,13 @@ class AppTypography {
   static TextStyle plusJakartaSans115Regular77({
     Color? color,
     FontWeight? fontWeight,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 11.5,
     color: color,
     fontWeight: fontWeight,
   );
   static TextStyle plusJakartaSans125W70078() =>
-      GoogleFonts.plusJakartaSans(fontSize: 12.5, fontWeight: FontWeight.w700);
+      GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w700);
   static TextStyle jetBrainsMono10W70079({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 10,
@@ -828,13 +898,13 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans14W60080({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w600,
         color: color,
       );
   static TextStyle plusJakartaSans115Regular81({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 11.5, color: color);
+      GoogleFonts.inter(fontSize: 11.5, color: color);
   static TextStyle jetBrainsMono10W70082({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 10,
@@ -843,7 +913,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans13W60083({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: color,
@@ -862,7 +932,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans14W70086() =>
-      GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700);
+      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700);
   static TextStyle jetBrainsMono11W70087({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 11,
@@ -871,13 +941,13 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans20W70088({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: color,
       );
   static TextStyle plusJakartaSans14Regular89({Color? color}) =>
-      GoogleFonts.plusJakartaSans(fontSize: 14, height: 1.4, color: color);
+      GoogleFonts.inter(fontSize: 14, height: 1.4, color: color);
   static TextStyle jetBrainsMono42W70090({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 42,
@@ -886,31 +956,31 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSansInheritedW70091() =>
-      GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700);
+      GoogleFonts.inter(fontWeight: FontWeight.w700);
   static TextStyle plusJakartaSans13Regular92({
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 13,
     fontWeight: fontWeight,
     color: color,
   );
   static TextStyle plusJakartaSans125W70093({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 12.5,
         fontWeight: FontWeight.w700,
         height: 1.2,
         color: color,
       );
   static TextStyle plusJakartaSans135W60094({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 13.5,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.2,
         color: color,
       );
   static TextStyle plusJakartaSans16W70095({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         height: 1.3,
@@ -924,50 +994,50 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans12W60097() =>
-      GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600);
+      GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600);
   static TextStyle plusJakartaSans13W70098() =>
-      GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700);
+      GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700);
   static TextStyle bricolageGrotesque15W70099({Color? color}) =>
-      GoogleFonts.bricolageGrotesque(
+      GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 15,
         color: color,
       );
   static TextStyle bricolageGrotesque20W700100({Color? color}) =>
-      GoogleFonts.bricolageGrotesque(
+      GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 20,
         color: color,
       );
   static TextStyle bricolageGrotesque18W700101({Color? color}) =>
-      GoogleFonts.bricolageGrotesque(
+      GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.w700,
         color: color,
       );
   static TextStyle dmSans13Regular102({Color? color}) =>
-      GoogleFonts.dmSans(fontSize: 13, color: color);
+      GoogleFonts.inter(fontSize: 13, color: color);
   static TextStyle dmSansInheritedW600103() =>
-      GoogleFonts.dmSans(fontWeight: FontWeight.w600);
+      GoogleFonts.inter(fontWeight: FontWeight.w600);
   static TextStyle bricolageGrotesqueInheritedW700104({
     double? fontSize,
     Color? color,
-  }) => GoogleFonts.bricolageGrotesque(
+  }) => GoogleFonts.inter(
     fontWeight: FontWeight.w700,
     fontSize: fontSize,
     color: color,
   );
   static TextStyle dmSans13Regular105({Color? color}) =>
-      GoogleFonts.dmSans(fontSize: 13, height: 1.4, color: color);
+      GoogleFonts.inter(fontSize: 13, height: 1.4, color: color);
   static TextStyle dmSans14W600106() =>
-      GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600);
+      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600);
   static TextStyle bricolageGrotesque17W600107({Color? color}) =>
-      GoogleFonts.bricolageGrotesque(
+      GoogleFonts.inter(
         fontSize: 17,
         fontWeight: FontWeight.w600,
         color: color,
       );
-  static TextStyle dmSans11W400108({Color? color}) => GoogleFonts.dmSans(
+  static TextStyle dmSans11W400108({Color? color}) => GoogleFonts.inter(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     color: color,
@@ -984,37 +1054,37 @@ class AppTypography {
         fontSize: 12,
         color: color,
       );
-  static TextStyle inter12W600111({Color? color}) => GoogleFonts.dmSans(
+  static TextStyle inter12W600111({Color? color}) => GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     color: color,
   );
   static TextStyle plusJakartaSans20W800112({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w800,
         letterSpacing: 0.5,
         color: color,
       );
   static TextStyle plusJakartaSans32W800113({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 32,
         fontWeight: FontWeight.w800,
         color: color,
       );
   static TextStyle plusJakartaSans12W700114({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.8,
         color: color,
       );
   static TextStyle plusJakartaSans15W700115() =>
-      GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700);
+      GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700);
   static TextStyle plusJakartaSans14W600116({
     Color? color,
     TextDecoration? decoration,
-  }) => GoogleFonts.plusJakartaSans(
+  }) => GoogleFonts.inter(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.45,
@@ -1030,14 +1100,14 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans155W700118({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 15.5,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
         color: color,
       );
   static TextStyle plusJakartaSans125W600119({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontSize: 12.5,
         fontWeight: FontWeight.w600,
         color: color,
@@ -1049,7 +1119,7 @@ class AppTypography {
         color: color,
       );
   static TextStyle plusJakartaSans18W700121({Color? color}) =>
-      GoogleFonts.plusJakartaSans(
+      GoogleFonts.inter(
         fontWeight: FontWeight.w700,
         fontSize: 18,
         color: color,

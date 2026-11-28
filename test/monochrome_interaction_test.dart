@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:ascent/shared/widgets/ascent_button.dart';
 import 'package:ascent/shared/widgets/ascent_segmented_control.dart';
 import 'package:flutter/material.dart';
@@ -100,9 +99,7 @@ void main() {
       (t) async {
         await t.pumpWidget(
           MaterialApp(
-            theme: HomeTheme.from(
-              dark ? AscentTheme.dark() : AscentTheme.light(),
-            ),
+            theme: dark ? AscentTheme.dark() : AscentTheme.light(),
             home: Scaffold(
               body: Center(
                 child: AscentButton.primary(label: 'Save', onPressed: () {}),
@@ -149,7 +146,7 @@ skip: true, // Known bug: Tinted action labels are below 4.5:1 contrast
       var next = 0;
       await t.pumpWidget(
         MaterialApp(
-          theme: HomeTheme.from(AscentTheme.light()),
+          theme: AscentTheme.light(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,
@@ -200,7 +197,7 @@ skip: true, // Known bug: Tinted action labels are below 4.5:1 contrast
       var selected = 'a';
       await t.pumpWidget(
         MaterialApp(
-          theme: HomeTheme.from(AscentTheme.dark()),
+          theme: AscentTheme.dark(),
           builder: (context, child) => MediaQuery(
             data: MediaQuery.of(
               context,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme/ascent_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -76,10 +77,10 @@ class HomeAskBar extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.auto_awesome_rounded,
                         size: 18,
-                        color: Colors.white,
+                        color: context.tokens.onAction,
                       ),
                     ),
                     const SizedBox(width: AppSpace.s12),

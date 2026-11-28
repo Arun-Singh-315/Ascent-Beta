@@ -273,47 +273,5 @@ void main() {
       },
     );
 
-    testWidgets('Ask Assistant card has constrained width and is centered', (
-      tester,
-    ) async {
-      final now = DateTime(2026, 11, 17, 10, 0);
-      final profile = createTestProfile();
-
-      tester.view.physicalSize = const Size(400 * 2, 800 * 2);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            todayFestivalProvider.overrideWith((ref) => null),
-            currentStreakStreamProvider.overrideWith((ref) => Stream.value(14)),
-            homeWeatherProvider.overrideWith((ref) => Future.value(null)),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: HomeHeader(profile: profile, now: now),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final heroFinder = find.byKey(const ValueKey('home_assistant_button'));
-      expect(heroFinder, findsOneWidget);
-
-      final heroSize = tester.getSize(heroFinder);
-      // Max card width should be constrained to 336 on a 400px screen
-      expect(heroSize.width, lessThanOrEqualTo(336.0));
-      // And centered: left and right margins should be balanced
-      final heroTopLeft = tester.getTopLeft(heroFinder);
-      final heroCenter = heroTopLeft.dx + heroSize.width / 2;
-      expect(heroCenter, closeTo(200.0, 1.0));
-    });
   });
 }

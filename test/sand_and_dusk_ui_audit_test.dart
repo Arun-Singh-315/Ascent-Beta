@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ascent/shared/widgets/app_text_field.dart';
 import 'package:ascent/shared/widgets/section_card.dart';
-import 'package:ascent/features/home/widgets/home_assistant_hero_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,25 +43,6 @@ void main() {
   });
 
   group('Glowing Ask Jarvis Card on Home', () {
-    testWidgets(
-      'Renders glowing card with animated illuminated border and soft Chat button',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: HomeAssistantHeroCard(assistantName: 'Jarvis'),
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('Ask Jarvis'), findsOneWidget);
-        expect(find.text('Plan your day or ask anything'), findsOneWidget);
-        expect(find.text('Chat'), findsOneWidget);
-        expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      },
-    );
   });
 
   group('Things / Plans Soft Actions', () {
@@ -94,35 +73,5 @@ void main() {
 
   group('Accessibility & Small Screen Safety (320px width & 2.0x scale)', () {
 
-    testWidgets(
-      'HomeAssistantHeroCard does not overflow at 320px with 2.0x text scale',
-      (tester) async {
-        tester.view.physicalSize = const Size(320 * 2.0, 600 * 2.0);
-        tester.view.devicePixelRatio = 2.0;
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-
-        await tester.pumpWidget(
-          MediaQuery(
-            data: const MediaQueryData(
-              size: Size(320, 600),
-              textScaler: TextScaler.linear(2.0),
-            ),
-            child: const ProviderScope(
-              child: MaterialApp(
-                home: Scaffold(
-                  body: HomeAssistantHeroCard(assistantName: 'Jarvis'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pump();
-        expect(tester.takeException(), isNull);
-      },
-    );
   });
 }

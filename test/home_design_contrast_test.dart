@@ -1,7 +1,4 @@
 import 'package:ascent/app/theme/home_design.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/monochrome_surfaces.dart';
-import 'package:ascent/features/home/widgets/home_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,20 +13,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  test(
-    'Shared controls retain Home materials throughout a theme transition',
-    () {
-      final day = HomeTheme.from(ThemeData.light());
-      final night = HomeTheme.from(ThemeData.dark());
-      for (final progress in [0.0, .25, .5, .75, 1.0]) {
-        final theme = ThemeData.lerp(day, night, progress);
-        final design = theme.extension<HomeDesign>()!;
-        expect(theme.extension<MonochromeSurfaces>()!.surface, design.surface);
-        expect(theme.extension<AscentGlass>()!.elevated, design.elevated);
-        expect(theme.extension<AscentGlass>()!.tonalBg, design.groupedFill);
-      }
-    },
-  );
   for (final design in [const HomeDesign.day(), const HomeDesign.night()]) {
     test(
       'Home reading and accent roles meet AA at darkness ${design.darkness}',

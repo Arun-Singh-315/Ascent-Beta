@@ -29,7 +29,6 @@ import 'home_customization_sheet.dart';
 import '../../shared/widgets/ascent_backdrop.dart';
 import 'widgets/home_feed_entrance.dart';
 import 'widgets/home_compact_header.dart';
-import 'widgets/home_theme.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
@@ -42,15 +41,11 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, this.notificationUri});
   final Uri? notificationUri;
 
+  // Home uses the app's one theme. It used to wrap itself in a second,
+  // separately animated theme, which made day/night switches flicker.
   @override
-  Widget build(BuildContext context) => AnimatedTheme(
-    duration: Duration(
-      milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 320,
-    ),
-    curve: Curves.easeInOutCubic,
-    data: HomeTheme.from(Theme.of(context)),
-    child: _HomeContent(notificationUri: notificationUri),
-  );
+  Widget build(BuildContext context) =>
+      _HomeContent(notificationUri: notificationUri);
 }
 
 class _HomeContent extends ConsumerStatefulWidget {
@@ -212,11 +207,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ),
                         padding: EdgeInsets.zero,
                         children: [
-                          // 1. HomeHeader (keeps header spacious by setting includeAssistant: false)
+                          // 1. HomeHeader
                           HomeHeader(
                             key: _headerKey,
                             profile: profile,
-                            includeAssistant: false,
                           ),
 
                           // Capture first: open the app, write, Enter.
