@@ -5,8 +5,6 @@ import 'package:go_router/go_router.dart';
 const featureGuides = <String, String>{
   'Mindspace':
       'Write · Send a note like a message.\nOrganize · Swipe right to archive; left to delete with Undo.\nMore · Long-press for selection. Open Commitments at the top for your daily commitments.',
-  'Challenge Partner':
-      'Create · Add independent challenges.\nChoose · Tap a card for status; its home icon selects the preview.\nProgress · Linked study and Focus update active challenges.',
   'Reminders & Alerts':
       'Create · Set a title, date and time. Normal notifications are the default.\nAlarm · Turn on Ring as an alarm for looping sound, Snooze and Done. Enable Android alarm access for popups.\nManage · Missed reminders stay Overdue. Snooze moves the time; Done completes the reminder, while tasks keep their own status.',
   'Focus Timer':
@@ -15,36 +13,16 @@ const featureGuides = <String, String>{
       'Plan · Add a Todo or timed activity.\nComplete · Check Todos; use Focus for timed work.\nReturn · Add a reminder when useful.',
   'Today':
       'Plan · Add a Todo or timed activity.\nComplete · Check Todos; use Focus for timed work.\nEdit · Open an activity for its actions.',
-  'Growth':
-      'Next step · Start or resume from the top card. Search and filter courses to find what you need.\nSyllabus · Open a course for modules, lectures, editing and notes. The player tracks your study time.\nGoals · Course pace is a plan; the study streak needs 120 active study minutes before local midnight. Paused time and manual completion checks do not count.',
   'Hydration Tracker':
       'Goal · Set your daily water target.\nLog · Use the drink buttons.\nReview · Check your recent water history.',
-  'Walking & Activity':
-      'Start · Allow location and begin an outdoor walk.\nPause · Stop tracking when taking a break.\nSave · Finish to store your route and history.',
   'Medicine & Health':
       'Add · Enter a prescription and dose times.\nRecord · Mark each dose when taken.\nReview · Check past doses in history.',
-  'Job Pipeline':
-      'Add · Save an application.\nMove · Change its stage as you progress.\nPrepare · Open a card for notes and linked tasks.',
-  'Study Plan':
-      'Organize · Create your courses and phases.\nStudy · Work through linked lectures and activities.\nReview · Adjust targets as your schedule changes.',
-  'DSA Tracker':
-      'Log · Add a problem, topic and difficulty.\nRevisit · Flag problems for another attempt.\nReview · Check practice history.',
-  'Interview Prep':
-      'Save · Add questions, company notes and dates.\nPractice · Review your question bank.\nFind · Search by question, company or topic.',
-  'Consistency':
-      'Review · Check daily study presence.\nBuild · Real study sessions count toward progress.\nToday · Home shows your study target.',
-  'Resume Vault':
-      'Upload · Add a resume version.\nOrganize · Name versions by role.\nUse · Open or share a saved file.',
-  'Analytics & Velocity':
-      'Review · Study hours, series and applications.\nCompare · Inspect progress over time.\nAdjust · Use the results to plan your next week.',
   'Money':
       'Record · Add income or expenses.\nReview · Choose a period to inspect spending.\nPlan · Set budget limits or savings goals.',
   'Settings':
       'Customize · Appearance, goals and notifications.\nProtect · Export a backup before restoring or clearing.\nHelp · Replay guides with the question-mark button.',
   'More':
-      'Explore · Open study, career and daily tools.\nLearn · Read short first-use tips when needed.\nReturn · Use the feature help button to revisit tips.',
-  'Pause':
-      'Rest · Choose a short break.\nRelax · Pick music or follow breathing.\nBrew · Follow a recipe with Brew With Me.',
+      'Explore · Open your Life tools, Vault, History and Settings from You.\nLearn · Read short first-use tips when needed.\nReturn · Use the feature help button to revisit tips.',
   'Riya':
       'Ask · Try “What are my tasks today?”\nReview · Confirm an expense, task or water log before saving.\nLimits · Local rules; use feature screens for other actions.',
 };
@@ -201,7 +179,7 @@ class FeatureEmptyStateHint extends StatelessWidget {
 final _tour = <(String, String, String)>[
   (
     'Your daily dashboard',
-    'Home brings together today’s work, learning, Mindspace and health. Write directly under Mindspace and tap Send. New notes appear in the preview.',
+    'Home brings together your day, Mindspace and care. Write straight into the boxes on Home and press Enter. New items appear right away.',
     '/home',
   ),
   (
@@ -210,19 +188,9 @@ final _tour = <(String, String, String)>[
     '/today',
   ),
   (
-    'Build your learning',
-    'Create a course, add modules and lectures, and open a lecture to study.',
-    '/learning',
-  ),
-  (
     'Give thoughts a place',
-    'Send notes, swipe right to archive, swipe left to delete, or long-press to select. Selected notes can become Todos or reminders. Open Commitments at the top to add daily commitments and get shared check-ins.',
+    'Send notes, swipe right to archive, swipe left to delete, or long-press to select. Selected notes can become Todos or reminders.',
     '/thought-wall',
-  ),
-  (
-    'Choose a challenge',
-    'Create several goals and pick any card to see its status. The home icon chooses which challenge appears on Home.',
-    '/momentum',
   ),
   (
     'Remember what matters',
@@ -233,25 +201,12 @@ final _tour = <(String, String, String)>[
   ('Riya', featureGuides['Riya']!, '/ai-assistant'),
   ('Hydration Tracker', featureGuides['Hydration Tracker']!, '/hydration'),
   ('Medicine & Health', featureGuides['Medicine & Health']!, '/medicine'),
-  ('Walking & Activity', featureGuides['Walking & Activity']!, '/walk'),
-  ('Pause', featureGuides['Pause']!, '/chai-break'),
-  ('Job Pipeline', featureGuides['Job Pipeline']!, '/pipeline'),
-  ('Study Plan', featureGuides['Study Plan']!, '/study-plan'),
-  ('DSA Tracker', featureGuides['DSA Tracker']!, '/dsa'),
-  ('Interview Prep', featureGuides['Interview Prep']!, '/interview-prep'),
-  ('Consistency', featureGuides['Consistency']!, '/consistency'),
-  ('Resume Vault', featureGuides['Resume Vault']!, '/resume-vault'),
-  (
-    'Analytics & Velocity',
-    featureGuides['Analytics & Velocity']!,
-    '/analytics',
-  ),
   ('Money', featureGuides['Money']!, '/money'),
   ('Settings', featureGuides['Settings']!, '/settings'),
   (
-    'Care for your day',
-    'Use Daily rhythm for medicine, water and breaks. More contains your remaining career, study and tracking tools.',
-    '/more',
+    'Everything else',
+    'Open You for water, medicine, money, Vault, History and Settings.',
+    '/you',
   ),
 ];
 

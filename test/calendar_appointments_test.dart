@@ -107,6 +107,16 @@ void main() {
       expect(await db.select(db.reminderTable).get(), isEmpty);
     });
   }
+  test('Weather is opt-in: nothing is fetched until a city is chosen', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(container.dispose);
+    expect(weatherConfigured(prefs), isFalse);
+    expect(await container.read(homeWeatherProvider.future), isNull);
+  });
   testWidgets('Weather setup and offline details remain usable', (t) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -120,13 +130,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: HomeTheme.from(AscentTheme.light()),
-          home: const Scaffold(body: HomeWeather()),
+          home: const Scaffold(body: WeatherForecastSheet()),
         ),
       ),
     );
-    await t.pumpAndSettle();
-    expect(find.text('Weather unavailable · Retry'), findsOneWidget);
-    await t.tap(find.byKey(const ValueKey('home_weather')));
     await t.pumpAndSettle();
     expect(
       find.text('Weather could not load. Check your connection and retry.'),

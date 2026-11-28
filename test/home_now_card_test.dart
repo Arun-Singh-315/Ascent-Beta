@@ -12,6 +12,7 @@ TodayActivityItem _item(
   bool overdue = false,
   String source = 'task',
   int? taskId,
+  bool anytime = false,
 }) => TodayActivityItem(
   id: id,
   title: id,
@@ -22,6 +23,8 @@ TodayActivityItem _item(
   scheduledTime: at,
   isOverdue: overdue,
   linkedTaskId: taskId,
+  // Items on today's list carry today's date; anytime to-dos have none.
+  plannedDate: anytime ? null : _now,
 );
 
 Reminder _reminder(int id, DateTime at, {int? taskId, bool active = true}) =>
@@ -93,6 +96,20 @@ void main() {
       'due',
       reason: 'a reminder for a visible activity is not shown twice',
     );
+  });
+
+  test('anytime to-dos stay out of Now, like the Things Today list', () {
+    final f = _resolve(
+      activities: [_item('someday', taskId: 3, anytime: true)],
+    );
+    expect(f.kind, NowFocusKind.empty);
+    final g = _resolve(
+      activities: [
+        _item('someday', taskId: 3, anytime: true),
+        _item('today', taskId: 4),
+      ],
+    );
+    expect(g.activity?.id, 'today');
   });
 
   test('inactive or future reminders are ignored', () {

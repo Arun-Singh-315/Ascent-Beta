@@ -12,7 +12,8 @@ const riyaSessionCapabilities = <RiyaCapability>[
   RiyaCapability(
     'learning.history',
     'Read recorded Learning history',
-    '/learning',
+    // Learning screens were retired; past sessions live in History.
+    '/history',
     {
       'scope': RiyaValue.text,
       'day': RiyaValue.date,

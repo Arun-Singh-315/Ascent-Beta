@@ -33,6 +33,11 @@ bool isAnytimeThing(TodayActivityItem a) =>
     a.sourceType != 'medicine' &&
     a.sourceType != 'lecture';
 
+/// Whether an item belongs to today's plan. Home's Now card, Home's Things
+/// card and the Things Today segment all use this one rule; anytime to-dos
+/// live in the Anytime segment instead.
+bool isOnTodayList(TodayActivityItem a) => !isAnytimeThing(a);
+
 bool _isDone(TodayActivityItem a) => a.status == TodayActivityStatus.done;
 
 DateTime? _when(TodayActivityItem a) => a.scheduledTime ?? a.plannedDate;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../today/models/things_sections.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -43,12 +44,9 @@ class HomeThingsCard extends ConsumerWidget {
     final items = ref.watch(todayActivitiesProvider).value ?? const [];
     // Medicine doses live in "Your day", not in the Things list.
     final today = items
-        .where(
-          (a) =>
-              a.sourceType != 'medicine' &&
-              (a.plannedDate != null || a.isDailyStanding),
-        )
+        .where((a) => a.sourceType != 'medicine' && isOnTodayList(a))
         .toList();
+    final anytime = anytimeThings(items).length;
     final done = today
         .where((a) => a.status == TodayActivityStatus.done)
         .length;
@@ -71,7 +69,9 @@ class HomeThingsCard extends ConsumerWidget {
         tint: tint,
         title: 'Things',
         subtitle: total == 0
-            ? 'Nothing planned yet'
+            ? (anytime == 0
+                  ? 'Nothing planned yet'
+                  : 'Nothing planned · $anytime anytime to-do${anytime == 1 ? '' : 's'}')
             : pending.isEmpty
             ? 'All done today'
             : '${pending.length} left · $done done',
@@ -236,11 +236,15 @@ class _HomeMindCardState extends ConsumerState<HomeMindCard> {
         icon: Icons.lightbulb_outline_rounded,
         tint: tint,
         title: 'Mind',
-        subtitle: count == 0
-            ? 'Nothing captured today'
-            : count == 1
-            ? '1 thought today'
-            : '$count thoughts today',
+        subtitle: mindSubtitle(
+          todayCount: count,
+          latest: recent.isEmpty
+              ? null
+              : recent
+                    .map((t) => t.createdAt)
+                    .reduce((a, b) => a.isAfter(b) ? a : b),
+          now: DateTime.now(),
+        ),
         route: '/thought-wall',
       ),
       children: [
@@ -286,6 +290,25 @@ String _ago(DateTime at) {
 
 /// A thought as a quiet speech bubble: hairline outline, one squared
 /// corner like a chat bubble, the words first and a small "when" below.
+/// Mind card subtitle. It never says "nothing captured" above older
+/// thoughts: when today is empty it names when the latest one was written.
+String mindSubtitle({
+  required int todayCount,
+  required DateTime? latest,
+  required DateTime now,
+}) {
+  if (todayCount == 1) return '1 thought today';
+  if (todayCount > 1) return '$todayCount thoughts today';
+  if (latest == null) return 'Nothing captured yet';
+  final today = DateTime(now.year, now.month, now.day);
+  final day = DateTime(latest.year, latest.month, latest.day);
+  final days = today.difference(day).inDays;
+  if (days <= 0) return 'Latest today';
+  if (days == 1) return 'Latest from yesterday';
+  if (days < 7) return 'Latest from ${DateFormat('EEEE').format(latest)}';
+  return 'Latest from ${DateFormat('d MMM').format(latest)}';
+}
+
 class _ThoughtBubble extends StatelessWidget {
   const _ThoughtBubble({super.key, required this.thought});
   final Thought thought;

@@ -331,7 +331,9 @@ class _AscentButtonInternalState extends State<_AscentButtonInternal> {
       );
     } else if (isGhost) {
       bg = _pressed ? g.ink.withValues(alpha: 0.06) : Colors.transparent;
-      fg = g.primaryButtonBg;
+      // Link ink, not the button fill: the fill blue is too dark to read as
+      // text on dark surfaces (3.2:1). CLAUDE.md §6.3.
+      fg = g.actionInk;
     } else {
       // isIcon
       bg = _pressed ? g.ink.withValues(alpha: 0.06) : Colors.transparent;

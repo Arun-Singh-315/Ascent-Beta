@@ -49,17 +49,27 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
-    final inTest = WidgetsBinding.instance.runtimeType.toString().contains(
-      'Test',
-    );
-    if (!inTest) {
-      _animController.repeat();
-    }
+    // The rain/snow canvas only moves while it is actually raining or
+    // snowing; see [_syncAtmosphere]. Nothing loops on a clear day.
     if (widget.now == null) {
       _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
         if (mounted) setState(() {});
       });
     }
+  }
+
+  /// Starts the precipitation loop only when there is something to animate,
+  /// and stops it otherwise (CLAUDE.md §2.8: no idle animation loops).
+  void _syncAtmosphere(bool animate) {
+    if (animate == _animController.isAnimating) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (animate && !_animController.isAnimating) {
+        _animController.repeat();
+      } else if (!animate && _animController.isAnimating) {
+        _animController.stop();
+      }
+    });
   }
 
   @override
@@ -183,9 +193,13 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
       }
     } catch (_) {}
 
-    // Offline or not set up: show nothing rather than an error (§7).
+    // Not set up: a quiet "Add weather" chip (weather is opt-in).
+    // Set up but offline: show nothing rather than an error (§7).
+    final configured = weatherConfigured(ref.watch(sharedPreferencesProvider));
     final showWeather =
-        current != null || (weatherState.isLoading && !weatherState.hasError);
+        !configured ||
+        current != null ||
+        (weatherState.isLoading && !weatherState.hasError);
     final String tempStr;
     final String descStr;
     final IconData weatherIcon;
@@ -260,7 +274,7 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                         Icon(weatherIcon, size: 14, color: c.accent),
                         const SizedBox(width: 6),
                         Text(
-                          '$tempStr · $descStr',
+                          configured ? '$tempStr · $descStr' : 'Add weather',
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
@@ -268,15 +282,16 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
                             letterSpacing: -0.1,
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '· $city',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w500,
-                            color: c.textSecondary,
+                        if (configured) const SizedBox(width: 4),
+                        if (configured)
+                          Text(
+                            '· $city',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                              color: c.textSecondary,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -417,6 +432,9 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     final weatherState = ref.watch(homeWeatherProvider);
     final current = weatherState.value?['current'] as Map<String, dynamic>?;
     final weatherCode = (current?['weather_code'] as num?)?.toInt();
+    _syncAtmosphere(
+      hasPrecipitation(weatherCode) && !MediaQuery.disableAnimationsOf(context),
+    );
 
     final streak = math.max(
       ref.watch(studyStreakProvider).displayStreakDays,
@@ -778,6 +796,15 @@ class _HomeHeaderState extends ConsumerState<HomeHeader>
     );
   }
 }
+
+/// Whether an Open-Meteo weather code is rain, drizzle, showers, snow or a
+/// thunderstorm: the only weather the header canvas animates.
+bool hasPrecipitation(int? code) =>
+    code != null &&
+    ((code >= 51 && code <= 67) ||
+        (code >= 71 && code <= 77) ||
+        (code >= 80 && code <= 86) ||
+        code >= 95);
 
 class _AtmosphereCanvasPainter extends CustomPainter {
   _AtmosphereCanvasPainter({
