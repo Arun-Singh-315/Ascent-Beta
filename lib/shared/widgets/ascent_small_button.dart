@@ -73,7 +73,7 @@ class _AscentSmallButtonState extends State<AscentSmallButton> {
       AscentSmallButtonStyle.plain => (
         Colors.transparent,
         widget.color ?? t.label,
-        t.line,
+        t.separator,
       ),
       AscentSmallButtonStyle.ghost => (
         Colors.transparent,

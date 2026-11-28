@@ -24,17 +24,16 @@ import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
 import 'v7/home_header_v7.dart';
+import 'v7/home_life_v7.dart';
 import 'v7/home_things_v7.dart';
 import 'v7/home_thoughts_v7.dart';
 import 'widgets/home_now_card.dart';
-import 'widgets/home_feed_cards.dart';
 import 'home_customization_sheet.dart';
 import '../../shared/widgets/ascent_backdrop.dart';
 import 'widgets/home_feed_entrance.dart';
 import '../vault/widgets/vault_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import '../promises/widgets/home_promise_card.dart';
 import '../travel/home_travel_card.dart';
 import 'package:flutter/cupertino.dart' show CupertinoActivityIndicator;
 
@@ -312,14 +311,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           // follow. Each feature appears once.
                           // Promises sit right under Now: one daily answer
                           // that keeps your word to yourself in view.
-                          if (layout.visible.contains('promises') &&
-                              ref
-                                  .watch(unlockedFeaturesProvider)
-                                  .contains(AscentFeature.things))
-                            const HomeFeedEntrance(
-                              index: 1,
-                              child: HomePromiseCard(),
-                            ),
                           // Travel shows only while a trip is on or a recent
                           // visit is waiting for its bill or photos.
                           const HomeFeedEntrance(
@@ -348,9 +339,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           ),
                           KeyedSubtree(
                             key: _sectionKeys[3],
-                            child: const HomeFeedEntrance(
+                            child: HomeFeedEntrance(
                               index: 4,
-                              child: HomeLifeTiles(),
+                              // Your promise lives in Life now.
+                              child: HomeLifeSection(
+                                showPromise: layout.visible.contains(
+                                  'promises',
+                                ),
+                              ),
                             ),
                           ),
 
